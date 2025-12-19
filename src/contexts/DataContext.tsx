@@ -193,6 +193,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const normalizedInputPhone = phone.replace(/[-\s()]/g, '')
     const normalizedInputName = name.trim()
     
+    console.log('체크인 게스트 찾기:', {
+      입력이름: normalizedInputName,
+      입력전화번호: normalizedInputPhone,
+      게스트수: guests.length
+    })
+    
     // guests 배열에서 해당 게스트 찾기
     const guestIndex = guests.findIndex((guest) => {
       const guestName = guest.name || guest['이름'] || guest.Name || ''
@@ -202,17 +208,44 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       const normalizedGuestPhone = guestPhone.replace(/[-\s()]/g, '')
       const phoneMatch = normalizedGuestPhone === normalizedInputPhone
       
+      if (nameMatch || phoneMatch) {
+        console.log('게스트 매칭 시도:', {
+          게스트이름: guestName,
+          이름일치: nameMatch,
+          게스트전화번호: normalizedGuestPhone,
+          전화번호일치: phoneMatch,
+          전체일치: nameMatch && phoneMatch
+        })
+      }
+      
       return nameMatch && phoneMatch
     })
 
+    console.log('게스트 찾기 결과:', {
+      guestIndex,
+      찾음: guestIndex !== -1
+    })
+
     if (guestIndex === -1) {
+      console.error('게스트를 찾을 수 없습니다. 등록된 게스트 목록:', guests.map(g => ({
+        이름: g.name || g['이름'] || g.Name,
+        전화번호: g.phone || g['전화번호'] || g.Phone
+      })))
       return { success: false, message: '등록된 정보가 없습니다.' }
     }
 
     const guest = guests[guestIndex]
+    
+    console.log('게스트 정보:', {
+      이름: guest.name || guest['이름'] || guest.Name,
+      전화번호: guest.phone || guest['전화번호'] || guest.Phone,
+      체크인여부: guest.checkedIn,
+      입장번호: guest.entryNumber
+    })
 
     // 이미 체크인한 경우
     if (guest.checkedIn) {
+      console.log('이미 체크인 완료된 게스트')
       return { 
         success: false, 
         message: `이미 체크인 완료되었습니다. 입장 번호: ${guest.entryNumber}번`,
@@ -241,6 +274,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     // Firestore에 업데이트 (비동기로 처리)
     setFirestoreData('guests' as any, updatedGuests).catch((error) => {
       console.error('Firestore 게스트 업데이트 오류:', error)
+    })
+
+    console.log('체크인 성공:', {
+      입장번호: newEntryNumber,
+      게스트이름: guest.name || guest['이름'] || guest.Name
     })
 
     return { success: true, entryNumber: newEntryNumber }
