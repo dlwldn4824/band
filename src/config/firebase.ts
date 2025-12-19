@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app'
 import { getFirestore } from 'firebase/firestore'
 import { getAuth } from 'firebase/auth'
+import { getStorage } from 'firebase/storage'
 
 // Firebase 설정
 // Firebase 콘솔에서 프로젝트 설정 > 일반 > SDK 설정 및 구성에서 복사하세요
@@ -22,6 +23,9 @@ export const db = getFirestore(app)
 
 // Auth 초기화
 export const auth = getAuth(app)
+
+// Storage 초기화
+export const storage = getStorage(app)
 
 export default app
 

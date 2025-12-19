@@ -1,0 +1,16 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // chat 폴더의 모든 파일 읽기/쓰기 허용
+    match /chat/{allPaths=**} {
+      allow read, write: if true;
+    }
+    
+    // 다른 폴더도 필요하면 추가
+    match /{allPaths=**} {
+      allow read, write: if true;
+    }
+  }
+}
+

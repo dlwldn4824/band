@@ -13,6 +13,7 @@ import {
   deleteDoc
 } from 'firebase/firestore'
 import { db } from '../config/firebase'
+import { uploadFile, isImageFile, isVideoFile, checkFileSize } from '../services/storageService'
 import './Chat.css'
 
 interface Message {
@@ -20,6 +21,10 @@ interface Message {
   user: string
   message: string
   timestamp: any
+  imageUrl?: string
+  videoUrl?: string
+  fileName?: string
+  fileType?: string
 }
 
 interface OnlineUser {
@@ -33,8 +38,11 @@ const Chat = () => {
   const [messages, setMessages] = useState<Message[]>([])
   const [inputMessage, setInputMessage] = useState('')
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([])
+  const [uploading, setUploading] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const onlineUserRef = useRef<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (!user) return
@@ -128,20 +136,70 @@ const Chat = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // 파일 크기 확인 (50MB 제한)
+    if (!checkFileSize(file, 50)) {
+      alert('파일 크기는 50MB 이하여야 합니다.')
+      return
+    }
+
+    setSelectedFile(file)
+    e.target.value = '' // 같은 파일 다시 선택 가능하도록
+  }
+
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!inputMessage.trim() || !user) return
+    if ((!inputMessage.trim() && !selectedFile) || !user) return
+
+    setUploading(true)
 
     try {
+      let imageUrl: string | undefined
+      let videoUrl: string | undefined
+      let fileName: string | undefined
+      let fileType: string | undefined
+
+      // 파일이 있으면 업로드
+      if (selectedFile) {
+        const downloadURL = await uploadFile(selectedFile, 'chat')
+        
+        if (isImageFile(selectedFile)) {
+          imageUrl = downloadURL
+          fileType = 'image'
+        } else if (isVideoFile(selectedFile)) {
+          videoUrl = downloadURL
+          fileType = 'video'
+        } else {
+          fileType = 'file'
+        }
+        
+        fileName = selectedFile.name
+      }
+
+      // 메시지 전송
       await addDoc(collection(db, 'chat'), {
         user: user.name,
-        message: inputMessage.trim(),
-        timestamp: serverTimestamp()
+        message: inputMessage.trim() || '',
+        timestamp: serverTimestamp(),
+        ...(imageUrl && { imageUrl }),
+        ...(videoUrl && { videoUrl }),
+        ...(fileName && { fileName }),
+        ...(fileType && { fileType })
       })
+
       setInputMessage('')
+      setSelectedFile(null)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
     } catch (error) {
       console.error('메시지 전송 오류:', error)
       alert('메시지 전송에 실패했습니다.')
+    } finally {
+      setUploading(false)
     }
   }
 
@@ -200,7 +258,31 @@ const Chat = () => {
                   <span className="message-user">{msg.user}</span>
                   <span className="message-time">{formatTime(msg.timestamp)}</span>
                 </div>
-                <div className="message-content">{msg.message}</div>
+                <div className="message-content">
+                  {msg.message && <div className="message-text">{msg.message}</div>}
+                  {msg.imageUrl && (
+                    <div className="message-image">
+                      <img 
+                        src={msg.imageUrl} 
+                        alt={msg.fileName || '이미지'} 
+                        onClick={() => window.open(msg.imageUrl, '_blank')}
+                      />
+                    </div>
+                  )}
+                  {msg.videoUrl && (
+                    <div className="message-video">
+                      <video 
+                        src={msg.videoUrl} 
+                        controls
+                        preload="metadata"
+                      >
+                        <source src={msg.videoUrl} type="video/mp4" />
+                        브라우저가 비디오 태그를 지원하지 않습니다.
+                      </video>
+                      {msg.fileName && <div className="video-filename">{msg.fileName}</div>}
+                    </div>
+                  )}
+                </div>
               </div>
             ))
           )}
@@ -208,21 +290,56 @@ const Chat = () => {
         </div>
 
         <form onSubmit={sendMessage} className="chat-input-form">
-          <input
-            type="text"
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            placeholder="메시지를 입력하세요..."
-            className="chat-input"
-            disabled={!user}
-          />
-          <button
-            type="submit"
-            className="send-button"
-            disabled={!inputMessage.trim() || !user}
-          >
-            전송
-          </button>
+          {selectedFile && (
+            <div className="selected-file-preview">
+              <span className="file-name">
+                {isImageFile(selectedFile) && '🖼️ '}
+                {isVideoFile(selectedFile) && '🎥 '}
+                {selectedFile.name}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedFile(null)
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = ''
+                  }
+                }}
+                className="remove-file-button"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+          <div className="input-row">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,video/*"
+              onChange={handleFileSelect}
+              className="file-input"
+              id="file-input"
+              disabled={!user || uploading}
+            />
+            <label htmlFor="file-input" className="file-input-label" title="이미지/동영상 업로드">
+              📎
+            </label>
+            <input
+              type="text"
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              placeholder="메시지를 입력하세요..."
+              className="chat-input"
+              disabled={!user || uploading}
+            />
+            <button
+              type="submit"
+              className="send-button"
+              disabled={(!inputMessage.trim() && !selectedFile) || !user || uploading}
+            >
+              {uploading ? '업로드 중...' : '전송'}
+            </button>
+          </div>
         </form>
       </div>
     </div>
