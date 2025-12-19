@@ -69,7 +69,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [guests, setGuests] = useState<Guest[]>([])
   const [performanceData, setPerformanceDataState] = useState<PerformanceData | null>(null)
   const [guestbookMessages, setGuestbookMessages] = useState<GuestbookMessage[]>([])
-  const [checkInCode, setCheckInCodeState] = useState<string | null>(null)
+  const [checkInCode, setCheckInCodeState] = useState<string | null>('0215')
 
   useEffect(() => {
     // Firestore에서 데이터 로드
@@ -261,7 +261,19 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const verifyCheckInCode = (code: string): boolean => {
-    return checkInCode !== null && checkInCode === code.trim()
+    const trimmedCode = code.trim()
+    // checkInCode가 null이면 기본값 '0215' 사용
+    const currentCode = checkInCode || '0215'
+    const isValid = currentCode === trimmedCode
+    
+    // 디버깅용 로그
+    console.log('체크인 코드 검증:', {
+      입력코드: trimmedCode,
+      저장된코드: currentCode,
+      일치여부: isValid
+    })
+    
+    return isValid
   }
 
   return (

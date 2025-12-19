@@ -72,7 +72,10 @@ const CheckIn = () => {
       return
     }
 
-    if (verifyCheckInCode(codeInput)) {
+    const trimmedCode = codeInput.trim()
+    console.log('체크인 시도:', { 입력코드: trimmedCode, 사용자: user.name })
+    
+    if (verifyCheckInCode(trimmedCode)) {
       // 로그인한 사용자 정보로 체크인 처리
       const checkInResult = checkInGuest(user.name, user.phone)
       setResult(checkInResult)
