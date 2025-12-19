@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { Html5Qrcode } from 'html5-qrcode'
 import './QRScanner.css'
 
@@ -12,8 +11,6 @@ const QRScanner = ({ onScanSuccess, onClose }: QRScannerProps) => {
   const scannerRef = useRef<Html5Qrcode | null>(null)
   const isScanningRef = useRef<boolean>(false)
   const [error, setError] = useState<string>('')
-  const [isScanning, setIsScanning] = useState(false)
-  const navigate = useNavigate()
 
   const stopScanner = useCallback(async () => {
     if (scannerRef.current && isScanningRef.current) {
@@ -27,7 +24,6 @@ const QRScanner = ({ onScanSuccess, onClose }: QRScannerProps) => {
         }
       } finally {
         isScanningRef.current = false
-        setIsScanning(false)
       }
     }
   }, [])
@@ -79,17 +75,15 @@ const QRScanner = ({ onScanSuccess, onClose }: QRScannerProps) => {
               setError('QR 코드 형식이 올바르지 않습니다.')
             }
           },
-          (errorMessage) => {
+          (_errorMessage) => {
             // 스캔 중 에러 (무시)
           }
         )
         isScanningRef.current = true
-        setIsScanning(true)
       } catch (err) {
         setError('카메라 접근 권한이 필요합니다.')
         console.error('QR Scanner error:', err)
         isScanningRef.current = false
-        setIsScanning(false)
       }
     }
 
