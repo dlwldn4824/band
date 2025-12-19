@@ -39,6 +39,7 @@ const Chat = () => {
   const [inputMessage, setInputMessage] = useState('')
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([])
   const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const onlineUserRef = useRef<string | null>(null)
@@ -140,9 +141,11 @@ const Chat = () => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // 파일 크기 확인 (50MB 제한)
-    if (!checkFileSize(file, 50)) {
-      alert('파일 크기는 50MB 이하여야 합니다.')
+    // 파일 크기 확인
+    // 이미지는 10MB, 동영상은 50MB 제한
+    const maxSize = isImageFile(file) ? 10 : 50
+    if (!checkFileSize(file, maxSize)) {
+      alert(`파일 크기는 ${maxSize}MB 이하여야 합니다.`)
       return
     }
 
@@ -164,7 +167,10 @@ const Chat = () => {
 
       // 파일이 있으면 업로드
       if (selectedFile) {
-        const downloadURL = await uploadFile(selectedFile, 'chat')
+        setUploadProgress(0)
+        const downloadURL = await uploadFile(selectedFile, 'chat', (progress) => {
+          setUploadProgress(progress)
+        })
         
         if (isImageFile(selectedFile)) {
           imageUrl = downloadURL
@@ -200,6 +206,7 @@ const Chat = () => {
       alert('메시지 전송에 실패했습니다.')
     } finally {
       setUploading(false)
+      setUploadProgress(0)
     }
   }
 
@@ -337,7 +344,7 @@ const Chat = () => {
               className="send-button"
               disabled={(!inputMessage.trim() && !selectedFile) || !user || uploading}
             >
-              {uploading ? '업로드 중...' : '전송'}
+              {uploading ? `업로드 중... ${uploadProgress > 0 ? `${uploadProgress}%` : ''}` : '전송'}
             </button>
           </div>
         </form>
