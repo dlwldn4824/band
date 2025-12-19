@@ -316,6 +316,11 @@ const Admin = () => {
         <p className="section-description">
           엑셀 파일로 셋리스트를 업로드하세요. 엑셀 파일에는 '곡명', '아티스트명' 컬럼이 필수이며, '보컬', '기타', '베이스', '키보드', '드럼', '이미지' 컬럼은 선택사항입니다.
         </p>
+        {performanceData && performanceData.setlist && performanceData.setlist.length > 0 && (
+          <div className="guest-count">
+            현재 업로드된 셋리스트: <strong>{performanceData.setlist.length}곡</strong>
+          </div>
+        )}
         
         <div className="upload-area">
           <input
