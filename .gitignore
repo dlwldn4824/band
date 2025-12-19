@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# Environment variables
+.env
+.env.local
+.env.production
+
 # Lock files (using npm)
 pnpm-lock.yaml
 yarn.lock

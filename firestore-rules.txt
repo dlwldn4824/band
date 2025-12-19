@@ -1,0 +1,33 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /current/{document=**} {
+      allow read, write: if true;
+    }
+
+    match /entries/{document=**} {
+      allow read, write: if true;
+    }
+
+    match /chat/{document=**} {
+      allow read, write: if true;
+    }
+
+    // 추가된 경로들
+    match /guests/{document=**} {
+      allow read, write: if true;
+    }
+
+    match /performanceData/{document=**} {
+      allow read, write: if true;
+    }
+
+    match /messages/{document=**} {
+      allow read, write: if true;
+    }
+
+  }
+}
+

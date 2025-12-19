@@ -1,4 +1,8 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { 
+  getFirestoreData, 
+  setFirestoreData
+} from '../services/firestoreService'
 
 export interface Guest {
   name: string
@@ -68,44 +72,121 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [checkInCode, setCheckInCodeState] = useState<string | null>(null)
 
   useEffect(() => {
-    const savedGuests = localStorage.getItem('guests')
-    const savedPerformanceData = localStorage.getItem('performanceData')
-    const savedGuestbookMessages = localStorage.getItem('guestbookMessages')
-    const savedCheckInCode = localStorage.getItem('checkInCode')
-    
-    if (savedGuests) {
-      setGuests(JSON.parse(savedGuests))
+    // Firestore에서 데이터 로드
+    const loadFirestoreData = async () => {
+      try {
+        // 게스트 데이터 로드
+        const firestoreGuests = await getFirestoreData('guests' as any)
+        if (firestoreGuests && Array.isArray(firestoreGuests) && firestoreGuests.length > 0) {
+          setGuests(firestoreGuests)
+        } else {
+          // Firestore에 없으면 localStorage에서 로드
+          const savedGuests = localStorage.getItem('guests')
+          if (savedGuests) {
+            const parsedGuests = JSON.parse(savedGuests)
+            setGuests(parsedGuests)
+            // Firestore에 동기화
+            if (parsedGuests.length > 0) {
+              await setFirestoreData('guests' as any, parsedGuests)
+            }
+          }
+        }
+
+        // 공연 데이터 로드
+        const firestorePerformanceData = await getFirestoreData('performanceData' as any, 'main')
+        if (firestorePerformanceData && !Array.isArray(firestorePerformanceData)) {
+          setPerformanceDataState(firestorePerformanceData as PerformanceData)
+        } else {
+          const savedPerformanceData = localStorage.getItem('performanceData')
+          if (savedPerformanceData) {
+            const parsedData = JSON.parse(savedPerformanceData)
+            setPerformanceDataState(parsedData)
+            await setFirestoreData('performanceData' as any, parsedData, 'main')
+          }
+        }
+
+        // 방명록 메시지 로드
+        const firestoreMessages = await getFirestoreData('messages' as any)
+        if (firestoreMessages && Array.isArray(firestoreMessages) && firestoreMessages.length > 0) {
+          setGuestbookMessages(firestoreMessages)
+        } else {
+          const savedGuestbookMessages = localStorage.getItem('guestbookMessages')
+          if (savedGuestbookMessages) {
+            const parsedMessages = JSON.parse(savedGuestbookMessages)
+            setGuestbookMessages(parsedMessages)
+            if (parsedMessages.length > 0) {
+              await setFirestoreData('messages' as any, parsedMessages)
+            }
+          }
+        }
+
+        // 체크인 코드 로드
+        const firestoreAuth = await getFirestoreData('current' as any, 'auth')
+        if (firestoreAuth && !Array.isArray(firestoreAuth) && (firestoreAuth as any).checkInCode) {
+          setCheckInCodeState((firestoreAuth as any).checkInCode)
+        } else {
+          const fixedCode = '0215'
+          setCheckInCodeState(fixedCode)
+          localStorage.setItem('checkInCode', fixedCode)
+          // Firestore에 저장
+          await setFirestoreData('current' as any, { checkInCode: fixedCode }, 'auth')
+        }
+      } catch (error) {
+        console.error('Firestore 로드 오류:', error)
+        // 오류 발생 시 localStorage에서 로드
+        const savedGuests = localStorage.getItem('guests')
+        const savedPerformanceData = localStorage.getItem('performanceData')
+        const savedGuestbookMessages = localStorage.getItem('guestbookMessages')
+        const savedCheckInCode = localStorage.getItem('checkInCode')
+        
+        if (savedGuests) {
+          setGuests(JSON.parse(savedGuests))
+        }
+        if (savedPerformanceData) {
+          setPerformanceDataState(JSON.parse(savedPerformanceData))
+        }
+        if (savedGuestbookMessages) {
+          setGuestbookMessages(JSON.parse(savedGuestbookMessages))
+        }
+        if (savedCheckInCode) {
+          setCheckInCodeState(savedCheckInCode)
+        } else {
+          const fixedCode = '0215'
+          setCheckInCodeState(fixedCode)
+          localStorage.setItem('checkInCode', fixedCode)
+        }
+      }
     }
-    if (savedPerformanceData) {
-      setPerformanceDataState(JSON.parse(savedPerformanceData))
-    }
-    if (savedGuestbookMessages) {
-      setGuestbookMessages(JSON.parse(savedGuestbookMessages))
-    }
-    // 체크인 코드를 "0215"로 고정
-    if (savedCheckInCode) {
-      setCheckInCodeState(savedCheckInCode)
-    } else {
-      const fixedCode = '0215'
-      setCheckInCodeState(fixedCode)
-      localStorage.setItem('checkInCode', fixedCode)
-    }
+
+    loadFirestoreData()
   }, [])
 
   const uploadGuests = (newGuests: Guest[]) => {
     setGuests(newGuests)
     localStorage.setItem('guests', JSON.stringify(newGuests))
+    // Firestore에 저장 (비동기로 처리)
+    setFirestoreData('guests' as any, newGuests).catch((error) => {
+      console.error('Firestore 게스트 저장 오류:', error)
+    })
   }
 
   const setPerformanceData = (data: PerformanceData) => {
     setPerformanceDataState(data)
     localStorage.setItem('performanceData', JSON.stringify(data))
+    // Firestore에 저장 (비동기로 처리)
+    setFirestoreData('performanceData' as any, data, 'main').catch((error) => {
+      console.error('Firestore 공연 데이터 저장 오류:', error)
+    })
   }
 
   const addGuestbookMessage = (message: GuestbookMessage) => {
     const newMessages = [...guestbookMessages, message]
     setGuestbookMessages(newMessages)
     localStorage.setItem('guestbookMessages', JSON.stringify(newMessages))
+    // Firestore에 저장 (비동기로 처리)
+    setFirestoreData('messages' as any, message, message.id).catch((error) => {
+      console.error('Firestore 방명록 메시지 저장 오류:', error)
+    })
   }
 
   const checkInGuest = (name: string, phone: string): { success: boolean; entryNumber?: number; message?: string } => {
@@ -157,6 +238,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
     setGuests(updatedGuests)
     localStorage.setItem('guests', JSON.stringify(updatedGuests))
+    // Firestore에 업데이트 (비동기로 처리)
+    setFirestoreData('guests' as any, updatedGuests).catch((error) => {
+      console.error('Firestore 게스트 업데이트 오류:', error)
+    })
 
     return { success: true, entryNumber: newEntryNumber }
   }
@@ -169,6 +254,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const setCheckInCode = (code: string) => {
     setCheckInCodeState(code)
     localStorage.setItem('checkInCode', code)
+    // Firestore에 저장 (비동기로 처리)
+    setFirestoreData('current' as any, { checkInCode: code }, 'auth').catch((error) => {
+      console.error('Firestore 체크인 코드 저장 오류:', error)
+    })
   }
 
   const verifyCheckInCode = (code: string): boolean => {
