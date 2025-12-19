@@ -37,7 +37,7 @@ const Ticket = ({ ticket }: TicketProps) => {
               <div className="ticket-stamp-area">
                 {user?.checkedIn && (
                   <img 
-                    src="src/assets/배경/실링왁스.png" 
+                    src="../assets/배경/실링왁스.png" 
                     alt="체크인 도장" 
                     className="ticket-stamp"
                   />

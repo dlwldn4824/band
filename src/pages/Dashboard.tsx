@@ -93,7 +93,7 @@ const Dashboard = () => {
         <section className="dashboard-section">
           <div className="poster-section">
             <img 
-              src="src/assets/배경/포스터 시안.png" 
+              src="../assets/배경/포스터 시안.png" 
               alt="공연 포스터" 
               className="poster-image"
             />
