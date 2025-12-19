@@ -13,8 +13,10 @@ import {
   deleteDoc
 } from 'firebase/firestore'
 import { db } from '../config/firebase'
-import { uploadFile, isImageFile, isVideoFile, checkFileSize } from '../services/storageService'
 import './Chat.css'
+
+// 구글 드라이브 링크 (환경변수 또는 설정에서 관리)
+const GOOGLE_DRIVE_LINK = import.meta.env.VITE_GOOGLE_DRIVE_LINK || 'https://drive.google.com/drive/folders/YOUR_FOLDER_ID'
 
 interface Message {
   id: string
@@ -38,12 +40,8 @@ const Chat = () => {
   const [messages, setMessages] = useState<Message[]>([])
   const [inputMessage, setInputMessage] = useState('')
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([])
-  const [uploading, setUploading] = useState(false)
-  const [uploadProgress, setUploadProgress] = useState(0)
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const onlineUserRef = useRef<string | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (!user) return
@@ -137,76 +135,20 @@ const Chat = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    // 파일 크기 확인
-    // 이미지는 10MB, 동영상은 50MB 제한
-    const maxSize = isImageFile(file) ? 10 : 50
-    if (!checkFileSize(file, maxSize)) {
-      alert(`파일 크기는 ${maxSize}MB 이하여야 합니다.`)
-      return
-    }
-
-    setSelectedFile(file)
-    e.target.value = '' // 같은 파일 다시 선택 가능하도록
-  }
-
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
-    if ((!inputMessage.trim() && !selectedFile) || !user) return
-
-    setUploading(true)
+    if (!inputMessage.trim() || !user) return
 
     try {
-      let imageUrl: string | undefined
-      let videoUrl: string | undefined
-      let fileName: string | undefined
-      let fileType: string | undefined
-
-      // 파일이 있으면 업로드
-      if (selectedFile) {
-        setUploadProgress(0)
-        const downloadURL = await uploadFile(selectedFile, 'chat', (progress) => {
-          setUploadProgress(progress)
-        })
-        
-        if (isImageFile(selectedFile)) {
-          imageUrl = downloadURL
-          fileType = 'image'
-        } else if (isVideoFile(selectedFile)) {
-          videoUrl = downloadURL
-          fileType = 'video'
-        } else {
-          fileType = 'file'
-        }
-        
-        fileName = selectedFile.name
-      }
-
-      // 메시지 전송
       await addDoc(collection(db, 'chat'), {
         user: user.name,
-        message: inputMessage.trim() || '',
-        timestamp: serverTimestamp(),
-        ...(imageUrl && { imageUrl }),
-        ...(videoUrl && { videoUrl }),
-        ...(fileName && { fileName }),
-        ...(fileType && { fileType })
+        message: inputMessage.trim(),
+        timestamp: serverTimestamp()
       })
-
       setInputMessage('')
-      setSelectedFile(null)
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-      }
     } catch (error) {
       console.error('메시지 전송 오류:', error)
       alert('메시지 전송에 실패했습니다.')
-    } finally {
-      setUploading(false)
-      setUploadProgress(0)
     }
   }
 
@@ -296,55 +238,34 @@ const Chat = () => {
           <div ref={messagesEndRef} />
         </div>
 
+        <div className="photo-upload-section">
+          <a 
+            href={GOOGLE_DRIVE_LINK} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="photo-upload-button"
+          >
+            📸 사진 업로드
+          </a>
+          <p className="photo-upload-hint">공연 사진을 구글 드라이브에 업로드해주세요</p>
+        </div>
+
         <form onSubmit={sendMessage} className="chat-input-form">
-          {selectedFile && (
-            <div className="selected-file-preview">
-              <span className="file-name">
-                {isImageFile(selectedFile) && '🖼️ '}
-                {isVideoFile(selectedFile) && '🎥 '}
-                {selectedFile.name}
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedFile(null)
-                  if (fileInputRef.current) {
-                    fileInputRef.current.value = ''
-                  }
-                }}
-                className="remove-file-button"
-              >
-                ✕
-              </button>
-            </div>
-          )}
           <div className="input-row">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*,video/*"
-              onChange={handleFileSelect}
-              className="file-input"
-              id="file-input"
-              disabled={!user || uploading}
-            />
-            <label htmlFor="file-input" className="file-input-label" title="이미지/동영상 업로드">
-              📎
-            </label>
             <input
               type="text"
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               placeholder="메시지를 입력하세요..."
               className="chat-input"
-              disabled={!user || uploading}
+              disabled={!user}
             />
             <button
               type="submit"
               className="send-button"
-              disabled={(!inputMessage.trim() && !selectedFile) || !user || uploading}
+              disabled={!inputMessage.trim() || !user}
             >
-              {uploading ? `업로드 중... ${uploadProgress > 0 ? `${uploadProgress}%` : ''}` : '전송'}
+              전송
             </button>
           </div>
         </form>
