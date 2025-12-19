@@ -82,8 +82,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     if (savedGuestbookMessages) {
       setGuestbookMessages(JSON.parse(savedGuestbookMessages))
     }
+    // 체크인 코드를 "0215"로 고정
     if (savedCheckInCode) {
       setCheckInCodeState(savedCheckInCode)
+    } else {
+      const fixedCode = '0215'
+      setCheckInCodeState(fixedCode)
+      localStorage.setItem('checkInCode', fixedCode)
     }
   }, [])
 
@@ -157,9 +162,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const generateCheckInCode = (): string => {
-    // 4자리 숫자 코드 생성 (1000-9999)
-    const code = Math.floor(1000 + Math.random() * 9000).toString()
-    return code
+    // 체크인 코드를 "0215"로 고정
+    return '0215'
   }
 
   const setCheckInCode = (code: string) => {
