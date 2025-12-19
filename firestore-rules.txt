@@ -15,6 +15,10 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    match /onlineUsers/{document=**} {
+      allow read, write: if true;
+    }
+
     // 추가된 경로들
     match /guests/{document=**} {
       allow read, write: if true;
