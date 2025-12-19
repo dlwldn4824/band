@@ -375,7 +375,6 @@ const Admin = () => {
       </div>
 
       <div className="admin-section">
-        <h2>공연 정보</h2>
         <p className="section-description">
           공연 정보는 자동으로 설정됩니다. 공연진은 셋리스트 업로드 시 자동으로 반영됩니다.
         </p>

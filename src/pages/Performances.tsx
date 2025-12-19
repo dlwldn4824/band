@@ -46,7 +46,6 @@ const Performances = () => {
   if (!performanceData?.setlist || performanceData.setlist.length === 0) {
     return (
       <div className="performances-page">
-        <h1>공연 정보</h1>
         <div className="empty-state">
           <p>공연 정보가 아직 설정되지 않았습니다.</p>
           <p>관리자 페이지에서 공연 정보를 설정해주세요.</p>
@@ -57,7 +56,6 @@ const Performances = () => {
 
   return (
     <div className="performances-page">
-      <h1>공연 정보</h1>
       
       <div className="performances-content">
         {/* 배경 이미지의 칠판 위치에 정보 표시 */}

@@ -55,7 +55,7 @@ const Dashboard = () => {
     <div className="dashboard">
       <div className="dashboard-header">
         <div>
-          <h1>안녕하세요, {user?.name}님! 👋</h1>
+          <h1>안녕하세요, {user?.name}님!</h1>
           <p>내 티켓과 이벤트 정보를 확인하세요</p>
         </div>
       </div>

@@ -34,7 +34,7 @@ const Layout = ({ children }: LayoutProps) => {
         <div className="container">
           <h1 className="logo">
             <button onClick={handleLogoClick} className="logo-button">
-              🎸 밴드 공연 관리
+              2025 멜로딕 단독 공연
             </button>
           </h1>
           <nav className="nav">
