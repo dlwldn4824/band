@@ -12,6 +12,8 @@ const Admin = () => {
 
   // 하드코딩된 공연 정보 (자동 설정)
   useEffect(() => {
+    if (!performanceData) return // performanceData가 로드되지 않았으면 실행하지 않음
+
     // 하드코딩된 공연 정보 설정 (항상 events와 ticket은 하드코딩된 값으로 덮어쓰기)
     const defaultEvents = [
       {
@@ -33,18 +35,25 @@ const Admin = () => {
       seat: '자유석'
     }
 
-    // 기존 데이터와 병합 (셋리스트와 공연진은 유지, events와 ticket은 하드코딩된 값으로 덮어쓰기)
-    const updatedPerformanceData: PerformanceData = {
-      ...performanceData,
-      events: defaultEvents,
-      ticket: defaultTicket,
-      // 셋리스트와 공연진은 기존 값 유지
-      setlist: performanceData?.setlist || [],
-      performers: performanceData?.performers || []
-    }
+    // events와 ticket만 업데이트하고, setlist와 performers는 기존 값 유지
+    // 이미 events와 ticket이 하드코딩된 값과 같으면 업데이트하지 않음
+    const needsUpdate = 
+      JSON.stringify(performanceData.events) !== JSON.stringify(defaultEvents) ||
+      JSON.stringify(performanceData.ticket) !== JSON.stringify(defaultTicket)
 
-    setPerformanceData(updatedPerformanceData)
-  }, []) // 마운트 시 한 번만 실행
+    if (needsUpdate) {
+      const updatedPerformanceData: PerformanceData = {
+        ...performanceData,
+        events: defaultEvents,
+        ticket: defaultTicket,
+        // 셋리스트와 공연진은 기존 값 유지 (절대 덮어쓰지 않음)
+        setlist: performanceData.setlist || [],
+        performers: performanceData.performers || []
+      }
+
+      setPerformanceData(updatedPerformanceData)
+    }
+  }, [performanceData]) // performanceData가 변경될 때마다 확인
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
