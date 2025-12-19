@@ -1,0 +1,189 @@
+@font-face {
+  font-family: 'DNFBitBitv2';
+  src: url('/assets/%EB%B0%B0%EA%B2%BD/DNFBitBitv2.ttf') format('truetype');
+}
+
+.login-page {
+  height: 100dvh;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background-image: url('../assets/배경/밴드_밤_배경.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  font-family: 'DNFBitBitv2', sans-serif;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: pan-x;
+}
+
+@media (max-width: 768px) {
+  .login-page {
+    background-position: center top;
+  }
+}
+
+.login-page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(2px);
+  z-index: 0;
+}
+
+.login-container {
+
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 300px;
+  min-height: 300px;
+  height: auto;
+  animation: fadeInUp 0.5s ease-out;
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.login-header h1 {
+  font-size: 1.25rem;
+  margin-bottom: 0.25rem;
+  color: #333;
+}
+
+.login-header p {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group {
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.form-group label {
+  font-weight: 600;
+  color: #333;
+  font-size: 0.9rem;
+}
+
+.form-group input {
+  padding: 0.5rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: border-color 0.3s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.form-group input:focus {
+  border-color: #667eea;
+  outline: none;
+}
+
+.error-message {
+  background-color: #fee;
+  color: #c33;
+  padding: 0.75rem;
+  border-radius: 15px;
+  font-size: 0.9rem;
+  text-align: center;
+  border: 1px solid #fcc;
+}
+
+.login-button {
+  background: #FFF0B8;
+  color: #333;
+  padding: 0.6rem;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
+  margin-top: 0.25rem;
+  border: none;
+  cursor: pointer;
+  min-height: 36px;
+  touch-action: manipulation;
+}
+
+.login-button:hover {
+  background: #fff38b;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+}
+
+.login-button:active {
+  transform: translateY(0);
+}
+
+@media (min-width: 768px) {
+  .login-page {
+    padding: 2rem;
+  }
+
+  .login-container {
+    padding: 1.5rem;
+    max-width: 300px;
+    min-height: 300px;
+    height: auto;
+    border-radius: 30px;
+  }
+
+  .login-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .login-header p {
+    font-size: 0.9rem;
+  }
+
+  .login-form {
+    gap: 0.75rem;
+  }
+
+  .form-group input {
+    padding: 0.5rem;
+    font-size: 16px;
+  }
+
+  .login-button {
+    padding: 0.6rem;
+    font-size: 1rem;
+  }
+}

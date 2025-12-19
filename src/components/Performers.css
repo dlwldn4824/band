@@ -1,0 +1,135 @@
+.performers {
+  background: transparent;
+  border-radius: 6px;
+  box-shadow: none;
+  overflow: hidden;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.performers-header {
+  background: rgba(245, 245, 245, 0.7);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(224, 224, 224, 0.5);
+  padding: 1rem 1.25rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.performers-header h2 {
+  margin: 0 0 1rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #333;
+  text-align: center;
+}
+
+.performers-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.filter-button {
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(232, 232, 232, 0.5);
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  touch-action: manipulation;
+  min-height: 36px;
+}
+
+.filter-button:hover {
+  background: rgba(245, 245, 245, 0.9);
+  border-color: rgba(208, 208, 208, 0.7);
+}
+
+.filter-button.active {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+}
+
+.performers-content {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.performers-session-group {
+  background: rgba(250, 250, 250, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(232, 232, 232, 0.5);
+  border-radius: 6px;
+  padding: 1rem 1.25rem;
+}
+
+.session-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.session-emoji {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.session-label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+  flex-shrink: 0;
+}
+
+.session-members {
+  font-size: 0.9375rem;
+  color: #555;
+  font-weight: 400;
+  word-break: break-word;
+}
+
+@media (min-width: 768px) {
+  .performers-header {
+    padding: 1.25rem 1.5rem;
+  }
+
+  .performers-header h2 {
+    font-size: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .filter-button {
+    padding: 0.625rem 1.25rem;
+    font-size: 0.9375rem;
+  }
+
+  .performers-session-group {
+    padding: 1.25rem 1.5rem;
+  }
+
+  .session-header {
+    gap: 0.75rem;
+  }
+
+  .session-emoji {
+    font-size: 1.5rem;
+  }
+
+  .session-label {
+    font-size: 1.125rem;
+  }
+
+  .session-members {
+    font-size: 1rem;
+  }
+}
+

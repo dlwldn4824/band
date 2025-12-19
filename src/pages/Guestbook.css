@@ -1,0 +1,193 @@
+/* =====================
+   페이지 배경 (트리 PNG)
+   ===================== */
+.guestbook-page {
+  min-height: 100vh;
+  background-image: url('../assets/배경/tree.png');
+  background-size: auto 100%;
+  background-position: center top;
+  background-repeat: no-repeat;
+  background-color: #000;
+  position: relative;
+}
+
+/* =====================
+   중앙 캔버스 (좌표 기준)
+   ===================== */
+.tree-container {
+  position: relative;
+  width: 360px;
+  height: 640px;
+  margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+  .tree-container {
+    width: 420px;
+    height: 760px;
+  }
+}
+
+/* =====================
+   오너먼트
+   ===================== */
+.ornament {
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  cursor: pointer;
+  z-index: 10;
+  transition: transform 0.2s ease;
+}
+
+.ornament:hover {
+  transform: scale(1.2);
+  z-index: 20;
+}
+
+@media (min-width: 768px) {
+  .ornament {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* 오너먼트 이미지 */
+.ornament.guitar { background-image: url('../assets/ornaments/guitar.png'); }
+.ornament.bass { background-image: url('../assets/ornaments/bass.png'); }
+.ornament.mic { background-image: url('../assets/ornaments/mic.png'); }
+.ornament.drum { background-image: url('../assets/ornaments/drum.png'); }
+.ornament.keyboard { background-image: url('../assets/ornaments/keyboard.png'); }
+
+/* =====================
+   방명록 버튼
+   ===================== */
+.add-message-button {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 320px;
+  padding: 1rem;
+  background: #FFF0B8;
+  border: none;
+  border-radius: 16px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  z-index: 20;
+}
+
+/* =====================
+   모달 공통
+   ===================== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  width: 92%;
+  max-width: 420px;
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 1.75rem 1.5rem 1.5rem;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.35);
+}
+.modal-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 1.25rem;
+  text-align: center;
+}
+
+/* =====================
+   작성 모달 전용
+   ===================== */
+.ornament-select {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-bottom: 1.5rem;
+}
+
+
+.select-box {
+  aspect-ratio: 1;
+  border-radius: 14px;
+  border: 2px solid #eee;
+  background-size: 60%;
+  background-repeat: no-repeat;
+  background-position: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.select-box:hover {
+  transform: translateY(-2px);
+}
+
+.select-box.selected {
+  border-color: #ffcc00;
+  background-color: #fff8d6;
+  box-shadow: 0 4px 10px rgba(255, 204, 0, 0.5);
+}
+
+.select-box.guitar { background-image: url('../assets/ornaments/guitar.png'); }
+.select-box.bass { background-image: url('../assets/ornaments/bass.png'); }
+.select-box.mic { background-image: url('../assets/ornaments/mic.png'); }
+.select-box.drum { background-image: url('../assets/ornaments/drum.png'); }
+.select-box.keyboard { background-image: url('../assets/ornaments/keyboard.png'); }
+
+.modal input,
+.modal textarea {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  font-size: 0.95rem;
+  margin-bottom: 0.75rem;
+  background: #fafafa;
+}
+
+.modal input:focus,
+.modal textarea:focus {
+  outline: none;
+  border-color: #ffcc00;
+  background: #fff;
+}
+
+
+.form-buttons {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.submit-button {
+  flex: 1;
+  background: #ffcc00;
+  color: #333;
+  border: none;
+  border-radius: 12px;
+  padding: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cancel-button {
+  flex: 1;
+  background: #f1f1f1;
+  border: none;
+  border-radius: 12px;
+  padding: 0.8rem;
+  cursor: pointer;
+}

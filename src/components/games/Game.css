@@ -1,0 +1,485 @@
+.game-container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 2rem;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  animation: fadeIn 0.5s ease-in;
+}
+
+.game-container h2 {
+  text-align: center;
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+  color: #333;
+}
+
+.game-area {
+  margin: 2rem 0;
+}
+
+.game-controls {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.game-button {
+  padding: 0.875rem 2rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.game-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.game-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.game-button.new-game {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+/* 가위바위보 */
+.score-board {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.score-item {
+  padding: 0.5rem 1rem;
+  background: #f5f5f5;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.choice-display {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+  margin: 2rem 0;
+}
+
+.choice-box {
+  text-align: center;
+}
+
+.choice-label {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+}
+
+.choice-emoji {
+  font-size: 4rem;
+  margin: 1rem 0;
+}
+
+.choice-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.vs {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #667eea;
+}
+
+.choice-button {
+  padding: 1rem 2rem;
+  font-size: 1.2rem;
+  background: white;
+  border: 2px solid #667eea;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin: 0 0.5rem;
+}
+
+.choice-button:hover {
+  background: #667eea;
+  color: white;
+  transform: scale(1.1);
+}
+
+.result {
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.result.win {
+  background: #d4edda;
+  color: #155724;
+}
+
+.result.lose {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.result.draw {
+  background: #fff3cd;
+  color: #856404;
+}
+
+/* 숫자 맞추기 */
+.game-instruction {
+  text-align: center;
+  font-size: 1.1rem;
+  margin-bottom: 1.5rem;
+  color: #333;
+}
+
+.input-group {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.number-input {
+  padding: 0.875rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  width: 150px;
+  text-align: center;
+}
+
+.number-input:focus {
+  border-color: #667eea;
+  outline: none;
+}
+
+.game-info {
+  text-align: center;
+  color: #666;
+  margin-top: 1rem;
+}
+
+/* 퀴즈 */
+.quiz-progress {
+  text-align: center;
+  color: #666;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+}
+
+.quiz-question {
+  font-size: 1.3rem;
+  text-align: center;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: #f9f9f9;
+  border-radius: 12px;
+  color: #333;
+}
+
+.quiz-options {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.quiz-option {
+  padding: 1rem;
+  background: white;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-align: left;
+}
+
+.quiz-option:hover:not(:disabled) {
+  border-color: #667eea;
+  background: #f0f0ff;
+}
+
+.quiz-option.selected {
+  border-color: #667eea;
+  background: #f0f0ff;
+}
+
+.quiz-option.correct {
+  border-color: #28a745;
+  background: #d4edda;
+  color: #155724;
+}
+
+.quiz-option.wrong {
+  border-color: #dc3545;
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.quiz-option:disabled {
+  cursor: not-allowed;
+}
+
+.quiz-result {
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.quiz-result.correct {
+  background: #d4edda;
+  color: #155724;
+}
+
+.quiz-result.wrong {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.final-score {
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  color: #667eea;
+}
+
+/* 타이핑 게임 */
+.typing-sentence {
+  font-size: 1.3rem;
+  text-align: center;
+  padding: 2rem;
+  background: #f9f9f9;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  line-height: 1.8;
+  color: #333;
+  min-height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.typing-input {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1.1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.typing-input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.game-stats {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-top: 1.5rem;
+}
+
+.stat-item {
+  padding: 0.5rem 1rem;
+  background: #f5f5f5;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+/* 메모리 게임 */
+.game-info {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+}
+
+.memory-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin: 2rem 0;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.memory-card {
+  aspect-ratio: 1;
+  position: relative;
+  cursor: pointer;
+  perspective: 1000px;
+}
+
+.memory-card .card-front,
+.memory-card .card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  font-size: 2rem;
+  transition: transform 0.3s;
+}
+
+.memory-card .card-front {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-weight: bold;
+}
+
+.memory-card .card-back {
+  background: white;
+  border: 2px solid #e0e0e0;
+  transform: rotateY(180deg);
+}
+
+.memory-card.flipped .card-front {
+  transform: rotateY(180deg);
+}
+
+.memory-card.flipped .card-back {
+  transform: rotateY(0deg);
+}
+
+/* 룰렛 */
+.roulette-container {
+  position: relative;
+  width: 300px;
+  height: 300px;
+  margin: 2rem auto;
+}
+
+.roulette-wheel {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 8px solid #333;
+  position: relative;
+  overflow: hidden;
+  background: conic-gradient(
+    from 0deg,
+    #ff6b6b 0deg 45deg,
+    #4ecdc4 45deg 90deg,
+    #45b7d1 90deg 135deg,
+    #96ceb4 135deg 180deg,
+    #ffeaa7 180deg 225deg,
+    #fdcb6e 225deg 270deg,
+    #e17055 270deg 315deg,
+    #a29bfe 315deg 360deg
+  );
+  transition: transform 3s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.roulette-wheel.spinning {
+  transition: transform 3s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+}
+
+.roulette-item {
+  position: absolute;
+  width: 50%;
+  height: 50%;
+  left: 50%;
+  top: 0;
+  transform-origin: left bottom;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 10px;
+}
+
+.roulette-item-content {
+  transform: rotate(calc(var(--item-angle) / 2));
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: white;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+  white-space: nowrap;
+  text-align: center;
+}
+
+.roulette-pointer {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 15px solid transparent;
+  border-right: 15px solid transparent;
+  border-top: 30px solid #333;
+  z-index: 10;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.roulette-result {
+  text-align: center;
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  color: white;
+  animation: fadeInUp 0.5s ease-out;
+}
+
+.roulette-result .result-text {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+@media (max-width: 768px) {
+  .game-container {
+    padding: 1.5rem;
+  }
+
+  .choice-display {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .choice-emoji {
+    font-size: 3rem;
+  }
+
+  .memory-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .roulette-container {
+    width: 250px;
+    height: 250px;
+  }
+
+  .roulette-item-content {
+    font-size: 0.75rem;
+  }
+}
+
