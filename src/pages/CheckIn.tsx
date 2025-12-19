@@ -81,7 +81,7 @@ const CheckIn = () => {
       setResult(checkInResult)
       
       if (checkInResult.success && checkInResult.entryNumber) {
-        // 사용자 정보 업데이트
+        // 사용자 정보 업데이트 (서버 상태 반영)
         updateUser({
           ...user,
           entryNumber: checkInResult.entryNumber,
@@ -89,7 +89,7 @@ const CheckIn = () => {
           checkedInAt: Date.now()
         })
 
-        // 3초 후 대시보드로 이동
+        // 3초 후 대시보드로 이동 (서버 상태가 반영된 후)
         setTimeout(() => {
           navigate('/dashboard')
         }, 3000)

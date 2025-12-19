@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useData } from '../contexts/DataContext'
@@ -9,9 +9,65 @@ import './Dashboard.css'
 
 const Dashboard = () => {
   const { user, updateUser } = useAuth()
-  const { performanceData, checkInGuest } = useData()
+  const { performanceData, checkInGuest, guests } = useData()
   const [showScanner, setShowScanner] = useState(false)
+  const [checkInStatus, setCheckInStatus] = useState<'loading' | 'notYet' | 'done'>('loading')
   const navigate = useNavigate()
+
+  // Firestore에서 체크인 상태 확인 (서버 상태 기반)
+  useEffect(() => {
+    if (!user) {
+      setCheckInStatus('notYet')
+      return
+    }
+
+    // guests가 아직 로드되지 않았으면 대기
+    if (guests.length === 0) {
+      setCheckInStatus('loading')
+      return
+    }
+
+    setCheckInStatus('loading')
+    
+    // Firestore의 guests 배열에서 현재 사용자의 체크인 상태 확인
+    const normalizedInputPhone = user.phone.replace(/[-\s()]/g, '')
+    const normalizedInputName = user.name.trim()
+    
+    const foundGuest = guests.find((guest) => {
+      const guestName = guest.name || guest['이름'] || guest.Name || ''
+      const nameMatch = guestName.trim() === normalizedInputName
+      
+      const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '')
+      const normalizedGuestPhone = guestPhone.replace(/[-\s()]/g, '')
+      const phoneMatch = normalizedGuestPhone === normalizedInputPhone
+      
+      return nameMatch && phoneMatch
+    })
+
+    if (foundGuest && foundGuest.checkedIn) {
+      setCheckInStatus('done')
+      // localStorage의 user 정보도 서버 상태와 동기화
+      if (!user.checkedIn || user.entryNumber !== foundGuest.entryNumber) {
+        updateUser({
+          ...user,
+          checkedIn: true,
+          entryNumber: foundGuest.entryNumber,
+          checkedInAt: foundGuest.checkedInAt
+        })
+      }
+    } else {
+      setCheckInStatus('notYet')
+      // 서버에서 체크인 안 된 상태면 localStorage도 업데이트
+      if (user.checkedIn) {
+        updateUser({
+          ...user,
+          checkedIn: false,
+          entryNumber: undefined,
+          checkedInAt: undefined
+        })
+      }
+    }
+  }, [user, guests, updateUser])
 
   const handleScanSuccess = (data: { name: string; phone: string }) => {
     setShowScanner(false)
@@ -42,10 +98,9 @@ const Dashboard = () => {
           checkedIn: true,
           checkedInAt: Date.now()
         })
+        // 체크인 상태 업데이트 (서버 상태 반영)
+        setCheckInStatus('done')
       }
-
-      // 페이지 새로고침하여 티켓 정보 업데이트
-      window.location.reload()
     } else {
       alert(checkInResult.message || '체크인에 실패했습니다.')
     }
@@ -67,7 +122,25 @@ const Dashboard = () => {
           </section>
         )}
 
-        {user && !user.checkedIn && (
+        {checkInStatus === 'loading' && (
+          <section className="dashboard-section">
+            <div className="checkin-card">
+              <p>체크인 상태 확인 중...</p>
+            </div>
+          </section>
+        )}
+
+        {checkInStatus === 'done' && (
+          <section className="dashboard-section">
+            <div className="checkin-card">
+              <h3>✅ 체크인 완료</h3>
+              <p>입장 번호: {user?.entryNumber}번</p>
+              <p>이미 체크인이 완료되었습니다.</p>
+            </div>
+          </section>
+        )}
+
+        {checkInStatus === 'notYet' && user && (
           <section className="dashboard-section">
             <div className="checkin-card">
               <h3>📷 현장 체크인</h3>

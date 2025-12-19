@@ -10,10 +10,11 @@ interface User {
 
 interface AuthContextType {
   user: User | null
-  login: (name: string, phone: string) => boolean
+  login: (name: string, phone: string, guests?: any[]) => boolean
   logout: () => void
   updateUser: (userData: User) => void
   isAuthenticated: boolean
+  refreshUserStatus: (guests: any[]) => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -28,17 +29,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [])
 
-  const login = (name: string, phone: string): boolean => {
-    const guests = JSON.parse(localStorage.getItem('guests') || '[]')
+  const login = (name: string, phone: string, guests?: any[]): boolean => {
+    // guests가 제공되지 않으면 localStorage에서 로드 (하위 호환성)
+    const guestList = guests || JSON.parse(localStorage.getItem('guests') || '[]')
     
-    if (guests.length === 0) {
+    if (guestList.length === 0) {
       return false
     }
 
     const normalizedInputPhone = phone.replace(/[-\s()]/g, '')
     const normalizedInputName = name.trim()
     
-    const foundGuest = guests.find((guest: any) => {
+    const foundGuest = guestList.find((guest: any) => {
       // 이름 매칭 (한글 키 또는 영문 키 지원)
       const guestName = guest.name || guest['이름'] || guest.Name || ''
       const nameMatch = guestName.trim() === normalizedInputName
@@ -54,6 +56,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (foundGuest) {
       const guestName = foundGuest.name || foundGuest['이름'] || name
       const guestPhone = foundGuest.phone || foundGuest['전화번호'] || phone
+      // Firestore의 최신 체크인 상태 사용 (서버 상태 기반)
       const userData = { 
         name: guestName, 
         phone: guestPhone,
@@ -69,6 +72,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return false
   }
 
+  // Firestore의 guests 배열을 기반으로 사용자 상태 갱신
+  const refreshUserStatus = (guests: any[]) => {
+    if (!user) return
+
+    const normalizedInputPhone = user.phone.replace(/[-\s()]/g, '')
+    const normalizedInputName = user.name.trim()
+    
+    const foundGuest = guests.find((guest: any) => {
+      const guestName = guest.name || guest['이름'] || guest.Name || ''
+      const nameMatch = guestName.trim() === normalizedInputName
+      
+      const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '')
+      const normalizedGuestPhone = guestPhone.replace(/[-\s()]/g, '')
+      const phoneMatch = normalizedGuestPhone === normalizedInputPhone
+      
+      return nameMatch && phoneMatch
+    })
+
+    if (foundGuest) {
+      // 서버 상태와 다르면 업데이트
+      if (
+        user.checkedIn !== foundGuest.checkedIn ||
+        user.entryNumber !== foundGuest.entryNumber ||
+        user.checkedInAt !== foundGuest.checkedInAt
+      ) {
+        updateUser({
+          ...user,
+          checkedIn: foundGuest.checkedIn || false,
+          entryNumber: foundGuest.entryNumber,
+          checkedInAt: foundGuest.checkedInAt
+        })
+      }
+    }
+  }
+
   const logout = () => {
     setUser(null)
     localStorage.removeItem('user')
@@ -80,7 +118,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, updateUser, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ user, login, logout, updateUser, isAuthenticated: !!user, refreshUserStatus }}>
       {children}
     </AuthContext.Provider>
   )

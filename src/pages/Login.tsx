@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { useData } from '../contexts/DataContext'
 import TicketTransition from '../components/TicketTransition'
 import ticketDemoImage from '../assets/배경/티켓데모.png'
 import './Login.css'
@@ -11,6 +12,7 @@ const Login = () => {
   const [error, setError] = useState('')
   const [showTicket, setShowTicket] = useState(false)
   const { login } = useAuth()
+  const { guests } = useData()
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -82,7 +84,8 @@ const Login = () => {
     blurActiveElement()
     window.scrollTo(0, 0)
 
-    const success = login(name.trim(), phone.trim())
+    // Firestore의 guests 배열 사용 (서버 상태 기반)
+    const success = login(name.trim(), phone.trim(), guests)
     if (success) {
       // 키보드가 내려갈 시간을 주고 티켓 표시
       setTimeout(() => {
