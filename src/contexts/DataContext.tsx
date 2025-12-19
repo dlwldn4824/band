@@ -76,8 +76,22 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const loadFirestoreData = async () => {
       try {
         // 게스트 데이터 로드
-        const firestoreGuests = await getFirestoreData('guests' as any)
-        if (firestoreGuests && Array.isArray(firestoreGuests) && firestoreGuests.length > 0) {
+        const firestoreGuestsData = await getFirestoreData('guests' as any, 'all')
+        let firestoreGuests: Guest[] = []
+        
+        if (firestoreGuestsData) {
+          const data = firestoreGuestsData as any
+          // Firestore에서 로드한 데이터가 배열인지 확인
+          if (Array.isArray(data)) {
+            firestoreGuests = data
+          } else if (data.guests && Array.isArray(data.guests)) {
+            firestoreGuests = data.guests
+          } else if (Array.isArray(data.data)) {
+            firestoreGuests = data.data
+          }
+        }
+        
+        if (firestoreGuests.length > 0) {
           setGuests(firestoreGuests)
         } else {
           // Firestore에 없으면 localStorage에서 로드
@@ -164,8 +178,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const uploadGuests = (newGuests: Guest[]) => {
     setGuests(newGuests)
     localStorage.setItem('guests', JSON.stringify(newGuests))
-    // Firestore에 저장 (비동기로 처리)
-    setFirestoreData('guests' as any, newGuests).catch((error) => {
+    // Firestore에 저장 (비동기로 처리) - 'all' 문서 ID로 배열 저장
+    setFirestoreData('guests' as any, { guests: newGuests }, 'all').catch((error) => {
       console.error('Firestore 게스트 저장 오류:', error)
     })
   }
@@ -196,7 +210,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     console.log('체크인 게스트 찾기:', {
       입력이름: normalizedInputName,
       입력전화번호: normalizedInputPhone,
-      게스트수: guests.length
+      게스트수: guests.length,
+      게스트데이터전체: guests
     })
     
     // guests 배열에서 해당 게스트 찾기
@@ -227,10 +242,19 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     })
 
     if (guestIndex === -1) {
-      console.error('게스트를 찾을 수 없습니다. 등록된 게스트 목록:', guests.map(g => ({
-        이름: g.name || g['이름'] || g.Name,
-        전화번호: g.phone || g['전화번호'] || g.Phone
-      })))
+      console.error('게스트를 찾을 수 없습니다.')
+      console.error('등록된 게스트 목록 (원본):', guests)
+      console.error('등록된 게스트 목록 (파싱):', guests.map((g, idx) => {
+        const guestName = g.name || g['이름'] || g.Name || ''
+        const guestPhone = g.phone || g['전화번호'] || g.Phone || ''
+        return {
+          인덱스: idx,
+          원본객체: g,
+          이름: guestName,
+          전화번호: guestPhone,
+          모든키: Object.keys(g)
+        }
+      }))
       return { success: false, message: '등록된 정보가 없습니다.' }
     }
 
@@ -271,8 +295,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
     setGuests(updatedGuests)
     localStorage.setItem('guests', JSON.stringify(updatedGuests))
-    // Firestore에 업데이트 (비동기로 처리)
-    setFirestoreData('guests' as any, updatedGuests).catch((error) => {
+    // Firestore에 업데이트 (비동기로 처리) - 'all' 문서 ID로 배열 저장
+    setFirestoreData('guests' as any, { guests: updatedGuests }, 'all').catch((error) => {
       console.error('Firestore 게스트 업데이트 오류:', error)
     })
 
