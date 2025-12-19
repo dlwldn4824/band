@@ -61,6 +61,8 @@ interface DataContextType {
   generateCheckInCode: () => string
   setCheckInCode: (code: string) => void
   verifyCheckInCode: (code: string) => boolean
+  clearGuests: () => void
+  clearSetlist: () => void
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined)
@@ -338,6 +340,26 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     return isValid
   }
 
+  const clearGuests = () => {
+    setGuests([])
+    localStorage.removeItem('guests')
+    // Firestore에서도 삭제
+    setFirestoreData('guests' as any, { guests: [] }, 'all').catch((error) => {
+      console.error('Firestore 게스트 초기화 오류:', error)
+    })
+  }
+
+  const clearSetlist = () => {
+    if (performanceData) {
+      const updatedData: PerformanceData = {
+        ...performanceData,
+        setlist: [],
+        performers: []
+      }
+      setPerformanceData(updatedData)
+    }
+  }
+
   return (
     <DataContext.Provider value={{ 
       guests, 
@@ -350,7 +372,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       checkInGuest,
       generateCheckInCode,
       setCheckInCode,
-      verifyCheckInCode
+      verifyCheckInCode,
+      clearGuests,
+      clearSetlist
     }}>
       {children}
     </DataContext.Provider>

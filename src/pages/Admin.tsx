@@ -8,7 +8,7 @@ const Admin = () => {
   const [file, setFile] = useState<File | null>(null)
   const [setlistFile, setSetlistFile] = useState<File | null>(null)
   const [uploadStatus, setUploadStatus] = useState('')
-  const { uploadGuests, setPerformanceData, guests, performanceData, checkInCode, generateCheckInCode, setCheckInCode } = useData()
+  const { uploadGuests, setPerformanceData, guests, performanceData, checkInCode, generateCheckInCode, setCheckInCode, clearGuests, clearSetlist } = useData()
 
   // 하드코딩된 공연 정보 (자동 설정)
   useEffect(() => {
@@ -280,6 +280,19 @@ const Admin = () => {
           <button onClick={handleGenerateSampleExcel} className="sample-button">
             📥 엑셀 템플릿 다운로드
           </button>
+          {guests.length > 0 && (
+            <button 
+              onClick={() => {
+                if (window.confirm('정말로 모든 게스트 정보를 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+                  clearGuests()
+                  setUploadStatus('✅ 게스트 정보가 초기화되었습니다.')
+                }
+              }} 
+              className="reset-button"
+            >
+              🗑️ 게스트 리스트 초기화
+            </button>
+          )}
         </div>
 
         {uploadStatus && (
@@ -324,6 +337,19 @@ const Admin = () => {
           <button onClick={handleGenerateSetlistExcel} className="sample-button">
             📥 셋리스트 템플릿 다운로드
           </button>
+          {performanceData && performanceData.setlist && performanceData.setlist.length > 0 && (
+            <button 
+              onClick={() => {
+                if (window.confirm('정말로 셋리스트를 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+                  clearSetlist()
+                  setUploadStatus('✅ 셋리스트가 초기화되었습니다.')
+                }
+              }} 
+              className="reset-button"
+            >
+              🗑️ 셋리스트 초기화
+            </button>
+          )}
         </div>
       </div>
 
