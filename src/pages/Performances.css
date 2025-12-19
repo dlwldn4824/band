@@ -61,18 +61,33 @@
 }
 
 .setlist-grid-header {
-  background: rgba(245, 245, 245, 0.7);
-  backdrop-filter: blur(10px);
+  background: none;
   padding: 1rem 1.25rem;
-  border-radius: 6px;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
   text-align: center;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #333;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 
+    2px 2px 4px rgba(0, 0, 0, 0.5),
+    0 0 10px rgba(216, 134, 118, 0.3);
+  letter-spacing: 0.1em;
   max-width: 500px;
   margin-left: auto;
   margin-right: auto;
+  position: relative;
+}
+
+.setlist-grid-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #D88676, transparent);
+  border-radius: 2px;
 }
 
 .setlist-grid {
@@ -84,32 +99,55 @@
 }
 
 .song-button {
-  background: rgba(250, 250, 250, 0.7);
-  backdrop-filter: blur(10px);
-  border: 2px solid rgba(232, 232, 232, 0.5);
-  border-radius: 8px;
-  padding: 0.5rem;
+  background: transparent;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  padding: 0.75rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   text-align: left;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
   min-height: 80px;
   touch-action: manipulation;
+  backdrop-filter: blur(2px);
+  position: relative;
+  overflow: hidden;
+}
+
+.song-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.song-button:hover::before {
+  left: 100%;
 }
 
 .song-button:hover {
-  background: rgba(245, 245, 245, 0.8);
-  border-color: rgba(208, 208, 208, 0.7);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(216, 134, 118, 0.6);
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 
+    0 6px 20px rgba(0, 0, 0, 0.2),
+    0 0 15px rgba(216, 134, 118, 0.3);
 }
 
 .song-button.selected {
-  background: #2d5016;
-  border-color: #2d5016;
+  background: rgba(216, 134, 118, 0.25);
+  border-color: #D88676;
+  border-width: 3px;
   color: #fff;
+  box-shadow: 
+    0 0 20px rgba(216, 134, 118, 0.5),
+    inset 0 0 20px rgba(216, 134, 118, 0.1);
 }
 
 .song-button.selected .song-button-number,
@@ -133,14 +171,16 @@
 .song-button-title {
   font-size: 1rem;
   font-weight: 600;
-  color: #333;
+  color: #fff;
   word-break: break-word;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .song-button-artist {
   font-size: 0.875rem;
-  color: #666;
+  color: rgba(255, 255, 255, 0.8);
   word-break: break-word;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 @keyframes fadeIn {
