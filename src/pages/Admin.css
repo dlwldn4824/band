@@ -53,13 +53,13 @@
 
 .file-label:hover {
   background-color: #e8e8e8;
-  border-color: #667eea;
+  border-color: #D88676;
 }
 
 .upload-button,
 .config-button {
   padding: 0.875rem 2rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #D88676;
   color: white;
   border-radius: 8px;
   font-weight: 600;
@@ -69,7 +69,7 @@
 .upload-button:hover:not(:disabled),
 .config-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 12px rgba(216, 134, 118, 0.4);
 }
 
 .upload-button:disabled {
@@ -163,7 +163,7 @@
 }
 
 .performance-info-display .info-item strong {
-  color: #667eea;
+  color: #D88676;
   margin-right: 0.5rem;
 }
 
@@ -198,7 +198,7 @@
 
 .download-qr-button {
   padding: 0.875rem 2rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #D88676;
   color: white;
   border: none;
   border-radius: 8px;
@@ -210,7 +210,7 @@
 
 .download-qr-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 12px rgba(216, 134, 118, 0.4);
 }
 
 .checkin-code-section {
@@ -251,7 +251,7 @@
 .checkin-code-value {
   font-size: 3rem;
   font-weight: bold;
-  color: #667eea;
+  color: #D88676;
   letter-spacing: 0.5rem;
   font-family: 'Courier New', monospace;
 }
@@ -270,7 +270,7 @@
 .generate-code-button,
 .regenerate-code-button {
   padding: 0.875rem 2rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #D88676;
   color: white;
   border: none;
   border-radius: 8px;
@@ -283,7 +283,7 @@
 .generate-code-button:hover,
 .regenerate-code-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 12px rgba(216, 134, 118, 0.4);
 }
 
 @media (max-width: 768px) {

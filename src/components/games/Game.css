@@ -28,7 +28,7 @@
 
 .game-button {
   padding: 0.875rem 2rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #D88676;
   color: white;
   border: none;
   border-radius: 8px;
@@ -98,14 +98,14 @@
 .vs {
   font-size: 2rem;
   font-weight: bold;
-  color: #667eea;
+  color: #D88676;
 }
 
 .choice-button {
   padding: 1rem 2rem;
   font-size: 1.2rem;
   background: white;
-  border: 2px solid #667eea;
+  border: 2px solid #D88676;
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.3s;
@@ -113,7 +113,7 @@
 }
 
 .choice-button:hover {
-  background: #667eea;
+  background: #D88676;
   color: white;
   transform: scale(1.1);
 }
@@ -167,7 +167,7 @@
 }
 
 .number-input:focus {
-  border-color: #667eea;
+  border-color: #D88676;
   outline: none;
 }
 
@@ -213,12 +213,12 @@
 }
 
 .quiz-option:hover:not(:disabled) {
-  border-color: #667eea;
+  border-color: #D88676;
   background: #f0f0ff;
 }
 
 .quiz-option.selected {
-  border-color: #667eea;
+  border-color: #D88676;
   background: #f0f0ff;
 }
 
@@ -262,7 +262,7 @@
   font-size: 1.5rem;
   font-weight: bold;
   margin-bottom: 1rem;
-  color: #667eea;
+  color: #D88676;
 }
 
 /* 타이핑 게임 */
@@ -292,7 +292,7 @@
 
 .typing-input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #D88676;
 }
 
 .game-stats {
@@ -350,7 +350,7 @@
 }
 
 .memory-card .card-front {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #D88676;
   color: white;
   font-weight: bold;
 }
@@ -444,7 +444,7 @@
   text-align: center;
   margin: 2rem 0;
   padding: 1.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #D88676;
   border-radius: 12px;
   color: white;
   animation: fadeInUp 0.5s ease-out;

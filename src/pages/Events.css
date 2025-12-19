@@ -54,7 +54,7 @@
 .game-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
-  border-color: #667eea;
+  border-color: #D88676;
 }
 
 .game-icon {
@@ -76,7 +76,7 @@
 
 .play-button {
   padding: 0.75rem 2rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #D88676;
   color: white;
   border-radius: 8px;
   font-weight: 600;
@@ -88,7 +88,7 @@
 
 .play-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 12px rgba(216, 134, 118, 0.4);
 }
 
 @media (max-width: 768px) {

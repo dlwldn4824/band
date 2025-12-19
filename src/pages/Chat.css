@@ -17,7 +17,7 @@
 
 .chat-header {
   padding: 1.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #D88676;
   color: white;
   border-radius: 16px 16px 0 0;
   display: flex;
@@ -66,7 +66,7 @@
 }
 
 .message.own-message .message-content {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #D88676;
   color: white;
 }
 
@@ -83,11 +83,11 @@
 
 .message-user {
   font-weight: 600;
-  color: #667eea;
+  color: #D88676;
 }
 
 .message.own-message .message-user {
-  color: #764ba2;
+  color: #D88676;
 }
 
 .message-time {
@@ -135,7 +135,7 @@
 }
 
 .chat-input:focus {
-  border-color: #667eea;
+  border-color: #D88676;
 }
 
 .chat-input:disabled {
@@ -145,7 +145,7 @@
 
 .send-button {
   padding: 0.875rem 2rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #D88676;
   color: white;
   border: none;
   border-radius: 8px;
@@ -156,7 +156,7 @@
 
 .send-button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 12px rgba(216, 134, 118, 0.4);
 }
 
 .send-button:disabled {

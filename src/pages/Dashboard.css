@@ -111,7 +111,7 @@
 .info-link {
   display: inline-block;
   padding: 0.625rem 1.25rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #D88676;
   color: white;
   border-radius: 8px;
   font-weight: 600;
@@ -122,7 +122,7 @@
 
 .info-link:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 12px rgba(216, 134, 118, 0.4);
 }
 
 .checkin-card {
@@ -169,7 +169,7 @@
 }
 
 .camera-button {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #D88676;
 }
 
 .code-entry-button {
@@ -179,7 +179,7 @@
 .camera-button:hover,
 .code-entry-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 12px rgba(216, 134, 118, 0.4);
 }
 
 .camera-button:active,

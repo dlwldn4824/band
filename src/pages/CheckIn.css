@@ -4,7 +4,7 @@
   align-items: center;
   justify-content: center;
   padding: 1rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #D88676;
   box-sizing: border-box;
 }
 
@@ -46,7 +46,7 @@
   font-size: 1.125rem;
   font-weight: 600;
   color: white;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #D88676;
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -56,7 +56,7 @@
 
 .checkin-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 5px 15px rgba(216, 134, 118, 0.4);
 }
 
 .checkin-button:active {
@@ -107,7 +107,7 @@
 
 .entry-number strong {
   font-size: 1.5rem;
-  color: #667eea;
+  color: #D88676;
 }
 
 .stamp {
@@ -137,7 +137,7 @@
   padding: 0.75rem 1.5rem;
   font-size: 1rem;
   color: white;
-  background: #667eea;
+  background: #D88676;
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -145,7 +145,7 @@
 }
 
 .retry-button:hover {
-  background: #5568d3;
+  background: #c57464;
 }
 
 .code-button {
@@ -195,8 +195,8 @@
 
 .code-input:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #D88676;
+  box-shadow: 0 0 0 3px rgba(216, 134, 118, 0.1);
 }
 
 .code-input-buttons {
@@ -217,13 +217,13 @@
 }
 
 .code-submit-button {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #D88676;
   color: white;
 }
 
 .code-submit-button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 12px rgba(216, 134, 118, 0.4);
 }
 
 .code-submit-button:disabled {
@@ -283,8 +283,8 @@
 
 .form-input:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #D88676;
+  box-shadow: 0 0 0 3px rgba(216, 134, 118, 0.1);
 }
 
 .checkin-submit-button {
@@ -293,7 +293,7 @@
   font-size: 1.125rem;
   font-weight: 600;
   color: white;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #D88676;
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -303,7 +303,7 @@
 
 .checkin-submit-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 5px 15px rgba(216, 134, 118, 0.4);
 }
 
 @media (max-width: 768px) {
