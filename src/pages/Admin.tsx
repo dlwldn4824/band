@@ -4,11 +4,37 @@ import { QRCodeSVG } from 'qrcode.react'
 import { useData, SetlistItem, PerformanceData } from '../contexts/DataContext'
 import './Admin.css'
 
+const ADMIN_CODE = '0215'
+
 const Admin = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [adminCodeInput, setAdminCodeInput] = useState('')
+  const [codeError, setCodeError] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [setlistFile, setSetlistFile] = useState<File | null>(null)
   const [uploadStatus, setUploadStatus] = useState('')
   const { uploadGuests, setPerformanceData, guests, performanceData, checkInCode, generateCheckInCode, setCheckInCode } = useData()
+
+  useEffect(() => {
+    // 세션 스토리지에서 인증 상태 확인
+    const authStatus = sessionStorage.getItem('adminAuthenticated')
+    if (authStatus === 'true') {
+      setIsAuthenticated(true)
+    }
+  }, [])
+
+  const handleCodeSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    setCodeError('')
+    
+    if (adminCodeInput === ADMIN_CODE) {
+      setIsAuthenticated(true)
+      sessionStorage.setItem('adminAuthenticated', 'true')
+    } else {
+      setCodeError('올바른 관리자 코드가 아닙니다.')
+      setAdminCodeInput('')
+    }
+  }
 
   // 하드코딩된 공연 정보 (자동 설정)
   useEffect(() => {
@@ -289,6 +315,50 @@ const Admin = () => {
     setUploadStatus('✅ 샘플 셋리스트 엑셀 파일이 다운로드되었습니다.')
   }
 
+
+  if (!isAuthenticated) {
+    return (
+      <div className="admin-page">
+        <div style={{ maxWidth: '400px', margin: '100px auto', padding: '20px', textAlign: 'center' }}>
+          <h1>관리자 페이지</h1>
+          <p style={{ marginBottom: '20px', color: '#666' }}>관리자 코드를 입력하세요</p>
+          <form onSubmit={handleCodeSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <input
+              type="text"
+              value={adminCodeInput}
+              onChange={(e) => setAdminCodeInput(e.target.value)}
+              placeholder="관리자 코드"
+              style={{
+                padding: '12px',
+                fontSize: '16px',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                textAlign: 'center'
+              }}
+              maxLength={4}
+            />
+            {codeError && (
+              <div style={{ color: 'red', fontSize: '14px' }}>{codeError}</div>
+            )}
+            <button
+              type="submit"
+              style={{
+                padding: '12px',
+                fontSize: '16px',
+                backgroundColor: '#007bff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              확인
+            </button>
+          </form>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="admin-page">
