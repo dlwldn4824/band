@@ -303,6 +303,97 @@
   box-shadow: 0 4px 12px rgba(216, 134, 118, 0.4);
 }
 
+.booking-info-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.booking-info-form .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.booking-info-form label {
+  font-weight: 600;
+  color: #333;
+  font-size: 0.9rem;
+}
+
+.booking-info-form input {
+  padding: 0.75rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.3s;
+}
+
+.booking-info-form input:focus {
+  border-color: #D88676;
+  outline: none;
+}
+
+.booking-info-preview {
+  background: #f9f9f9;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 2px solid #e0e0e0;
+}
+
+.booking-info-preview h3 {
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.preview-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.preview-content p {
+  margin: 0;
+  line-height: 1.6;
+  color: #333;
+}
+
+.preview-content strong {
+  color: #666;
+  min-width: 100px;
+  display: inline-block;
+}
+
+.save-booking-info-button {
+  padding: 1rem 2rem;
+  background: #D88676;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
+  align-self: flex-start;
+}
+
+.save-booking-info-button:hover {
+  background: #C57464;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(216, 134, 118, 0.4);
+}
+
+.save-booking-info-button:active {
+  transform: translateY(0);
+}
+
 @media (max-width: 768px) {
   .admin-page h1 {
     font-size: 2rem;
@@ -319,6 +410,10 @@
   .upload-button,
   .config-button {
     width: 100%;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
   }
 }
 
