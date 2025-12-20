@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import './Login.css'
 
 const AdminLogin = () => {
+  const [name, setName] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const navigate = useNavigate()
@@ -10,6 +11,11 @@ const AdminLogin = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+
+    if (!name.trim()) {
+      setError('이름을 입력해주세요.')
+      return
+    }
 
     if (!password.trim()) {
       setError('운영진 코드를 입력해주세요.')
@@ -30,11 +36,24 @@ const AdminLogin = () => {
       <div className="login-container">
         <div className="login-header">
           <h1>운영진 로그인</h1>
-          <p className="login-subtitle">운영진 코드를 입력해주세요</p>
+          <p className="login-subtitle">이름과 운영진 코드를 입력해주세요</p>
         </div>
 
         <form onSubmit={handleSubmit} className="login-form">
           {error && <div className="error-message">{error}</div>}
+
+          <div className="form-group">
+            <label htmlFor="admin-name">이름</label>
+            <input
+              id="admin-name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="이름을 입력하세요"
+              className="login-input"
+              autoComplete="name"
+            />
+          </div>
 
           <div className="input-group">
             <label htmlFor="admin-password">운영진 코드</label>
