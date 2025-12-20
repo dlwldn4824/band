@@ -31,11 +31,6 @@ const Events = () => {
 
   return (
     <div className="events-page">
-      <div className="events-header">
-        <h1>🎮 이벤트 게임</h1>
-        <p className="events-description">다양한 미니게임을 즐겨보세요!</p>
-      </div>
-      
       <div className="games-grid">
         {games.map((game) => (
           <div
