@@ -44,6 +44,24 @@
   text-align: center;
 }
 
+.system-message {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0.75rem 0;
+  animation: slideIn 0.3s ease-out;
+}
+
+.system-message-text {
+  padding: 0.5rem 1rem;
+  background: rgba(216, 134, 118, 0.1);
+  color: #666;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-style: italic;
+  text-align: center;
+}
+
 .message {
   display: flex;
   flex-direction: column;

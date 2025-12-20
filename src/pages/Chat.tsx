@@ -27,6 +27,7 @@ interface Message {
   videoUrl?: string
   fileName?: string
   fileType?: string
+  type?: 'system' | 'user' // 시스템 메시지 구분
 }
 
 interface OnlineUser {
@@ -42,6 +43,7 @@ const Chat = () => {
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const onlineUserRef = useRef<string | null>(null)
+  const previousOnlineUserIdsRef = useRef<Set<string>>(new Set())
 
   useEffect(() => {
     if (!user) return
@@ -82,20 +84,44 @@ const Chat = () => {
     const unsubscribeOnlineUsers = onSnapshot(onlineUsersQuery, (snapshot) => {
       const users: OnlineUser[] = []
       const now = Date.now()
+      const currentUserIds = new Set<string>()
       
       snapshot.forEach((doc) => {
         const data = doc.data()
         const lastSeen = data.lastSeen?.toMillis?.() || 0
         // 1분 이내 활동한 사용자만 온라인으로 표시
         if (now - lastSeen < 60000) {
+          const userId = doc.id
+          const userName = data.name || '익명'
+          currentUserIds.add(userId)
+          
           users.push({
-            id: doc.id,
-            name: data.name || '익명',
+            id: userId,
+            name: userName,
             lastSeen: data.lastSeen
           })
+          
+          // 새로운 사용자가 입장한 경우 (이전 목록에 없고, 현재 사용자가 아닌 경우)
+          if (
+            !previousOnlineUserIdsRef.current.has(userId) &&
+            userId !== onlineUserRef.current &&
+            user // 현재 사용자가 로그인한 상태
+          ) {
+            // 입장 메시지를 Firestore에 저장 (비동기 처리)
+            addDoc(collection(db, 'chat'), {
+              user: userName,
+              message: `${userName}님이 입장했습니다.`,
+              timestamp: serverTimestamp(),
+              type: 'system'
+            }).catch((error) => {
+              console.error('입장 메시지 전송 오류:', error)
+            })
+          }
         }
       })
       
+      // 이전 목록 업데이트
+      previousOnlineUserIdsRef.current = currentUserIds
       setOnlineUsers(users)
     })
 
@@ -184,42 +210,54 @@ const Chat = () => {
               <p>아직 메시지가 없습니다. 첫 메시지를 남겨보세요! 👋</p>
             </div>
           ) : (
-            messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`message ${msg.user === user?.name ? 'own-message' : ''}`}
-              >
-                <div className="message-header">
-                  <span className="message-user">{msg.user}</span>
-                  <span className="message-time">{formatTime(msg.timestamp)}</span>
+            messages.map((msg) => {
+              // 시스템 메시지인 경우
+              if (msg.type === 'system') {
+                return (
+                  <div key={msg.id} className="system-message">
+                    <span className="system-message-text">{msg.message}</span>
+                  </div>
+                )
+              }
+              
+              // 일반 메시지
+              return (
+                <div
+                  key={msg.id}
+                  className={`message ${msg.user === user?.name ? 'own-message' : ''}`}
+                >
+                  <div className="message-header">
+                    <span className="message-user">{msg.user}</span>
+                    <span className="message-time">{formatTime(msg.timestamp)}</span>
+                  </div>
+                  <div className="message-content">
+                    {msg.message && <div className="message-text">{msg.message}</div>}
+                    {msg.imageUrl && (
+                      <div className="message-image">
+                        <img 
+                          src={msg.imageUrl} 
+                          alt={msg.fileName || '이미지'} 
+                          onClick={() => window.open(msg.imageUrl, '_blank')}
+                        />
+                      </div>
+                    )}
+                    {msg.videoUrl && (
+                      <div className="message-video">
+                        <video 
+                          src={msg.videoUrl} 
+                          controls
+                          preload="metadata"
+                        >
+                          <source src={msg.videoUrl} type="video/mp4" />
+                          브라우저가 비디오 태그를 지원하지 않습니다.
+                        </video>
+                        {msg.fileName && <div className="video-filename">{msg.fileName}</div>}
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="message-content">
-                  {msg.message && <div className="message-text">{msg.message}</div>}
-                  {msg.imageUrl && (
-                    <div className="message-image">
-                      <img 
-                        src={msg.imageUrl} 
-                        alt={msg.fileName || '이미지'} 
-                        onClick={() => window.open(msg.imageUrl, '_blank')}
-                      />
-                    </div>
-                  )}
-                  {msg.videoUrl && (
-                    <div className="message-video">
-                      <video 
-                        src={msg.videoUrl} 
-                        controls
-                        preload="metadata"
-                      >
-                        <source src={msg.videoUrl} type="video/mp4" />
-                        브라우저가 비디오 태그를 지원하지 않습니다.
-                      </video>
-                      {msg.fileName && <div className="video-filename">{msg.fileName}</div>}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))
+              )
+            })
           )}
           <div ref={messagesEndRef} />
         </div>
