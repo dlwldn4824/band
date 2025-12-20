@@ -5,6 +5,12 @@
   height: 100vh;
 }
 
+.layout:has(.chat-page) .main .container {
+  padding: 0;
+  height: 100%;
+  max-width: 100%;
+}
+
 .chat-page {
   animation: fadeIn 0.5s ease-in;
   height: 100dvh;
@@ -27,6 +33,7 @@
   overflow: hidden;
   flex: 1;
   min-height: 0;
+  box-sizing: border-box;
 }
 
 .online-status {
@@ -294,11 +301,12 @@
 }
 
 .chat-input-form {
-  padding: 1rem 1.5rem;
+  padding: 1rem;
   background: white;
   border-top: 1px solid #e0e0e0;
   border-radius: 0 0 16px 16px;
   flex: 0 0 auto;
+  box-sizing: border-box;
 }
 
 .input-row {
@@ -306,6 +314,7 @@
   gap: 0.5rem;
   align-items: center;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .file-input-label:active {
