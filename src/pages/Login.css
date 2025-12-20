@@ -409,6 +409,7 @@
 .walk-in-buttons {
   display: flex;
   gap: 0.5rem;
+  align-items: stretch;
 }
 
 .back-button {
@@ -423,7 +424,11 @@
   border: none;
   cursor: pointer;
   min-height: 36px;
+  height: 100%;
   touch-action: manipulation;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .back-button:hover {
