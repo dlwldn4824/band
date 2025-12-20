@@ -8,10 +8,14 @@ import QRScanner from '../components/QRScanner'
 import './Dashboard.css'
 
 const Dashboard = () => {
-  const { user, updateUser } = useAuth()
+  const { user, updateUser, setNickname } = useAuth()
   const { performanceData, checkInGuest, guests } = useData()
   const [showScanner, setShowScanner] = useState(false)
   const [checkInStatus, setCheckInStatus] = useState<'loading' | 'notYet' | 'done'>('loading')
+  const [showNicknameModal, setShowNicknameModal] = useState(false)
+  const [nickname, setNicknameInput] = useState('')
+  const [nicknameError, setNicknameError] = useState('')
+  const [isUpdatingNickname, setIsUpdatingNickname] = useState(false)
   const navigate = useNavigate()
 
   // Firestore에서 체크인 상태 확인 (서버 상태 기반)
@@ -112,6 +116,22 @@ const Dashboard = () => {
         <div>
           <h1>안녕하세요, {user?.name}님!</h1>
           <p>내 티켓과 이벤트 정보를 확인하세요</p>
+          {user?.nickname && (
+            <div className="nickname-section">
+              <span className="nickname-label">채팅 닉네임:</span>
+              <span className="nickname-value">{user.nickname}</span>
+              <button 
+                onClick={() => {
+                  setNicknameInput(user.nickname || '')
+                  setNicknameError('')
+                  setShowNicknameModal(true)
+                }}
+                className="edit-nickname-button"
+              >
+                수정
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -186,6 +206,81 @@ const Dashboard = () => {
           onScanSuccess={handleScanSuccess}
           onClose={() => setShowScanner(false)}
         />
+      )}
+
+      {/* 닉네임 수정 모달 */}
+      {showNicknameModal && (
+        <div className="modal-overlay" onClick={() => setShowNicknameModal(false)}>
+          <div className="modal-content profile-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>닉네임 수정</h2>
+              <button 
+                className="modal-close"
+                onClick={() => setShowNicknameModal(false)}
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="profile-form">
+              <p className="profile-description">
+                채팅에서 사용할 닉네임을 수정해주세요.
+              </p>
+              
+              <div className="form-group">
+                <label htmlFor="edit-nickname">닉네임</label>
+                <input
+                  type="text"
+                  id="edit-nickname"
+                  value={nickname}
+                  onChange={(e) => {
+                    setNicknameInput(e.target.value)
+                    setNicknameError('')
+                  }}
+                  placeholder="닉네임을 입력하세요"
+                  maxLength={20}
+                  autoFocus
+                  disabled={isUpdatingNickname}
+                />
+                <p className="input-hint">최대 20자까지 입력 가능합니다</p>
+              </div>
+
+              {nicknameError && <div className="error-message">{nicknameError}</div>}
+
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!nickname.trim()) {
+                    setNicknameError('닉네임을 입력해주세요.')
+                    return
+                  }
+
+                  if (nickname.trim().length < 2) {
+                    setNicknameError('닉네임은 최소 2자 이상이어야 합니다.')
+                    return
+                  }
+
+                  setIsUpdatingNickname(true)
+                  setNicknameError('')
+
+                  try {
+                    await setNickname(nickname.trim())
+                    setShowNicknameModal(false)
+                    setNicknameInput('')
+                  } catch (error) {
+                    console.error('닉네임 저장 오류:', error)
+                    setNicknameError('닉네임 저장에 실패했습니다. 다시 시도해주세요.')
+                    setIsUpdatingNickname(false)
+                  }
+                }}
+                className="login-button"
+                disabled={isUpdatingNickname || !nickname.trim()}
+              >
+                {isUpdatingNickname ? '저장 중...' : '저장'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
