@@ -16,19 +16,25 @@ const Events = () => {
   if (currentGame !== 'menu') {
     return (
       <div className="events-page">
-        <button onClick={() => setCurrentGame('menu')} className="back-button">
-          ← 게임 선택으로 돌아가기
-        </button>
-        {currentGame === 'rps' && <RockPaperScissors />}
-        {currentGame === 'roulette' && <Roulette />}
+        <div className="events-header">
+          <button onClick={() => setCurrentGame('menu')} className="back-button">
+            ← 게임 선택으로 돌아가기
+          </button>
+        </div>
+        <div className="events-content">
+          {currentGame === 'rps' && <RockPaperScissors />}
+          {currentGame === 'roulette' && <Roulette />}
+        </div>
       </div>
     )
   }
 
   return (
     <div className="events-page">
-      <h1>🎮 이벤트 게임</h1>
-      <p className="events-description">다양한 미니게임을 즐겨보세요!</p>
+      <div className="events-header">
+        <h1>🎮 이벤트 게임</h1>
+        <p className="events-description">다양한 미니게임을 즐겨보세요!</p>
+      </div>
       
       <div className="games-grid">
         {games.map((game) => (

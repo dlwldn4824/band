@@ -58,6 +58,36 @@
   display: none;
 }
 
+/* 이벤트 페이지에서 main 스크롤 막고 화면 높이 고정 */
+.layout.layout--events {
+  height: var(--app-height, 100dvh);
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.layout.layout--events .main {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+.layout.layout--events .main .container {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* 이벤트 페이지에서 푸터 숨기기 */
+.layout.layout--events .footer {
+  display: none;
+}
+
 .chat-page {
   animation: fadeIn 0.5s ease-in;
   height: 100%;
