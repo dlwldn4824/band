@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useData, SetlistItem } from '../contexts/DataContext'
+import demoImage from '../assets/배경/데모 이미지.png'
 import './Performances.css'
 
 const Performances = () => {
@@ -80,16 +81,14 @@ const Performances = () => {
                 ×
               </button>
 
-              {/* 곡소개 이미지 */}
-              {selectedSong.image && (
-                <div className="song-image-container">
-                  <img 
-                    src={selectedSong.image} 
-                    alt={`${selectedSong.songName} 이미지`}
-                    className="song-image"
-                  />
-                </div>
-              )}
+              {/* 데모 이미지 */}
+              <div className="song-image-container">
+                <img 
+                  src={selectedSong.image || demoImage} 
+                  alt={`${selectedSong.songName} 이미지`}
+                  className="song-image"
+                />
+              </div>
 
               {/* 곡 정보 */}
               <div className="song-info">
