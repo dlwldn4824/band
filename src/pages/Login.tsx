@@ -17,7 +17,11 @@ const Login = () => {
   const [walkInName, setWalkInName] = useState('')
   const [walkInPhone, setWalkInPhone] = useState('')
   const [walkInError, setWalkInError] = useState('')
-  const { login } = useAuth()
+  const [showProfileModal, setShowProfileModal] = useState(false)
+  const [nickname, setNickname] = useState('')
+  const [profileError, setProfileError] = useState('')
+  const [isSettingProfile, setIsSettingProfile] = useState(false)
+  const { login, user, setNickname: saveNickname } = useAuth()
   const { guests, addWalkInGuest, bookingInfo } = useData()
   const navigate = useNavigate()
 
@@ -169,9 +173,13 @@ const Login = () => {
             el?.blur?.()
             window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior })
             
-            // iOS에서 키보드 내려가는 시간을 주고 이동
+            // 닉네임이 이미 설정되어 있으면 바로 대시보드로, 없으면 프로필 설정 모달 표시
             setTimeout(() => {
-              navigate('/dashboard')
+              if (user?.nickname) {
+                navigate('/dashboard')
+              } else {
+                setShowProfileModal(true)
+              }
             }, 150)
           }}
         />
@@ -393,6 +401,82 @@ const Login = () => {
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* 프로필 설정 모달 */}
+      {showProfileModal && (
+        <div className="modal-overlay" onClick={(e) => {
+          // 모달 외부 클릭으로 닫기 방지 (닉네임 설정 필수)
+          e.stopPropagation()
+        }}>
+          <div className="modal-content profile-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>프로필 설정</h2>
+            </div>
+            
+            <div className="profile-form">
+              <p className="profile-description">
+                채팅에서 사용할 닉네임을 설정해주세요.
+                <br />
+                <span className="profile-hint">(나중에 변경할 수 있습니다)</span>
+              </p>
+              
+              <div className="form-group">
+                <label htmlFor="nickname">닉네임</label>
+                <input
+                  type="text"
+                  id="nickname"
+                  value={nickname}
+                  onChange={(e) => {
+                    setNickname(e.target.value)
+                    setProfileError('')
+                  }}
+                  placeholder="닉네임을 입력하세요"
+                  maxLength={20}
+                  autoFocus
+                  disabled={isSettingProfile}
+                />
+                <p className="input-hint">최대 20자까지 입력 가능합니다</p>
+              </div>
+
+              {profileError && <div className="error-message">{profileError}</div>}
+
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!nickname.trim()) {
+                    setProfileError('닉네임을 입력해주세요.')
+                    return
+                  }
+
+                  if (nickname.trim().length < 2) {
+                    setProfileError('닉네임은 최소 2자 이상이어야 합니다.')
+                    return
+                  }
+
+                  setIsSettingProfile(true)
+                  setProfileError('')
+
+                  try {
+                    await saveNickname(nickname.trim())
+                    setShowProfileModal(false)
+                    setTimeout(() => {
+                      navigate('/dashboard')
+                    }, 150)
+                  } catch (error) {
+                    console.error('닉네임 저장 오류:', error)
+                    setProfileError('닉네임 저장에 실패했습니다. 다시 시도해주세요.')
+                    setIsSettingProfile(false)
+                  }
+                }}
+                className="login-button"
+                disabled={isSettingProfile || !nickname.trim()}
+              >
+                {isSettingProfile ? '저장 중...' : '완료'}
+              </button>
+            </div>
           </div>
         </div>
       )}

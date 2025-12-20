@@ -477,3 +477,31 @@
     min-width: 120px;
   }
 }
+
+/* 프로필 설정 모달 */
+.profile-modal {
+  max-width: 400px;
+}
+
+.profile-form {
+  padding: 1.5rem 0;
+}
+
+.profile-description {
+  text-align: center;
+  color: #666;
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.profile-hint {
+  font-size: 0.85rem;
+  color: #999;
+}
+
+.input-hint {
+  font-size: 0.75rem;
+  color: #999;
+  margin-top: 0.25rem;
+  margin-bottom: 0;
+}

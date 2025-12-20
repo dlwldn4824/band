@@ -56,9 +56,11 @@ const Chat = () => {
       onlineUserRef.current = userId
       const userRef = doc(db, 'onlineUsers', userId)
       
+      const displayName = user.nickname || user.name
       await setDoc(userRef, {
         name: user.name,
         phone: user.phone,
+        nickname: displayName,
         lastSeen: serverTimestamp()
       }, { merge: true })
 
@@ -94,7 +96,7 @@ const Chat = () => {
         // 1분 이내 활동한 사용자만 온라인으로 표시
         if (now - lastSeen < 60000) {
           const userId = doc.id
-          const userName = data.name || '익명'
+          const userName = data.nickname || data.name || '익명'
           currentUserIds.add(userId)
           
           users.push({
@@ -187,7 +189,7 @@ const Chat = () => {
 
     try {
       await addDoc(collection(db, 'chat'), {
-        user: user.name,
+        user: user.nickname || user.name,
         message: inputMessage.trim(),
         timestamp: serverTimestamp()
       })
@@ -258,7 +260,7 @@ const Chat = () => {
               return (
                 <div
                   key={msg.id}
-                  className={`message ${msg.user === user?.name ? 'own-message' : ''}`}
+                  className={`message ${msg.user === (user?.nickname || user?.name) ? 'own-message' : ''}`}
                 >
                   <div className="message-header">
                     <span className="message-user">{msg.user}</span>

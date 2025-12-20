@@ -1,8 +1,11 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { db } from '../config/firebase'
 
 interface User {
   name: string
   phone: string
+  nickname?: string // 채팅에서 사용할 닉네임
   entryNumber?: number // 입장 번호
   checkedIn?: boolean // 체크인 여부
   checkedInAt?: number // 체크인 시간 (timestamp)
@@ -13,6 +16,7 @@ interface AuthContextType {
   login: (name: string, phone: string, guests?: any[]) => boolean
   logout: () => void
   updateUser: (userData: User) => void
+  setNickname: (nickname: string) => Promise<void>
   isAuthenticated: boolean
   refreshUserStatus: (guests: any[]) => void
 }
@@ -23,10 +27,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('user')
-    if (savedUser) {
-      setUser(JSON.parse(savedUser))
+    const loadUser = async () => {
+      const savedUser = localStorage.getItem('user')
+      if (savedUser) {
+        const userData = JSON.parse(savedUser)
+        setUser(userData)
+        
+        // Firestore에서 nickname 로드
+        if (userData.phone) {
+          try {
+            const userId = `${userData.name}_${userData.phone}`
+            const userProfileRef = doc(db, 'userProfiles', userId)
+            const userProfileSnap = await getDoc(userProfileRef)
+            
+            if (userProfileSnap.exists()) {
+              const profileData = userProfileSnap.data()
+              if (profileData.nickname && profileData.nickname !== userData.nickname) {
+                const updatedUser = { ...userData, nickname: profileData.nickname }
+                setUser(updatedUser)
+                localStorage.setItem('user', JSON.stringify(updatedUser))
+              }
+            }
+          } catch (error) {
+            console.error('닉네임 로드 오류:', error)
+          }
+        }
+      }
     }
+    loadUser()
   }, [])
 
   const login = (name: string, phone: string, guests?: any[]): boolean => {
@@ -117,8 +145,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem('user', JSON.stringify(userData))
   }
 
+  const setNickname = async (nickname: string) => {
+    if (!user) return
+    
+    try {
+      const userId = `${user.name}_${user.phone}`
+      const userProfileRef = doc(db, 'userProfiles', userId)
+      
+      await setDoc(userProfileRef, {
+        name: user.name,
+        phone: user.phone,
+        nickname: nickname.trim(),
+        updatedAt: new Date()
+      }, { merge: true })
+      
+      const updatedUser = { ...user, nickname: nickname.trim() }
+      setUser(updatedUser)
+      localStorage.setItem('user', JSON.stringify(updatedUser))
+    } catch (error) {
+      console.error('닉네임 저장 오류:', error)
+      throw error
+    }
+  }
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, updateUser, isAuthenticated: !!user, refreshUserStatus }}>
+    <AuthContext.Provider value={{ user, login, logout, updateUser, setNickname, isAuthenticated: !!user, refreshUserStatus }}>
       {children}
     </AuthContext.Provider>
   )
