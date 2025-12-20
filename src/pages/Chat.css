@@ -103,8 +103,7 @@
 
 .messages-container {
   flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden;
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
