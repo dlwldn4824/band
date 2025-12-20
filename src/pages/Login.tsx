@@ -12,11 +12,13 @@ const Login = () => {
   const [error, setError] = useState('')
   const [showTicket, setShowTicket] = useState(false)
   const [showWalkInModal, setShowWalkInModal] = useState(false)
+  const [walkInStep, setWalkInStep] = useState<'payment' | 'info'>('payment')
+  const [paymentConfirmed, setPaymentConfirmed] = useState(false)
   const [walkInName, setWalkInName] = useState('')
   const [walkInPhone, setWalkInPhone] = useState('')
   const [walkInError, setWalkInError] = useState('')
   const { login } = useAuth()
-  const { guests, addWalkInGuest } = useData()
+  const { guests, addWalkInGuest, bookingInfo } = useData()
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -176,7 +178,7 @@ const Login = () => {
       ) : (
         <div className="login-container">
           <div className="login-header">
-            <h1>체크인</h1>
+            <h1>사전 예약자 체크인</h1>
             <p>이름과 전화번호를 입력해주세요</p>
           </div>
 
@@ -229,7 +231,14 @@ const Login = () => {
 
       {/* 현장 구매 모달 */}
       {showWalkInModal && (
-        <div className="modal-overlay" onClick={() => setShowWalkInModal(false)}>
+        <div className="modal-overlay" onClick={() => {
+          setShowWalkInModal(false)
+          setWalkInStep('payment')
+          setPaymentConfirmed(false)
+          setWalkInName('')
+          setWalkInPhone('')
+          setWalkInError('')
+        }}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>현장 구매</h2>
@@ -237,6 +246,8 @@ const Login = () => {
                 className="modal-close"
                 onClick={() => {
                   setShowWalkInModal(false)
+                  setWalkInStep('payment')
+                  setPaymentConfirmed(false)
                   setWalkInName('')
                   setWalkInPhone('')
                   setWalkInError('')
@@ -245,37 +256,110 @@ const Login = () => {
                 ×
               </button>
             </div>
-            <form onSubmit={handleWalkInSubmit} className="login-form">
-              <div className="form-group">
-                <label htmlFor="walkInName">이름</label>
-                <input
-                  type="text"
-                  id="walkInName"
-                  value={walkInName}
-                  onChange={(e) => setWalkInName(e.target.value)}
-                  placeholder="이름을 입력하세요"
-                  autoComplete="name"
-                />
+
+            {walkInStep === 'payment' ? (
+              <div className="walk-in-payment-step">
+                <div className="payment-info">
+                  <h3>입금 안내</h3>
+                  <div className="payment-details">
+                    <div className="payment-item">
+                      <span className="payment-label">입금 계좌:</span>
+                      <span className="payment-value">
+                        {bookingInfo?.accountName || '(미설정)'} {bookingInfo?.bankName || ''} {bookingInfo?.accountNumber || ''}
+                      </span>
+                    </div>
+                    <div className="payment-item">
+                      <span className="payment-label">현장 예매 가격:</span>
+                      <span className="payment-value">{bookingInfo?.walkInPrice || '(미설정)'}</span>
+                    </div>
+                    <div className="payment-item">
+                      <span className="payment-label">환불 정책:</span>
+                      <span className="payment-value">{bookingInfo?.refundPolicy || '(미설정)'}</span>
+                    </div>
+                    {bookingInfo?.contactPhone && (
+                      <div className="payment-item">
+                        <span className="payment-label">문의 전화:</span>
+                        <span className="payment-value">{bookingInfo.contactPhone}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="payment-confirm">
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={paymentConfirmed}
+                      onChange={(e) => setPaymentConfirmed(e.target.checked)}
+                      className="payment-checkbox"
+                    />
+                    <span>입금을 완료했습니다.</span>
+                  </label>
+                </div>
+
+                {walkInError && <div className="error-message">{walkInError}</div>}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!paymentConfirmed) {
+                      setWalkInError('입금 확인을 체크해주세요.')
+                      return
+                    }
+                    setWalkInStep('info')
+                    setWalkInError('')
+                  }}
+                  className="login-button"
+                  disabled={!paymentConfirmed}
+                >
+                  다음 단계
+                </button>
               </div>
+            ) : (
+              <form onSubmit={handleWalkInSubmit} className="login-form">
+                <div className="form-group">
+                  <label htmlFor="walkInName">이름</label>
+                  <input
+                    type="text"
+                    id="walkInName"
+                    value={walkInName}
+                    onChange={(e) => setWalkInName(e.target.value)}
+                    placeholder="이름을 입력하세요"
+                    autoComplete="name"
+                  />
+                </div>
 
-              <div className="form-group">
-                <label htmlFor="walkInPhone">전화번호</label>
-                <input
-                  type="tel"
-                  id="walkInPhone"
-                  value={walkInPhone}
-                  onChange={(e) => setWalkInPhone(e.target.value)}
-                  placeholder="010-1234-5678"
-                  autoComplete="tel"
-                />
-              </div>
+                <div className="form-group">
+                  <label htmlFor="walkInPhone">전화번호</label>
+                  <input
+                    type="tel"
+                    id="walkInPhone"
+                    value={walkInPhone}
+                    onChange={(e) => setWalkInPhone(e.target.value)}
+                    placeholder="010-1234-5678"
+                    autoComplete="tel"
+                  />
+                </div>
 
-              {walkInError && <div className="error-message">{walkInError}</div>}
+                {walkInError && <div className="error-message">{walkInError}</div>}
 
-              <button type="submit" className="login-button">
-                등록하고 입장하기
-              </button>
-            </form>
+                <div className="walk-in-buttons">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setWalkInStep('payment')
+                      setWalkInError('')
+                    }}
+                    className="back-button"
+                  >
+                    이전
+                  </button>
+                  <button type="submit" className="login-button">
+                    등록하고 입장하기
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

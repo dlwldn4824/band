@@ -1,14 +1,31 @@
 import { useState, useEffect } from 'react'
 import * as XLSX from 'xlsx'
 import { QRCodeSVG } from 'qrcode.react'
-import { useData, SetlistItem, PerformanceData } from '../contexts/DataContext'
+import { useData, SetlistItem, PerformanceData, BookingInfo } from '../contexts/DataContext'
 import './Admin.css'
 
 const Admin = () => {
   const [file, setFile] = useState<File | null>(null)
   const [setlistFile, setSetlistFile] = useState<File | null>(null)
   const [uploadStatus, setUploadStatus] = useState('')
-  const { uploadGuests, setPerformanceData, guests, performanceData, checkInCode, generateCheckInCode, setCheckInCode, clearGuests, clearSetlist } = useData()
+  const { uploadGuests, setPerformanceData, guests, performanceData, checkInCode, generateCheckInCode, setCheckInCode, clearGuests, clearSetlist, bookingInfo, setBookingInfo } = useData()
+  
+  // 예매 정보 폼 상태
+  const [bookingForm, setBookingForm] = useState<BookingInfo>({
+    accountName: '',
+    bankName: '',
+    accountNumber: '',
+    walkInPrice: '',
+    refundPolicy: '',
+    contactPhone: ''
+  })
+
+  // 예매 정보 폼 초기화
+  useEffect(() => {
+    if (bookingInfo) {
+      setBookingForm(bookingInfo)
+    }
+  }, [bookingInfo])
 
   // 하드코딩된 공연 정보 (자동 설정)
   useEffect(() => {
@@ -472,6 +489,103 @@ const Admin = () => {
               </button>
             </div>
           )}
+        </div>
+      </div>
+
+      <div className="admin-section">
+        <h2>예매 정보 관리</h2>
+        <p className="section-description">
+          입금 계좌, 현장 예매 가격, 환불 정책, 안내 전화번호 등 예매 관련 정보를 관리하세요.
+        </p>
+        
+        <div className="booking-info-form">
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="accountName">입금 계좌 이름</label>
+              <input
+                type="text"
+                id="accountName"
+                value={bookingForm.accountName}
+                onChange={(e) => setBookingForm({ ...bookingForm, accountName: e.target.value })}
+                placeholder="예: 이지우"
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="bankName">은행명</label>
+              <input
+                type="text"
+                id="bankName"
+                value={bookingForm.bankName}
+                onChange={(e) => setBookingForm({ ...bookingForm, bankName: e.target.value })}
+                placeholder="예: 카카오뱅크"
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="accountNumber">계좌번호</label>
+            <input
+              type="text"
+              id="accountNumber"
+              value={bookingForm.accountNumber}
+              onChange={(e) => setBookingForm({ ...bookingForm, accountNumber: e.target.value })}
+              placeholder="예: 3333254015574"
+            />
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="walkInPrice">현장 예매 가격</label>
+              <input
+                type="text"
+                id="walkInPrice"
+                value={bookingForm.walkInPrice}
+                onChange={(e) => setBookingForm({ ...bookingForm, walkInPrice: e.target.value })}
+                placeholder="예: 7천원"
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="contactPhone">안내 전화번호</label>
+              <input
+                type="tel"
+                id="contactPhone"
+                value={bookingForm.contactPhone}
+                onChange={(e) => setBookingForm({ ...bookingForm, contactPhone: e.target.value })}
+                placeholder="예: 01048246873"
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="refundPolicy">환불 정책</label>
+            <input
+              type="text"
+              id="refundPolicy"
+              value={bookingForm.refundPolicy}
+              onChange={(e) => setBookingForm({ ...bookingForm, refundPolicy: e.target.value })}
+              placeholder="예: 환불 불가"
+            />
+          </div>
+
+          <div className="booking-info-preview">
+            <h3>미리보기</h3>
+            <div className="preview-content">
+              <p><strong>입금 계좌:</strong> {bookingForm.accountName || '(미입력)'} {bookingForm.bankName || '(미입력)'} {bookingForm.accountNumber || '(미입력)'}</p>
+              <p><strong>현장 예매:</strong> {bookingForm.walkInPrice || '(미입력)'}</p>
+              <p><strong>환불 정책:</strong> {bookingForm.refundPolicy || '(미입력)'}</p>
+              <p><strong>안내 전화번호:</strong> {bookingForm.contactPhone || '(미입력)'}</p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => {
+              setBookingInfo(bookingForm)
+              setUploadStatus('✅ 예매 정보가 저장되었습니다.')
+            }}
+            className="save-booking-info-button"
+          >
+            💾 예매 정보 저장
+          </button>
         </div>
       </div>
     </div>

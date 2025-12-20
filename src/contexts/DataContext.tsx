@@ -49,14 +49,25 @@ export interface GuestbookMessage {
   position?: { x: number; y: number }
 }
 
+export interface BookingInfo {
+  accountName: string // 입금 계좌 이름
+  bankName: string // 은행명
+  accountNumber: string // 계좌번호
+  walkInPrice: string // 현장 예매 가격
+  refundPolicy: string // 환불 정책
+  contactPhone: string // 안내 전화번호
+}
+
 interface DataContextType {
   guests: Guest[]
   performanceData: PerformanceData | null
   guestbookMessages: GuestbookMessage[]
   checkInCode: string | null
+  bookingInfo: BookingInfo | null
   uploadGuests: (guests: Guest[]) => void
   addWalkInGuest: (name: string, phone: string) => { success: boolean; message?: string }
   setPerformanceData: (data: PerformanceData) => void
+  setBookingInfo: (info: BookingInfo) => void
   addGuestbookMessage: (message: GuestbookMessage) => void
   checkInGuest: (name: string, phone: string) => { success: boolean; entryNumber?: number; message?: string }
   generateCheckInCode: () => string
@@ -73,6 +84,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [performanceData, setPerformanceDataState] = useState<PerformanceData | null>(null)
   const [guestbookMessages, setGuestbookMessages] = useState<GuestbookMessage[]>([])
   const [checkInCode, setCheckInCodeState] = useState<string | null>('0215')
+  const [bookingInfo, setBookingInfoState] = useState<BookingInfo | null>(null)
 
   useEffect(() => {
     // Firestore에서 데이터 로드
@@ -148,6 +160,56 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           // Firestore에 저장
           await setFirestoreData('current' as any, { checkInCode: fixedCode }, 'auth')
         }
+
+        // 예매 정보 로드
+        const firestoreBookingInfo = await getFirestoreData('bookingInfo' as any, 'main')
+        if (firestoreBookingInfo && !Array.isArray(firestoreBookingInfo)) {
+          const bookingData = firestoreBookingInfo as any
+          if (bookingData.accountName && bookingData.bankName && bookingData.accountNumber) {
+            setBookingInfoState(bookingData as BookingInfo)
+          } else {
+            // Firestore 데이터가 불완전한 경우 localStorage 확인
+            const savedBookingInfo = localStorage.getItem('bookingInfo')
+            if (savedBookingInfo) {
+              const parsedInfo = JSON.parse(savedBookingInfo)
+              setBookingInfoState(parsedInfo)
+              await setFirestoreData('bookingInfo' as any, parsedInfo, 'main')
+            } else {
+              // 기본값 설정
+              const defaultBookingInfo: BookingInfo = {
+                accountName: '이지우',
+                bankName: '카카오뱅크',
+                accountNumber: '3333254015574',
+                walkInPrice: '7천원',
+                refundPolicy: '환불 불가',
+                contactPhone: '01048246873'
+              }
+              setBookingInfoState(defaultBookingInfo)
+              localStorage.setItem('bookingInfo', JSON.stringify(defaultBookingInfo))
+              await setFirestoreData('bookingInfo' as any, defaultBookingInfo, 'main')
+            }
+          }
+        } else {
+          const savedBookingInfo = localStorage.getItem('bookingInfo')
+          if (savedBookingInfo) {
+            const parsedInfo = JSON.parse(savedBookingInfo)
+            setBookingInfoState(parsedInfo)
+            await setFirestoreData('bookingInfo' as any, parsedInfo, 'main')
+          } else {
+            // 기본값 설정
+            const defaultBookingInfo: BookingInfo = {
+              accountName: '이지우',
+              bankName: '카카오뱅크',
+              accountNumber: '3333254015574',
+              walkInPrice: '7천원',
+              refundPolicy: '환불 불가',
+              contactPhone: '01048246873'
+            }
+            setBookingInfoState(defaultBookingInfo)
+            localStorage.setItem('bookingInfo', JSON.stringify(defaultBookingInfo))
+            await setFirestoreData('bookingInfo' as any, defaultBookingInfo, 'main')
+          }
+        }
       } catch (error) {
         console.error('Firestore 로드 오류:', error)
         // 오류 발생 시 localStorage에서 로드
@@ -155,6 +217,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         const savedPerformanceData = localStorage.getItem('performanceData')
         const savedGuestbookMessages = localStorage.getItem('guestbookMessages')
         const savedCheckInCode = localStorage.getItem('checkInCode')
+        const savedBookingInfo = localStorage.getItem('bookingInfo')
         
         if (savedGuests) {
           setGuests(JSON.parse(savedGuests))
@@ -171,6 +234,36 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           const fixedCode = '0215'
           setCheckInCodeState(fixedCode)
           localStorage.setItem('checkInCode', fixedCode)
+        }
+        if (savedBookingInfo) {
+          setBookingInfoState(JSON.parse(savedBookingInfo))
+        } else {
+          // 기본값 설정
+          const defaultBookingInfo: BookingInfo = {
+            accountName: '이지우',
+            bankName: '카카오뱅크',
+            accountNumber: '3333254015574',
+            walkInPrice: '7천원',
+            refundPolicy: '환불 불가',
+            contactPhone: '01048246873'
+          }
+          setBookingInfoState(defaultBookingInfo)
+          localStorage.setItem('bookingInfo', JSON.stringify(defaultBookingInfo))
+        }
+        if (savedBookingInfo) {
+          setBookingInfoState(JSON.parse(savedBookingInfo))
+        } else {
+          // 기본값 설정
+          const defaultBookingInfo: BookingInfo = {
+            accountName: '이지우',
+            bankName: '카카오뱅크',
+            accountNumber: '3333254015574',
+            walkInPrice: '7천원',
+            refundPolicy: '환불 불가',
+            contactPhone: '01048246873'
+          }
+          setBookingInfoState(defaultBookingInfo)
+          localStorage.setItem('bookingInfo', JSON.stringify(defaultBookingInfo))
         }
       }
     }
@@ -232,6 +325,15 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     // Firestore에 저장 (비동기로 처리)
     setFirestoreData('performanceData' as any, data, 'main').catch((error) => {
       console.error('Firestore 공연 데이터 저장 오류:', error)
+    })
+  }
+
+  const setBookingInfo = (info: BookingInfo) => {
+    setBookingInfoState(info)
+    localStorage.setItem('bookingInfo', JSON.stringify(info))
+    // Firestore에 저장 (비동기로 처리)
+    setFirestoreData('bookingInfo' as any, info, 'main').catch((error) => {
+      console.error('Firestore 예매 정보 저장 오류:', error)
     })
   }
 
@@ -406,9 +508,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       performanceData, 
       guestbookMessages,
       checkInCode,
+      bookingInfo,
       uploadGuests,
       addWalkInGuest,
       setPerformanceData,
+      setBookingInfo,
       addGuestbookMessage,
       checkInGuest,
       generateCheckInCode,
