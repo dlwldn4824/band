@@ -94,7 +94,7 @@ const css = `
   position:relative;
   width:min(600px, 95vw);
   aspect-ratio: 3331 / 1551; /* 너가 올린 이미지 비율에 맞춤(대충) */
-  border-radius: 4px;
+  border-radius: 8px;
   transform: translateY(8px) scale(0.98);
   opacity: 0;
   animation: tt_popIn 420ms ease-out forwards;
@@ -107,7 +107,7 @@ const css = `
 .tt_piece{
   position:absolute;
   inset:0;
-  border-radius: 4px;
+  border-radius: 8px;
   overflow:hidden;
 }
 
@@ -128,10 +128,10 @@ const css = `
 
 /* 절취선 기준으로 이미지의 위/아래를 잘라 보여주기 */
 .tt_top{
-  clip-path: inset(0 0 calc(100% - var(--tear)) 0 round 4px);
+  clip-path: inset(0 0 calc(100% - var(--tear)) 0 round 8px);
 }
 .tt_bottom{
-  clip-path: inset(var(--tear) 0 0 0 round 4px);
+  clip-path: inset(var(--tear) 0 0 0 round 8px);
 }
 
 /* 절취선 (점선 + 살짝 흔들림) */
