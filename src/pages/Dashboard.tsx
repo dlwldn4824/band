@@ -18,6 +18,23 @@ const Dashboard = () => {
   const [isUpdatingNickname, setIsUpdatingNickname] = useState(false)
   const navigate = useNavigate()
 
+  // 대시보드 페이지에서는 body 스크롤 허용
+  useEffect(() => {
+    const originalBodyPosition = document.body.style.position
+    const originalBodyOverflow = document.body.style.overflow
+    const originalHtmlOverflow = document.documentElement.style.overflow
+    
+    document.body.style.position = 'relative'
+    document.body.style.overflow = 'auto'
+    document.documentElement.style.overflow = 'auto'
+    
+    return () => {
+      document.body.style.position = originalBodyPosition
+      document.body.style.overflow = originalBodyOverflow
+      document.documentElement.style.overflow = originalHtmlOverflow
+    }
+  }, [])
+
   // Firestore에서 체크인 상태 확인 (서버 상태 기반)
   useEffect(() => {
     if (!user) {
