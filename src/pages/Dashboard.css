@@ -255,7 +255,7 @@
   color: rgba(255, 76, 76, 0.9);
   border-radius: 20px;
   transform: rotate(-10deg) scale(0.45);
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(3px);
   background: transparent;
   z-index: 10;
 }
