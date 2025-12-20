@@ -339,6 +339,9 @@
   font-weight: 600;
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
+  white-space: nowrap;
+  min-width: fit-content;
+  flex-shrink: 0;
 }
 
 .send-button:hover:not(:disabled) {
