@@ -55,7 +55,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             
             if (userProfileSnap.exists()) {
               const profileData = userProfileSnap.data()
-              if (profileData.nickname && profileData.nickname !== userData.nickname) {
+              // Firestore에 닉네임이 있고, 로컬에 없거나 다르면 업데이트
+              if (profileData.nickname && (!userData.nickname || profileData.nickname !== userData.nickname)) {
                 const updatedUser = { ...userData, nickname: profileData.nickname }
                 setUser(updatedUser)
                 localStorage.setItem('user', JSON.stringify(updatedUser))
@@ -108,6 +109,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       setUser(userData)
       localStorage.setItem('user', JSON.stringify(userData))
+      
+      // Firestore에서 닉네임 로드 (비동기, 실패해도 계속 진행)
+      const loadNickname = async () => {
+        try {
+          const userId = `${guestName}_${guestPhone}`
+          const userProfileRef = doc(db, 'userProfiles', userId)
+          const userProfileSnap = await getDoc(userProfileRef)
+          
+          if (userProfileSnap.exists()) {
+            const profileData = userProfileSnap.data()
+            if (profileData.nickname && profileData.nickname.trim() !== '') {
+              const updatedUser = { ...userData, nickname: profileData.nickname }
+              setUser(updatedUser)
+              localStorage.setItem('user', JSON.stringify(updatedUser))
+            }
+          }
+        } catch (error) {
+          // Firestore 연결 실패해도 로그인은 성공으로 처리
+          console.warn('Firestore 닉네임 로드 실패 (로그인은 성공):', error)
+        }
+      }
+      loadNickname()
+      
       return true
     }
     
