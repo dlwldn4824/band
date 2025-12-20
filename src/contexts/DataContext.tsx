@@ -55,6 +55,7 @@ interface DataContextType {
   guestbookMessages: GuestbookMessage[]
   checkInCode: string | null
   uploadGuests: (guests: Guest[]) => void
+  addWalkInGuest: (name: string, phone: string) => { success: boolean; message?: string }
   setPerformanceData: (data: PerformanceData) => void
   addGuestbookMessage: (message: GuestbookMessage) => void
   checkInGuest: (name: string, phone: string) => { success: boolean; entryNumber?: number; message?: string }
@@ -184,6 +185,45 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     setFirestoreData('guests' as any, { guests: newGuests }, 'all').catch((error) => {
       console.error('Firestore 게스트 저장 오류:', error)
     })
+  }
+
+  const addWalkInGuest = (name: string, phone: string): { success: boolean; message?: string } => {
+    // 이름과 전화번호 정규화
+    const normalizedName = name.trim()
+    const normalizedPhone = phone.replace(/[-\s()]/g, '')
+
+    if (!normalizedName || !normalizedPhone) {
+      return { success: false, message: '이름과 전화번호를 입력해주세요.' }
+    }
+
+    // 이미 등록된 게스트인지 확인
+    const existingGuest = guests.find((guest) => {
+      const guestName = guest.name || guest['이름'] || guest.Name || ''
+      const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '').replace(/[-\s()]/g, '')
+      return guestName.trim() === normalizedName && guestPhone === normalizedPhone
+    })
+
+    if (existingGuest) {
+      return { success: false, message: '이미 등록된 게스트입니다.' }
+    }
+
+    // 새로운 현장 구매자 추가
+    const newGuest: Guest = {
+      name: normalizedName,
+      phone: normalizedPhone,
+      checkedIn: false
+    }
+
+    const updatedGuests = [...guests, newGuest]
+    setGuests(updatedGuests)
+    localStorage.setItem('guests', JSON.stringify(updatedGuests))
+    
+    // Firestore에 저장 (비동기로 처리)
+    setFirestoreData('guests' as any, { guests: updatedGuests }, 'all').catch((error) => {
+      console.error('Firestore 현장 구매자 저장 오류:', error)
+    })
+
+    return { success: true, message: '현장 구매 등록이 완료되었습니다.' }
   }
 
   const setPerformanceData = (data: PerformanceData) => {
@@ -366,7 +406,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       performanceData, 
       guestbookMessages,
       checkInCode,
-      uploadGuests, 
+      uploadGuests,
+      addWalkInGuest,
       setPerformanceData,
       addGuestbookMessage,
       checkInGuest,
