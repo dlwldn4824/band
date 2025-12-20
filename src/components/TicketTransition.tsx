@@ -95,7 +95,7 @@ const css = `
   width:min(360px, 88vw);
   aspect-ratio: 3331 / 1551; /* 너가 올린 이미지 비율에 맞춤(대충) */
   border-radius: 18px;
-  filter: drop-shadow(0 20px 40px rgba(0,0,0,0.45));
+  box-shadow: 0 20px 40px rgba(0,0,0,0.45);
   transform: translateY(8px) scale(0.98);
   opacity: 0;
   animation: tt_popIn 420ms ease-out forwards;
@@ -117,6 +117,12 @@ const css = `
   height:100%;
   object-fit:cover;
   display:block;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 }
 
 /* 절취선 기준으로 이미지의 위/아래를 잘라 보여주기 */
@@ -185,7 +191,7 @@ const css = `
 @keyframes tt_tearTop{
   0%   { transform: translateY(0) rotate(0deg); filter: none; }
   35%  { transform: translateY(-8px) rotate(-1.2deg); }
-  100% { transform: translateY(-90px) rotate(-4deg); filter: blur(0.3px); opacity:0.95; }
+  100% { transform: translateY(-90px) rotate(-4deg); opacity:0.95; }
 }
 
 @keyframes tt_tearBottom{
