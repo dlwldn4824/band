@@ -121,20 +121,38 @@ const Dashboard = () => {
               ⚙️ 운영진 모드
             </div>
           )}
-          {user?.nickname && (
+          {!isAdmin && (
             <div className="nickname-section">
-              <span className="nickname-label">채팅 닉네임:</span>
-              <span className="nickname-value">{user.nickname}</span>
-              <button 
-                onClick={() => {
-                  setNicknameInput(user.nickname || '')
-                  setNicknameError('')
-                  setShowNicknameModal(true)
-                }}
-                className="edit-nickname-button"
-              >
-                수정
-              </button>
+              {user?.nickname ? (
+                <>
+                  <span className="nickname-label">채팅 닉네임:</span>
+                  <span className="nickname-value">{user.nickname}</span>
+                  <button 
+                    onClick={() => {
+                      setNicknameInput(user.nickname || '')
+                      setNicknameError('')
+                      setShowNicknameModal(true)
+                    }}
+                    className="edit-nickname-button"
+                  >
+                    수정
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span className="nickname-label">채팅 닉네임이 설정되지 않았습니다</span>
+                  <button 
+                    onClick={() => {
+                      setNicknameInput('')
+                      setNicknameError('')
+                      setShowNicknameModal(true)
+                    }}
+                    className="edit-nickname-button"
+                  >
+                    닉네임 설정
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -235,7 +253,7 @@ const Dashboard = () => {
         <div className="modal-overlay" onClick={() => setShowNicknameModal(false)}>
           <div className="modal-content profile-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>닉네임 수정</h2>
+              <h2>{user?.nickname ? '닉네임 수정' : '닉네임 설정'}</h2>
               <button 
                 className="modal-close"
                 onClick={() => setShowNicknameModal(false)}

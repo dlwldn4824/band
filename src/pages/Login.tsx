@@ -86,22 +86,28 @@ const Login = () => {
       const userProfileRef = doc(db, 'userProfiles', userId)
       const userProfileSnap = await getDoc(userProfileRef)
       
+      const profileData = userProfileSnap.exists() ? userProfileSnap.data() : null
+      const hasNickname = profileData?.nickname && profileData.nickname.trim() !== ''
+      
       // Firestore에 닉네임이 있으면 바로 대시보드로
-      if (userProfileSnap.exists() && userProfileSnap.data().nickname) {
+      if (hasNickname) {
         // 로컬스토리지도 업데이트
-        const updatedUser = { ...currentUser, nickname: userProfileSnap.data().nickname }
+        const updatedUser = { ...currentUser, nickname: profileData.nickname }
         localStorage.setItem('user', JSON.stringify(updatedUser))
         navigate('/dashboard')
       } else {
         // Firestore에 닉네임이 없으면 첫 로그인으로 간주하고 프로필 설정 모달 표시
+        console.log('닉네임이 없어서 프로필 설정 모달 표시')
         setShowProfileModal(true)
       }
     } catch (error) {
       // Firestore 연결 실패 시 로컬스토리지 확인
       console.warn('Firestore 닉네임 확인 실패, 로컬스토리지 확인:', error)
-      if (currentUser?.nickname) {
+      const hasLocalNickname = currentUser?.nickname && currentUser.nickname.trim() !== ''
+      if (hasLocalNickname) {
         navigate('/dashboard')
       } else {
+        console.log('로컬스토리지에도 닉네임이 없어서 프로필 설정 모달 표시')
         setShowProfileModal(true)
       }
     }
