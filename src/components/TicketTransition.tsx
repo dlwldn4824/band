@@ -92,7 +92,7 @@ const css = `
 
 .tt_ticket{
   position:relative;
-  width:min(360px, 88vw);
+  width:min(600px, 95vw);
   aspect-ratio: 3331 / 1551; /* 너가 올린 이미지 비율에 맞춤(대충) */
   border-radius: 18px;
   box-shadow: 0 20px 40px rgba(0,0,0,0.45);
@@ -118,11 +118,13 @@ const css = `
   object-fit:cover;
   display:block;
   image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
+  image-rendering: high-quality;
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* 절취선 기준으로 이미지의 위/아래를 잘라 보여주기 */
