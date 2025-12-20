@@ -99,7 +99,9 @@ function App() {
             path="/events"
             element={
               <Layout>
-                <Events />
+                <ProtectedRoute>
+                  <Events />
+                </ProtectedRoute>
               </Layout>
             }
           />

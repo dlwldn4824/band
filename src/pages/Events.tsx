@@ -1,4 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
+import { useData } from '../contexts/DataContext'
 import RockPaperScissors from '../components/games/RockPaperScissors'
 import Roulette from '../components/games/Roulette'
 import EntryNumberDraw from '../components/games/EntryNumberDraw'
@@ -8,6 +11,24 @@ type GameType = 'menu' | 'rps' | 'roulette' | 'draw'
 
 const Events = () => {
   const [currentGame, setCurrentGame] = useState<GameType>('menu')
+  const { isAdmin } = useAuth()
+  const { eventsEnabled, setEventsEnabled } = useData()
+  const navigate = useNavigate()
+
+  // 운영진이 아니고 이벤트가 활성화되지 않았으면 접근 차단
+  useEffect(() => {
+    if (!isAdmin && !eventsEnabled) {
+      navigate('/dashboard')
+    }
+  }, [isAdmin, eventsEnabled, navigate])
+
+  // 운영진이 게임을 시작하면 이벤트 활성화
+  const handleGameStart = (gameId: GameType) => {
+    if (isAdmin && !eventsEnabled) {
+      setEventsEnabled(true)
+    }
+    setCurrentGame(gameId)
+  }
 
   const games = [
     { id: 'rps', name: '가위바위보', icon: '✂️', description: '컴퓨터와 가위바위보 대결!' },
@@ -39,7 +60,7 @@ const Events = () => {
           <div
             key={game.id}
             className="game-card"
-            onClick={() => setCurrentGame(game.id as GameType)}
+            onClick={() => handleGameStart(game.id as GameType)}
           >
             <div className="game-icon">{game.icon}</div>
             <h3>{game.name}</h3>

@@ -6,10 +6,13 @@ interface LayoutProps {
   children: React.ReactNode
 }
 
+import { useData } from '../contexts/DataContext'
+
 const Layout = ({ children }: LayoutProps) => {
   const location = useLocation()
   const navigate = useNavigate()
   const { isAuthenticated, logout, isAdmin } = useAuth()
+  const { eventsEnabled } = useData()
 
   const isActive = (path: string) => {
     return location.pathname === path ? 'active' : ''
@@ -77,9 +80,11 @@ const Layout = ({ children }: LayoutProps) => {
                 <Link to="/performances" className={`nav-link ${isActive('/performances')}`}>
                   공연 정보
                 </Link>
-                <Link to="/events" className={`nav-link ${isActive('/events')}`}>
-                  이벤트
-                </Link>
+                {eventsEnabled && (
+                  <Link to="/events" className={`nav-link ${isActive('/events')}`}>
+                    이벤트
+                  </Link>
+                )}
                 <Link to="/guestbook" className={`nav-link ${isActive('/guestbook')}`}>
                   방명록
                 </Link>
@@ -98,9 +103,11 @@ const Layout = ({ children }: LayoutProps) => {
                 <Link to="/performances" className={`nav-link ${isActive('/performances')}`}>
                   공연 정보
                 </Link>
-                <Link to="/events" className={`nav-link ${isActive('/events')}`}>
-                  이벤트
-                </Link>
+                {eventsEnabled && (
+                  <Link to="/events" className={`nav-link ${isActive('/events')}`}>
+                    이벤트
+                  </Link>
+                )}
                 <Link to="/guestbook" className={`nav-link ${isActive('/guestbook')}`}>
                   방명록
                 </Link>

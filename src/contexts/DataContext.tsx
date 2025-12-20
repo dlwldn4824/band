@@ -64,6 +64,7 @@ interface DataContextType {
   guestbookMessages: GuestbookMessage[]
   checkInCode: string | null
   bookingInfo: BookingInfo | null
+  eventsEnabled: boolean
   uploadGuests: (guests: Guest[]) => void
   addWalkInGuest: (name: string, phone: string) => { success: boolean; message?: string }
   setPerformanceData: (data: PerformanceData) => void
@@ -75,6 +76,7 @@ interface DataContextType {
   verifyCheckInCode: (code: string) => boolean
   clearGuests: () => void
   clearSetlist: () => void
+  setEventsEnabled: (enabled: boolean) => void
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined)
@@ -85,6 +87,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [guestbookMessages, setGuestbookMessages] = useState<GuestbookMessage[]>([])
   const [checkInCode, setCheckInCodeState] = useState<string | null>('0215')
   const [bookingInfo, setBookingInfoState] = useState<BookingInfo | null>(null)
+  const [eventsEnabled, setEventsEnabledState] = useState<boolean>(false)
 
   useEffect(() => {
     // Firestore에서 데이터 로드
@@ -159,6 +162,21 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           localStorage.setItem('checkInCode', fixedCode)
           // Firestore에 저장
           await setFirestoreData('current' as any, { checkInCode: fixedCode }, 'auth')
+        }
+
+        // 이벤트 활성화 상태 로드
+        const firestoreEventsStatus = await getFirestoreData('current' as any, 'events')
+        if (firestoreEventsStatus && !Array.isArray(firestoreEventsStatus) && typeof (firestoreEventsStatus as any).enabled === 'boolean') {
+          setEventsEnabledState((firestoreEventsStatus as any).enabled)
+        } else {
+          const savedEventsEnabled = localStorage.getItem('eventsEnabled')
+          if (savedEventsEnabled !== null) {
+            setEventsEnabledState(savedEventsEnabled === 'true')
+          } else {
+            setEventsEnabledState(false)
+            localStorage.setItem('eventsEnabled', 'false')
+            await setFirestoreData('current' as any, { enabled: false }, 'events')
+          }
         }
 
         // 예매 정보 로드
@@ -502,6 +520,15 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
+  const setEventsEnabled = (enabled: boolean) => {
+    setEventsEnabledState(enabled)
+    localStorage.setItem('eventsEnabled', enabled.toString())
+    // Firestore에 저장 (비동기로 처리)
+    setFirestoreData('current' as any, { enabled }, 'events').catch((error) => {
+      console.error('Firestore 이벤트 활성화 상태 저장 오류:', error)
+    })
+  }
+
   return (
     <DataContext.Provider value={{ 
       guests, 
@@ -509,6 +536,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       guestbookMessages,
       checkInCode,
       bookingInfo,
+      eventsEnabled,
       uploadGuests,
       addWalkInGuest,
       setPerformanceData,
@@ -519,7 +547,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       setCheckInCode,
       verifyCheckInCode,
       clearGuests,
-      clearSetlist
+      clearSetlist,
+      setEventsEnabled
     }}>
       {children}
     </DataContext.Provider>
