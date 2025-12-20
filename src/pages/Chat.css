@@ -334,29 +334,31 @@
 }
 
 .photo-upload-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.875rem;
+  width: 48px;
+  height: 48px;
+  border: none;
+  border-radius: 14px;
   background: #D88676;
   color: white;
   text-decoration: none;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 1.2rem;
-  transition: transform 0.2s, box-shadow 0.2s;
-  min-width: 48px;
-  height: 48px;
+  display: grid;
+  place-items: center;
   flex-shrink: 0;
+  cursor: pointer;
+  box-shadow: 0 6px 14px rgba(216, 134, 118, 0.25);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  font-size: 20px;
+  line-height: 1;
 }
 
-.photo-upload-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(216, 134, 118, 0.4);
+.photo-upload-button:active {
+  transform: scale(0.96);
+  box-shadow: 0 4px 10px rgba(216, 134, 118, 0.2);
 }
 
 .chat-input-form {
-  padding: 1rem;
+  padding: 12px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
   background: white;
   border-top: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 0 0 16px 16px;
@@ -366,8 +368,9 @@
 }
 
 .input-row {
-  display: flex;
-  gap: 0.5rem;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
   align-items: center;
   width: 100%;
   box-sizing: border-box;
@@ -378,13 +381,16 @@
 }
 
 .chat-input {
-  flex: 1;
-  padding: 0.875rem;
+  width: 100%;
+  min-width: 0;
+  height: 48px;
+  padding: 0 14px;
   border: 2px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 1rem;
+  border-radius: 14px;
+  font-size: 16px;
   outline: none;
   transition: border-color 0.3s;
+  box-sizing: border-box;
 }
 
 .chat-input:focus {
@@ -397,17 +403,21 @@
 }
 
 .send-button {
-  padding: 0.875rem 2rem;
+  height: 48px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 14px;
   background: #D88676;
   color: white;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-  white-space: nowrap;
-  min-width: fit-content;
   flex-shrink: 0;
+  white-space: nowrap;
+  min-width: 88px;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .send-button:hover:not(:disabled) {
@@ -417,6 +427,7 @@
 
 .send-button:disabled {
   opacity: 0.5;
+  background: rgba(216, 134, 118, 0.35);
   cursor: not-allowed;
 }
 
@@ -429,6 +440,22 @@
 
   .message {
     max-width: 85%;
+  }
+}
+
+@media (max-width: 380px) {
+  .send-button {
+    min-width: 56px;
+    padding: 0 12px;
+    font-size: 0;
+    position: relative;
+  }
+  
+  .send-button::after {
+    content: '➤';
+    font-size: 18px;
+    display: inline-block;
+    line-height: 1;
   }
 }
 
