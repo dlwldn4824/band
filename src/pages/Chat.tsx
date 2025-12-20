@@ -45,6 +45,7 @@ const Chat = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const onlineUserRef = useRef<string | null>(null)
   const previousOnlineUserIdsRef = useRef<Set<string>>(new Set())
+  const isInitialLoadRef = useRef<boolean>(true)
 
   useEffect(() => {
     if (!user) return
@@ -158,8 +159,13 @@ const Chat = () => {
   }, [user])
 
   useEffect(() => {
-    // 메시지가 추가될 때마다 스크롤
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    // 초기 로드가 아닐 때만 자동 스크롤
+    if (!isInitialLoadRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    } else {
+      // 초기 로드 완료 후 플래그 해제
+      isInitialLoadRef.current = false
+    }
   }, [messages])
 
   const sendMessage = async (e: React.FormEvent) => {
