@@ -117,7 +117,7 @@
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 1rem 1.5rem;
+  padding: 1rem rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -265,36 +265,26 @@
   }
 }
 
-.photo-upload-section {
-  padding: 1rem 1.5rem;
-  background: white;
-  border-top: 1px solid #e0e0e0;
-  text-align: center;
-  flex: 0 0 auto;
-}
-
 .photo-upload-button {
-  display: inline-block;
-  padding: 0.875rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.875rem;
   background: #D88676;
   color: white;
   text-decoration: none;
   border-radius: 8px;
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 1.2rem;
   transition: transform 0.2s, box-shadow 0.2s;
-  margin-bottom: 0.5rem;
+  min-width: 48px;
+  height: 48px;
+  flex-shrink: 0;
 }
 
 .photo-upload-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(216, 134, 118, 0.4);
-}
-
-.photo-upload-hint {
-  font-size: 0.85rem;
-  color: #666;
-  margin: 0;
 }
 
 .chat-input-form {
@@ -309,6 +299,7 @@
   display: flex;
   gap: 0.5rem;
   align-items: center;
+  width: 100%;
 }
 
 .file-input-label:active {

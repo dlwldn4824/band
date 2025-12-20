@@ -296,20 +296,16 @@ const Chat = () => {
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="photo-upload-section">
-          <a 
-            href={GOOGLE_DRIVE_LINK} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="photo-upload-button"
-          >
-            📸 사진 업로드
-          </a>
-          <p className="photo-upload-hint">공연 사진을 구글 드라이브에 업로드해주세요</p>
-        </div>
-
         <form onSubmit={sendMessage} className="chat-input-form">
           <div className="input-row">
+            <a 
+              href={GOOGLE_DRIVE_LINK} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="photo-upload-button"
+            >
+              📸
+            </a>
             <input
               type="text"
               value={inputMessage}
