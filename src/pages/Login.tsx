@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useData } from '../contexts/DataContext'
-import { doc, getDoc } from 'firebase/firestore'
+import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import TicketTransition from '../components/TicketTransition'
 import ticketDemoImage from '../assets/배경/티켓데모.png'
@@ -78,6 +78,35 @@ const Login = () => {
     }
   }, [])
 
+  // 닉네임 확인 및 네비게이션 로직 (공통 함수)
+  const checkNicknameAndNavigate = async (currentUser: any) => {
+    // Firestore에서 닉네임 확인
+    try {
+      const userId = `${currentUser.name}_${currentUser.phone}`
+      const userProfileRef = doc(db, 'userProfiles', userId)
+      const userProfileSnap = await getDoc(userProfileRef)
+      
+      // Firestore에 닉네임이 있으면 바로 대시보드로
+      if (userProfileSnap.exists() && userProfileSnap.data().nickname) {
+        // 로컬스토리지도 업데이트
+        const updatedUser = { ...currentUser, nickname: userProfileSnap.data().nickname }
+        localStorage.setItem('user', JSON.stringify(updatedUser))
+        navigate('/dashboard')
+      } else {
+        // Firestore에 닉네임이 없으면 첫 로그인으로 간주하고 프로필 설정 모달 표시
+        setShowProfileModal(true)
+      }
+    } catch (error) {
+      // Firestore 연결 실패 시 로컬스토리지 확인
+      console.warn('Firestore 닉네임 확인 실패, 로컬스토리지 확인:', error)
+      if (currentUser?.nickname) {
+        navigate('/dashboard')
+      } else {
+        setShowProfileModal(true)
+      }
+    }
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -99,9 +128,32 @@ const Login = () => {
     // Firestore의 guests 배열 사용 (서버 상태 기반)
     const success = login(name.trim(), phone.trim(), guests)
     if (success) {
-      // 키보드가 내려갈 시간을 주고 티켓 표시
-      setTimeout(() => {
-        setShowTicket(true)
+      // Firestore에서 티켓 애니메이션 표시 여부 확인
+      setTimeout(async () => {
+        const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
+        if (!currentUser) {
+          setError('사용자 정보를 불러올 수 없습니다.')
+          return
+        }
+
+        try {
+          const userId = `${currentUser.name}_${currentUser.phone}`
+          const userProfileRef = doc(db, 'userProfiles', userId)
+          const userProfileSnap = await getDoc(userProfileRef)
+          
+          // 티켓 애니메이션을 이미 본 경우 건너뛰기
+          if (userProfileSnap.exists() && userProfileSnap.data().ticketShown) {
+            // 티켓 애니메이션 없이 바로 닉네임 확인 로직으로
+            checkNicknameAndNavigate(currentUser)
+          } else {
+            // 티켓 애니메이션 표시
+            setShowTicket(true)
+          }
+        } catch (error) {
+          // Firestore 연결 실패 시 티켓 애니메이션 표시 (안전하게)
+          console.warn('Firestore 티켓 확인 실패, 티켓 애니메이션 표시:', error)
+          setShowTicket(true)
+        }
       }, 150)
     } else {
       setError('등록된 정보가 없습니다. 이름과 전화번호를 확인해주세요.')
@@ -147,9 +199,33 @@ const Login = () => {
         setWalkInPhone('')
         setName(walkInName.trim())
         setPhone(walkInPhone.trim())
-        // 키보드가 내려갈 시간을 주고 티켓 표시
-        setTimeout(() => {
-          setShowTicket(true)
+        
+        // Firestore에서 티켓 애니메이션 표시 여부 확인
+        setTimeout(async () => {
+          const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
+          if (!currentUser) {
+            setWalkInError('사용자 정보를 불러올 수 없습니다.')
+            return
+          }
+
+          try {
+            const userId = `${currentUser.name}_${currentUser.phone}`
+            const userProfileRef = doc(db, 'userProfiles', userId)
+            const userProfileSnap = await getDoc(userProfileRef)
+            
+            // 티켓 애니메이션을 이미 본 경우 건너뛰기
+            if (userProfileSnap.exists() && userProfileSnap.data().ticketShown) {
+              // 티켓 애니메이션 없이 바로 닉네임 확인 로직으로
+              checkNicknameAndNavigate(currentUser)
+            } else {
+              // 티켓 애니메이션 표시
+              setShowTicket(true)
+            }
+          } catch (error) {
+            // Firestore 연결 실패 시 티켓 애니메이션 표시 (안전하게)
+            console.warn('Firestore 티켓 확인 실패, 티켓 애니메이션 표시:', error)
+            setShowTicket(true)
+          }
         }, 150)
       } else {
         setWalkInError('등록은 완료되었지만 로그인에 실패했습니다. 다시 시도해주세요.')
@@ -169,7 +245,7 @@ const Login = () => {
             date: new Date().toLocaleDateString(),
             seat: 'STANDING',
           }}
-          onDone={() => {
+          onDone={async () => {
             // 포커스 해제 및 스크롤 초기화
             const el = document.activeElement as HTMLElement | null
             el?.blur?.()
@@ -178,38 +254,29 @@ const Login = () => {
             // 티켓 애니메이션 숨기기
             setShowTicket(false)
             
-            // Firestore에서 닉네임 확인 (첫 로그인 여부 판단)
-            setTimeout(async () => {
-              const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
-              if (!currentUser) {
-                navigate('/dashboard')
-                return
-              }
-
-              // Firestore에서 닉네임 확인
+            // Firestore에 티켓 애니메이션을 본 기록 저장
+            const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
+            if (currentUser) {
               try {
                 const userId = `${currentUser.name}_${currentUser.phone}`
                 const userProfileRef = doc(db, 'userProfiles', userId)
-                const userProfileSnap = await getDoc(userProfileRef)
-                
-                // Firestore에 닉네임이 있으면 바로 대시보드로
-                if (userProfileSnap.exists() && userProfileSnap.data().nickname) {
-                  // 로컬스토리지도 업데이트
-                  const updatedUser = { ...currentUser, nickname: userProfileSnap.data().nickname }
-                  localStorage.setItem('user', JSON.stringify(updatedUser))
-                  navigate('/dashboard')
-                } else {
-                  // Firestore에 닉네임이 없으면 첫 로그인으로 간주하고 프로필 설정 모달 표시
-                  setShowProfileModal(true)
-                }
+                await setDoc(userProfileRef, {
+                  name: currentUser.name,
+                  phone: currentUser.phone,
+                  ticketShown: true,
+                  updatedAt: new Date()
+                }, { merge: true })
               } catch (error) {
-                // Firestore 연결 실패 시 로컬스토리지 확인
-                console.warn('Firestore 닉네임 확인 실패, 로컬스토리지 확인:', error)
-                if (currentUser?.nickname) {
-                  navigate('/dashboard')
-                } else {
-                  setShowProfileModal(true)
-                }
+                console.warn('Firestore 티켓 기록 저장 실패:', error)
+              }
+            }
+            
+            // 닉네임 확인 및 네비게이션
+            setTimeout(() => {
+              if (currentUser) {
+                checkNicknameAndNavigate(currentUser)
+              } else {
+                navigate('/dashboard')
               }
             }, 200)
           }}
