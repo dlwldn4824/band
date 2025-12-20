@@ -171,7 +171,7 @@
 
 .checkin-card {
   background: white;
-  padding: 1.5rem;
+  padding: 0.75rem 1.5rem;
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   text-align: center;
@@ -253,7 +253,7 @@
 
 .ticket-stamp {
   position: absolute;
-  right: -90px;
+  right: -100px;
   top: 75px;
   padding: 3px 4px;
   border: 8px solid rgba(255, 76, 76, 0.7);
