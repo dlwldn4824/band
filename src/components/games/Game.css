@@ -1,7 +1,7 @@
 .game-container {
   max-width: 600px;
   margin: 0 auto;
-  padding: 1.5rem;
+  padding: 0;
   background: white;
   border-radius: 16px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -10,7 +10,7 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow: visible;
+  overflow: hidden;
   box-sizing: border-box;
 }
 
@@ -20,6 +20,32 @@
   margin-bottom: 1rem;
   color: #333;
   flex-shrink: 0;
+}
+
+/* 룰렛 전용 헤더 */
+.roulette-header {
+  flex: 0 0 auto;
+  padding: 1.5rem 1.5rem 1rem;
+}
+
+/* 룰렛 전용 body (원판 영역) */
+.roulette-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0 1rem;
+}
+
+/* 룰렛 전용 footer (결과 + 버튼) */
+.roulette-footer {
+  flex: 0 0 auto;
+  padding: 1rem 1.5rem;
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+  background: white;
+  border-radius: 0 0 16px 16px;
 }
 
 .game-area {
@@ -39,8 +65,7 @@
   gap: 1rem;
   flex-wrap: wrap;
   flex: 0 0 auto;
-  padding: 0.5rem 0;
-  margin-top: auto;
+  padding: 0;
 }
 
 .game-button {
@@ -52,6 +77,14 @@
   font-weight: 600;
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
+  width: 100%;
+  max-width: 100%;
+  height: 52px;
+  font-size: clamp(14px, 3.8vw, 18px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
 }
 
 .game-button:hover:not(:disabled) {
@@ -391,9 +424,10 @@
 /* 룰렛 */
 .roulette-container {
   position: relative;
-  width: 280px;
-  height: 280px;
-  margin: 1rem auto;
+  width: min(78vw, 360px);
+  height: min(78vw, 360px);
+  max-height: 45vh;
+  aspect-ratio: 1 / 1;
   flex-shrink: 0;
 }
 
@@ -462,7 +496,7 @@
 
 .roulette-result {
   text-align: center;
-  margin: 1rem 0;
+  margin-bottom: 1rem;
   padding: 1rem 1.5rem;
   background: #D88676;
   border-radius: 12px;

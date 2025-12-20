@@ -46,48 +46,54 @@ const Roulette = () => {
 
   return (
     <div className="game-container">
-      <h2>🎰 룰렛</h2>
+      <div className="roulette-header">
+        <h2>🎰 룰렛</h2>
+      </div>
       
-      <div className="roulette-container">
-        <div 
-          className={`roulette-wheel ${isSpinning ? 'spinning' : ''}`}
-          style={{ transform: `rotate(${rotation}deg)` }}
-        >
-          {items.map((item, index) => {
-            const angle = index * itemAngle
-            return (
-              <div
-                key={index}
-                className="roulette-item"
-                style={{
-                  transform: `rotate(${angle}deg)`,
-                  '--item-angle': `${itemAngle}deg`,
-                } as React.CSSProperties}
-              >
-                <div className="roulette-item-content">
-                  {item}
+      <div className="roulette-body">
+        <div className="roulette-container">
+          <div 
+            className={`roulette-wheel ${isSpinning ? 'spinning' : ''}`}
+            style={{ transform: `rotate(${rotation}deg)` }}
+          >
+            {items.map((item, index) => {
+              const angle = index * itemAngle
+              return (
+                <div
+                  key={index}
+                  className="roulette-item"
+                  style={{
+                    transform: `rotate(${angle}deg)`,
+                    '--item-angle': `${itemAngle}deg`,
+                  } as React.CSSProperties}
+                >
+                  <div className="roulette-item-content">
+                    {item}
+                  </div>
                 </div>
-              </div>
-            )
-          })}
+              )
+            })}
+          </div>
+          <div className="roulette-pointer"></div>
         </div>
-        <div className="roulette-pointer"></div>
       </div>
 
-      {result && (
-        <div className="roulette-result">
-          <div className="result-text">결과: {result}</div>
-        </div>
-      )}
+      <div className="roulette-footer">
+        {result && (
+          <div className="roulette-result">
+            <div className="result-text">결과: {result}</div>
+          </div>
+        )}
 
-      <div className="game-controls">
-        <button 
-          onClick={spin} 
-          className="game-button" 
-          disabled={isSpinning}
-        >
-          {isSpinning ? '회전 중...' : '룰렛 돌리기'}
-        </button>
+        <div className="game-controls">
+          <button 
+            onClick={spin} 
+            className="game-button" 
+            disabled={isSpinning}
+          >
+            {isSpinning ? '회전 중...' : '룰렛 돌리기'}
+          </button>
+        </div>
       </div>
     </div>
   )
