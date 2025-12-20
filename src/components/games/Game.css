@@ -552,3 +552,151 @@
   }
 }
 
+/* 입장 번호 추첨 */
+.draw-container {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}
+
+.draw-info {
+  text-align: center;
+  width: 100%;
+}
+
+.draw-count {
+  font-size: 1.1rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+}
+
+.draw-count strong {
+  color: #D88676;
+  font-size: 1.2rem;
+}
+
+.draw-range {
+  font-size: 0.9rem;
+  color: #999;
+}
+
+.draw-display {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.draw-number {
+  font-size: 8rem;
+  font-weight: 900;
+  color: #D88676;
+  text-align: center;
+  line-height: 1;
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(216, 134, 118, 0.1) 0%, rgba(216, 134, 118, 0.2) 100%);
+  border: 8px solid #D88676;
+  box-shadow: 0 8px 24px rgba(216, 134, 118, 0.3);
+  transition: transform 0.1s ease-out;
+}
+
+.draw-number.placeholder {
+  color: #ccc;
+  border-color: #ddd;
+  background: #f9f9f9;
+  box-shadow: none;
+}
+
+.draw-number.drawing {
+  animation: drawPulse 0.3s ease-in-out infinite;
+  transform: scale(1.05);
+}
+
+.draw-number.final {
+  animation: drawFinal 0.5s ease-out;
+  transform: scale(1.1);
+  box-shadow: 0 12px 32px rgba(216, 134, 118, 0.5);
+}
+
+@keyframes drawPulse {
+  0%, 100% {
+    transform: scale(1.05);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+}
+
+@keyframes drawFinal {
+  0% {
+    transform: scale(1.05);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1.1);
+  }
+}
+
+.draw-result {
+  text-align: center;
+  padding: 1.5rem 2rem;
+  background: linear-gradient(135deg, #D88676 0%, #C57464 100%);
+  border-radius: 16px;
+  color: white;
+  animation: fadeInUp 0.5s ease-out;
+  width: 100%;
+  max-width: 400px;
+}
+
+.result-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.result-number {
+  font-size: 1.1rem;
+  opacity: 0.95;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .draw-number {
+    font-size: 6rem;
+    width: 160px;
+    height: 160px;
+    min-height: 160px;
+  }
+
+  .draw-count {
+    font-size: 1rem;
+  }
+
+  .result-name {
+    font-size: 1.25rem;
+  }
+}
+
