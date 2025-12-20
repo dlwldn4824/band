@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useData } from '../contexts/DataContext'
 import './Login.css'
 
 const AdminLogin = () => {
   const [name, setName] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const { performanceData } = useData()
   const navigate = useNavigate()
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -23,12 +25,45 @@ const AdminLogin = () => {
     }
 
     // 운영진 코드 검증 (체크인 코드와 동일하게 '0215' 사용)
-    if (password.trim() === '0215') {
-      // 운영진 로그인 성공 - Admin 페이지로 이동
-      navigate('/manage')
-    } else {
+    if (password.trim() !== '0215') {
       setError('올바른 운영진 코드를 입력해주세요.')
+      return
     }
+
+    // 공연자 이름 검증
+    const normalizedName = name.trim()
+    let isPerformer = false
+
+    // 1. performers 배열에서 확인
+    if (performanceData?.performers && Array.isArray(performanceData.performers)) {
+      isPerformer = performanceData.performers.some(performer => 
+        performer.trim() === normalizedName
+      )
+    }
+
+    // 2. setlist의 각 곡에서 공연자 확인 (vocal, guitar, bass, keyboard, drum)
+    if (!isPerformer && performanceData?.setlist && Array.isArray(performanceData.setlist)) {
+      for (const song of performanceData.setlist) {
+        if (
+          song.vocal?.trim() === normalizedName ||
+          song.guitar?.trim() === normalizedName ||
+          song.bass?.trim() === normalizedName ||
+          song.keyboard?.trim() === normalizedName ||
+          song.drum?.trim() === normalizedName
+        ) {
+          isPerformer = true
+          break
+        }
+      }
+    }
+
+    if (!isPerformer) {
+      setError('셋리스트에 등록된 공연자가 아닙니다.')
+      return
+    }
+
+    // 운영진 로그인 성공 - Admin 페이지로 이동
+    navigate('/manage')
   }
 
   return (
