@@ -2,7 +2,7 @@
 .layout:has(.chat-page) .main {
   overflow: hidden;
   padding: 0;
-  height: calc(100vh - 60px);
+  height: 100%;
   min-height: 0;
 }
 
@@ -10,6 +10,7 @@
   padding: 0;
   height: 100%;
   max-width: 100%;
+  width: 100%;
 }
 
 /* 채팅 페이지에서 푸터 숨기기 */
@@ -19,7 +20,8 @@
 
 .chat-page {
   animation: fadeIn 0.5s ease-in;
-  height: 90%;
+  height: var(--app-height, 100dvh);
+  width: 100%;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -58,6 +60,7 @@
   align-items: center;
   transition: background-color 0.2s;
   flex: 0 0 auto;
+  z-index: 1;
 }
 
 .online-status:hover {
@@ -136,6 +139,7 @@
   gap: 0.5rem;
   background: #f9f9f9;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 .empty-chat {
@@ -315,10 +319,11 @@
 .chat-input-form {
   padding: 1rem;
   background: white;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 0 0 16px 16px;
   flex: 0 0 auto;
   box-sizing: border-box;
+  z-index: 1;
 }
 
 .input-row {

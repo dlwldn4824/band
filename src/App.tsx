@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect } from 'react'
 import { AuthProvider } from './contexts/AuthContext'
 import { DataProvider } from './contexts/DataContext'
 import Layout from './components/Layout'
@@ -12,7 +13,19 @@ import Chat from './pages/Chat'
 import Guestbook from './pages/Guestbook'
 import CheckIn from './pages/CheckIn'
 
+function useAppHeight() {
+  useEffect(() => {
+    const setH = () => {
+      document.documentElement.style.setProperty("--app-height", `${window.innerHeight}px`)
+    }
+    setH()
+    window.addEventListener("resize", setH)
+    return () => window.removeEventListener("resize", setH)
+  }, [])
+}
+
 function App() {
+  useAppHeight()
   return (
     <AuthProvider>
       <DataProvider>
