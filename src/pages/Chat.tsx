@@ -15,8 +15,8 @@ import {
 import { db } from '../config/firebase'
 import './Chat.css'
 
-// Dropbox 공유 폴더 링크 (환경변수 또는 설정에서 관리)
-const DROPBOX_VIEW_LINK = import.meta.env.VITE_DROPBOX_VIEW_LINK || 'https://www.dropbox.com/scl/fo/w0znqg7kya8bbnbw4suym/AMTE39F_UIKjGHEvt5JeymE?dl=0'
+// Google Drive 공유 폴더 링크 (환경변수 또는 설정에서 관리)
+const GOOGLE_DRIVE_LINK = import.meta.env.VITE_GOOGLE_DRIVE_LINK || 'https://drive.google.com/drive/folders/19YpzIkvVTx_wUzEdY5vVWzbe5_o99W3g?usp=sharing'
 
 interface Message {
   id: string
@@ -301,7 +301,7 @@ const Chat = () => {
         <form onSubmit={sendMessage} className="chat-input-form">
           <div className="input-row">
             <a 
-              href={DROPBOX_VIEW_LINK} 
+              href={GOOGLE_DRIVE_LINK} 
               target="_blank" 
               rel="noopener noreferrer"
               className="photo-upload-button"
