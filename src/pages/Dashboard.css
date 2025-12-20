@@ -248,12 +248,12 @@
 
 .ticket-stamp {
   position: absolute;
-  right: 0px;
+  right: -29px;
   top: 25px;
   padding: 3px 4px;
   border: 8px solid rgba(255, 76, 76, 0.7);
   color: rgba(255, 76, 76, 0.9);
-  border-radius: 18px;
+  border-radius: 20px;
   transform: rotate(-10deg) scale(0.45);
   backdrop-filter: blur(2px);
   background: transparent;
