@@ -317,6 +317,14 @@
   color: #333;
 }
 
+.copy-hint {
+  margin-top: 0.75rem;
+  font-size: 0.75rem;
+  color: #999;
+  text-align: center;
+  font-style: italic;
+}
+
 .payment-details {
   display: flex;
   flex-direction: column;
