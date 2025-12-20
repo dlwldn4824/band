@@ -24,9 +24,10 @@
   margin: 2rem 0;
   flex: 1 1 auto;
   min-height: 0;
-  overflow-y: auto;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
+  justify-content: center;
 }
 
 .game-controls {
@@ -84,6 +85,8 @@
   align-items: center;
   gap: 2rem;
   margin: 2rem 0;
+  flex-wrap: nowrap;
+  width: 100%;
 }
 
 .choice-box {
@@ -473,12 +476,23 @@
   }
 
   .choice-display {
-    flex-direction: column;
+    flex-direction: row;
     gap: 1rem;
+    flex-wrap: nowrap;
   }
 
   .choice-emoji {
     font-size: 3rem;
+  }
+  
+  .choice-box {
+    flex: 1;
+    min-width: 0;
+  }
+  
+  .vs {
+    font-size: 1.5rem;
+    flex-shrink: 0;
   }
 
   .memory-grid {
