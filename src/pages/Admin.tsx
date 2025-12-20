@@ -75,16 +75,16 @@ const Admin = () => {
       JSON.stringify(performanceData.ticket) !== JSON.stringify(defaultTicket)
 
     if (needsUpdate) {
-      const updatedPerformanceData: PerformanceData = {
-        ...performanceData,
-        events: defaultEvents,
-        ticket: defaultTicket,
+    const updatedPerformanceData: PerformanceData = {
+      ...performanceData,
+      events: defaultEvents,
+      ticket: defaultTicket,
         // 셋리스트와 공연진은 기존 값 유지 (절대 덮어쓰지 않음)
         setlist: performanceData.setlist || [],
         performers: performanceData.performers || []
-      }
+    }
 
-      setPerformanceData(updatedPerformanceData)
+    setPerformanceData(updatedPerformanceData)
     }
   }, [performanceData]) // performanceData가 변경될 때마다 확인
 

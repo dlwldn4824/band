@@ -112,7 +112,6 @@ const css = `
   inset:0;
   border-radius: 18px;
   overflow:hidden;
-  background: linear-gradient(135deg, #FFD700 0%, #FDB931 100%); /* Gold gradient default */
 }
 
 .tt_img{

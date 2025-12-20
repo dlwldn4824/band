@@ -36,3 +36,4 @@ https://drive.google.com/drive/folders/FOLDER_ID
 - "뷰어" 권한으로 설정하면 사진만 볼 수 있습니다
 
 
+

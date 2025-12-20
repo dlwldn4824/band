@@ -231,23 +231,23 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       } catch (error) {
         console.error('Firestore 로드 오류:', error)
         // 오류 발생 시 localStorage에서 로드
-        const savedGuests = localStorage.getItem('guests')
-        const savedPerformanceData = localStorage.getItem('performanceData')
-        const savedGuestbookMessages = localStorage.getItem('guestbookMessages')
-        const savedCheckInCode = localStorage.getItem('checkInCode')
+    const savedGuests = localStorage.getItem('guests')
+    const savedPerformanceData = localStorage.getItem('performanceData')
+    const savedGuestbookMessages = localStorage.getItem('guestbookMessages')
+    const savedCheckInCode = localStorage.getItem('checkInCode')
         const savedBookingInfo = localStorage.getItem('bookingInfo')
-        
-        if (savedGuests) {
-          setGuests(JSON.parse(savedGuests))
-        }
-        if (savedPerformanceData) {
-          setPerformanceDataState(JSON.parse(savedPerformanceData))
-        }
-        if (savedGuestbookMessages) {
-          setGuestbookMessages(JSON.parse(savedGuestbookMessages))
-        }
-        if (savedCheckInCode) {
-          setCheckInCodeState(savedCheckInCode)
+    
+    if (savedGuests) {
+      setGuests(JSON.parse(savedGuests))
+    }
+    if (savedPerformanceData) {
+      setPerformanceDataState(JSON.parse(savedPerformanceData))
+    }
+    if (savedGuestbookMessages) {
+      setGuestbookMessages(JSON.parse(savedGuestbookMessages))
+    }
+    if (savedCheckInCode) {
+      setCheckInCodeState(savedCheckInCode)
         } else {
           const fixedCode = '0215'
           setCheckInCodeState(fixedCode)
@@ -537,7 +537,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       checkInCode,
       bookingInfo,
       eventsEnabled,
-      uploadGuests,
+      uploadGuests, 
       addWalkInGuest,
       setPerformanceData,
       setBookingInfo,

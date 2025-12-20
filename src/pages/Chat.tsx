@@ -105,7 +105,7 @@ const Chat = () => {
             name: userName,
             lastSeen: data.lastSeen
           })
-          
+
           // 새로운 사용자가 입장한 경우 (이전 목록에 없고, 현재 사용자가 아니고, 아직 입장 메시지를 보내지 않은 경우)
           if (
             !previousOnlineUserIdsRef.current.has(userId) &&
@@ -199,8 +199,8 @@ const Chat = () => {
         user: user.nickname || user.name,
         message: inputMessage.trim(),
         timestamp: serverTimestamp()
-      })
-      setInputMessage('')
+    })
+    setInputMessage('')
     } catch (error) {
       console.error('메시지 전송 오류:', error)
       alert('메시지 전송에 실패했습니다.')
@@ -243,7 +243,7 @@ const Chat = () => {
                   </div>
                 ))}
               </div>
-            </div>
+          </div>
           )}
         </div>
 
@@ -265,14 +265,14 @@ const Chat = () => {
               
               // 일반 메시지
               return (
-                <div
-                  key={msg.id}
+              <div
+                key={msg.id}
                   className={`message ${msg.user === (user?.nickname || user?.name) ? 'own-message' : ''}`}
-                >
-                  <div className="message-header">
-                    <span className="message-user">{msg.user}</span>
-                    <span className="message-time">{formatTime(msg.timestamp)}</span>
-                  </div>
+              >
+                <div className="message-header">
+                  <span className="message-user">{msg.user}</span>
+                  <span className="message-time">{formatTime(msg.timestamp)}</span>
+                </div>
                   <div className="message-content">
                     {msg.message && <div className="message-text">{msg.message}</div>}
                     {msg.imageUrl && (
@@ -298,7 +298,7 @@ const Chat = () => {
                       </div>
                     )}
                   </div>
-                </div>
+              </div>
               )
             })
           )}
@@ -316,21 +316,21 @@ const Chat = () => {
             >
               📸
             </a>
-            <input
-              type="text"
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              placeholder="메시지를 입력하세요..."
-              className="chat-input"
+          <input
+            type="text"
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            placeholder="메시지를 입력하세요..."
+            className="chat-input"
               disabled={!user}
-            />
-            <button
-              type="submit"
-              className="send-button"
+          />
+          <button
+            type="submit"
+            className="send-button"
               disabled={!inputMessage.trim() || !user}
-            >
-              전송
-            </button>
+          >
+            전송
+          </button>
           </div>
         </form>
       </div>
