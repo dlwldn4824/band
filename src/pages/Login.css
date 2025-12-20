@@ -340,6 +340,38 @@
   color: #333;
   font-weight: 600;
   word-break: break-all;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.bank-name {
+  color: #0066cc;
+  font-weight: 600;
+}
+
+.account-number {
+  color: #0066cc;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: rgba(0, 102, 204, 0.3);
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.account-number:hover {
+  color: #0052a3;
+  text-decoration-color: #0052a3;
+  background: rgba(0, 102, 204, 0.1);
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.account-number:active {
+  color: #003d7a;
+  transform: scale(0.98);
 }
 
 .payment-confirm {

@@ -265,7 +265,39 @@ const Login = () => {
                     <div className="payment-item">
                       <span className="payment-label">입금 계좌:</span>
                       <span className="payment-value">
-                        {bookingInfo?.accountName || '(미설정)'} {bookingInfo?.bankName || ''} {bookingInfo?.accountNumber || ''}
+                        {bookingInfo?.accountName || '(미설정)'}{' '}
+                        {bookingInfo?.bankName && (
+                          <span className="bank-name">{bookingInfo.bankName}</span>
+                        )}{' '}
+                        {bookingInfo?.accountNumber && (
+                          <span 
+                            className="account-number"
+                            onClick={async () => {
+                              try {
+                                await navigator.clipboard.writeText(bookingInfo.accountNumber)
+                                alert('계좌번호가 복사되었습니다!')
+                              } catch (err) {
+                                // 클립보드 API 실패 시 fallback
+                                const textArea = document.createElement('textarea')
+                                textArea.value = bookingInfo.accountNumber
+                                textArea.style.position = 'fixed'
+                                textArea.style.opacity = '0'
+                                document.body.appendChild(textArea)
+                                textArea.select()
+                                try {
+                                  document.execCommand('copy')
+                                  alert('계좌번호가 복사되었습니다!')
+                                } catch (e) {
+                                  alert('계좌번호 복사에 실패했습니다.')
+                                }
+                                document.body.removeChild(textArea)
+                              }
+                            }}
+                            title="클릭하여 복사"
+                          >
+                            {bookingInfo.accountNumber}
+                          </span>
+                        )}
                       </span>
                     </div>
                     <div className="payment-item">
