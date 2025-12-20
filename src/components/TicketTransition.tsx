@@ -13,7 +13,7 @@ type Props = {
 
 export default function TicketTransition({
   ticketImageUrl,
-  tearAtPercent = 73,
+  tearAtPercent = 72,
   onDone,
   info,
 }: Props) {
@@ -85,7 +85,7 @@ const css = `
   display:flex;
   align-items:center;
   justify-content:center;
-  background: #ffffff;
+  background: transparent;
   padding: 24px;
   overflow:hidden;
 }
@@ -95,7 +95,6 @@ const css = `
   width:min(600px, 95vw);
   aspect-ratio: 3331 / 1551; /* 너가 올린 이미지 비율에 맞춤(대충) */
   border-radius: 18px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.45);
   transform: translateY(8px) scale(0.98);
   opacity: 0;
   animation: tt_popIn 420ms ease-out forwards;
