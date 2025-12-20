@@ -21,7 +21,7 @@ const Login = () => {
   const [nickname, setNickname] = useState('')
   const [profileError, setProfileError] = useState('')
   const [isSettingProfile, setIsSettingProfile] = useState(false)
-  const { login, user, setNickname: saveNickname } = useAuth()
+  const { login, setNickname: saveNickname } = useAuth()
   const { guests, addWalkInGuest, bookingInfo } = useData()
   const navigate = useNavigate()
 
@@ -173,14 +173,19 @@ const Login = () => {
             el?.blur?.()
             window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior })
             
+            // 티켓 애니메이션 숨기기
+            setShowTicket(false)
+            
             // 닉네임이 이미 설정되어 있으면 바로 대시보드로, 없으면 프로필 설정 모달 표시
             setTimeout(() => {
-              if (user?.nickname) {
+              // user 상태가 업데이트되기를 기다리기 위해 약간의 딜레이
+              const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
+              if (currentUser?.nickname) {
                 navigate('/dashboard')
               } else {
                 setShowProfileModal(true)
               }
-            }, 150)
+            }, 200)
           }}
         />
       ) : (
