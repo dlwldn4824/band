@@ -65,9 +65,6 @@ const Layout = ({ children }: LayoutProps) => {
                 <Link to="/admin/chat" className={`nav-link ${isActive('/admin/chat')}`}>
                   채팅
                 </Link>
-                <Link to="/manage" className={`nav-link ${isActive('/manage')}`}>
-                  관리
-                </Link>
                 <button onClick={handleLogout} className="nav-link logout-nav-button">
                   로그아웃
                 </button>

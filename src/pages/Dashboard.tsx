@@ -187,13 +187,6 @@ const Dashboard = () => {
             <div className="checkin-card" style={{ background: '#f0f0f0', border: '2px solid #D88676' }}>
               <h3>⚙️ 운영진 전용 기능</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
-                <button 
-                  onClick={() => navigate('/manage')} 
-                  className="camera-button"
-                  style={{ width: '100%', background: '#D88676', color: 'white' }}
-                >
-                  📊 관리자 페이지
-                </button>
                 <div style={{ padding: '0.75rem', background: 'white', borderRadius: '8px' }}>
                   <p style={{ margin: '0 0 0.5rem 0', fontWeight: '600' }}>현재 통계</p>
                   <p style={{ margin: '0.25rem 0', fontSize: '0.9rem' }}>총 게스트: {guests.length}명</p>
