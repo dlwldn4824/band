@@ -174,22 +174,8 @@ const Chat = () => {
   return (
     <div className="chat-page">
       <div className="chat-container">
-        <div className="chat-header">
-          <div>
-            <h2>💬 실시간 채팅</h2>
-            <div className="chat-info">
-              <span>온라인: {onlineUsers.length}명</span>
-              {onlineUsers.length > 0 && (
-                <div className="online-users-list">
-                  {onlineUsers.map((onlineUser) => (
-                    <span key={onlineUser.id} className="online-user-badge">
-                      {onlineUser.name}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+        <div className="online-status">
+          <span>온라인: {onlineUsers.length}명</span>
         </div>
 
         <div className="messages-container">

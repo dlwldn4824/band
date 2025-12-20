@@ -35,3 +35,4 @@ https://drive.google.com/drive/folders/FOLDER_ID
 - "편집자" 권한으로 설정하면 사용자가 직접 사진을 업로드할 수 있습니다
 - "뷰어" 권한으로 설정하면 사진만 볼 수 있습니다
 
+
