@@ -166,6 +166,7 @@
   max-width: 70%;
   animation: slideIn 0.3s ease-out;
   align-self: flex-start;
+  margin-bottom: 0.25rem;
 }
 
 .message.own-message {
@@ -180,12 +181,14 @@
 .message-header {
   display: flex;
   gap: 0.5rem;
-  margin-bottom: 0.15rem;
-  font-size: 0.85rem;
+  margin-bottom: 0.25rem;
+  font-size: 0.75rem;
+  padding: 0 0.25rem;
 }
 
 .message.own-message .message-header {
   justify-content: flex-end;
+  padding: 0 0.25rem;
 }
 
 .message-user {
@@ -203,20 +206,18 @@
 }
 
 .message-content {
-  padding: 0.3rem 0.875rem;
+  padding: 0.5rem 0.75rem;
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: 18px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
   word-wrap: break-word;
   line-height: 1.4;
-  display: flex;
-  align-items: center;
-  width: fit-content;
-  min-width: fit-content;
+  display: inline-block;
+  max-width: 100%;
 }
 
 .message-text {
-  margin-bottom: 0.5rem;
+  margin: 0;
 }
 
 .message-image {
