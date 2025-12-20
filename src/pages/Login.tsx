@@ -5,6 +5,7 @@ import { useData } from '../contexts/DataContext'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import TicketTransition from '../components/TicketTransition'
+import ticketImage from '../assets/배경/티켓_최종.png'
 import './Login.css'
 
 const Login = () => {
@@ -244,7 +245,7 @@ const Login = () => {
     <div className="login-page">
       {showTicket ? (
         <TicketTransition
-          ticketImageUrl="/assets/배경/티켓_최종.png"
+          ticketImageUrl={ticketImage}
           info={{
             name: name,
             date: new Date().toLocaleDateString(),

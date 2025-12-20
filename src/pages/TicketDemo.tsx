@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import TicketTransition from '../components/TicketTransition'
+import ticketImage from '../assets/배경/티켓_최종.png'
 import './TicketDemo.css'
 
 const TicketDemo = () => {
@@ -42,7 +43,7 @@ const TicketDemo = () => {
       {showTicket && (
         <TicketTransition
           key={animationCount}
-          ticketImageUrl="/assets/배경/티켓_최종.png"
+          ticketImageUrl={ticketImage}
           info={{
             name: '데모 사용자',
             date: new Date().toLocaleDateString(),
