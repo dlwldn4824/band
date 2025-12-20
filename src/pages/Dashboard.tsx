@@ -8,7 +8,7 @@ import QRScanner from '../components/QRScanner'
 import './Dashboard.css'
 
 const Dashboard = () => {
-  const { user, updateUser, setNickname } = useAuth()
+  const { user, updateUser, setNickname, isAdmin, adminName } = useAuth()
   const { performanceData, checkInGuest, guests } = useData()
   const [showScanner, setShowScanner] = useState(false)
   const [checkInStatus, setCheckInStatus] = useState<'loading' | 'notYet' | 'done'>('loading')
@@ -114,8 +114,13 @@ const Dashboard = () => {
     <div className="dashboard">
       <div className="dashboard-header">
         <div>
-          <h1>안녕하세요, {user?.name}님!</h1>
-          <p>내 티켓과 이벤트 정보를 확인하세요</p>
+          <h1>안녕하세요, {isAdmin ? adminName : user?.name}님!</h1>
+          <p>{isAdmin ? '운영진 대시보드' : '내 티켓과 이벤트 정보를 확인하세요'}</p>
+          {isAdmin && (
+            <div style={{ marginTop: '0.5rem', padding: '0.5rem', background: '#D88676', color: 'white', borderRadius: '8px', fontSize: '0.9rem' }}>
+              ⚙️ 운영진 모드
+            </div>
+          )}
           {user?.nickname && (
             <div className="nickname-section">
               <span className="nickname-label">채팅 닉네임:</span>
@@ -136,7 +141,7 @@ const Dashboard = () => {
       </div>
 
       <div className="dashboard-content">
-        {performanceData?.ticket && (
+        {performanceData?.ticket && !isAdmin && (
           <section className="dashboard-section">
             <Ticket ticket={performanceData.ticket} />
           </section>
@@ -150,7 +155,7 @@ const Dashboard = () => {
           </section>
         )}
 
-        {checkInStatus === 'done' && (
+        {checkInStatus === 'done' && !isAdmin && (
           <section className="dashboard-section">
             <div className="checkin-card">
               <h3>✅ 체크인 완료</h3>
@@ -160,7 +165,7 @@ const Dashboard = () => {
           </section>
         )}
 
-        {checkInStatus === 'notYet' && user && (
+        {checkInStatus === 'notYet' && user && !isAdmin && (
           <section className="dashboard-section">
             <div className="checkin-card">
               <h3>📷 현장 체크인</h3>
@@ -172,6 +177,30 @@ const Dashboard = () => {
                 <button onClick={() => navigate('/checkin')} className="code-entry-button">
                   🔢 현장 코드로 입장하기
                 </button>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {isAdmin && (
+          <section className="dashboard-section">
+            <div className="checkin-card" style={{ background: '#f0f0f0', border: '2px solid #D88676' }}>
+              <h3>⚙️ 운영진 전용 기능</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
+                <button 
+                  onClick={() => navigate('/manage')} 
+                  className="camera-button"
+                  style={{ width: '100%', background: '#D88676', color: 'white' }}
+                >
+                  📊 관리자 페이지
+                </button>
+                <div style={{ padding: '0.75rem', background: 'white', borderRadius: '8px' }}>
+                  <p style={{ margin: '0 0 0.5rem 0', fontWeight: '600' }}>현재 통계</p>
+                  <p style={{ margin: '0.25rem 0', fontSize: '0.9rem' }}>총 게스트: {guests.length}명</p>
+                  <p style={{ margin: '0.25rem 0', fontSize: '0.9rem' }}>
+                    체크인 완료: {guests.filter(g => g.checkedIn).length}명
+                  </p>
+                </div>
               </div>
             </div>
           </section>
