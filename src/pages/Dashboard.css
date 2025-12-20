@@ -231,10 +231,9 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background: white;
+  background: transparent;
   padding: 0;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
   box-sizing: border-box;
   overflow: hidden;
   position: relative;
@@ -251,11 +250,11 @@
   position: absolute;
   right: 14px;
   top: 14px;
-  padding: 10px 12px;
+  padding: 8px 10px;
   border: 2px solid rgba(255, 76, 76, 0.7);
   color: rgba(255, 76, 76, 0.9);
-  border-radius: 10px;
-  transform: rotate(-10deg) scale(0.96);
+  border-radius: 8px;
+  transform: rotate(-10deg) scale(0.85);
   backdrop-filter: blur(2px);
   background: rgba(255, 255, 255, 0.9);
   z-index: 10;
@@ -264,7 +263,7 @@
 .ticket-stamp-text {
   font-weight: 900;
   letter-spacing: 0.08em;
-  font-size: 12px;
+  font-size: 14px;
   text-align: center;
   line-height: 1.4;
 }
