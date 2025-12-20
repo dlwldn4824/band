@@ -52,7 +52,7 @@
 
 .games-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 1.5rem;
   flex: 1 1 auto;
   min-height: 0;
@@ -122,8 +122,24 @@
   }
 
   .games-grid {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  .game-card {
+    padding: 1rem;
+  }
+
+  .game-icon {
+    font-size: 3rem;
+  }
+
+  .game-card h3 {
+    font-size: 1.25rem;
+  }
+
+  .game-card p {
+    font-size: 0.875rem;
   }
 }
 
