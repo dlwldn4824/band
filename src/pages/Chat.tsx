@@ -46,6 +46,7 @@ const Chat = () => {
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const onlineUserRef = useRef<string | null>(null)
   const previousOnlineUserIdsRef = useRef<Set<string>>(new Set())
+  const enteredUserIdsRef = useRef<Set<string>>(new Set()) // 한 번 입장 메시지를 보낸 사용자 추적
 
   useEffect(() => {
     if (!user) return
@@ -105,12 +106,16 @@ const Chat = () => {
             lastSeen: data.lastSeen
           })
           
-          // 새로운 사용자가 입장한 경우 (이전 목록에 없고, 현재 사용자가 아닌 경우)
+          // 새로운 사용자가 입장한 경우 (이전 목록에 없고, 현재 사용자가 아니고, 아직 입장 메시지를 보내지 않은 경우)
           if (
             !previousOnlineUserIdsRef.current.has(userId) &&
+            !enteredUserIdsRef.current.has(userId) &&
             userId !== onlineUserRef.current &&
             user // 현재 사용자가 로그인한 상태
           ) {
+            // 입장 메시지를 보낸 사용자로 표시
+            enteredUserIdsRef.current.add(userId)
+            
             // 입장 메시지를 Firestore에 저장 (비동기 처리)
             addDoc(collection(db, 'chat'), {
               user: userName,
@@ -119,6 +124,8 @@ const Chat = () => {
               type: 'system'
             }).catch((error) => {
               console.error('입장 메시지 전송 오류:', error)
+              // 실패 시 Set에서 제거하여 재시도 가능하게 함
+              enteredUserIdsRef.current.delete(userId)
             })
           }
         }
