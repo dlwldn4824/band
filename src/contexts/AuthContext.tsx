@@ -146,7 +146,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const setNickname = async (nickname: string) => {
-    if (!user) return
+    if (!user) {
+      throw new Error('사용자 정보가 없습니다. 다시 로그인해주세요.')
+    }
     
     try {
       const userId = `${user.name}_${user.phone}`
@@ -162,8 +164,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const updatedUser = { ...user, nickname: nickname.trim() }
       setUser(updatedUser)
       localStorage.setItem('user', JSON.stringify(updatedUser))
-    } catch (error) {
+    } catch (error: any) {
       console.error('닉네임 저장 오류:', error)
+      // Firestore 권한 오류인 경우 더 명확한 메시지 제공
+      if (error?.code === 'permission-denied') {
+        throw new Error('닉네임 저장 권한이 없습니다. Firestore 보안 규칙을 확인해주세요.')
+      }
       throw error
     }
   }
