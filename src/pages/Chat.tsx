@@ -15,8 +15,8 @@ import {
 import { db } from '../config/firebase'
 import './Chat.css'
 
-// 구글 드라이브 링크 (환경변수 또는 설정에서 관리)
-const GOOGLE_DRIVE_LINK = import.meta.env.VITE_GOOGLE_DRIVE_LINK || 'https://drive.google.com/drive/folders/YOUR_FOLDER_ID'
+// Dropbox 공유 폴더 링크 (환경변수 또는 설정에서 관리)
+const DROPBOX_VIEW_LINK = import.meta.env.VITE_DROPBOX_VIEW_LINK || 'https://www.dropbox.com/scl/fo/w0znqg7kya8bbnbw4suym/AMTE39F_UIKjGHEvt5JeymE?dl=0'
 
 interface Message {
   id: string
@@ -301,10 +301,11 @@ const Chat = () => {
         <form onSubmit={sendMessage} className="chat-input-form">
           <div className="input-row">
             <a 
-              href={GOOGLE_DRIVE_LINK} 
+              href={DROPBOX_VIEW_LINK} 
               target="_blank" 
               rel="noopener noreferrer"
               className="photo-upload-button"
+              title="공연 사진 & 영상 보기"
             >
               📸
             </a>
