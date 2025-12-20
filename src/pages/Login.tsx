@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useData } from '../contexts/DataContext'
+import { doc, getDoc } from 'firebase/firestore'
+import { db } from '../config/firebase'
 import TicketTransition from '../components/TicketTransition'
 import ticketDemoImage from '../assets/배경/티켓데모.png'
 import './Login.css'
@@ -176,14 +178,38 @@ const Login = () => {
             // 티켓 애니메이션 숨기기
             setShowTicket(false)
             
-            // 닉네임이 이미 설정되어 있으면 바로 대시보드로, 없으면 프로필 설정 모달 표시
-            setTimeout(() => {
-              // user 상태가 업데이트되기를 기다리기 위해 약간의 딜레이
+            // Firestore에서 닉네임 확인 (첫 로그인 여부 판단)
+            setTimeout(async () => {
               const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
-              if (currentUser?.nickname) {
+              if (!currentUser) {
                 navigate('/dashboard')
-              } else {
-                setShowProfileModal(true)
+                return
+              }
+
+              // Firestore에서 닉네임 확인
+              try {
+                const userId = `${currentUser.name}_${currentUser.phone}`
+                const userProfileRef = doc(db, 'userProfiles', userId)
+                const userProfileSnap = await getDoc(userProfileRef)
+                
+                // Firestore에 닉네임이 있으면 바로 대시보드로
+                if (userProfileSnap.exists() && userProfileSnap.data().nickname) {
+                  // 로컬스토리지도 업데이트
+                  const updatedUser = { ...currentUser, nickname: userProfileSnap.data().nickname }
+                  localStorage.setItem('user', JSON.stringify(updatedUser))
+                  navigate('/dashboard')
+                } else {
+                  // Firestore에 닉네임이 없으면 첫 로그인으로 간주하고 프로필 설정 모달 표시
+                  setShowProfileModal(true)
+                }
+              } catch (error) {
+                // Firestore 연결 실패 시 로컬스토리지 확인
+                console.warn('Firestore 닉네임 확인 실패, 로컬스토리지 확인:', error)
+                if (currentUser?.nickname) {
+                  navigate('/dashboard')
+                } else {
+                  setShowProfileModal(true)
+                }
               }
             }, 200)
           }}
