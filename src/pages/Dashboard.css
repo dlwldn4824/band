@@ -261,7 +261,7 @@
   border-radius: 20px;
   transform: rotate(-10deg) scale(0.4);
   backdrop-filter: blur(5px);
-  background: transparent;
+  background: rgba(255, 255, 255, 0.9);
   z-index: 10;
 }
 
@@ -269,7 +269,7 @@
   font-family: 'DNFBitBitv2', sans-serif;
   font-weight: 900;
   letter-spacing: 0.08em;
-  font-size: 45px;
+  font-size: 50px;
   text-align: center;
   line-height: 1.4;
 }
