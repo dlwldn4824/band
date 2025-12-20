@@ -41,6 +41,7 @@ const Chat = () => {
   const [messages, setMessages] = useState<Message[]>([])
   const [inputMessage, setInputMessage] = useState('')
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([])
+  const [showOnlineList, setShowOnlineList] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const onlineUserRef = useRef<string | null>(null)
   const previousOnlineUserIdsRef = useRef<Set<string>>(new Set())
@@ -200,8 +201,22 @@ const Chat = () => {
   return (
     <div className="chat-page">
       <div className="chat-container">
-        <div className="online-status">
-          <span>온라인: {onlineUsers.length}명</span>
+        <div className="online-status" onClick={() => setShowOnlineList(!showOnlineList)}>
+          <span className="online-status-text">온라인: {onlineUsers.length}명</span>
+          <span className="online-status-arrow">{showOnlineList ? '▲' : '▼'}</span>
+          {showOnlineList && onlineUsers.length > 0 && (
+            <div className="online-users-dropdown">
+              <div className="online-users-header">온라인 사용자</div>
+              <div className="online-users-content">
+                {onlineUsers.map((onlineUser) => (
+                  <div key={onlineUser.id} className="online-user-item">
+                    <span className="online-user-dot">●</span>
+                    <span className="online-user-name">{onlineUser.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="messages-container">
