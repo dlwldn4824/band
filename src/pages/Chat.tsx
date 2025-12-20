@@ -43,9 +43,9 @@ const Chat = () => {
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([])
   const [showOnlineList, setShowOnlineList] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
   const onlineUserRef = useRef<string | null>(null)
   const previousOnlineUserIdsRef = useRef<Set<string>>(new Set())
-  const isInitialLoadRef = useRef<boolean>(true)
 
   useEffect(() => {
     if (!user) return
@@ -158,15 +158,28 @@ const Chat = () => {
     }
   }, [user])
 
+  // 사용자가 맨 아래 근처에 있는지 확인
+  const isNearBottom = (el: HTMLDivElement) => {
+    const threshold = 80 // px
+    return el.scrollHeight - el.scrollTop - el.clientHeight < threshold
+  }
+
+  // 초기 로드 시 맨 위로 스크롤
   useEffect(() => {
-    // 초기 로드가 아닐 때만 자동 스크롤
-    if (!isInitialLoadRef.current) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-    } else {
-      // 초기 로드 완료 후 플래그 해제
-      isInitialLoadRef.current = false
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior })
     }
-  }, [messages])
+  }, [])
+
+  // 새 메시지 도착 시: 사용자가 아래 근처일 때만 자동 스크롤
+  useEffect(() => {
+    const el = messagesContainerRef.current
+    if (!el) return
+
+    if (isNearBottom(el)) {
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
+    }
+  }, [messages.length])
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -225,7 +238,7 @@ const Chat = () => {
           )}
         </div>
 
-        <div className="messages-container">
+        <div className="messages-container" ref={messagesContainerRef}>
           {messages.length === 0 ? (
             <div className="empty-chat">
               <p>아직 메시지가 없습니다. 첫 메시지를 남겨보세요! 👋</p>
