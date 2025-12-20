@@ -155,6 +155,7 @@
 .message {
   display: flex;
   flex-direction: column;
+  width: fit-content;
   max-width: 70%;
   animation: slideIn 0.3s ease-out;
 }
@@ -194,12 +195,16 @@
 }
 
 .message-content {
-  padding: 0.5rem 0.875rem;
+  padding: 0.3rem 0.875rem;
   background: white;
   border-radius: 12px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   word-wrap: break-word;
   line-height: 1.4;
+  display: flex;
+  align-items: center;
+  width: fit-content;
+  min-width: fit-content;
 }
 
 .message-text {
