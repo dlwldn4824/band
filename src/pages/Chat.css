@@ -2,7 +2,8 @@
 .layout:has(.chat-page) .main {
   overflow: hidden;
   padding: 0;
-  height: 100vh;
+  height: calc(100vh - 120px);
+  min-height: 0;
 }
 
 .layout:has(.chat-page) .main .container {
@@ -13,7 +14,7 @@
 
 .chat-page {
   animation: fadeIn 0.5s ease-in;
-  height: 100dvh;
+  height: 100%;
   overflow: hidden;
   display: flex;
   flex-direction: column;
