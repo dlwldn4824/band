@@ -9,23 +9,29 @@ interface LayoutProps {
 const Layout = ({ children }: LayoutProps) => {
   const location = useLocation()
   const navigate = useNavigate()
-  const { isAuthenticated, logout } = useAuth()
+  const { isAuthenticated, logout, isAdmin } = useAuth()
 
   const isActive = (path: string) => {
     return location.pathname === path ? 'active' : ''
   }
 
-  const isChat = location.pathname.startsWith('/chat')
-  const isGuestbook = location.pathname.startsWith('/guestbook')
-  const isEvents = location.pathname.startsWith('/events')
+  const isChat = location.pathname.startsWith('/chat') || location.pathname.startsWith('/admin/chat')
+  const isGuestbook = location.pathname.startsWith('/guestbook') || location.pathname.startsWith('/admin/guestbook')
+  const isEvents = location.pathname.startsWith('/events') || location.pathname.startsWith('/admin/events')
 
   const handleLogout = () => {
     logout()
-    navigate('/login')
+    if (isAdmin) {
+      navigate('/admin/login')
+    } else {
+      navigate('/login')
+    }
   }
 
   const handleLogoClick = () => {
-    if (isAuthenticated) {
+    if (isAdmin) {
+      navigate('/admin/dashboard')
+    } else if (isAuthenticated) {
       navigate('/dashboard')
     } else {
       navigate('/login')
@@ -42,31 +48,66 @@ const Layout = ({ children }: LayoutProps) => {
             </button>
           </h1>
           <nav className="nav">
-            {isAuthenticated ? (
-              <Link to="/dashboard" className={`nav-link ${isActive('/dashboard')}`}>
-                내 정보
-              </Link>
+            {isAdmin ? (
+              <>
+                <Link to="/admin/dashboard" className={`nav-link ${isActive('/admin/dashboard')}`}>
+                  내 정보
+                </Link>
+                <Link to="/admin/performances" className={`nav-link ${isActive('/admin/performances')}`}>
+                  공연 정보
+                </Link>
+                <Link to="/admin/events" className={`nav-link ${isActive('/admin/events')}`}>
+                  이벤트
+                </Link>
+                <Link to="/admin/guestbook" className={`nav-link ${isActive('/admin/guestbook')}`}>
+                  방명록
+                </Link>
+                <Link to="/admin/chat" className={`nav-link ${isActive('/admin/chat')}`}>
+                  채팅
+                </Link>
+                <Link to="/manage" className={`nav-link ${isActive('/manage')}`}>
+                  관리
+                </Link>
+                <button onClick={handleLogout} className="nav-link logout-nav-button">
+                  로그아웃
+                </button>
+              </>
+            ) : isAuthenticated ? (
+              <>
+                <Link to="/dashboard" className={`nav-link ${isActive('/dashboard')}`}>
+                  내 정보
+                </Link>
+                <Link to="/performances" className={`nav-link ${isActive('/performances')}`}>
+                  공연 정보
+                </Link>
+                <Link to="/events" className={`nav-link ${isActive('/events')}`}>
+                  이벤트
+                </Link>
+                <Link to="/guestbook" className={`nav-link ${isActive('/guestbook')}`}>
+                  방명록
+                </Link>
+                <Link to="/chat" className={`nav-link ${isActive('/chat')}`}>
+                  채팅
+                </Link>
+                <button onClick={handleLogout} className="nav-link logout-nav-button">
+                  로그아웃
+                </button>
+              </>
             ) : (
-              <Link to="/login" className={`nav-link ${isActive('/login')}`}>
-                체크인
-              </Link>
-            )}
-            <Link to="/performances" className={`nav-link ${isActive('/performances')}`}>
-              공연 정보
-            </Link>
-            <Link to="/events" className={`nav-link ${isActive('/events')}`}>
-              이벤트
-            </Link>
-            <Link to="/guestbook" className={`nav-link ${isActive('/guestbook')}`}>
-              방명록
-            </Link>
-            <Link to="/chat" className={`nav-link ${isActive('/chat')}`}>
-              채팅
-            </Link>
-            {isAuthenticated && (
-              <button onClick={handleLogout} className="nav-link logout-nav-button">
-                로그아웃
-              </button>
+              <>
+                <Link to="/login" className={`nav-link ${isActive('/login')}`}>
+                  체크인
+                </Link>
+                <Link to="/performances" className={`nav-link ${isActive('/performances')}`}>
+                  공연 정보
+                </Link>
+                <Link to="/events" className={`nav-link ${isActive('/events')}`}>
+                  이벤트
+                </Link>
+                <Link to="/guestbook" className={`nav-link ${isActive('/guestbook')}`}>
+                  방명록
+                </Link>
+              </>
             )}
           </nav>
         </div>

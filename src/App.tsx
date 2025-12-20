@@ -56,6 +56,38 @@ function App() {
             }
           />
           <Route
+            path="/admin/performances"
+            element={
+              <Layout>
+                <Performances />
+              </Layout>
+            }
+          />
+          <Route
+            path="/admin/events"
+            element={
+              <Layout>
+                <Events />
+              </Layout>
+            }
+          />
+          <Route
+            path="/admin/chat"
+            element={
+              <Layout>
+                <Chat />
+              </Layout>
+            }
+          />
+          <Route
+            path="/admin/guestbook"
+            element={
+              <Layout>
+                <Guestbook />
+              </Layout>
+            }
+          />
+          <Route
             path="/performances"
             element={
               <Layout>

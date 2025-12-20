@@ -19,12 +19,17 @@ interface AuthContextType {
   setNickname: (nickname: string) => Promise<void>
   isAuthenticated: boolean
   refreshUserStatus: (guests: any[]) => void
+  isAdmin: boolean
+  setAdmin: (isAdmin: boolean, adminName?: string) => void
+  adminName: string | null
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
+  const [isAdmin, setIsAdmin] = useState<boolean>(false)
+  const [adminName, setAdminName] = useState<string | null>(null)
 
   useEffect(() => {
     const loadUser = async () => {
@@ -32,6 +37,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (savedUser) {
         const userData = JSON.parse(savedUser)
         setUser(userData)
+      
+      // 운영진 상태 로드
+      const savedAdmin = localStorage.getItem('isAdmin')
+      const savedAdminName = localStorage.getItem('adminName')
+      if (savedAdmin === 'true') {
+        setIsAdmin(true)
+        setAdminName(savedAdminName)
+      }
         
         // Firestore에서 nickname 로드 시도 (실패해도 로컬 데이터로 계속 진행)
         if (userData.phone) {
@@ -138,7 +151,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = () => {
     setUser(null)
+    setIsAdmin(false)
+    setAdminName(null)
     localStorage.removeItem('user')
+    localStorage.removeItem('isAdmin')
+    localStorage.removeItem('adminName')
+  }
+
+  const setAdmin = (admin: boolean, name?: string) => {
+    setIsAdmin(admin)
+    if (admin && name) {
+      setAdminName(name)
+      localStorage.setItem('isAdmin', 'true')
+      localStorage.setItem('adminName', name)
+    } else {
+      setAdminName(null)
+      localStorage.removeItem('isAdmin')
+      localStorage.removeItem('adminName')
+    }
   }
 
   const updateUser = (userData: User) => {
@@ -177,7 +207,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, updateUser, setNickname, isAuthenticated: !!user, refreshUserStatus }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      login, 
+      logout, 
+      updateUser, 
+      setNickname, 
+      isAuthenticated: !!user, 
+      refreshUserStatus,
+      isAdmin,
+      setAdmin,
+      adminName
+    }}>
       {children}
     </AuthContext.Provider>
   )

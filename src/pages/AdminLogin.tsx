@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useData } from '../contexts/DataContext'
+import { useAuth } from '../contexts/AuthContext'
 import './Login.css'
 
 const AdminLogin = () => {
@@ -8,6 +9,7 @@ const AdminLogin = () => {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const { performanceData } = useData()
+  const { setAdmin } = useAuth()
   const navigate = useNavigate()
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -62,7 +64,10 @@ const AdminLogin = () => {
       return
     }
 
-    // 운영진 로그인 성공 - Admin Dashboard로 이동
+    // 운영진 로그인 성공 - 운영진 상태 설정
+    setAdmin(true, normalizedName)
+    
+    // Admin Dashboard로 이동
     navigate('/admin/dashboard')
   }
 
