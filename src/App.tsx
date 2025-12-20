@@ -13,6 +13,7 @@ import Events from './pages/Events'
 import Chat from './pages/Chat'
 import Guestbook from './pages/Guestbook'
 import CheckIn from './pages/CheckIn'
+import TicketDemo from './pages/TicketDemo'
 
 function useAppHeight() {
   useEffect(() => {
@@ -36,6 +37,7 @@ function App() {
           <Route path="/staff/login" element={<AdminLogin />} />
           <Route path="/checkin" element={<CheckIn />} />
           <Route path="/manage" element={<Admin />} />
+          <Route path="/ticket-demo" element={<TicketDemo />} />
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route
             path="/dashboard"
