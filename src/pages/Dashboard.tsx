@@ -184,6 +184,14 @@ const Dashboard = () => {
                 alt="티켓" 
                 className="ticket-image"
               />
+              {checkInStatus === 'done' && user?.entryNumber && (
+                <div className="ticket-stamp">
+                  <div className="ticket-stamp-text">
+                    입장번호 {user.entryNumber}번<br />
+                    체크인 완료
+                  </div>
+                </div>
+              )}
             </div>
           </section>
         )}
