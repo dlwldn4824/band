@@ -62,8 +62,8 @@ const AdminLogin = () => {
       return
     }
 
-    // 운영진 로그인 성공 - Admin 페이지로 이동
-    navigate('/manage')
+    // 운영진 로그인 성공 - Admin Dashboard로 이동
+    navigate('/admin/dashboard')
   }
 
   return (

@@ -48,6 +48,14 @@ function App() {
             }
           />
           <Route
+            path="/admin/dashboard"
+            element={
+              <Layout>
+                <Dashboard />
+              </Layout>
+            }
+          />
+          <Route
             path="/performances"
             element={
               <Layout>
