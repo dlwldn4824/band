@@ -33,7 +33,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const userData = JSON.parse(savedUser)
         setUser(userData)
         
-        // Firestore에서 nickname 로드
+        // Firestore에서 nickname 로드 시도 (실패해도 로컬 데이터로 계속 진행)
         if (userData.phone) {
           try {
             const userId = `${userData.name}_${userData.phone}`
@@ -49,7 +49,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               }
             }
           } catch (error) {
-            console.error('닉네임 로드 오류:', error)
+            // Firestore 연결 실패해도 로컬 데이터로 계속 진행
+            console.warn('Firestore 닉네임 로드 실패 (로컬 데이터 사용):', error)
           }
         }
       }
@@ -150,6 +151,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       throw new Error('사용자 정보가 없습니다. 다시 로그인해주세요.')
     }
     
+    const trimmedNickname = nickname.trim()
+    const updatedUser = { ...user, nickname: trimmedNickname }
+    
+    // 로컬스토리지에 먼저 저장 (항상 성공)
+    setUser(updatedUser)
+    localStorage.setItem('user', JSON.stringify(updatedUser))
+    
+    // Firestore에 저장 시도 (실패해도 계속 진행)
     try {
       const userId = `${user.name}_${user.phone}`
       const userProfileRef = doc(db, 'userProfiles', userId)
@@ -157,20 +166,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await setDoc(userProfileRef, {
         name: user.name,
         phone: user.phone,
-        nickname: nickname.trim(),
+        nickname: trimmedNickname,
         updatedAt: new Date()
       }, { merge: true })
-      
-      const updatedUser = { ...user, nickname: nickname.trim() }
-      setUser(updatedUser)
-      localStorage.setItem('user', JSON.stringify(updatedUser))
     } catch (error: any) {
-      console.error('닉네임 저장 오류:', error)
-      // Firestore 권한 오류인 경우 더 명확한 메시지 제공
-      if (error?.code === 'permission-denied') {
-        throw new Error('닉네임 저장 권한이 없습니다. Firestore 보안 규칙을 확인해주세요.')
-      }
-      throw error
+      // Firestore 저장 실패해도 로컬스토리지는 이미 저장되었으므로 계속 진행
+      console.warn('Firestore 닉네임 저장 실패 (로컬스토리지에는 저장됨):', error)
+      // 서버 연결이 안 되어 있어도 로컬에서 작동하도록 에러를 던지지 않음
     }
   }
 
