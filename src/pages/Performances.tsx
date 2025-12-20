@@ -1,18 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useData, SetlistItem } from '../contexts/DataContext'
 import './Performances.css'
 
 const Performances = () => {
-  useEffect(() => {
-    // 마운트 시 스크롤 방지
-    document.body.style.overflow = 'hidden'
-    
-    // 언마운트 시 스크롤 복구
-    return () => {
-      document.body.style.overflow = 'auto'
-    }
-  }, [])
-
   const { performanceData } = useData()
   const [selectedSong, setSelectedSong] = useState<SetlistItem | null>(null)
 
@@ -56,35 +46,8 @@ const Performances = () => {
 
   return (
     <div className="performances-page">
-      
       <div className="performances-content">
-        {/* 배경 이미지의 칠판 위치에 정보 표시 */}
-        {selectedSong && (
-          <div className="chalkboard-overlay">
-            <div className="chalkboard-content">
-              <div className="chalkboard-song">
-                <span className="chalkboard-icon">🎤</span>
-                <span className="chalkboard-song-title">{selectedSong.songName}</span>
-              </div>
-              {selectedSong.artist && (
-                <div className="chalkboard-artist">{selectedSong.artist}</div>
-              )}
-              <div className="chalkboard-performers">
-                {Object.entries(getSessionInfo(selectedSong)).map(([session, members]) => {
-                  if (members.length === 0) return null
-                  return (
-                    <div key={session} className="chalkboard-session">
-                      <span className="session-label">{session}:</span>
-                      <span className="session-members">{members.join(', ')}</span>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* 그리드 형태의 곡 버튼들 */}
+        {/* 곡 버튼 그리드 */}
         <div className="setlist-grid-section">
           <div className="setlist-grid-header">전체 셋리스트</div>
           <div className="setlist-grid">
@@ -105,10 +68,58 @@ const Performances = () => {
             ))}
           </div>
         </div>
+
+        {/* 선택된 곡 정보 표시 */}
+        {selectedSong && (
+          <div className="song-detail-modal">
+            <div className="song-detail-content">
+              <button 
+                className="song-detail-close"
+                onClick={() => setSelectedSong(null)}
+              >
+                ×
+              </button>
+
+              {/* 곡소개 이미지 */}
+              {selectedSong.image && (
+                <div className="song-image-container">
+                  <img 
+                    src={selectedSong.image} 
+                    alt={`${selectedSong.songName} 이미지`}
+                    className="song-image"
+                  />
+                </div>
+              )}
+
+              {/* 곡 정보 */}
+              <div className="song-info">
+                <h2 className="song-title">{selectedSong.songName}</h2>
+                {selectedSong.artist && (
+                  <p className="song-artist">{selectedSong.artist}</p>
+                )}
+              </div>
+
+              {/* 세션 정보 */}
+              <div className="session-info">
+                <h3 className="session-title">세션 정보</h3>
+                <div className="session-list">
+                  {Object.entries(getSessionInfo(selectedSong)).map(([session, members]) => {
+                    if (members.length === 0) return null
+                    return (
+                      <div key={session} className="session-item">
+                        <span className="session-label">{session}</span>
+                        <span className="session-members">{members.join(', ')}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
 }
 
 export default Performances
-
