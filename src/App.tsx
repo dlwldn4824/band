@@ -5,6 +5,7 @@ import { DataProvider } from './contexts/DataContext'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
 import Login from './pages/Login'
+import AdminLogin from './pages/AdminLogin'
 import Admin from './pages/Admin'
 import Dashboard from './pages/Dashboard'
 import Performances from './pages/Performances'
@@ -31,6 +32,8 @@ function App() {
       <DataProvider>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/staff/login" element={<AdminLogin />} />
           <Route path="/checkin" element={<CheckIn />} />
           <Route path="/manage" element={<Admin />} />
           <Route path="/" element={<Navigate to="/login" replace />} />
