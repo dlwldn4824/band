@@ -40,6 +40,14 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    match /roulette/{document=**} {
+      allow read, write: if true;
+    }
+
+    match /entryDraw/{document=**} {
+      allow read, write: if true;
+    }
+
   }
 }
 

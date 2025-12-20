@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useData } from '../contexts/DataContext'
 import RockPaperScissorsTournament from '../components/games/RockPaperScissorsTournament'
-import Roulette from '../components/games/Roulette'
-import EntryNumberDraw from '../components/games/EntryNumberDraw'
+import RouletteMirror from '../components/games/RouletteMirror'
+import EntryNumberDrawMirror from '../components/games/EntryNumberDrawMirror'
 import './Events.css'
 
 type GameType = 'menu' | 'rps' | 'roulette' | 'draw'
@@ -46,8 +46,8 @@ const Events = () => {
         </div>
         <div className="events-content">
           {currentGame === 'rps' && <RockPaperScissorsTournament />}
-          {currentGame === 'roulette' && <Roulette />}
-          {currentGame === 'draw' && <EntryNumberDraw />}
+          {currentGame === 'roulette' && <RouletteMirror />}
+          {currentGame === 'draw' && <EntryNumberDrawMirror />}
         </div>
       </div>
     )
