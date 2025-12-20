@@ -4,7 +4,14 @@
   box-sizing: border-box;
 }
 
-html, body, #root {
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+#root {
   height: 100%;
   margin: 0;
 }
@@ -17,8 +24,8 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background-color: #f5f5f5;
   color: #333;
-  overflow: hidden;
-  overscroll-behavior: none;
+  position: fixed;
+  width: 100%;
 }
 
 a {
