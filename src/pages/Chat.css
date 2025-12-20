@@ -1,20 +1,26 @@
-/* Layout의 main 스크롤 방지 (채팅 페이지에서만) */
-.layout:has(.chat-page) .main {
+/* 채팅 페이지에서만 main 스크롤 방지 */
+.layout.layout--chat {
+  height: var(--app-height, 100dvh);
+}
+
+.layout.layout--chat .main {
+  height: 100%;
   overflow: hidden;
   padding: 0;
-  height: 100%;
   min-height: 0;
 }
 
-.layout:has(.chat-page) .main .container {
-  padding: 0;
+.layout.layout--chat .main .container {
   height: 100%;
-  max-width: 100%;
   width: 100%;
+  max-width: 100%;
+  padding: 0;
+  overflow: hidden;
+  min-height: 0;
 }
 
 /* 채팅 페이지에서 푸터 숨기기 */
-.layout:has(.chat-page) .footer {
+.layout.layout--chat .footer {
   display: none;
 }
 
@@ -29,18 +35,17 @@
 }
 
 .chat-container {
-  max-width: 800px;
   width: 100%;
+  max-width: 800px;
   margin: 0 auto;
   background: white;
   border-radius: 16px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
-  height: 100%;
-  overflow: hidden;
   flex: 1;
   min-height: 0;
+  overflow: hidden;
   box-sizing: border-box;
 }
 
@@ -384,7 +389,8 @@
 @media (max-width: 768px) {
   .chat-container {
     border-radius: 0;
-    height: 100vh;
+    max-width: 100%;
+    margin: 0;
   }
 
   .message {

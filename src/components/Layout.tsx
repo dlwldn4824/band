@@ -15,6 +15,8 @@ const Layout = ({ children }: LayoutProps) => {
     return location.pathname === path ? 'active' : ''
   }
 
+  const isChat = location.pathname.startsWith('/chat')
+
   const handleLogout = () => {
     logout()
     navigate('/login')
@@ -29,7 +31,7 @@ const Layout = ({ children }: LayoutProps) => {
   }
 
   return (
-    <div className="layout">
+    <div className={`layout ${isChat ? 'layout--chat' : ''}`}>
       <header className="header">
         <div className="container">
           <h1 className="logo">
