@@ -412,6 +412,12 @@
   align-items: stretch;
 }
 
+.walk-in-buttons .login-button {
+  flex: 1;
+  margin-top: 0;
+  height: 100%;
+}
+
 .back-button {
   flex: 1;
   background: #f5f5f5;

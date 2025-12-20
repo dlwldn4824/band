@@ -300,7 +300,7 @@ const Login = () => {
                         )}
                       </span>
                     </div>
-                    <p className="copy-hint">💡 계좌번호를 클릭하면 복사됩니다</p>
+                    <p className="copy-hint">계좌번호를 클릭하면 복사됩니다</p>
                     <div className="payment-item">
                       <span className="payment-label">현장 예매 가격:</span>
                       <span className="payment-value">{bookingInfo?.walkInPrice || '(미설정)'}</span>
