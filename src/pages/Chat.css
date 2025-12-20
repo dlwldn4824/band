@@ -158,6 +158,7 @@
   width: fit-content;
   max-width: 70%;
   animation: slideIn 0.3s ease-out;
+  align-self: flex-start;
 }
 
 .message.own-message {
