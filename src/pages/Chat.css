@@ -176,6 +176,11 @@
 .message.own-message .message-content {
   background: #D88676;
   color: white;
+  border-radius: 18px 18px 4px 18px;
+}
+
+.message:not(.own-message) .message-content {
+  border-radius: 18px 18px 18px 4px;
 }
 
 .message-header {
