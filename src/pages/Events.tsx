@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useData } from '../contexts/DataContext'
-import RockPaperScissors from '../components/games/RockPaperScissors'
+import RockPaperScissorsTournament from '../components/games/RockPaperScissorsTournament'
 import Roulette from '../components/games/Roulette'
 import EntryNumberDraw from '../components/games/EntryNumberDraw'
 import './Events.css'
@@ -31,7 +31,7 @@ const Events = () => {
   }
 
   const games = [
-    { id: 'rps', name: '가위바위보', icon: '✂️', description: '컴퓨터와 가위바위보 대결!' },
+    { id: 'rps', name: '가위바위보', icon: '✂️', description: isAdmin ? '관객들과 토너먼트!' : '관객들과 가위바위보 대결!' },
     { id: 'roulette', name: '룰렛', icon: '🎰', description: '룰렛을 돌려서 상품을 받아보세요!' },
     { id: 'draw', name: '입장 번호 추첨', icon: '🎲', description: '체크인 완료된 관객 중 1명 추첨!' },
   ]
@@ -45,7 +45,7 @@ const Events = () => {
           </button>
         </div>
         <div className="events-content">
-          {currentGame === 'rps' && <RockPaperScissors />}
+          {currentGame === 'rps' && <RockPaperScissorsTournament />}
           {currentGame === 'roulette' && <Roulette />}
           {currentGame === 'draw' && <EntryNumberDraw />}
         </div>
