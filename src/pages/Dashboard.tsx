@@ -207,9 +207,8 @@ const Dashboard = () => {
         {checkInStatus === 'done' && !isAdmin && (
           <section className="dashboard-section">
             <div className="checkin-card">
-              <h3>✅ 체크인 완료</h3>
+              <h3>체크인 완료</h3>
               <p>입장 번호: {user?.entryNumber}번</p>
-              <p>이미 체크인이 완료되었습니다.</p>
             </div>
           </section>
         )}
