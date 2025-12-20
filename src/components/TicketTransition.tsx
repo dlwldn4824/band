@@ -85,9 +85,7 @@ const css = `
   display:flex;
   align-items:center;
   justify-content:center;
-  background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.06), transparent 40%),
-              radial-gradient(circle at 70% 80%, rgba(255,255,255,0.05), transparent 45%),
-              #0b0d12;
+  background: #ffffff;
   padding: 24px;
   overflow:hidden;
 }
@@ -135,7 +133,7 @@ const css = `
   left: 8%;
   width: 84%;
   height: 0;
-  border-top: 2px dashed rgba(255,255,255,0.55);
+  border-top: 2px dashed rgba(0,0,0,0.3);
   transform: translateY(-1px);
   pointer-events:none;
 }
@@ -205,7 +203,7 @@ const css = `
 .tt_hint{
   position: absolute;
   bottom: 28px;
-  color: rgba(255,255,255,0.75);
+  color: rgba(0,0,0,0.6);
   font-size: 13px;
   letter-spacing: 0.02em;
   transition: opacity 240ms ease;

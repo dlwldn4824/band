@@ -244,7 +244,7 @@ const Login = () => {
     <div className="login-page">
       {showTicket ? (
         <TicketTransition
-          ticketImageUrl="/assets/배경/입장전티켓.png"
+          ticketImageUrl="../assets/배경/입장전티켓.png"
           info={{
             name: name,
             date: new Date().toLocaleDateString(),
