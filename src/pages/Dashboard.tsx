@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useData } from '../contexts/DataContext'
-import Ticket from '../components/Ticket'
 import Events from '../components/Events'
 import QRScanner from '../components/QRScanner'
+import ticketImage from '../assets/배경/티켓_최종.png'
 import './Dashboard.css'
 
 const Dashboard = () => {
@@ -176,9 +176,15 @@ const Dashboard = () => {
       </div>
 
       <div className="dashboard-content">
-        {performanceData?.ticket && !isAdmin && (
+        {!isAdmin && (
           <section className="dashboard-section">
-            <Ticket ticket={performanceData.ticket} />
+            <div className="ticket-image-section">
+              <img 
+                src={ticketImage} 
+                alt="티켓" 
+                className="ticket-image"
+              />
+            </div>
           </section>
         )}
 

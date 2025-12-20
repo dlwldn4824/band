@@ -226,6 +226,26 @@
   transform: translateY(0);
 }
 
+.ticket-image-section {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+}
+
+.ticket-image {
+  width: 100%;
+  max-width: 600px;
+  height: auto;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
 .poster-section {
   width: 100%;
   display: flex;
