@@ -123,7 +123,7 @@ const Layout = ({ children }: LayoutProps) => {
       </main>
       <footer className="footer">
         <div className="container">
-          <p>&copy; 2025 밴드 공연 관리 시스템</p>
+          <p>&copy; 밴드 공연 관리 시스템</p>
         </div>
       </footer>
     </div>

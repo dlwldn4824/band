@@ -92,9 +92,12 @@ const Performances = () => {
                   <div className="song-button-number">{globalIndex + 1}</div>
                   <div className="song-button-info">
                     <div className="song-button-title">{item.songName}</div>
-                    {item.artist && (
-                      <div className="song-button-artist">{item.artist}</div>
-                    )}
+                    {(() => {
+                      const artist = (item.artist ?? '').trim()
+                      return artist && artist !== '-' && (
+                        <div className="song-button-artist">{artist}</div>
+                      )
+                    })()}
                   </div>
                 </button>
               )
@@ -121,9 +124,12 @@ const Performances = () => {
                     <div className="song-button-number">{globalIndex + 1}</div>
                     <div className="song-button-info">
                       <div className="song-button-title">{item.songName}</div>
-                      {item.artist && (
-                        <div className="song-button-artist">{item.artist}</div>
-                      )}
+                      {(() => {
+                        const artist = (item.artist ?? '').trim()
+                        return artist && artist !== '-' && (
+                          <div className="song-button-artist">{artist}</div>
+                        )
+                      })()}
                     </div>
                   </button>
                 )

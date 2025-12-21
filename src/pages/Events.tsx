@@ -12,7 +12,7 @@ type GameType = 'menu' | 'rps' | 'roulette' | 'draw' | 'ledboard'
 
 const Events = () => {
   const [currentGame, setCurrentGame] = useState<GameType>('menu')
-  const { isAdmin } = useAuth()
+  const { isAdmin, user } = useAuth()
   const { eventsEnabled, setEventsEnabled } = useData()
   const navigate = useNavigate()
 
@@ -31,12 +31,23 @@ const Events = () => {
     setCurrentGame(gameId)
   }
 
-  const games = [
+  // 예약한 사람인지 확인 (entryNumber가 있거나 checkedIn이 true)
+  const isBookedUser = user && (user.entryNumber !== undefined || user.checkedIn === true)
+
+  // 운영진은 모든 게임 보임, 예약한 사람은 LED Board만 보임
+  const allGames = [
     { id: 'rps', name: '가위바위보', icon: '✂️', description: isAdmin ? '관객들과 토너먼트!' : '관객들과 가위바위보 대결!' },
     { id: 'roulette', name: '룰렛', icon: '🎰', description: '룰렛을 돌려서 상품을 받아보세요!' },
     { id: 'draw', name: '입장 번호 추첨', icon: '🎲', description: '체크인 완료된 관객 중 1명 추첨!' },
     { id: 'ledboard', name: '전광판 만들기', icon: '📺', description: '나만의 전광판을 만들어 응원하세요!' },
   ]
+
+  // 예약한 사람은 LED Board만 보이도록 필터링
+  const games = isAdmin 
+    ? allGames 
+    : isBookedUser 
+      ? allGames.filter(game => game.id === 'ledboard')
+      : allGames
 
   if (currentGame !== 'menu') {
     return (

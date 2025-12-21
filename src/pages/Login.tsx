@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useData } from '../contexts/DataContext'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
@@ -336,6 +336,12 @@ const Login = () => {
               >
                 현장 구매
               </button>
+            </div>
+
+            <div className="admin-login-link">
+              <Link to="/admin/login" className="admin-login-text">
+                운영진 로그인 가기
+              </Link>
             </div>
           </form>
         </div>

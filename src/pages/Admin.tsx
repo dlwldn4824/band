@@ -24,7 +24,7 @@ const Admin = () => {
   const [file, setFile] = useState<File | null>(null)
   const [setlistFile, setSetlistFile] = useState<File | null>(null)
   const [uploadStatus, setUploadStatus] = useState('')
-  const { uploadGuests, setPerformanceData, guests, performanceData, checkInCode, generateCheckInCode, setCheckInCode, clearGuests, clearSetlist, bookingInfo, setBookingInfo } = useData()
+  const { uploadGuests, setPerformanceData, guests, performanceData, checkInCode, generateCheckInCode, setCheckInCode, clearGuests, clearSetlist, bookingInfo, setBookingInfo, clearGuestbookMessages } = useData()
   
   // 예매 정보 폼 상태
   const [bookingForm, setBookingForm] = useState<BookingInfo>({
@@ -163,9 +163,17 @@ const Admin = () => {
 
       // 엑셀 데이터에서 곡명, 아티스트명, 공연진 정보, 이미지 추출
       const setlist: SetlistItem[] = jsonData
-        .map((row: any) => {
+        .map((row: any, index: number) => {
           const songName = row['곡명'] || ''
-          const artist = row['아티스트명'] || ''
+          // 여러 가능한 헤더명 체크 (아티스트를 우선으로)
+          const artist = 
+            row['아티스트'] || 
+            row['아티스트명'] || 
+            row['Artist'] || 
+            row['artist'] || 
+            row['ARTIST'] ||
+            row['아티스트 '] || // 공백 붙은 경우
+            ''
           const image = row['이미지'] || row['image'] || row['Image'] || row['이미지URL'] || row['imageUrl'] || row['img'] || ''
           const vocal = row['보컬'] || ''
           const guitar = row['기타'] || ''
@@ -175,6 +183,12 @@ const Admin = () => {
           
           if (!songName.trim()) {
             return null
+          }
+          
+          // 디버깅: 첫 3개 행의 아티스트 정보 출력
+          if (index < 3) {
+            console.log(`[${index + 1}번째 행] 곡명: "${songName}", 아티스트 원본값: "${row['아티스트']}", 최종 artist: "${artist}"`)
+            console.log(`[${index + 1}번째 행] 전체 키:`, Object.keys(row))
           }
           
           const item: SetlistItem = {
@@ -241,6 +255,10 @@ const Admin = () => {
 
       console.log('추출된 공연진:', uniquePerformers)
       console.log('셋리스트 데이터:', setlist)
+      console.log('각 곡의 아티스트 정보:', setlist.map(item => ({
+        song: item.songName,
+        artist: item.artist || '(없음)'
+      })))
       console.log('각 곡의 공연진 정보:', setlist.map(item => ({
         song: item.songName,
         vocal: item.vocal,
@@ -301,7 +319,7 @@ const Admin = () => {
   const handleGenerateSetlistExcel = () => {
     // 빈 템플릿 엑셀 파일 생성
     const templateData = [
-      { 곡명: '', 아티스트명: '', 보컬: '', 기타: '', 베이스: '', 키보드: '', 드럼: '' }
+      { 곡명: '', 아티스트: '', 보컬: '', 기타: '', 베이스: '', 키보드: '', 드럼: '' }
     ]
 
     const worksheet = XLSX.utils.json_to_sheet(templateData)
@@ -533,6 +551,25 @@ const Admin = () => {
       </div>
 
       <div className="admin-section">
+        <h2>방명록 관리</h2>
+        <p className="section-description">
+          저장된 모든 방명록 메시지를 삭제할 수 있습니다.
+        </p>
+        <button 
+          onClick={async () => {
+            if (window.confirm('정말로 모든 방명록 메시지를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+              await clearGuestbookMessages()
+              setUploadStatus('✅ 모든 방명록 메시지가 삭제되었습니다.')
+            }
+          }}
+          className="reset-button"
+          style={{ background: '#ff4444', color: 'white' }}
+        >
+          🗑️ 방명록 메시지 전체 삭제
+        </button>
+      </div>
+
+      <div className="admin-section">
         <h2>예매 정보 관리</h2>
         <p className="section-description">
           입금 계좌, 현장 예매 가격, 환불 정책, 안내 전화번호 등 예매 관련 정보를 관리하세요.
@@ -627,6 +664,7 @@ const Admin = () => {
             💾 예매 정보 저장
           </button>
         </div>
+
       </div>
     </div>
   )

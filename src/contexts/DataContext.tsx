@@ -3,6 +3,8 @@ import {
   getFirestoreData, 
   setFirestoreData
 } from '../services/firestoreService'
+import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore'
+import { db } from '../config/firebase'
 
 export interface Guest {
   name: string
@@ -58,6 +60,7 @@ export interface BookingInfo {
   contactPhone: string // 안내 전화번호
 }
 
+
 interface DataContextType {
   guests: Guest[]
   performanceData: PerformanceData | null
@@ -77,6 +80,7 @@ interface DataContextType {
   clearGuests: () => void
   clearSetlist: () => void
   setEventsEnabled: (enabled: boolean) => void
+  clearGuestbookMessages: () => void
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined)
@@ -172,12 +176,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           const savedEventsEnabled = localStorage.getItem('eventsEnabled')
           if (savedEventsEnabled !== null) {
             setEventsEnabledState(savedEventsEnabled === 'true')
-          } else {
-            setEventsEnabledState(false)
-            localStorage.setItem('eventsEnabled', 'false')
-            await setFirestoreData('current' as any, { enabled: false }, 'events')
           }
         }
+
 
         // 예매 정보 로드
         const firestoreBookingInfo = await getFirestoreData('bookingInfo' as any, 'main')
@@ -529,6 +530,26 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     })
   }
 
+  const clearGuestbookMessages = async () => {
+    setGuestbookMessages([])
+    localStorage.removeItem('guestbookMessages')
+    
+    // Firestore에서 모든 메시지 삭제
+    try {
+      const messagesRef = collection(db, 'messages')
+      const querySnapshot = await getDocs(messagesRef)
+      
+      const deletePromises = querySnapshot.docs.map((docSnapshot) => 
+        deleteDoc(doc(db, 'messages', docSnapshot.id))
+      )
+      
+      await Promise.all(deletePromises)
+      console.log('모든 방명록 메시지가 삭제되었습니다.')
+    } catch (error) {
+      console.error('Firestore 방명록 메시지 삭제 오류:', error)
+    }
+  }
+
   return (
     <DataContext.Provider value={{ 
       guests, 
@@ -548,7 +569,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       verifyCheckInCode,
       clearGuests,
       clearSetlist,
-      setEventsEnabled
+      setEventsEnabled,
+      clearGuestbookMessages
     }}>
       {children}
     </DataContext.Provider>

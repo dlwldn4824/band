@@ -273,6 +273,25 @@
   transform: translateY(0);
 }
 
+.admin-login-link {
+  margin-top: 1rem;
+  text-align: center;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.admin-login-text {
+  color: #999;
+  font-size: 0.75rem;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.admin-login-text:hover {
+  color: #666;
+  text-decoration: underline;
+}
+
 .modal-overlay {
   position: fixed;
   top: 0;
