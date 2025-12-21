@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useData, GuestbookMessage } from '../contexts/DataContext'
 import './Guestbook.css'
 
@@ -67,13 +67,18 @@ const Guestbook = () => {
     })
   }
 
-  // 메모지로 변환 (기존 메시지도 메모지 형식으로)
+  // 메모지로 변환 (현재 페이지만 처리)
   const memoNotes: MemoNote[] = useMemo(() => {
     const processedMemos: MemoNote[] = []
     
-    return guestbookMessages.map((msg, index) => {
+    // 현재 페이지의 메모지만 처리
+    const startIndex = (currentPage - 1) * MEMOS_PER_PAGE
+    const endIndex = currentPage * MEMOS_PER_PAGE
+    const memosForCurrentPage = guestbookMessages.slice(startIndex, endIndex)
+    
+    return memosForCurrentPage.map((msg, localIndex) => {
       // 기존 메시지에 design이 없으면 랜덤으로 할당
-      const design = (msg as any).design || MEMO_DESIGNS[index % MEMO_DESIGNS.length].id
+      const design = (msg as any).design || MEMO_DESIGNS[localIndex % MEMO_DESIGNS.length].id
       // 기존 메시지에 rotation이 없으면 랜덤으로 생성
       const rotation = (msg as any).rotation || (Math.random() * 30 - 15) // -15 ~ 15도
       
@@ -82,21 +87,14 @@ const Guestbook = () => {
       if ((msg as any).position) {
         position = (msg as any).position
       } else {
-        // 페이지네이션을 고려: 각 페이지 내에서의 상대적 인덱스 계산
-        const pageIndex = index % MEMOS_PER_PAGE
-        const currentPage = Math.floor(index / MEMOS_PER_PAGE)
-        
-        // 같은 페이지 내의 메모지들만 충돌 감지에 사용
-        const pageStartIndex = currentPage * MEMOS_PER_PAGE
-        const pageMemos = processedMemos.slice(pageStartIndex)
-        
-        const existingMemos = pageMemos.map(memo => ({
+        // 현재 페이지 내에서의 상대적 인덱스로 위치 계산
+        const existingMemos = processedMemos.map(memo => ({
           position: memo.position,
           rotation: memo.rotation
         }))
         
         // 페이지 내 상대적 인덱스로 위치 계산
-        position = calculateMemoPosition(pageIndex, existingMemos)
+        position = calculateMemoPosition(localIndex, existingMemos)
       }
       
       const memoNote: MemoNote = {
@@ -109,7 +107,7 @@ const Guestbook = () => {
       processedMemos.push(memoNote)
       return memoNote
     })
-  }, [guestbookMessages])
+  }, [guestbookMessages, currentPage])
 
   // 메모지 실제 크기 계산 함수
   function getMemoDimensions() {
@@ -298,11 +296,15 @@ const Guestbook = () => {
   }
 
   // 페이지네이션
-  const totalPages = Math.ceil(memoNotes.length / MEMOS_PER_PAGE)
-  const currentMemos = memoNotes.slice(
-    (currentPage - 1) * MEMOS_PER_PAGE,
-    currentPage * MEMOS_PER_PAGE
-  )
+  const totalPages = Math.max(1, Math.ceil(guestbookMessages.length / MEMOS_PER_PAGE))
+  const currentMemos = memoNotes // memoNotes 자체가 현재 페이지의 메모를 담고 있음
+
+  // 현재 페이지가 유효한 범위를 벗어나면 마지막 페이지로 이동
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages)
+    }
+  }, [currentPage, totalPages])
 
   const handleSubmit = () => {
     if (!name.trim() || !message.trim()) {
@@ -310,15 +312,25 @@ const Guestbook = () => {
       return
     }
 
-    const newIndex = guestbookMessages.length
-    // 기존 메모지들의 위치와 회전 정보 추출
-    const existingMemos = memoNotes.map(memo => ({
+    // 현재 페이지의 메모지 개수 확인
+    const currentPageStartIndex = (currentPage - 1) * MEMOS_PER_PAGE
+    const currentPageMemos = guestbookMessages.slice(currentPageStartIndex, currentPageStartIndex + MEMOS_PER_PAGE)
+    
+    // 현재 페이지가 가득 찼으면 다음 페이지로 이동
+    let targetPage = currentPage
+    if (currentPageMemos.length >= MEMOS_PER_PAGE) {
+      targetPage = currentPage + 1
+    }
+
+    // 현재 페이지 내에서의 인덱스 계산
+    const localIndex = currentPageMemos.length
+    const existingMemos = currentMemos.map(memo => ({
       position: memo.position,
       rotation: memo.rotation
     }))
     
     const rotation = Math.random() * 30 - 15 // -15 ~ 15도
-    const position = calculateMemoPosition(newIndex, existingMemos)
+    const position = calculateMemoPosition(localIndex, existingMemos)
 
     addGuestbookMessage({
       id: Date.now().toString(),
@@ -329,6 +341,11 @@ const Guestbook = () => {
       rotation,
       position,
     } as any)
+
+    // 페이지가 가득 찼으면 다음 페이지로 이동
+    if (targetPage > currentPage) {
+      setCurrentPage(targetPage)
+    }
 
     setName('')
     setMessage('')
@@ -355,21 +372,10 @@ const Guestbook = () => {
           </button>
           {/* 테스트용 더미 메모지 생성 버튼 */}
           <button
+            className="dummy-button"
             onClick={generateDummyMemos}
-            style={{
-              padding: '0.6rem 1rem',
-              background: '#28a745',
-              color: 'white',
-              border: 'none',
-              borderRadius: '12px',
-              fontSize: '0.9rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
-            }}
           >
-            테스트 메모지 생성
+            데모 메모지 생성
           </button>
         </div>
       </div>
@@ -425,7 +431,7 @@ const Guestbook = () => {
             이전
           </button>
           <span className="page-info">
-            {currentPage} / {totalPages}
+            {currentPage} / {Math.max(1, Math.ceil(guestbookMessages.length / MEMOS_PER_PAGE))}
           </span>
           <button
             className="page-button"

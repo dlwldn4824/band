@@ -518,7 +518,6 @@
 }
 
 .chat-input {
-  width: 100%;
   min-width: 0;
   height: 48px;
   padding: 0 14px;
@@ -541,10 +540,11 @@
 
 .send-button {
   height: 48px;
-  padding: 0 16px;
+  padding: 0 12px;
   border: none;
   border-radius: 14px;
   background: #D88676;
+  font-size: 16px;
   color: white;
   font-weight: 700;
   display: inline-flex;
@@ -553,7 +553,7 @@
   cursor: pointer;
   flex-shrink: 0;
   white-space: nowrap;
-  min-width: 88px;
+  min-width: 70px;
   transition: transform 0.2s, box-shadow 0.2s;
 }
 

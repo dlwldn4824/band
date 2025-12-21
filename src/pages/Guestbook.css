@@ -33,18 +33,33 @@
   flex-shrink: 0;
 }
 
+.header-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
 .add-message-button,
-.view-all-button {
-  padding: 0.6rem 1rem;
+.view-all-button,
+.dummy-button {
+  height: 44px;
+  padding: 0 14px;
   border: none;
-  border-radius: 12px;
-  font-size: 0.9rem;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 44px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
-  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   box-sizing: border-box;
+  flex-shrink: 0;
 }
 
 .add-message-button {
@@ -63,6 +78,15 @@
 
 .view-all-button:hover {
   background: #5a6268;
+}
+
+.dummy-button {
+  background: #28a745;
+  color: white;
+}
+
+.dummy-button:hover {
+  background: #218838;
 }
 
 /* =====================
@@ -554,13 +578,19 @@
   }
 
   .header-buttons {
-    gap: 0.5rem;
+    gap: 12px;
+    flex-wrap: wrap;
+    display: flex;
+    align-items: center;
   }
 
   .view-all-button,
-  .add-message-button {
-    font-size: 0.85rem;
-    padding: 0.5rem 0.75rem;
+  .add-message-button,
+  .dummy-button {
+    height: 40px;
+    padding: 0 12px;
+    font-size: 13px;
+    line-height: 40px;
   }
 
   .modal-view-all {
@@ -592,14 +622,19 @@
   }
 
   .header-buttons {
-    gap: 0.4rem;
-    flex-shrink: 1;
-    min-width: 0;
+    gap: 8px;
+    flex-wrap: wrap;
   }
 
   .view-all-button,
-  .add-message-button {
-    font-size: 0.75rem;
+  .add-message-button,
+  .dummy-button {
+    height: 38px;
+    padding: 0 10px;
+    font-size: 12px;
+    line-height: 38px;
+    flex: 1 1 0;
+    min-width: 0;
     padding: 0.5rem 0.6rem;
   }
 
