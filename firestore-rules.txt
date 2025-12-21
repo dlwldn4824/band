@@ -3,6 +3,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // 공개 데이터 - 누구나 읽기 가능
     match /current/{document=**} {
       allow read, write: if true;
     }
@@ -19,7 +20,6 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
-    // 추가된 경로들
     match /guests/{document=**} {
       allow read, write: if true;
     }
@@ -45,6 +45,11 @@ service cloud.firestore {
     }
 
     match /entryDraw/{document=**} {
+      allow read, write: if true;
+    }
+
+    // 예약 정보 컬렉션 추가
+    match /bookingInfo/{document=**} {
       allow read, write: if true;
     }
 
