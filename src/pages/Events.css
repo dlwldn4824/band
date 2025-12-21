@@ -6,6 +6,7 @@
   flex-direction: column;
   overflow: hidden;
   padding-bottom: env(safe-area-inset-bottom);
+  position: relative;
 }
 
 .events-page h1 {
@@ -35,19 +36,24 @@
 }
 
 .back-button {
-  padding: 0.75rem 1.5rem;
-  background-color: #f5f5f5;
+  position: absolute;
+  top: 0rem;
+  left: 1rem;
+  padding: 0.5rem 0.75rem;
+  background-color: transparent;
   color: #333;
-  border-radius: 8px;
-  font-weight: 600;
-  margin-bottom: 1rem;
-  transition: background-color 0.3s;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 0.75rem;
+  transition: all 0.3s;
   border: none;
   cursor: pointer;
+  z-index: 100;
 }
 
 .back-button:hover {
-  background-color: #e0e0e0;
+  background-color: rgba(0, 0, 0, 0.05);
+  color: #D88676;
 }
 
 .games-grid {

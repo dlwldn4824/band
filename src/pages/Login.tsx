@@ -495,7 +495,7 @@ const Login = () => {
                       setWalkInStep('payment')
                       setWalkInError('')
                     }}
-                    className="back-button"
+                    className="login-button"
                   >
                     이전
                   </button>

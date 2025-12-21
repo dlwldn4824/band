@@ -216,14 +216,15 @@ const Dashboard = () => {
         {checkInStatus === 'notYet' && user && !isAdmin && (
           <section className="dashboard-section">
             <div className="checkin-card">
-              <h3>📷 현장 체크인</h3>
-              <p>현장에 붙여놓은 QR 코드를 스캔하여 체크인하세요</p>
+              <h3>햔장 체크인</h3>
+              <p>공연장 도착 후 반드시 QR 코드 또는 현장 코드를 통해 체크인해 주세요.
+              체크인 완료 시에만 입장 팔찌 수령 및 이벤트 참여가 가능합니다.</p>
               <div className="checkin-buttons">
                 <button onClick={() => setShowScanner(true)} className="camera-button">
-                  📷 카메라 켜기
+                  QR 촬영하기
                 </button>
                 <button onClick={() => navigate('/checkin')} className="code-entry-button">
-                  🔢 현장 코드로 입장하기
+                  현장 코드로 입장하기
                 </button>
               </div>
             </div>

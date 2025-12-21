@@ -64,7 +64,7 @@
 
 .edit-nickname-button {
   padding: 0.375rem 0.75rem;
-  background: #D88676;
+  background: rgb(255, 76, 76);
   color: white;
   border: none;
   border-radius: 6px;
@@ -75,7 +75,7 @@
 }
 
 .edit-nickname-button:hover {
-  background: #C57464;
+  background: rgb(220, 50, 50);
 }
 
 .logout-button {
@@ -193,13 +193,13 @@
 
 .checkin-buttons {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 0.75rem;
 }
 
 .camera-button,
 .code-entry-button {
-  width: 100%;
+  flex: 1;
   padding: 1rem;
   color: white;
   border: none;
@@ -213,17 +213,17 @@
 }
 
 .camera-button {
-  background: #D88676;
+  background: rgb(255, 76, 76);
 }
 
 .code-entry-button {
-  background: #FF5C3D;
+  background: rgb(255, 76, 76);
 }
 
 .camera-button:hover,
 .code-entry-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(216, 134, 118, 0.4);
+  box-shadow: 0 4px 12px rgba(255, 76, 76, 0.4);
 }
 
 .camera-button:active,
@@ -246,6 +246,7 @@
 
 .ticket-image {
   width: 100%;
+  border-radius: 12px;
   height: auto;
   display: block;
   object-fit: contain;
@@ -449,7 +450,7 @@
 
 .form-group input:focus {
   outline: none;
-  border-color: #D88676;
+  border-color: rgb(255, 76, 76);
   background: #fff;
 }
 
@@ -463,7 +464,7 @@
 .login-button {
   width: 100%;
   padding: 0.875rem;
-  background: #D88676;
+  background: rgb(255, 76, 76);
   color: white;
   border: none;
   border-radius: 12px;
@@ -476,7 +477,7 @@
 
 .login-button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(216, 134, 118, 0.4);
+  box-shadow: 0 4px 12px rgba(255, 76, 76, 0.4);
 }
 
 .login-button:disabled {

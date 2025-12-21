@@ -43,24 +43,40 @@
    ===================== */
 .ornament {
   position: absolute;
-  width: 36px;
-  height: 36px;
+  width: 48px;
+  height: 48px;
   background-size: contain;
   background-repeat: no-repeat;
   cursor: pointer;
-  z-index: 10;
   transition: transform 0.2s ease;
+  transform-origin: center center;
+}
+
+/* 뒤 레이어 (트리 뒤에) */
+.ornament-back {
+  z-index: 5;
+  opacity: 0.75;
+  filter: blur(0.5px);
+}
+
+/* 앞 레이어 (트리 위에) */
+.ornament-front {
+  z-index: 15;
+  opacity: 1;
+  filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.3));
 }
 
 .ornament:hover {
-  transform: scale(1.2);
-  z-index: 20;
+  transform: scale(1.2) !important;
+  z-index: 25;
+  opacity: 1 !important;
+  filter: drop-shadow(3px 3px 6px rgba(0, 0, 0, 0.4)) !important;
 }
 
 @media (min-width: 768px) {
   .ornament {
-    width: 44px;
-    height: 44px;
+    width: 56px;
+    height: 56px;
   }
 }
 

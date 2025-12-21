@@ -377,13 +377,120 @@
   cursor: pointer;
   box-shadow: 0 6px 14px rgba(216, 134, 118, 0.25);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
-  font-size: 20px;
-  line-height: 1;
+  padding: 0;
+  overflow: hidden;
+}
+
+.photo-upload-icon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
 }
 
 .photo-upload-button:active {
   transform: scale(0.96);
   box-shadow: 0 4px 10px rgba(216, 134, 118, 0.2);
+}
+
+/* 사진 공유 안내 모달 */
+.photo-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 1rem;
+  animation: fadeIn 0.3s ease;
+}
+
+.photo-modal {
+  background: white;
+  border-radius: 16px;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.3s ease;
+  overflow: hidden;
+}
+
+.photo-modal-content {
+  padding: 2rem 1.5rem;
+  text-align: center;
+}
+
+.photo-modal-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #333;
+  margin: 0 0 1rem 0;
+  line-height: 1.4;
+}
+
+.photo-modal-description {
+  font-size: 0.95rem;
+  color: #666;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.photo-modal-buttons {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.photo-modal-cancel,
+.photo-modal-confirm {
+  flex: 1;
+  padding: 0.875rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.photo-modal-cancel {
+  background: #f5f5f5;
+  color: #333;
+}
+
+.photo-modal-cancel:hover {
+  background: #e0e0e0;
+}
+
+.photo-modal-confirm {
+  background: #D88676;
+  color: white;
+}
+
+.photo-modal-confirm:hover {
+  background: #c77565;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(216, 134, 118, 0.4);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .chat-input-form {

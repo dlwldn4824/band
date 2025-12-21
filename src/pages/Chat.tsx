@@ -42,6 +42,7 @@ const Chat = () => {
   const [inputMessage, setInputMessage] = useState('')
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([])
   const [showOnlineList, setShowOnlineList] = useState(false)
+  const [showPhotoModal, setShowPhotoModal] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const onlineUserRef = useRef<string | null>(null)
@@ -307,15 +308,18 @@ const Chat = () => {
 
         <form onSubmit={sendMessage} className="chat-input-form">
           <div className="input-row">
-            <a 
-              href={GOOGLE_DRIVE_LINK} 
-              target="_blank" 
-              rel="noopener noreferrer"
+            <button
+              type="button"
+              onClick={() => setShowPhotoModal(true)}
               className="photo-upload-button"
               title="공연 사진 & 영상 보기"
             >
-              📸
-            </a>
+              <img 
+                src="/assets/배경/free-icon-image-7476903.png" 
+                alt="사진 공유"
+                className="photo-upload-icon"
+              />
+            </button>
           <input
             type="text"
             value={inputMessage}
@@ -334,6 +338,37 @@ const Chat = () => {
           </div>
         </form>
       </div>
+
+      {/* 사진 공유 안내 모달 */}
+      {showPhotoModal && (
+        <div className="photo-modal-overlay" onClick={() => setShowPhotoModal(false)}>
+          <div className="photo-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="photo-modal-content">
+              <h3 className="photo-modal-title">공연에서 있었던 추억을 공유해주세요!</h3>
+              <p className="photo-modal-description">
+                공연 중 찍은 사진과 영상을 구글 드라이브에 업로드하고 공유해보세요.
+              </p>
+            </div>
+            <div className="photo-modal-buttons">
+              <button
+                className="photo-modal-cancel"
+                onClick={() => setShowPhotoModal(false)}
+              >
+                뒤로가기
+              </button>
+              <a
+                href={GOOGLE_DRIVE_LINK}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="photo-modal-confirm"
+                onClick={() => setShowPhotoModal(false)}
+              >
+                확인
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

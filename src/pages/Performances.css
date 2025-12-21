@@ -1,26 +1,33 @@
 .performances-page {
   animation: fadeIn 0.5s ease-in;
-  height: 100%;
-  overflow: hidden;
+  width: 100%;
+  min-height: 100vh;
+  display: block;
   background: #f5f5f5;
   position: relative;
   padding: 0;
   box-sizing: border-box;
+  /* body 스크롤 사용 - 모바일에서 가장 안정적 */
 }
 
 .performances-content {
-  height: 100%;
+  width: 100%;
   padding: 1rem;
   padding-bottom: calc(1rem + env(safe-area-inset-bottom));
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
   box-sizing: border-box;
+  position: relative;
+  /* body가 스크롤을 담당하므로 여기서는 overflow 제거 */
 }
 
 .setlist-grid-section {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
+  margin-bottom: 2.5rem;
+}
+
+.setlist-grid-section:last-child {
+  margin-bottom: 1rem;
 }
 
 .setlist-grid-header {
@@ -30,13 +37,18 @@
   color: #333;
   margin-bottom: 1.5rem;
   padding: 1rem 0;
+  position: sticky;
+  top: 0;
+  background: #f5f5f5;
+  z-index: 10;
+  border-bottom: 2px solid #D88676;
 }
 
 .setlist-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 0.75rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0;
   width: 100%;
   box-sizing: border-box;
 }
@@ -50,9 +62,10 @@
   transition: all 0.3s ease;
   text-align: left;
   display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  min-height: 90px;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.75rem;
+  min-height: 70px;
   touch-action: manipulation;
   position: relative;
   overflow: hidden;
@@ -80,6 +93,8 @@
   font-weight: 700;
   color: #D88676;
   line-height: 1.2;
+  flex-shrink: 0;
+  min-width: 28px;
 }
 
 .song-button.selected .song-button-number {
@@ -90,6 +105,8 @@
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  flex: 1;
+  min-width: 0;
 }
 
 .song-button-title {
@@ -98,6 +115,7 @@
   color: #333;
   word-break: break-word;
   line-height: 1.3;
+  margin: 0;
 }
 
 .song-button.selected .song-button-title {
@@ -109,6 +127,8 @@
   color: #666;
   word-break: break-word;
   line-height: 1.3;
+  margin: 0;
+  margin-top: 0.125rem;
 }
 
 .song-button.selected .song-button-artist {
@@ -140,10 +160,14 @@
   width: 100%;
   max-height: calc(100vh - 1rem - env(safe-area-inset-bottom));
   overflow-y: auto;
+  overflow-x: hidden;
   position: relative;
   animation: slideUp 0.3s ease;
   box-sizing: border-box;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
 }
 
 .song-detail-close {
@@ -171,12 +195,68 @@
   transform: scale(1.1);
 }
 
+/* 곡 네비게이션 버튼 */
+.song-navigation {
+  position: absolute;
+  /* 곡 제목 위치와 동일하게: 이미지 높이(200px) + song-info padding-top(0.75rem) + song-number-info margin-bottom(0.5rem) + song-title 위치 */
+  top: calc(195px + 0.75rem + 0.5rem + 0.5rem);
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 0.5rem;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.song-nav-button {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid rgba(216, 134, 118, 0.3);
+  color: #D88676;
+  font-size: 1.5rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+}
+
+.song-nav-button:hover:not(:disabled) {
+  background: #D88676;
+  color: white;
+  border-color: #D88676;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(216, 134, 118, 0.4);
+}
+
+.song-nav-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.song-nav-prev {
+  margin-left: 0.5rem;
+}
+
+.song-nav-next {
+  margin-right: 0.5rem;
+}
+
 .song-image-container {
   width: 100%;
   aspect-ratio: 16 / 9;
   overflow: hidden;
   border-radius: 16px 16px 0 0;
   background: #f0f0f0;
+  max-height: 200px;
 }
 
 .song-image {
@@ -187,53 +267,70 @@
 }
 
 .song-info {
-  padding: 1rem 1.5rem;
+  padding: 0.75rem 1rem;
   text-align: center;
   border-bottom: 1px solid #e0e0e0;
   box-sizing: border-box;
 }
 
+.song-number-info {
+  margin-bottom: 0.5rem;
+}
+
+.song-part-info {
+  display: inline-block;
+  padding: 0.3rem 0.6rem;
+  background: #D88676;
+  color: white;
+  border-radius: 20px;
+  font-size: clamp(0.7rem, 2.8vw, 0.8rem);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
 .song-title {
-  font-size: clamp(1.25rem, 5vw, 1.75rem);
+  font-size: clamp(1.1rem, 4.5vw, 1.5rem);
   font-weight: 700;
   color: #333;
-  margin: 0 0 0.5rem 0;
+  margin: 0 0 0.35rem 0;
   word-break: break-word;
-  line-height: 1.3;
+  line-height: 1.25;
 }
 
 .song-artist {
-  font-size: clamp(0.95rem, 4vw, 1.125rem);
+  font-size: clamp(0.85rem, 3.5vw, 1rem);
   color: #666;
   margin: 0;
   word-break: break-word;
-  line-height: 1.3;
+  line-height: 1.25;
 }
 
 .session-info {
-  padding: 1rem 1.5rem;
+  padding: 0.75rem 1rem;
   padding-bottom: calc(1rem + env(safe-area-inset-bottom));
   box-sizing: border-box;
+  min-height: fit-content;
 }
 
 .session-title {
-  font-size: clamp(1rem, 4vw, 1.25rem);
+  font-size: clamp(0.9rem, 3.5vw, 1.1rem);
   font-weight: 600;
   color: #333;
-  margin: 0 0 1rem 0;
+  margin: 0 0 0.6rem 0;
 }
 
 .session-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
 }
 
 .session-item {
   display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  padding: 0.75rem;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.75rem;
   background: #f9f9f9;
   border-radius: 8px;
   box-sizing: border-box;
@@ -242,18 +339,29 @@
 .session-label {
   font-weight: 600;
   color: #D88676;
-  min-width: 70px;
-  font-size: clamp(0.85rem, 3.5vw, 0.95rem);
+  font-size: clamp(0.75rem, 3vw, 0.85rem);
+  line-height: 1.3;
   flex-shrink: 0;
-  line-height: 1.4;
+  min-width: 50px;
 }
 
 .session-members {
-  color: #333;
-  font-size: clamp(0.85rem, 3.5vw, 0.95rem);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
   flex: 1;
-  word-break: break-word;
-  line-height: 1.4;
+}
+
+.session-chip {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  background: rgba(216, 134, 118, 0.15);
+  color: #D88676;
+  border-radius: 12px;
+  font-size: clamp(0.7rem, 2.8vw, 0.8rem);
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
 }
 
 .empty-state {
@@ -310,9 +418,9 @@
 }
 
   .song-button {
-    min-height: 85px;
+    min-height: 65px;
     padding: 0.6rem;
-    gap: 0.3rem;
+    gap: 0.6rem;
   }
 
   .song-detail-modal {
@@ -338,23 +446,21 @@
   }
 
   .song-info {
-    padding: 1rem;
+    padding: 0.6rem 0.75rem;
   }
 
   .session-info {
-    padding: 1rem;
-    padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+    padding: 0.6rem 0.75rem;
+    padding-bottom: calc(0.6rem + env(safe-area-inset-bottom));
   }
 
   .session-item {
-    flex-direction: row;
-    align-items: flex-start;
-    gap: 0.5rem;
-    padding: 0.6rem;
+    padding: 0.5rem 0.6rem;
   }
 
-  .session-label {
-    min-width: 60px;
+  .session-chip {
+    padding: 0.2rem 0.45rem;
+    font-size: clamp(0.65rem, 2.5vw, 0.75rem);
   }
 }
 
@@ -365,17 +471,17 @@
   }
 
   .song-button {
-    min-height: 80px;
+    min-height: 60px;
     padding: 0.5rem;
+    gap: 0.5rem;
   }
 
   .session-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.4rem;
+    padding: 0.45rem 0.5rem;
   }
 
-  .session-label {
-    min-width: auto;
+  .session-chip {
+    padding: 0.18rem 0.4rem;
+    font-size: clamp(0.6rem, 2.2vw, 0.7rem);
   }
 }

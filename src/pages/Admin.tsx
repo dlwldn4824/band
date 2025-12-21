@@ -250,15 +250,39 @@ const Admin = () => {
         drum: item.drum
       })))
 
-      // 기존 공연 정보와 병합 (공연진은 항상 셋리스트에서 추출한 값으로 업데이트)
+      // 하드코딩된 기본 정보
+      const defaultEvents = [
+        {
+          title: '1부',
+          description: '멜로딕의 2번째 단독공연이 시작됩니다.',
+          time: '19:00-20:00'
+        },
+        {
+          title: '2부',
+          description: '10분 휴식 시간 후 2부가 시작됩니다.',
+          time: '20:10-21:00'
+        }
+      ]
+
+      const defaultTicket = {
+        eventName: '2025 멜로딕 단독 공연',
+        date: '2025년 12월 27일 (토)',
+        venue: '홍대 라디오 가가 공연장',
+        seat: '자유석'
+      }
+
+      // 기존 공연 정보와 병합 (events와 ticket도 함께 포함하여 완전한 데이터로 저장)
       const updatedPerformanceData: PerformanceData = {
         ...(performanceData || {}),
         setlist: setlist,
         performers: uniquePerformers, // 항상 새로 추출한 공연진으로 업데이트
+        events: performanceData?.events || defaultEvents, // 기존 events가 있으면 유지, 없으면 기본값
+        ticket: performanceData?.ticket || defaultTicket, // 기존 ticket이 있으면 유지, 없으면 기본값
       }
 
       console.log('업데이트된 공연 데이터:', updatedPerformanceData)
       console.log('저장될 공연진:', updatedPerformanceData.performers)
+      console.log('저장될 셋리스트:', updatedPerformanceData.setlist?.length, '곡')
 
       setPerformanceData(updatedPerformanceData)
       
