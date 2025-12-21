@@ -19,30 +19,50 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 1rem;
   flex-shrink: 0;
   z-index: 10;
+  position: sticky;
+  top: 0;
 }
 
 .guestbook-header h2 {
   font-size: 1.5rem;
   color: #333;
   margin: 0;
+  flex-shrink: 0;
+}
+
+.add-message-button,
+.view-all-button {
+  padding: 0.6rem 1rem;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .add-message-button {
-  padding: 0.6rem 1.2rem;
   background: #D88676;
   color: white;
-  border: none;
-  border-radius: 12px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
 }
 
 .add-message-button:hover {
   background: #C57464;
+}
+
+.view-all-button {
+  background: #6c757d;
+  color: white;
+}
+
+.view-all-button:hover {
+  background: #5a6268;
 }
 
 /* =====================
@@ -56,6 +76,8 @@
   position: relative;
   width: 100%;
   -webkit-overflow-scrolling: touch;
+  /* 헤더와 메모지 영역 구분을 위한 배경 */
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
 }
 
 .memo-wall {
@@ -66,6 +88,8 @@
   padding: 16px 8px 40px;
   box-sizing: border-box;
   overflow-x: hidden;
+  /* 헤더 높이 + 회전 여유 공간을 고려한 상단 여백 (더 여유있게) */
+  padding-top: 50px;
 }
 
 /* =====================
@@ -73,8 +97,8 @@
    ===================== */
 .memo-note {
   position: absolute;
-  width: min(320px, 80vw);
-  max-width: calc(100vw - 32px); /* 좌우 여백 확보 */
+  width: min(320px, 25vw);
+  max-width: calc(100vw - 24px); /* 좌우 여백 확보 */
   padding: 1rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   cursor: pointer;
@@ -85,10 +109,18 @@
   overflow-wrap: break-word;
 }
 
+.memo-note {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
 .memo-note:hover {
-  transform: rotate(0deg) scale(1.05) !important;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  transform: translateX(-50%) rotate(var(--memo-rotation, 0deg)) scale(1.08);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
   z-index: 100;
+}
+
+.memo-note:active {
+  transform: translateX(-50%) rotate(var(--memo-rotation, 0deg)) scale(1.05);
 }
 
 /* 메모지 디자인별 색상 */
@@ -389,13 +421,209 @@
 }
 
 /* =====================
+   모아서 보기 모달
+   ===================== */
+.modal-view-all {
+  max-width: 600px;
+  max-height: 85vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.sort-controls {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  justify-content: center;
+}
+
+.sort-button {
+  padding: 0.5rem 1rem;
+  background: #f1f1f1;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sort-button:hover {
+  background: #e0e0e0;
+}
+
+.sort-button.active {
+  background: #D88676;
+  color: white;
+  border-color: #D88676;
+}
+
+.all-memos-list {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 0.5rem;
+  margin-bottom: 1rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.all-memos-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.all-memos-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.all-memos-list::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+.all-memos-list::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
+}
+
+.all-memo-item {
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.all-memo-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.all-memo-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.all-memo-name {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #333;
+}
+
+.all-memo-date {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.all-memo-content {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #555;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.all-memo-content p {
+  margin: 0;
+}
+
+.empty-all-memos {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: #999;
+}
+
+.empty-all-memos p {
+  font-size: 1rem;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .guestbook-header {
+    padding: 0.75rem 1rem;
+    gap: 0.75rem;
+  }
+
+  .guestbook-header h2 {
+    font-size: 1.1rem;
+  }
+
+  .header-buttons {
+    gap: 0.5rem;
+  }
+
+  .view-all-button,
+  .add-message-button {
+    font-size: 0.85rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .modal-view-all {
+    max-width: 95%;
+    max-height: 90vh;
+  }
+
+  .all-memo-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+
+  .all-memo-date {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .guestbook-header {
+    padding: 0.75rem 1rem;
+    gap: 0.5rem;
+    flex-wrap: nowrap;
+  }
+
+  .guestbook-header h2 {
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+
+  .header-buttons {
+    gap: 0.4rem;
+    flex-shrink: 1;
+    min-width: 0;
+  }
+
+  .view-all-button,
+  .add-message-button {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.6rem;
+  }
+
+  .all-memo-item {
+    padding: 0.75rem;
+  }
+
+  .all-memo-name {
+    font-size: 0.9rem;
+  }
+
+  .all-memo-content {
+    font-size: 0.85rem;
+  }
+}
+
+/* =====================
    반응형
    ===================== */
 @media (max-width: 768px) {
   .memo-note {
-    width: 45%;
+    width: min(200px, 40vw);
     min-width: 140px;
-    max-width: 200px;
+    max-width: calc(100vw - 24px);
     padding: 0.75rem;
   }
 
@@ -423,9 +651,9 @@
 
 @media (max-width: 480px) {
   .memo-note {
-    width: min(180px, 75vw);
+    width: min(180px, 45vw);
     min-width: 120px;
-    max-width: calc(100vw - 24px);
+    max-width: calc(50vw - 16px);
     padding: 0.6rem;
   }
 
