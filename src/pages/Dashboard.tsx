@@ -5,18 +5,47 @@ import { useData } from '../contexts/DataContext'
 import Events from '../components/Events'
 import QRScanner from '../components/QRScanner'
 import ticketImage from '../assets/배경/티켓_최종.png'
+import editIcon from '../assets/배경/수정아이콘.png'
+import { formatPhoneDisplay } from '../utils/phoneFormat'
 import './Dashboard.css'
 
 const Dashboard = () => {
-  const { user, updateUser, setNickname, isAdmin, adminName } = useAuth()
-  const { performanceData, checkInGuest, guests } = useData()
+  // ✅ 모든 Hook은 최상단에서 조건 없이 호출
+  const { user, updateUser, setNickname, isAdmin, adminName, isLoading } = useAuth()
+  const { performanceData, checkInGuest, guests, lastCheckedInGuest } = useData()
   const [showScanner, setShowScanner] = useState(false)
   const [checkInStatus, setCheckInStatus] = useState<'loading' | 'notYet' | 'done'>('loading')
   const [showNicknameModal, setShowNicknameModal] = useState(false)
   const [nickname, setNicknameInput] = useState('')
   const [nicknameError, setNicknameError] = useState('')
   const [isUpdatingNickname, setIsUpdatingNickname] = useState(false)
+  const [checkInNotification, setCheckInNotification] = useState<{ name: string; timestamp: number } | null>(null)
+  const [showGuestList, setShowGuestList] = useState(false)
   const navigate = useNavigate()
+
+  // ✅ Hook 호출 완료 후 조건부 return
+  // 인증 로딩 중일 때는 로딩 UI 표시
+  if (isLoading) {
+    return (
+      <div className="dashboard">
+        <div style={{ padding: '2rem', textAlign: 'center' }}>로딩 중...</div>
+      </div>
+    )
+  }
+
+  // 디버깅: 컴포넌트 렌더링 상태 로그
+  useEffect(() => {
+    console.log('=== Dashboard 렌더링 상태 ===')
+    console.log('user:', user)
+    console.log('isAdmin:', isAdmin)
+    console.log('adminName:', adminName)
+    console.log('performanceData:', performanceData)
+    console.log('performanceData?.events:', performanceData?.events)
+    console.log('performanceData?.events?.length:', performanceData?.events?.length)
+    console.log('guests.length:', guests.length)
+    console.log('checkInStatus:', checkInStatus)
+    console.log('============================')
+  }, [user, isAdmin, adminName, performanceData, guests.length, checkInStatus])
 
   // 대시보드 페이지에서는 body 스크롤 허용
   useEffect(() => {
@@ -37,17 +66,24 @@ const Dashboard = () => {
 
   // Firestore에서 체크인 상태 확인 (서버 상태 기반)
   useEffect(() => {
+    console.log('[체크인 상태 확인] 시작')
+    console.log('[체크인 상태 확인] user:', user)
+    console.log('[체크인 상태 확인] guests.length:', guests.length)
+    
     if (!user) {
+      console.log('[체크인 상태 확인] user가 없음 → notYet')
       setCheckInStatus('notYet')
       return
     }
 
     // guests가 아직 로드되지 않았으면 대기
     if (guests.length === 0) {
+      console.log('[체크인 상태 확인] guests가 비어있음 → loading')
       setCheckInStatus('loading')
       return
     }
 
+    console.log('[체크인 상태 확인] 체크인 상태 확인 중...')
     setCheckInStatus('loading')
     
     // Firestore의 guests 배열에서 현재 사용자의 체크인 상태 확인
@@ -66,6 +102,7 @@ const Dashboard = () => {
     })
 
     if (foundGuest && foundGuest.checkedIn) {
+      console.log('[체크인 상태 확인] 체크인 완료:', foundGuest)
       setCheckInStatus('done')
       // localStorage의 user 정보도 서버 상태와 동기화
       if (!user.checkedIn || user.entryNumber !== foundGuest.entryNumber) {
@@ -77,6 +114,7 @@ const Dashboard = () => {
         })
       }
     } else {
+      console.log('[체크인 상태 확인] 체크인 안 됨:', foundGuest ? '게스트는 찾았지만 체크인 안 됨' : '게스트를 찾지 못함')
       setCheckInStatus('notYet')
       // 서버에서 체크인 안 된 상태면 localStorage도 업데이트
       if (user.checkedIn) {
@@ -89,6 +127,33 @@ const Dashboard = () => {
       }
     }
   }, [user, guests, updateUser])
+
+  // 체크인 알림 표시 (admin 권한이 있을 때만)
+  useEffect(() => {
+    // admin 권한이 있을 때만 알림 표시
+    if (!isAdmin) {
+      setCheckInNotification(null)
+      return
+    }
+
+    if (lastCheckedInGuest) {
+      // 이전 알림과 다른 게스트인지 확인 (중복 방지)
+      if (checkInNotification?.name !== lastCheckedInGuest.name || 
+          checkInNotification?.timestamp !== lastCheckedInGuest.timestamp) {
+        setCheckInNotification({
+          name: lastCheckedInGuest.name,
+          timestamp: lastCheckedInGuest.timestamp
+        })
+        
+        // 5초 후 알림 자동 제거
+        const timer = setTimeout(() => {
+          setCheckInNotification(null)
+        }, 5000)
+        
+        return () => clearTimeout(timer)
+      }
+    }
+  }, [lastCheckedInGuest, checkInNotification, isAdmin])
 
   const handleScanSuccess = (data: { name: string; phone: string }) => {
     setShowScanner(false)
@@ -127,15 +192,42 @@ const Dashboard = () => {
     }
   }
 
+  // 렌더링 조건 디버깅
+  const shouldShowEvents = performanceData?.events && performanceData.events.length > 0
+  const shouldShowEmptyState = !performanceData
+  
+  console.log('[렌더링 조건] shouldShowEvents:', shouldShowEvents)
+  console.log('[렌더링 조건] shouldShowEmptyState:', shouldShowEmptyState)
+  console.log('[렌더링 조건] performanceData 존재:', !!performanceData)
+  console.log('[렌더링 조건] performanceData?.events 존재:', !!performanceData?.events)
+
   return (
     <div className="dashboard">
+      {/* 체크인 알림 (admin 권한이 있을 때만 표시) */}
+      {isAdmin && checkInNotification && (
+        <div className="checkin-notification">
+          <div className="checkin-notification-content">
+            <span className="checkin-notification-icon">🎉</span>
+            <span className="checkin-notification-text">
+              {checkInNotification.name}님이 현장 체크인 하셨습니다
+            </span>
+            <button 
+              className="checkin-notification-close"
+              onClick={() => setCheckInNotification(null)}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+      
       <div className="dashboard-header">
         <div>
           <h1>안녕하세요, {isAdmin ? adminName : user?.name}님!</h1>
           <p>{isAdmin ? '운영진 대시보드' : '내 티켓과 이벤트 정보를 확인하세요'}</p>
           {isAdmin && (
             <div style={{ marginTop: '0.5rem', padding: '0.5rem', background: '#D88676', color: 'white', borderRadius: '8px', fontSize: '0.9rem' }}>
-              ⚙️ 운영진 모드
+              운영진 모드
             </div>
           )}
           {!isAdmin && (
@@ -153,6 +245,7 @@ const Dashboard = () => {
                     className="edit-nickname-button"
                   >
                     수정
+                    <img src={editIcon} alt="수정" className="edit-icon" />
                   </button>
                 </>
               ) : (
@@ -167,6 +260,7 @@ const Dashboard = () => {
                     className="edit-nickname-button"
                   >
                     닉네임 설정
+                    <img src={editIcon} alt="수정" className="edit-icon" />
                   </button>
                 </>
               )}
@@ -204,19 +298,11 @@ const Dashboard = () => {
           </section>
         )}
 
-        {checkInStatus === 'done' && !isAdmin && (
-          <section className="dashboard-section">
-            <div className="checkin-card">
-              <h3>체크인 완료</h3>
-              <p>입장 번호: {user?.entryNumber}번</p>
-            </div>
-          </section>
-        )}
 
         {checkInStatus === 'notYet' && user && !isAdmin && (
           <section className="dashboard-section">
             <div className="checkin-card">
-              <h3>햔장 체크인</h3>
+              <h3>현장 체크인</h3>
               <p>공연장 도착 후 반드시 QR 코드 또는 현장 코드를 통해 체크인해 주세요.
               체크인 완료 시에만 입장 팔찌 수령 및 이벤트 참여가 가능합니다.</p>
               <div className="checkin-buttons">
@@ -243,11 +329,133 @@ const Dashboard = () => {
                     체크인 완료: {guests.filter(g => g.checkedIn).length}명
                   </p>
                 </div>
+                <button
+                  onClick={() => setShowGuestList(true)}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    background: '#D88676',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '1rem',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'background 0.2s'
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.background = '#C57464'}
+                  onMouseOut={(e) => e.currentTarget.style.background = '#D88676'}
+                >
+                  👥 게스트 입장 여부 확인하기
+                </button>
               </div>
             </div>
           </section>
         )}
 
+        {/* 게스트 리스트 모달 */}
+        {isAdmin && showGuestList && (
+          <div 
+            className="guest-list-modal-overlay"
+            onClick={() => setShowGuestList(false)}
+          >
+            <div 
+              className="guest-list-modal"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="guest-list-modal-header">
+                <h2>게스트 입장 여부</h2>
+                <button
+                  className="guest-list-modal-close"
+                  onClick={() => setShowGuestList(false)}
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="guest-list-modal-content">
+                {guests.length > 0 ? (
+                  <div className="guest-list-table">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>번호</th>
+                          <th>이름</th>
+                          <th>전화번호</th>
+                          <th>예매 유형</th>
+                          <th>입금 확인</th>
+                          <th>입장 여부</th>
+                          <th>입장 번호</th>
+                          <th>체크인 시간</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {guests.map((guest, index) => {
+                          const guestName = guest.name || guest['이름'] || guest.Name || ''
+                          const guestPhoneRaw = guest.phone || guest['전화번호'] || guest.Phone || ''
+                          const guestPhone = formatPhoneDisplay(guestPhoneRaw)
+                          const isWalkIn = guest.isWalkIn === true
+                          return (
+                            <tr key={index}>
+                              <td>{index + 1}</td>
+                              <td>{guestName}</td>
+                              <td>{guestPhone}</td>
+                              <td>
+                                <span className={isWalkIn ? 'walk-in-badge' : 'pre-booking-badge'}>
+                                  {isWalkIn ? '현장 예매' : '사전 예매'}
+                                </span>
+                              </td>
+                              <td>
+                                {isWalkIn ? (
+                                  <span className={guest.paymentConfirmed ? 'payment-confirmed' : 'payment-pending'}>
+                                    {guest.paymentConfirmed ? '✅ 확인완료' : '⏳ 대기중'}
+                                  </span>
+                                ) : (
+                                  <span className="not-applicable">-</span>
+                                )}
+                              </td>
+                              <td>
+                                <span className={guest.checkedIn ? 'checked-in' : 'not-checked-in'}>
+                                  {guest.checkedIn ? '✅ 입장 완료' : '❌ 미입장'}
+                                </span>
+                              </td>
+                              <td>{guest.entryNumber ? `${guest.entryNumber}번` : '-'}</td>
+                              <td>
+                                {guest.checkedInAt 
+                                  ? new Date(guest.checkedInAt).toLocaleString('ko-KR', {
+                                      year: 'numeric',
+                                      month: '2-digit',
+                                      day: '2-digit',
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                      hour12: false
+                                    })
+                                  : '-'
+                                }
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
+                    등록된 게스트가 없습니다.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {(() => {
+          console.log('[렌더링] Events 섹션 체크:', {
+            hasPerformanceData: !!performanceData,
+            hasEvents: !!performanceData?.events,
+            eventsLength: performanceData?.events?.length,
+            shouldRender: shouldShowEvents
+          })
+          return null
+        })()}
         {performanceData?.events && performanceData.events.length > 0 && (
           <section className="dashboard-section">
             <Events events={performanceData.events} />
@@ -264,6 +472,13 @@ const Dashboard = () => {
           </div>
         </section>
 
+        {(() => {
+          console.log('[렌더링] Empty State 체크:', {
+            hasPerformanceData: !!performanceData,
+            shouldRender: shouldShowEmptyState
+          })
+          return null
+        })()}
         {!performanceData && (
           <div className="empty-state">
             <p>공연 정보가 아직 설정되지 않았습니다.</p>

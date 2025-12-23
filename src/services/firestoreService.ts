@@ -27,7 +27,7 @@ export const getFirestoreData = async (path: FirestorePath, docId?: string) => {
       if (docSnap.exists()) {
         return { id: docSnap.id, ...docSnap.data() }
       } else {
-        console.log('문서를 찾을 수 없습니다.')
+        console.log(`[Firestore] 문서를 찾을 수 없습니다: ${path}/${docId}`)
         return null
       }
     } else {
@@ -42,9 +42,24 @@ export const getFirestoreData = async (path: FirestorePath, docId?: string) => {
       
       return data
     }
-  } catch (error) {
-    console.error('Firestore 읽기 오류:', error)
-    throw error
+  } catch (error: any) {
+    console.error(`[Firestore 읽기 오류] ${path}${docId ? `/${docId}` : ''}:`, error)
+    
+    // 권한 오류인 경우 null 반환 (500 에러 방지)
+    if (error?.code === 'permission-denied' || error?.code === 7) {
+      console.warn('[Firestore] 권한이 없습니다. localStorage에서 로드합니다.')
+      return null
+    }
+    
+    // 네트워크 오류인 경우 null 반환
+    if (error?.code === 'unavailable' || error?.code === 14) {
+      console.warn('[Firestore] 네트워크 오류. localStorage에서 로드합니다.')
+      return null
+    }
+    
+    // 기타 오류는 null 반환하여 앱이 계속 작동하도록 함
+    console.warn('[Firestore] 오류 발생, null 반환:', error?.message || error)
+    return null
   }
 }
 
@@ -64,6 +79,7 @@ export const setFirestoreData = async (
         ...data,
         updatedAt: Timestamp.now()
       }, { merge: true })
+      return true
     } else {
       // 새 문서 생성 (자동 ID)
       const collectionRef = collection(db, path)
@@ -75,9 +91,23 @@ export const setFirestoreData = async (
       })
       return docRef.id
     }
-  } catch (error) {
-    console.error('Firestore 쓰기 오류:', error)
-    throw error
+  } catch (error: any) {
+    console.error(`[Firestore 쓰기 오류] ${path}${docId ? `/${docId}` : ''}:`, error)
+    
+    // 권한 오류인 경우 false 반환
+    if (error?.code === 'permission-denied' || error?.code === 7) {
+      console.warn('[Firestore] 쓰기 권한이 없습니다.')
+      return false
+    }
+    
+    // 네트워크 오류인 경우 false 반환
+    if (error?.code === 'unavailable' || error?.code === 14) {
+      console.warn('[Firestore] 네트워크 오류로 쓰기 실패.')
+      return false
+    }
+    
+    // 기타 오류는 false 반환
+    return false
   }
 }
 
@@ -129,27 +159,50 @@ export const subscribeToFirestore = (
     if (docId) {
       // 특정 문서 구독
       const docRef = doc(db, path, docId)
-      return onSnapshot(docRef, (docSnap) => {
-        if (docSnap.exists()) {
-          callback({ id: docSnap.id, ...docSnap.data() })
-        } else {
+      return onSnapshot(
+        docRef, 
+        (docSnap) => {
+          if (docSnap.exists()) {
+            callback({ id: docSnap.id, ...docSnap.data() })
+          } else {
+            callback(null)
+          }
+        },
+        (error) => {
+          console.error(`[Firestore 구독 오류] ${path}/${docId}:`, error)
+          // 오류 발생 시 null 반환하여 앱이 계속 작동하도록 함
           callback(null)
         }
-      })
+      )
     } else {
       // 컬렉션 구독
       const collectionRef = collection(db, path)
-      return onSnapshot(collectionRef, (querySnapshot) => {
-        const data: any[] = []
-        querySnapshot.forEach((doc) => {
-          data.push({ id: doc.id, ...doc.data() })
-        })
-        callback(data)
-      })
+      return onSnapshot(
+        collectionRef, 
+        (querySnapshot) => {
+          const data: any[] = []
+          querySnapshot.forEach((doc) => {
+            data.push({ id: doc.id, ...doc.data() })
+          })
+          callback(data)
+        },
+        (error) => {
+          console.error(`[Firestore 구독 오류] ${path}:`, error)
+          // 오류 발생 시 빈 배열 반환하여 앱이 계속 작동하도록 함
+          callback([])
+        }
+      )
     }
   } catch (error) {
-    console.error('Firestore 구독 오류:', error)
-    throw error
+    console.error('Firestore 구독 설정 오류:', error)
+    // 초기 설정 오류 시에도 callback 호출하여 앱이 멈추지 않도록 함
+    if (docId) {
+      callback(null)
+    } else {
+      callback([])
+    }
+    // 구독 해제 함수 반환 (빈 함수)
+    return () => {}
   }
 }
 

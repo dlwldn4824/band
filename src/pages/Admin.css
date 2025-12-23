@@ -417,4 +417,277 @@
   }
 }
 
+/* 공연진 리스트 */
+.performers-list {
+  margin-top: 1rem;
+}
+
+.performers-list-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.performer-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.performer-item:hover {
+  background: #f0f0f0;
+  border-color: #D88676;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(216, 134, 118, 0.2);
+}
+
+.performer-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: #D88676;
+  color: white;
+  border-radius: 50%;
+  font-weight: 600;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+.performer-name {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #333;
+  flex: 1;
+}
+
+.performer-delete-button {
+  background: #dc3545;
+  color: white;
+  border: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.performer-delete-button:hover {
+  background: #c82333;
+  transform: scale(1.1);
+}
+
+.performer-add-form {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  align-items: center;
+}
+
+.performer-input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.performer-input:focus {
+  border-color: #D88676;
+}
+
+.performer-add-button {
+  padding: 0.75rem 1.5rem;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.performer-add-button:hover:not(:disabled) {
+  background: #218838;
+}
+
+.performer-add-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.performers-count {
+  padding: 1rem;
+  background: #f0f7ff;
+  border: 1px solid #b3d9ff;
+  border-radius: 8px;
+  text-align: center;
+  color: #0066cc;
+  font-size: 0.95rem;
+}
+
+.performers-count strong {
+  color: #D88676;
+  font-size: 1.1rem;
+}
+
+@media (max-width: 768px) {
+  .performers-list-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0.75rem;
+  }
+  
+  .performer-item {
+    padding: 0.75rem;
+  }
+  
+  .performer-number {
+    width: 24px;
+    height: 24px;
+    font-size: 0.8rem;
+  }
+  
+  .performer-name {
+    font-size: 0.9rem;
+  }
+}
+
+/* 게스트 리스트 테이블 */
+.guest-list-table {
+  margin-top: 1rem;
+  overflow-x: auto;
+}
+
+.guest-list-table table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.guest-list-table th {
+  background: #f5f5f5;
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 2px solid #e0e0e0;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.guest-list-table td {
+  padding: 12px;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 0.9rem;
+}
+
+.guest-list-table tr:hover {
+  background: #f9f9f9;
+}
+
+.guest-list-table tr:last-child td {
+  border-bottom: none;
+}
+
+.checked-in {
+  color: #28a745;
+  font-weight: 600;
+}
+
+.not-checked-in {
+  color: #dc3545;
+  font-weight: 600;
+}
+
+/* 예매 유형 배지 */
+.walk-in-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: #fff3cd;
+  color: #856404;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid #ffc107;
+}
+
+.pre-booking-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: #d1ecf1;
+  color: #0c5460;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid #17a2b8;
+}
+
+/* 입금 확인 버튼 */
+.payment-confirm-button {
+  padding: 0.4rem 0.8rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.payment-confirm-button.confirmed {
+  background: #28a745;
+  color: white;
+}
+
+.payment-confirm-button.confirmed:hover {
+  background: #218838;
+}
+
+.payment-confirm-button.not-confirmed {
+  background: #ffc107;
+  color: #856404;
+}
+
+.payment-confirm-button.not-confirmed:hover {
+  background: #e0a800;
+}
+
+.not-applicable {
+  color: #999;
+  font-style: italic;
+}
+
+@media (max-width: 768px) {
+  .guest-list-table {
+    font-size: 0.85rem;
+  }
+  
+  .guest-list-table th,
+  .guest-list-table td {
+    padding: 8px;
+    font-size: 0.8rem;
+  }
+}
+
 

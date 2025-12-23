@@ -3,6 +3,7 @@
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
+  background-color: #000000;
 }
 
 .container {
@@ -11,12 +12,14 @@
   padding: 0 0.75rem;
   width: 100%;
   box-sizing: border-box;
+  background-color: transparent;
 }
 
 .header {
   background: #000;
   color: white;
-  padding: 0.75rem 0;
+  padding: 1rem 0;
+  padding-top: calc(1rem + env(safe-area-inset-top));
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   flex-shrink: 0;
 }
@@ -24,16 +27,28 @@
 .header .container {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1.75rem;
   align-items: center;
-  padding: 0 0.5rem;
+  padding: 0 0.75rem;
   width: 100%;
   box-sizing: border-box;
+  position: relative;
+}
+
+.header-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  gap: 1rem;
+  position: relative;
 }
 
 .logo {
-  font-size: 1rem;
+  font-size: 1.125rem;
   font-weight: bold;
+  flex: 1;
+  text-align: center;
 }
 
 .logo-button {
@@ -56,6 +71,7 @@
   display: flex;
   flex-wrap: nowrap;
   justify-content: center;
+  align-items: center;
   gap: 0.375rem;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -64,6 +80,7 @@
   width: 100%;
   padding: 0 0.25rem;
   box-sizing: border-box;
+  position: relative;
 }
 
 .nav::-webkit-scrollbar {
@@ -73,12 +90,14 @@
 .nav-link {
   color: white;
   font-weight: 500;
-  padding: 0.4rem 0.6rem;
-  border-radius: 6px;
-  transition: background-color 0.3s;
+  padding: 0.5rem 0.75rem;
+  border-radius: 20px;
+  transition: all 0.3s;
   white-space: nowrap;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   flex-shrink: 0;
+  background-color: transparent;
+  border: 1px solid white;
 }
 
 .nav-link:hover {
@@ -86,26 +105,33 @@
 }
 
 .nav-link.active {
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: white;
+  color: #333;
+  border: 1px solid white;
 }
 
 .logout-nav-button {
-  background-color: rgba(255, 255, 255, 0.15) !important;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: white;
-  font-weight: 500;
+  background-image: url('/assets/배경/logout-button.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: transparent;
+  border: none;
+  color: transparent;
   padding: 0.4rem 0.6rem;
   border-radius: 6px;
   transition: all 0.3s;
   white-space: nowrap;
-  font-size: 0.75rem;
   cursor: pointer;
-  font-family: inherit;
   flex-shrink: 0;
+  min-width: 20px;
+  min-height: 25px;
+  position: absolute;
+  right: 0;
 }
 
 .logout-nav-button:hover {
-  background-color: rgba(255, 255, 255, 0.25) !important;
+  background-color: transparent;
   border-color: rgba(255, 255, 255, 0.4);
 }
 
@@ -116,6 +142,7 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
+  background-color: #000000;
 }
 
 .main > .container {
@@ -130,6 +157,7 @@
   color: white;
   text-align: center;
   padding: 1rem 0;
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
   margin-top: auto;
   flex-shrink: 0;
   font-size: 0.75rem;
@@ -142,21 +170,40 @@
   }
 
   .header {
-    padding: 1.5rem 0;
+    padding: 2rem 0;
+    padding-top: calc(2rem + env(safe-area-inset-top));
   }
 
   .header .container {
     flex-direction: row;
     justify-content: space-between;
+    align-items: center;
     gap: 0;
   }
 
+  .header-top {
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
   .logo {
-    font-size: 1.5rem;
+    font-size: 1.75rem;
+    text-align: center;
+  }
+  
+  .logout-nav-button {
+    position: absolute;
+    right: 0;
   }
 
   .nav {
-    gap: 2rem;
+    gap: 2.5rem;
+    flex: 1;
+    justify-content: flex-end;
+    padding-right: 0;
+    position: relative;
   }
 
   .main {

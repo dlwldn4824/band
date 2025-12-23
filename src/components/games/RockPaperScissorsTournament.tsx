@@ -33,28 +33,34 @@ const RockPaperScissorsTournament = () => {
 
   useEffect(() => {
     // 실시간 게임 상태 구독
-    unsubscribeRef.current = onSnapshot(gameRef, (snapshot) => {
-      if (snapshot.exists()) {
-        const data = snapshot.data() as GameState
-        setGameState(data)
-        
-        // 남은 시간 계산
-        if (data.status === 'registration' && data.registrationEndTime) {
-          const endTime = data.registrationEndTime.toMillis()
-          const now = Date.now()
-          const remaining = Math.max(0, Math.floor((endTime - now) / 1000))
-          setTimeLeft(remaining)
-        } else if (data.status === 'playing' && data.roundEndTime) {
-          const endTime = data.roundEndTime.toMillis()
-          const now = Date.now()
-          const remaining = Math.max(0, Math.floor((endTime - now) / 1000))
-          setTimeLeft(remaining)
+    unsubscribeRef.current = onSnapshot(
+      gameRef, 
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.data() as GameState
+          setGameState(data)
+          
+          // 남은 시간 계산
+          if (data.status === 'registration' && data.registrationEndTime) {
+            const endTime = data.registrationEndTime.toMillis()
+            const now = Date.now()
+            const remaining = Math.max(0, Math.floor((endTime - now) / 1000))
+            setTimeLeft(remaining)
+          } else if (data.status === 'playing' && data.roundEndTime) {
+            const endTime = data.roundEndTime.toMillis()
+            const now = Date.now()
+            const remaining = Math.max(0, Math.floor((endTime - now) / 1000))
+            setTimeLeft(remaining)
+          }
+        } else {
+          // 게임이 없으면 초기화
+          setGameState(null)
         }
-      } else {
-        // 게임이 없으면 초기화
-        setGameState(null)
+      },
+      (error) => {
+        console.error('[RockPaperScissorsTournament] 게임 상태 구독 오류:', error)
       }
-    })
+    )
 
     return () => {
       if (unsubscribeRef.current) {

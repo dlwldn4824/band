@@ -87,55 +87,63 @@ const Chat = () => {
 
     // 온라인 사용자 실시간 구독
     const onlineUsersQuery = query(collection(db, 'onlineUsers'))
-    const unsubscribeOnlineUsers = onSnapshot(onlineUsersQuery, (snapshot) => {
-      const users: OnlineUser[] = []
-      const now = Date.now()
-      const currentUserIds = new Set<string>()
-      
-      snapshot.forEach((doc) => {
-        const data = doc.data()
-        const lastSeen = data.lastSeen?.toMillis?.() || 0
-        // 1분 이내 활동한 사용자만 온라인으로 표시
-        if (now - lastSeen < 60000) {
-          const userId = doc.id
-          const userName = data.nickname || data.name || '익명'
-          currentUserIds.add(userId)
-          
-          users.push({
-            id: userId,
-            name: userName,
-            lastSeen: data.lastSeen
-          })
-
-          // 새로운 사용자가 입장한 경우 (이전 목록에 없고, 현재 사용자가 아니고, 아직 입장 메시지를 보내지 않은 경우)
-          if (
-            !previousOnlineUserIdsRef.current.has(userId) &&
-            !enteredUserIdsRef.current.has(userId) &&
-            userId !== onlineUserRef.current &&
-            user // 현재 사용자가 로그인한 상태
-          ) {
-            // 입장 메시지를 보낸 사용자로 표시
-            enteredUserIdsRef.current.add(userId)
+    const unsubscribeOnlineUsers = onSnapshot(
+      onlineUsersQuery, 
+      (snapshot) => {
+        const users: OnlineUser[] = []
+        const now = Date.now()
+        const currentUserIds = new Set<string>()
+        
+        snapshot.forEach((doc) => {
+          const data = doc.data()
+          const lastSeen = data.lastSeen?.toMillis?.() || 0
+          // 1분 이내 활동한 사용자만 온라인으로 표시
+          if (now - lastSeen < 60000) {
+            const userId = doc.id
+            const userName = data.nickname || data.name || '익명'
+            currentUserIds.add(userId)
             
-            // 입장 메시지를 Firestore에 저장 (비동기 처리)
-            addDoc(collection(db, 'chat'), {
-              user: userName,
-              message: `${userName}님이 입장했습니다.`,
-              timestamp: serverTimestamp(),
-              type: 'system'
-            }).catch((error) => {
-              console.error('입장 메시지 전송 오류:', error)
-              // 실패 시 Set에서 제거하여 재시도 가능하게 함
-              enteredUserIdsRef.current.delete(userId)
+            users.push({
+              id: userId,
+              name: userName,
+              lastSeen: data.lastSeen
             })
+
+            // 새로운 사용자가 입장한 경우 (이전 목록에 없고, 현재 사용자가 아니고, 아직 입장 메시지를 보내지 않은 경우)
+            if (
+              !previousOnlineUserIdsRef.current.has(userId) &&
+              !enteredUserIdsRef.current.has(userId) &&
+              userId !== onlineUserRef.current &&
+              user // 현재 사용자가 로그인한 상태
+            ) {
+              // 입장 메시지를 보낸 사용자로 표시
+              enteredUserIdsRef.current.add(userId)
+              
+              // 입장 메시지를 Firestore에 저장 (비동기 처리)
+              addDoc(collection(db, 'chat'), {
+                user: userName,
+                message: `${userName}님이 입장했습니다.`,
+                timestamp: serverTimestamp(),
+                type: 'system'
+              }).catch((error) => {
+                console.error('입장 메시지 전송 오류:', error)
+                // 실패 시 Set에서 제거하여 재시도 가능하게 함
+                enteredUserIdsRef.current.delete(userId)
+              })
+            }
           }
-        }
-      })
-      
-      // 이전 목록 업데이트
-      previousOnlineUserIdsRef.current = currentUserIds
-      setOnlineUsers(users)
-    })
+        })
+        
+        // 이전 목록 업데이트
+        previousOnlineUserIdsRef.current = currentUserIds
+        setOnlineUsers(users)
+      },
+      (error) => {
+        console.error('[Chat] 온라인 사용자 구독 오류:', error)
+        // 오류 발생 시 빈 배열로 설정하여 앱이 계속 작동하도록 함
+        setOnlineUsers([])
+      }
+    )
 
     // 채팅 메시지 실시간 구독
     const messagesQuery = query(
@@ -143,17 +151,24 @@ const Chat = () => {
       orderBy('timestamp', 'desc'),
       limit(100)
     )
-    const unsubscribeMessages = onSnapshot(messagesQuery, (snapshot) => {
-      const newMessages: Message[] = []
-      snapshot.forEach((doc) => {
-        newMessages.push({
-          id: doc.id,
-          ...doc.data()
-        } as Message)
-      })
-      // 시간순으로 정렬 (오래된 것부터)
-      setMessages(newMessages.reverse())
-    })
+    const unsubscribeMessages = onSnapshot(
+      messagesQuery, 
+      (snapshot) => {
+        const newMessages: Message[] = []
+        snapshot.forEach((doc) => {
+          newMessages.push({
+            id: doc.id,
+            ...doc.data()
+          } as Message)
+        })
+        // 시간순으로 정렬 (오래된 것부터)
+        setMessages(newMessages.reverse())
+      },
+      (error) => {
+        console.error('[Chat] 메시지 구독 오류:', error)
+        // 오류 발생 시 기존 메시지 유지
+      }
+    )
 
     // 정리 함수
     return () => {

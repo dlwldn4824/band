@@ -1,7 +1,4 @@
-@font-face {
-  font-family: 'DNFBitBitv2';
-  src: url('/assets/%EB%B0%B0%EA%B2%BD/DNFBitBitv2.ttf') format('truetype');
-}
+/* 폰트는 index.css에서 글로벌로 임포트됨 */
 
 .login-page {
   height: 100dvh;
@@ -12,7 +9,7 @@
   align-items: center;
   justify-content: center;
   padding: 1rem;
-  background-image: url('../assets/배경/밴드_밤_배경.png');
+  background-image: url('../assets/배경/밴드_포스터_벽.jpeg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -140,7 +137,7 @@
   padding: 0.5rem;
   border: 2px solid #e0e0e0;
   border-radius: 8px;
-  font-size: 16px;
+  font-size: 16px !important; /* iOS Safari 줌 방지: 16px 이상 필수 */
   transition: border-color 0.3s;
   -webkit-appearance: none;
   appearance: none;
@@ -213,7 +210,7 @@
 
   .form-group input {
     padding: 0.5rem;
-    font-size: 16px;
+    font-size: 16px !important; /* iOS Safari 줌 방지: 16px 이상 필수 */
   }
 
   .login-button {

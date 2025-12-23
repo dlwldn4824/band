@@ -1,12 +1,11 @@
-@font-face {
-  font-family: 'DNFBitBitv2';
-  src: url('/assets/%EB%B0%B0%EA%B2%BD/DNFBitBitv2.ttf') format('truetype');
-}
+/* 폰트는 index.css에서 글로벌로 임포트됨 */
 
 .dashboard {
   animation: fadeIn 0.5s ease-in;
   width: 100%;
   box-sizing: border-box;
+  background-color: #000000;
+  min-height: 100vh;
 }
 
 .dashboard-header {
@@ -24,70 +23,89 @@
 }
 
 .dashboard-header h1 {
+  margin-top: 0.25rem;
   font-size: 1.25rem;
   margin-bottom: 0.25rem;
-  color: #333;
+  color: #ffffff;
   line-height: 1.3;
   word-break: keep-all;
   text-align: center;
+  font-family: 'Pretendard', sans-serif;
+  font-weight: 500;
 }
 
 .dashboard-header p {
-  color: #666;
+  color: #ffffff;
   font-size: 0.875rem;
   line-height: 1.4;
   text-align: center;
+  font-family: 'Pretendard', sans-serif;
 }
 
 .nickname-section {
+  width: 70%;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   gap: 0.5rem;
-  margin-top: 0.75rem;
+  margin: 1.3rem auto 0;
   padding: 0.5rem 1rem;
-  background: #f9f9f9;
-  border-radius: 8px;
+  background: #2A2A2A;
+  border-radius: 12px;
   flex-wrap: wrap;
 }
 
 .nickname-label {
-  color: #666;
+  color: #ffffff;
+  font-family: 'Pretendard', sans-serif;
   font-size: 0.875rem;
 }
 
 .nickname-value {
-  color: #333;
+  color: #ffffff;
+  font-family: 'Pretendard', sans-serif;
   font-weight: 600;
   font-size: 0.875rem;
 }
 
 .edit-nickname-button {
   padding: 0.375rem 0.75rem;
-  background: rgb(255, 76, 76);
+  background: transparent;
   color: white;
-  border: none;
-  border-radius: 6px;
+  border: 1px solid white;
+  border-radius: 20px;
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 .edit-nickname-button:hover {
-  background: rgb(220, 50, 50);
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.edit-icon {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
 }
 
 .logout-button {
   padding: 0.875rem 1.5rem;
-  background-color: #f5f5f5;
-  color: #333;
-  border-radius: 8px;
-  font-weight: 600;
+  background-image: url('/assets/배경/logout-button.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: transparent;
   transition: background-color 0.3s;
   width: 100%;
   min-height: 48px;
   touch-action: manipulation;
+  border: none;
+  color: transparent;
 }
 
 .logout-button:hover {
@@ -100,6 +118,8 @@
   gap: 1rem;
   width: 100%;
   box-sizing: border-box;
+  background-color: #000000;
+  padding: 1rem;
 }
 
 .dashboard-section {
@@ -118,12 +138,12 @@
 }
 
 .empty-state {
-  background: white;
+  background: #000000;
   padding: 3rem;
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   text-align: center;
-  color: #999;
+  color: #ffffff;
 }
 
 .empty-state p {
@@ -143,11 +163,11 @@
 .info-card h2 {
   font-size: 1.125rem;
   margin-bottom: 0.5rem;
-  color: #333;
+  color: #ffffff;
 }
 
 .info-card p {
-  color: #666;
+  color: #ffffff;
   margin-bottom: 1rem;
   font-size: 0.875rem;
 }
@@ -170,7 +190,7 @@
 }
 
 .checkin-card {
-  background: white;
+  background: #000000;
   padding: 0.75rem 1.5rem;
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -182,11 +202,11 @@
 .checkin-card h3 {
   font-size: 1.125rem;
   margin-bottom: 0.5rem;
-  color: #333;
+  color: #ffffff;
 }
 
 .checkin-card p {
-  color: #666;
+  color: #ffffff;
   margin-bottom: 1rem;
   font-size: 0.875rem;
 }
@@ -233,6 +253,7 @@
 
 .ticket-image-section {
   width: 100%;
+  max-width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -262,7 +283,7 @@
   border-radius: 20px;
   transform: rotate(-10deg) scale(0.35);
   backdrop-filter: blur(5px);
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(18, 18, 18, 0.8);
   z-index: 10;
 }
 
@@ -276,12 +297,13 @@
 }
 
 .poster-section {
+  margin-top: 2rem;
   width: 100%;
+  max-width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: white;
-  padding: 1.5rem;
+  background: #000000;
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   box-sizing: border-box;
@@ -289,7 +311,7 @@
 
 .poster-image {
   width: 100%;
-  max-width: 600px;
+  max-width: 100%;
   height: auto;
   border-radius: 12px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -306,10 +328,15 @@
 
   .dashboard-header h1 {
     font-size: 2rem;
+    color: #fff;
+    font-family: 'Pretendard', sans-serif;
+    font-weight: 500;
   }
 
   .dashboard-header p {
     font-size: 1.1rem;
+    color: #ffffff;
+    font-family: 'Pretendard', sans-serif;
   }
 
   .logout-button {
@@ -322,7 +349,7 @@
   }
 
   .poster-section {
-    padding: 2rem;
+    padding: 0rem;
   }
 
   .poster-image {
@@ -330,9 +357,294 @@
   }
 }
 
+/* 체크인 알림 */
+.checkin-notification {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  animation: slideDown 0.3s ease-out;
+}
+
+.checkin-notification-content {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 300px;
+  max-width: 90vw;
+}
+
+.checkin-notification-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.checkin-notification-text {
+  flex: 1;
+  font-weight: 600;
+  font-size: 1rem;
+  word-break: keep-all;
+}
+
+.checkin-notification-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.checkin-notification-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .checkin-notification-content {
+    padding: 0.875rem 1.25rem;
+    min-width: 280px;
+  }
+  
+  .checkin-notification-text {
+    font-size: 0.9rem;
+  }
+  
+  .checkin-notification-icon {
+    font-size: 1.25rem;
+  }
+}
+
+/* 게스트 리스트 모달 */
+.guest-list-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.guest-list-modal {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  max-width: 900px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease-out;
+}
+
+.guest-list-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.guest-list-modal-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #333;
+}
+
+.guest-list-modal-close {
+  background: #f5f5f5;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  color: #666;
+  transition: all 0.2s;
+}
+
+.guest-list-modal-close:hover {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.guest-list-modal-content {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.guest-list-table {
+  margin-top: 1rem;
+  overflow-x: auto;
+}
+
+.guest-list-table table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.guest-list-table th {
+  background: #f5f5f5;
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 2px solid #e0e0e0;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.guest-list-table td {
+  padding: 12px;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 0.9rem;
+}
+
+.guest-list-table tr:hover {
+  background: #f9f9f9;
+}
+
+.guest-list-table tr:last-child td {
+  border-bottom: none;
+}
+
+.checked-in {
+  color: #28a745;
+  font-weight: 600;
+}
+
+.not-checked-in {
+  color: #dc3545;
+  font-weight: 600;
+}
+
+/* 예매 유형 배지 */
+.walk-in-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: #fff3cd;
+  color: #856404;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid #ffc107;
+}
+
+.pre-booking-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: #d1ecf1;
+  color: #0c5460;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid #17a2b8;
+}
+
+/* 입금 확인 상태 (조회용) */
+.payment-confirmed {
+  color: #28a745;
+  font-weight: 600;
+}
+
+.payment-pending {
+  color: #ffc107;
+  font-weight: 600;
+}
+
+.not-applicable {
+  color: #999;
+  font-style: italic;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .guest-list-modal {
+    max-width: 95%;
+    max-height: 95vh;
+  }
+  
+  .guest-list-modal-header {
+    padding: 1rem;
+  }
+  
+  .guest-list-modal-header h2 {
+    font-size: 1.25rem;
+  }
+  
+  .guest-list-modal-content {
+    padding: 1rem;
+  }
+  
+  .guest-list-table {
+    font-size: 0.85rem;
+  }
+  
+  .guest-list-table th,
+  .guest-list-table td {
+    padding: 8px;
+    font-size: 0.8rem;
+  }
+}
+
 @media (max-width: 768px) {
   .poster-section {
-    padding: 1rem;
+    padding: 0rem;
   }
 
   .poster-image {

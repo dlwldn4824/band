@@ -6,6 +6,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import TicketTransition from '../components/TicketTransition'
 import ticketImage from '../assets/배경/티켓_최종.png'
+import { validatePhoneNumber } from '../utils/phoneFormat'
 import './Login.css'
 
 const Login = () => {
@@ -134,33 +135,38 @@ const Login = () => {
     // Firestore의 guests 배열 사용 (서버 상태 기반)
     const success = login(name.trim(), phone.trim(), guests)
     if (success) {
-      // Firestore에서 티켓 애니메이션 표시 여부 확인
-      setTimeout(async () => {
-        const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
-        if (!currentUser) {
-          setError('사용자 정보를 불러올 수 없습니다.')
-          return
+        // iOS 줌 방지: 포커스 해제
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur()
         }
+        
+        // Firestore에서 티켓 애니메이션 표시 여부 확인
+        setTimeout(async () => {
+          const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
+          if (!currentUser) {
+            setError('사용자 정보를 불러올 수 없습니다.')
+            return
+          }
 
-        try {
-          const userId = `${currentUser.name}_${currentUser.phone}`
-          const userProfileRef = doc(db, 'userProfiles', userId)
-          const userProfileSnap = await getDoc(userProfileRef)
-          
-          // 티켓 애니메이션을 이미 본 경우 건너뛰기
-          if (userProfileSnap.exists() && userProfileSnap.data().ticketShown) {
-            // 티켓 애니메이션 없이 바로 닉네임 확인 로직으로
-            checkNicknameAndNavigate(currentUser)
-          } else {
-            // 티켓 애니메이션 표시
+          try {
+            const userId = `${currentUser.name}_${currentUser.phone}`
+            const userProfileRef = doc(db, 'userProfiles', userId)
+            const userProfileSnap = await getDoc(userProfileRef)
+            
+            // 티켓 애니메이션을 이미 본 경우 건너뛰기
+            if (userProfileSnap.exists() && userProfileSnap.data().ticketShown) {
+              // 티켓 애니메이션 없이 바로 닉네임 확인 로직으로
+              checkNicknameAndNavigate(currentUser)
+            } else {
+              // 티켓 애니메이션 표시
+              setShowTicket(true)
+            }
+          } catch (error) {
+            // Firestore 연결 실패 시 티켓 애니메이션 표시 (안전하게)
+            console.warn('Firestore 티켓 확인 실패, 티켓 애니메이션 표시:', error)
             setShowTicket(true)
           }
-        } catch (error) {
-          // Firestore 연결 실패 시 티켓 애니메이션 표시 (안전하게)
-          console.warn('Firestore 티켓 확인 실패, 티켓 애니메이션 표시:', error)
-          setShowTicket(true)
-        }
-      }, 150)
+        }, 150)
     } else {
       setError('등록된 정보가 없습니다. 이름과 전화번호를 확인해주세요.')
     }
@@ -175,6 +181,13 @@ const Login = () => {
       return
     }
 
+    // 전화번호 검증
+    const phoneValidation = validatePhoneNumber(walkInPhone.trim())
+    if (!phoneValidation.valid) {
+      setWalkInError(phoneValidation.message || '전화번호 형식이 올바르지 않습니다.')
+      return
+    }
+
     // 포커스 강제 해제 (iOS 자동 줌 방지)
     const blurActiveElement = () => {
       const el = document.activeElement as HTMLElement | null
@@ -184,27 +197,35 @@ const Login = () => {
     blurActiveElement()
     window.scrollTo(0, 0)
 
+    // 전화번호에서 하이픈 제거하여 저장
+    const normalizedPhone = walkInPhone.trim().replace(/\D/g, '')
+    
     // 현장 구매자 등록
-    const result = addWalkInGuest(walkInName.trim(), walkInPhone.trim())
+    const result = addWalkInGuest(walkInName.trim(), normalizedPhone)
     
     if (result.success) {
       // 등록 성공 후 새 게스트를 포함한 배열로 로그인 처리
       const newGuest = {
         name: walkInName.trim(),
-        phone: walkInPhone.trim().replace(/[-\s()]/g, ''),
+        phone: normalizedPhone,
         checkedIn: false
       }
       const updatedGuests = [...guests, newGuest]
       
-      // 등록 성공 후 바로 로그인 처리
-      const loginSuccess = login(walkInName.trim(), walkInPhone.trim(), updatedGuests)
+      // 등록 성공 후 바로 로그인 처리 (정규화된 전화번호 사용)
+      const loginSuccess = login(walkInName.trim(), normalizedPhone, updatedGuests)
       
       if (loginSuccess) {
         setShowWalkInModal(false)
         setWalkInName('')
         setWalkInPhone('')
         setName(walkInName.trim())
-        setPhone(walkInPhone.trim())
+        setPhone(normalizedPhone)
+        
+        // iOS 줌 방지: 포커스 해제
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur()
+        }
         
         // Firestore에서 티켓 애니메이션 표시 여부 확인
         setTimeout(async () => {
@@ -316,6 +337,7 @@ const Login = () => {
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="010-1234-5678"
                 autoComplete="tel"
+                maxLength={13}
               />
             </div>
 
@@ -489,6 +511,7 @@ const Login = () => {
                     onChange={(e) => setWalkInPhone(e.target.value)}
                     placeholder="010-1234-5678"
                     autoComplete="tel"
+                    maxLength={13}
                   />
                 </div>
 
@@ -545,7 +568,6 @@ const Login = () => {
                   }}
                   placeholder="닉네임을 입력하세요"
                   maxLength={20}
-                  autoFocus
                   disabled={isSettingProfile}
                 />
                 <p className="input-hint">최대 20자까지 입력 가능합니다</p>
@@ -571,6 +593,10 @@ const Login = () => {
 
                   try {
                     await saveNickname(nickname.trim())
+                    // iOS 줌 방지: 포커스 해제
+                    if (document.activeElement instanceof HTMLElement) {
+                      document.activeElement.blur()
+                    }
                     setShowProfileModal(false)
                     setTimeout(() => {
                       navigate('/dashboard')

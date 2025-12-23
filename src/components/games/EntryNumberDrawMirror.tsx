@@ -39,57 +39,63 @@ const EntryNumberDrawMirror = () => {
 
   useEffect(() => {
     // 실시간 게임 상태 구독
-    unsubscribeRef.current = onSnapshot(gameRef, (snapshot) => {
-      if (snapshot.exists()) {
-        const data = snapshot.data() as DrawState
-        setIsDrawing(data.isDrawing || false)
-        setCurrentNumber(data.currentNumber ?? null)
-        setSelectedGuest(data.selectedGuest || null)
-        
-        if (data.isDrawing && data.startTime) {
-          // 애니메이션 시작
-          const startTime = data.startTime.toMillis()
-          const minDuration = 2000
-          const maxDuration = 4000
-          const duration = minDuration + Math.random() * (maxDuration - minDuration)
-          const endTime = startTime + duration
+    unsubscribeRef.current = onSnapshot(
+      gameRef, 
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.data() as DrawState
+          setIsDrawing(data.isDrawing || false)
+          setCurrentNumber(data.currentNumber ?? null)
+          setSelectedGuest(data.selectedGuest || null)
+          
+          if (data.isDrawing && data.startTime) {
+            // 애니메이션 시작
+            const startTime = data.startTime.toMillis()
+            const minDuration = 2000
+            const maxDuration = 4000
+            const duration = minDuration + Math.random() * (maxDuration - minDuration)
+            const endTime = startTime + duration
 
-          const animate = () => {
-            const now = Date.now()
-            const elapsed = now - startTime
-            const progress = elapsed / duration
+            const animate = () => {
+              const now = Date.now()
+              const elapsed = now - startTime
+              const progress = elapsed / duration
 
-            if (now < endTime) {
-              // 빠르게 변하다가 점점 느려지게
-              const speed = 1 - progress * 0.9 // 1에서 0.1로 감소
-              const interval = Math.max(50, 500 * speed) // 50ms ~ 500ms
+              if (now < endTime) {
+                // 빠르게 변하다가 점점 느려지게
+                const speed = 1 - progress * 0.9 // 1에서 0.1로 감소
+                const interval = Math.max(50, 500 * speed) // 50ms ~ 500ms
 
-              // 랜덤 입장 번호 표시
-              if (data.eligibleGuests.length > 0) {
-                const randomIndex = Math.floor(Math.random() * data.eligibleGuests.length)
-                setCurrentNumber(data.eligibleGuests[randomIndex].entryNumber)
+                // 랜덤 입장 번호 표시
+                if (data.eligibleGuests.length > 0) {
+                  const randomIndex = Math.floor(Math.random() * data.eligibleGuests.length)
+                  setCurrentNumber(data.eligibleGuests[randomIndex].entryNumber)
+                }
+
+                animationRef.current = setTimeout(animate, interval)
+              } else {
+                // 최종 결과
+                if (data.selectedGuest) {
+                  setCurrentNumber(data.selectedGuest.entryNumber)
+                  setSelectedGuest(data.selectedGuest)
+                }
+                setIsDrawing(false)
               }
-
-              animationRef.current = setTimeout(animate, interval)
-            } else {
-              // 최종 결과
-              if (data.selectedGuest) {
-                setCurrentNumber(data.selectedGuest.entryNumber)
-                setSelectedGuest(data.selectedGuest)
-              }
-              setIsDrawing(false)
             }
-          }
 
-          animate()
+            animate()
+          }
+        } else {
+          // 초기화
+          setIsDrawing(false)
+          setCurrentNumber(null)
+          setSelectedGuest(null)
         }
-      } else {
-        // 초기화
-        setIsDrawing(false)
-        setCurrentNumber(null)
-        setSelectedGuest(null)
+      },
+      (error) => {
+        console.error('[EntryNumberDraw] 게임 상태 구독 오류:', error)
       }
-    })
+    )
 
     return () => {
       if (unsubscribeRef.current) {
@@ -199,5 +205,6 @@ const EntryNumberDrawMirror = () => {
 }
 
 export default EntryNumberDrawMirror
+
 
 

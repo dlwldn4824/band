@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import { DataProvider } from './contexts/DataContext'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
+import AdminProtectedRoute from './components/AdminProtectedRoute'
 import Login from './pages/Login'
 import AdminLogin from './pages/AdminLogin'
 import Admin from './pages/Admin'
@@ -51,7 +52,9 @@ function App() {
             path="/admin/dashboard"
             element={
               <Layout>
-                <Dashboard />
+                <AdminProtectedRoute>
+                  <Dashboard />
+                </AdminProtectedRoute>
               </Layout>
             }
           />

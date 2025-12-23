@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import * as XLSX from 'xlsx'
 import { QRCodeSVG } from 'qrcode.react'
 import { useData, SetlistItem, PerformanceData, BookingInfo } from '../contexts/DataContext'
+import { formatPhoneDisplay } from '../utils/phoneFormat'
 import './Admin.css'
 
 const Admin = () => {
@@ -24,7 +25,8 @@ const Admin = () => {
   const [file, setFile] = useState<File | null>(null)
   const [setlistFile, setSetlistFile] = useState<File | null>(null)
   const [uploadStatus, setUploadStatus] = useState('')
-  const { uploadGuests, setPerformanceData, guests, performanceData, checkInCode, generateCheckInCode, setCheckInCode, clearGuests, clearSetlist, bookingInfo, setBookingInfo, clearGuestbookMessages } = useData()
+  const [newPerformerName, setNewPerformerName] = useState('')
+  const { uploadGuests, setPerformanceData, guests, performanceData, checkInCode, generateCheckInCode, setCheckInCode, clearGuests, clearSetlist, bookingInfo, setBookingInfo, clearGuestbookMessages, toggleGuestPayment } = useData()
   
   // 예매 정보 폼 상태
   const [bookingForm, setBookingForm] = useState<BookingInfo>({
@@ -329,6 +331,62 @@ const Admin = () => {
     setUploadStatus('✅ 셋리스트 템플릿 파일이 다운로드되었습니다.')
   }
 
+  // 공연진 추가 함수
+  const handleAddPerformer = () => {
+    if (!newPerformerName.trim()) {
+      setUploadStatus('공연진 이름을 입력해주세요.')
+      return
+    }
+
+    if (!performanceData) {
+      setUploadStatus('공연 데이터가 없습니다.')
+      return
+    }
+
+    const trimmedName = newPerformerName.trim()
+    
+    // 중복 확인
+    const existingPerformers = performanceData.performers || []
+    if (existingPerformers.includes(trimmedName)) {
+      setUploadStatus('이미 등록된 공연진입니다.')
+      setNewPerformerName('')
+      return
+    }
+
+    // 공연진 추가
+    const updatedPerformers = [...existingPerformers, trimmedName].sort()
+    const updatedPerformanceData: PerformanceData = {
+      ...performanceData,
+      performers: updatedPerformers
+    }
+
+    setPerformanceData(updatedPerformanceData)
+    setNewPerformerName('')
+    setUploadStatus(`✅ "${trimmedName}" 공연진이 추가되었습니다.`)
+  }
+
+  // 공연진 삭제 함수
+  const handleDeletePerformer = (index: number) => {
+    if (!performanceData || !performanceData.performers) {
+      return
+    }
+
+    const performerName = performanceData.performers[index]
+    
+    if (!window.confirm(`"${performerName}" 공연진을 삭제하시겠습니까?`)) {
+      return
+    }
+
+    const updatedPerformers = performanceData.performers.filter((_, i) => i !== index)
+    const updatedPerformanceData: PerformanceData = {
+      ...performanceData,
+      performers: updatedPerformers
+    }
+
+    setPerformanceData(updatedPerformanceData)
+    setUploadStatus(`✅ "${performerName}" 공연진이 삭제되었습니다.`)
+  }
+
   return (
     <div className="admin-page">
       <h1>관리자 페이지</h1>
@@ -383,6 +441,142 @@ const Admin = () => {
           <div className={`status-message ${uploadStatus.includes('✅') ? 'success' : 'error'}`}>
             {uploadStatus}
           </div>
+        )}
+      </div>
+
+      {/* 공연진 리스트 섹션 */}
+      <div className="admin-section">
+        <h2>공연진 리스트</h2>
+        <p className="section-description">
+          셋리스트에서 자동으로 추출된 공연진 목록입니다. 공연진을 추가하거나 삭제할 수 있습니다.
+        </p>
+        
+        {/* 공연진 추가 폼 */}
+        <div className="performer-add-form">
+          <input
+            type="text"
+            placeholder="공연진 이름 입력"
+            value={newPerformerName}
+            onChange={(e) => setNewPerformerName(e.target.value)}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                handleAddPerformer()
+              }
+            }}
+            className="performer-input"
+          />
+          <button
+            onClick={handleAddPerformer}
+            className="performer-add-button"
+            disabled={!newPerformerName.trim()}
+          >
+            ➕ 추가
+          </button>
+        </div>
+
+        {performanceData && performanceData.performers && performanceData.performers.length > 0 ? (
+          <div className="performers-list">
+            <div className="performers-list-grid">
+              {performanceData.performers.map((performer, index) => (
+                <div key={index} className="performer-item">
+                  <span className="performer-number">{index + 1}</span>
+                  <span className="performer-name">{performer}</span>
+                  <button
+                    onClick={() => handleDeletePerformer(index)}
+                    className="performer-delete-button"
+                    title="삭제"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="performers-count">
+              총 <strong>{performanceData.performers.length}명</strong>의 공연진이 등록되어 있습니다.
+            </div>
+          </div>
+        ) : (
+          <p>등록된 공연진이 없습니다. 셋리스트를 업로드하면 공연진 정보가 자동으로 추출되거나, 위에서 직접 추가할 수 있습니다.</p>
+        )}
+      </div>
+
+      {/* 게스트 리스트 섹션 */}
+      <div className="admin-section">
+        <h2>게스트 리스트</h2>
+        <p className="section-description">
+          등록된 게스트 목록과 입장 여부를 확인할 수 있습니다.
+        </p>
+        {guests.length > 0 ? (
+          <div className="guest-list-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>번호</th>
+                  <th>이름</th>
+                  <th>전화번호</th>
+                  <th>예매 유형</th>
+                  <th>입금 확인</th>
+                  <th>입장 여부</th>
+                  <th>입장 번호</th>
+                  <th>체크인 시간</th>
+                </tr>
+              </thead>
+              <tbody>
+                {guests.map((guest, index) => {
+                  const guestName = guest.name || guest['이름'] || guest.Name || ''
+                  const guestPhoneRaw = guest.phone || guest['전화번호'] || guest.Phone || ''
+                  const guestPhone = formatPhoneDisplay(guestPhoneRaw)
+                  const isWalkIn = guest.isWalkIn === true
+                  return (
+                    <tr key={index}>
+                      <td>{index + 1}</td>
+                      <td>{guestName}</td>
+                      <td>{guestPhone}</td>
+                      <td>
+                        <span className={isWalkIn ? 'walk-in-badge' : 'pre-booking-badge'}>
+                          {isWalkIn ? '현장 예매' : '사전 예매'}
+                        </span>
+                      </td>
+                      <td>
+                        {isWalkIn ? (
+                          <button
+                            onClick={() => toggleGuestPayment(index)}
+                            className={`payment-confirm-button ${guest.paymentConfirmed ? 'confirmed' : 'not-confirmed'}`}
+                            title={guest.paymentConfirmed ? '입금 확인 완료' : '입금 확인 대기'}
+                          >
+                            {guest.paymentConfirmed ? '✅ 확인완료' : '⏳ 대기중'}
+                          </button>
+                        ) : (
+                          <span className="not-applicable">-</span>
+                        )}
+                      </td>
+                      <td>
+                        <span className={guest.checkedIn ? 'checked-in' : 'not-checked-in'}>
+                          {guest.checkedIn ? '✅ 입장 완료' : '❌ 미입장'}
+                        </span>
+                      </td>
+                      <td>{guest.entryNumber ? `${guest.entryNumber}번` : '-'}</td>
+                      <td>
+                        {guest.checkedInAt 
+                          ? new Date(guest.checkedInAt).toLocaleString('ko-KR', {
+                              year: 'numeric',
+                              month: '2-digit',
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              hour12: false
+                            })
+                          : '-'
+                        }
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p>등록된 게스트가 없습니다.</p>
         )}
       </div>
 

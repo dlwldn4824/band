@@ -35,10 +35,12 @@ const RouletteMirror = () => {
 
   useEffect(() => {
     // 실시간 게임 상태 구독
-    unsubscribeRef.current = onSnapshot(gameRef, (snapshot) => {
-      if (snapshot.exists()) {
-        const data = snapshot.data() as RouletteState
-        setIsSpinning(data.isSpinning || false)
+    unsubscribeRef.current = onSnapshot(
+      gameRef, 
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.data() as RouletteState
+          setIsSpinning(data.isSpinning || false)
         setResult(data.result || '')
         
         if (data.isSpinning && data.startTime) {
@@ -57,6 +59,9 @@ const RouletteMirror = () => {
         setRotation(0)
         setAnimationStartTime(null)
       }
+    },
+    (error) => {
+      console.error('[RouletteMirror] 게임 상태 구독 오류:', error)
     })
 
     return () => {
@@ -196,5 +201,6 @@ const RouletteMirror = () => {
 }
 
 export default RouletteMirror
+
 
 

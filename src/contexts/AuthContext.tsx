@@ -18,6 +18,7 @@ interface AuthContextType {
   updateUser: (userData: User) => void
   setNickname: (nickname: string) => Promise<void>
   isAuthenticated: boolean
+  isLoading: boolean
   refreshUserStatus: (guests: any[]) => void
   isAdmin: boolean
   setAdmin: (isAdmin: boolean, adminName?: string) => void
@@ -30,43 +31,52 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
   const [isAdmin, setIsAdmin] = useState<boolean>(false)
   const [adminName, setAdminName] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState<boolean>(true) // 로딩 상태 추가
 
   useEffect(() => {
     const loadUser = async () => {
-      const savedUser = localStorage.getItem('user')
-      if (savedUser) {
-        const userData = JSON.parse(savedUser)
-        setUser(userData)
+      setIsLoading(true) // 로딩 시작
       
-      // 운영진 상태 로드
-      const savedAdmin = localStorage.getItem('isAdmin')
-      const savedAdminName = localStorage.getItem('adminName')
-      if (savedAdmin === 'true') {
-        setIsAdmin(true)
-        setAdminName(savedAdminName)
-      }
+      try {
+        // 운영진 상태 먼저 로드 (user와 독립적)
+        const savedAdmin = localStorage.getItem('isAdmin')
+        const savedAdminName = localStorage.getItem('adminName')
+        if (savedAdmin === 'true') {
+          setIsAdmin(true)
+          setAdminName(savedAdminName)
+        }
         
-        // Firestore에서 nickname 로드 시도 (실패해도 로컬 데이터로 계속 진행)
-        if (userData.phone) {
-          try {
-            const userId = `${userData.name}_${userData.phone}`
-            const userProfileRef = doc(db, 'userProfiles', userId)
-            const userProfileSnap = await getDoc(userProfileRef)
-            
-            if (userProfileSnap.exists()) {
-              const profileData = userProfileSnap.data()
-              // Firestore에 닉네임이 있고, 로컬에 없거나 다르면 업데이트
-              if (profileData.nickname && (!userData.nickname || profileData.nickname !== userData.nickname)) {
-                const updatedUser = { ...userData, nickname: profileData.nickname }
-                setUser(updatedUser)
-                localStorage.setItem('user', JSON.stringify(updatedUser))
+        const savedUser = localStorage.getItem('user')
+        if (savedUser) {
+          const userData = JSON.parse(savedUser)
+          setUser(userData)
+          
+          // Firestore에서 nickname 로드 시도 (실패해도 로컬 데이터로 계속 진행)
+          if (userData.phone) {
+            try {
+              const userId = `${userData.name}_${userData.phone}`
+              const userProfileRef = doc(db, 'userProfiles', userId)
+              const userProfileSnap = await getDoc(userProfileRef)
+              
+              if (userProfileSnap.exists()) {
+                const profileData = userProfileSnap.data()
+                // Firestore에 닉네임이 있고, 로컬에 없거나 다르면 업데이트
+                if (profileData.nickname && (!userData.nickname || profileData.nickname !== userData.nickname)) {
+                  const updatedUser = { ...userData, nickname: profileData.nickname }
+                  setUser(updatedUser)
+                  localStorage.setItem('user', JSON.stringify(updatedUser))
+                }
               }
+            } catch (error) {
+              // Firestore 연결 실패해도 로컬 데이터로 계속 진행
+              console.warn('Firestore 닉네임 로드 실패 (로컬 데이터 사용):', error)
             }
-          } catch (error) {
-            // Firestore 연결 실패해도 로컬 데이터로 계속 진행
-            console.warn('Firestore 닉네임 로드 실패 (로컬 데이터 사용):', error)
           }
         }
+      } catch (error) {
+        console.error('사용자 정보 로드 오류:', error)
+      } finally {
+        setIsLoading(false) // 로딩 완료 (성공/실패 관계없이)
       }
     }
     loadUser()
@@ -238,6 +248,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       updateUser, 
       setNickname, 
       isAuthenticated: !!user, 
+      isLoading,
       refreshUserStatus,
       isAdmin,
       setAdmin,

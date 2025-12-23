@@ -7,6 +7,7 @@ const Performances = () => {
   const { performanceData } = useData()
   const [selectedSong, setSelectedSong] = useState<SetlistItem | null>(null)
   const [selectedSongIndex, setSelectedSongIndex] = useState<number | null>(null)
+  const [selectedPart, setSelectedPart] = useState<1 | 2>(1)
 
   // 셋리스트 페이지에서만 body 스크롤 활성화
   useEffect(() => {
@@ -71,72 +72,76 @@ const Performances = () => {
   const part1Songs = performanceData.setlist.slice(0, part1Count)
   const part2Songs = performanceData.setlist.slice(part1Count)
 
+  // 선택된 부에 따라 표시할 곡 목록
+  const displaySongs = selectedPart === 1 ? part1Songs : part2Songs
+  const startIndex = selectedPart === 1 ? 0 : part1Count
+
   return (
     <div className="performances-page">
       <div className="performances-content">
-        {/* 1부 셋리스트 */}
-        <div className="setlist-grid-section">
-          <div className="setlist-grid-header">1부</div>
-          <div className="setlist-grid">
-            {part1Songs.map((item, index) => {
-              const globalIndex = index
-              return (
-                <button
-                  key={globalIndex}
-                  className={`song-button ${selectedSong === item ? 'selected' : ''}`}
-                  onClick={() => {
-                    setSelectedSong(item)
-                    setSelectedSongIndex(globalIndex)
-                  }}
-                >
-                  <div className="song-button-number">{globalIndex + 1}</div>
-                  <div className="song-button-info">
-                    <div className="song-button-title">{item.songName}</div>
-                    {(() => {
-                      const artist = (item.artist ?? '').trim()
-                      return artist && artist !== '-' && (
-                        <div className="song-button-artist">{artist}</div>
-                      )
-                    })()}
-                  </div>
-                </button>
-              )
-            })}
-          </div>
+        {/* 1부/2부 선택 버튼 */}
+        <div className="part-selector">
+          <button
+            className={`part-button ${selectedPart === 1 ? 'active' : ''}`}
+            onClick={() => setSelectedPart(1)}
+          >
+            1부
+          </button>
+          <button
+            className={`part-button ${selectedPart === 2 ? 'active' : ''}`}
+            onClick={() => setSelectedPart(2)}
+            disabled={part2Songs.length === 0}
+          >
+            2부
+          </button>
         </div>
 
-        {/* 2부 셋리스트 */}
-        {part2Songs.length > 0 && (
-          <div className="setlist-grid-section">
-            <div className="setlist-grid-header">2부</div>
-            <div className="setlist-grid">
-              {part2Songs.map((item, index) => {
-                const globalIndex = part1Count + index
+        {/* 셋리스트 리스트 */}
+        <div className="setlist-list-section">
+          <div className="timeline">
+            {/* 타임라인 레일 (라인 + dot) */}
+            <div className="timeline-rail">
+              <div className="timeline-line"></div>
+              {displaySongs.map((_, index) => {
+                const globalIndex = startIndex + index
                 return (
-                  <button
-                    key={globalIndex}
-                    className={`song-button ${selectedSong === item ? 'selected' : ''}`}
-                    onClick={() => {
-                      setSelectedSong(item)
-                      setSelectedSongIndex(globalIndex)
-                    }}
-                  >
-                    <div className="song-button-number">{globalIndex + 1}</div>
-                    <div className="song-button-info">
-                      <div className="song-button-title">{item.songName}</div>
-                      {(() => {
-                        const artist = (item.artist ?? '').trim()
-                        return artist && artist !== '-' && (
-                          <div className="song-button-artist">{artist}</div>
-                        )
-                      })()}
-                    </div>
-                  </button>
+                  <div key={globalIndex} className="timeline-dot">
+                    {globalIndex + 1}
+                  </div>
+                )
+              })}
+            </div>
+            
+            {/* 카드 콘텐츠 영역 */}
+            <div className="timeline-content">
+              {displaySongs.map((item, index) => {
+                const globalIndex = startIndex + index
+                return (
+                  <div key={globalIndex} className="timeline-item">
+                    <button
+                      className={`song-item ${selectedSong === item ? 'selected' : ''}`}
+                      onClick={() => {
+                        setSelectedSong(item)
+                        setSelectedSongIndex(globalIndex)
+                      }}
+                    >
+                      <div className="song-item-content">
+                        <div className="song-item-title">{item.songName}</div>
+                        {(() => {
+                          const artist = (item.artist ?? '').trim()
+                          return artist && artist !== '-' && (
+                            <div className="song-item-artist">{artist}</div>
+                          )
+                        })()}
+                      </div>
+                      <div className="song-item-arrow">›</div>
+                    </button>
+                  </div>
                 )
               })}
             </div>
           </div>
-        )}
+        </div>
 
         {/* 선택된 곡 정보 표시 */}
         {selectedSong && selectedSongIndex !== null && performanceData?.setlist && (
