@@ -77,27 +77,28 @@
    Timeline
    ========================= */
 .timeline {
-  display: flex;
   position: relative;
   width: 100%;
-  gap: 1rem;
-}
-
-/* 타임라인 레일 (라인 + dot) */
-.timeline-rail {
-  position: relative;
-  width: 54px;
-  flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
+  gap: 6px; /* 각 행 사이 간격 */
 }
 
-/* 세로 라인: dot 정중앙 관통 */
+/* 레일(라인) */
+.timeline-rail {
+  --rail-center-x: 27px; /* 레일 중앙 x 좌표 (width 54px / 2) */
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 54px;
+  pointer-events: none; /* 클릭 이벤트 방해하지 않도록 */
+}
+
+/* 세로 라인: 레일 중앙 */
 .timeline-line {
   position: absolute;
-  left: 50%;
+  left: var(--rail-center-x);
   top: 0;
   bottom: 0;
   width: 2px;
@@ -107,30 +108,32 @@
   z-index: 1;
 }
 
-/* 카드 콘텐츠 영역: 간격 절반 수준 */
-.timeline-content {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-}
-
-/* 각 아이템 */
-.timeline-item {
-  position: relative;
-  width: 100%;
+/* 각 행: dot + 카드 */
+.timeline-row {
   display: flex;
   align-items: center;
+  gap: 12px; /* rail과 카드 사이 간격 */
+  position: relative;
 }
 
-/* dot */
-.timeline-dot {
+/* 레일 아이템: dot 컨테이너 */
+.timeline-rail-item {
   position: relative;
+  width: 54px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;     /* dot을 세로 중앙 */
+  justify-content: center; /* dot을 가로 중앙(=라인 위) */
+  height: 100%;            /* timeline-item과 같은 높이 */
+}
+
+/* dot: 라인 위에 포개지게 */
+.timeline-dot {
   width: 30px;
   height: 30px;
-  margin: 0.5rem 0;
   border-radius: 50%;
   background: #ff4c4c;
-  color: #ffffff;
+  color: #fff;
   font-size: 0.875rem;
   font-weight: 700;
   display: flex;
@@ -138,7 +141,18 @@
   justify-content: center;
   font-family: 'Pretendard', sans-serif;
   z-index: 3;
-  flex-shrink: 0;
+  position: relative;
+  left: var(--rail-center-x);
+  transform: translateX(-50%); /* dot 중심이 라인 중심과 일치 */
+}
+
+/* 각 카드 아이템 */
+.timeline-item {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  flex: 1;
 }
 
 /* song card button */
@@ -474,8 +488,13 @@
     padding: 0.875rem 2rem;
   }
 
+  .timeline-rail-item,
+  .timeline-item {
+    height: 84px;
+  }
+
   .timeline-content {
-    gap: 3px; /* 모바일/태블릿도 동일 간격 유지 */
+    gap: 4px;
   }
 
   .timeline-dot {
@@ -527,13 +546,9 @@
     padding: 0.75rem 1.75rem;
   }
 
-  .timeline {
-    --rail-x: 20px;
-    padding-left: 48px;
-  }
-
-  .timeline-content {
-    gap: 3px; /* 동일하게 */
+  .timeline-rail-item,
+  .timeline-item {
+    height: 78px;
   }
 
   .timeline-dot {

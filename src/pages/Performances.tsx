@@ -99,25 +99,20 @@ const Performances = () => {
         {/* 셋리스트 리스트 */}
         <div className="setlist-list-section">
           <div className="timeline">
-            {/* 타임라인 레일 (라인 + dot) */}
+            {/* 타임라인 레일 (라인) */}
             <div className="timeline-rail">
-              <div className="timeline-line"></div>
-              {displaySongs.map((_, index) => {
-                const globalIndex = startIndex + index
-                return (
-                  <div key={globalIndex} className="timeline-dot">
-                    {globalIndex + 1}
-                  </div>
-                )
-              })}
+              <div className="timeline-line" />
             </div>
             
-            {/* 카드 콘텐츠 영역 */}
-            <div className="timeline-content">
-              {displaySongs.map((item, index) => {
-                const globalIndex = startIndex + index
-                return (
-                  <div key={globalIndex} className="timeline-item">
+            {/* 각 행: dot + 카드 */}
+            {displaySongs.map((item, index) => {
+              const globalIndex = startIndex + index
+              return (
+                <div key={globalIndex} className="timeline-row">
+                  <div className="timeline-rail-item">
+                    <div className="timeline-dot">{globalIndex + 1}</div>
+                  </div>
+                  <div className="timeline-item">
                     <button
                       className={`song-item ${selectedSong === item ? 'selected' : ''}`}
                       onClick={() => {
@@ -137,9 +132,9 @@ const Performances = () => {
                       <div className="song-item-arrow">›</div>
                     </button>
                   </div>
-                )
-              })}
-            </div>
+                </div>
+              )
+            })}
           </div>
         </div>
 
