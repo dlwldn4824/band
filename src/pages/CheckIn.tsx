@@ -53,6 +53,40 @@ const CheckIn = () => {
     }
   }
 
+  // /checkin URL 스캔 시 자동 체크인 처리
+  const handleCheckInUrl = () => {
+    setShowScanner(false)
+    
+    if (!user) {
+      setResult({ success: false, message: '로그인이 필요합니다.' })
+      setTimeout(() => {
+        navigate('/login')
+      }, 2000)
+      return
+    }
+
+    // 로그인한 사용자 정보로 체크인 처리
+    const checkInResult = checkInGuest(user.name, user.phone)
+    setResult(checkInResult)
+    
+    if (checkInResult.success && checkInResult.entryNumber) {
+      // 사용자 정보 업데이트
+      updateUser({
+        ...user,
+        entryNumber: checkInResult.entryNumber,
+        checkedIn: true,
+        checkedInAt: Date.now()
+      })
+
+      // 3초 후 대시보드로 이동
+      setTimeout(() => {
+        navigate('/dashboard')
+      }, 3000)
+    } else {
+      setResult({ success: false, message: checkInResult.message || '체크인에 실패했습니다.' })
+    }
+  }
+
   const handleManualCheckIn = () => {
     setShowScanner(true)
   }
@@ -193,6 +227,7 @@ const CheckIn = () => {
           <QRScanner
             onScanSuccess={handleScanSuccess}
             onClose={() => setShowScanner(false)}
+            onCheckInUrl={handleCheckInUrl}
           />
         )}
       </div>

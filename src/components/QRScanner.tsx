@@ -5,9 +5,10 @@ import './QRScanner.css'
 interface QRScannerProps {
   onScanSuccess: (data: { name: string; phone: string }) => void
   onClose: () => void
+  onCheckInUrl?: () => void // /checkin URL 스캔 시 호출할 함수
 }
 
-const QRScanner = ({ onScanSuccess, onClose }: QRScannerProps) => {
+const QRScanner = ({ onScanSuccess, onClose, onCheckInUrl }: QRScannerProps) => {
   const scannerRef = useRef<Html5Qrcode | null>(null)
   const isScanningRef = useRef<boolean>(false)
   const [error, setError] = useState<string>('')
@@ -51,10 +52,16 @@ const QRScanner = ({ onScanSuccess, onClose }: QRScannerProps) => {
             // URL 형식인지 확인 (체크인 페이지 URL)
             if (decodedText.includes('/checkin') || decodedText.startsWith('http')) {
               await stopScanner()
-              // URL이면 체크인 페이지로 이동 (이미 체크인 페이지에 있으면 무시)
+              // /checkin URL이면
               if (decodedText.includes('/checkin')) {
+                // onCheckInUrl 콜백이 있으면 호출 (CheckIn 페이지에서 자동 체크인)
+                if (onCheckInUrl) {
+                  onCheckInUrl()
+                } else {
+                  // Dashboard 등에서 스캔한 경우 체크인 페이지로 이동
+                  window.location.href = decodedText.includes('http') ? decodedText : `${window.location.origin}/checkin`
+                }
                 onClose()
-                // 이미 체크인 페이지에 있으므로 아무것도 하지 않음
               } else {
                 // 외부 URL이면 해당 페이지로 이동
                 window.location.href = decodedText
@@ -92,7 +99,7 @@ const QRScanner = ({ onScanSuccess, onClose }: QRScannerProps) => {
     return () => {
       stopScanner()
     }
-  }, [onScanSuccess, onClose, stopScanner])
+  }, [onScanSuccess, onClose, onCheckInUrl, stopScanner])
 
   return (
     <div className="qr-scanner-overlay">

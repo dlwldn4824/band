@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useData } from '../contexts/DataContext'
@@ -21,6 +21,7 @@ const Dashboard = () => {
   const [isUpdatingNickname, setIsUpdatingNickname] = useState(false)
   const [checkInNotification, setCheckInNotification] = useState<{ name: string; timestamp: number } | null>(null)
   const [showGuestList, setShowGuestList] = useState(false)
+  const notificationTimerRef = useRef<NodeJS.Timeout | null>(null)
   const navigate = useNavigate()
 
   // ✅ Hook 호출 완료 후 조건부 return
@@ -130,30 +131,58 @@ const Dashboard = () => {
 
   // 체크인 알림 표시 (admin 권한이 있을 때만)
   useEffect(() => {
-    // admin 권한이 있을 때만 알림 표시
+    // admin 권한이 없으면 알림 제거
     if (!isAdmin) {
+      if (notificationTimerRef.current) {
+        clearTimeout(notificationTimerRef.current)
+        notificationTimerRef.current = null
+      }
       setCheckInNotification(null)
       return
     }
 
     if (lastCheckedInGuest) {
       // 이전 알림과 다른 게스트인지 확인 (중복 방지)
-      if (checkInNotification?.name !== lastCheckedInGuest.name || 
-          checkInNotification?.timestamp !== lastCheckedInGuest.timestamp) {
+      const isNewNotification = 
+        !checkInNotification || 
+        checkInNotification.name !== lastCheckedInGuest.name || 
+        checkInNotification.timestamp !== lastCheckedInGuest.timestamp
+
+      if (isNewNotification) {
+        // 기존 타이머가 있으면 정리
+        if (notificationTimerRef.current) {
+          clearTimeout(notificationTimerRef.current)
+        }
+        
+        // 새 알림 설정
         setCheckInNotification({
           name: lastCheckedInGuest.name,
           timestamp: lastCheckedInGuest.timestamp
         })
         
         // 5초 후 알림 자동 제거
-        const timer = setTimeout(() => {
+        notificationTimerRef.current = setTimeout(() => {
           setCheckInNotification(null)
+          notificationTimerRef.current = null
         }, 5000)
-        
-        return () => clearTimeout(timer)
+      }
+    } else {
+      // lastCheckedInGuest가 null이면 알림 제거
+      if (notificationTimerRef.current) {
+        clearTimeout(notificationTimerRef.current)
+        notificationTimerRef.current = null
+      }
+      setCheckInNotification(null)
+    }
+
+    // cleanup 함수
+    return () => {
+      if (notificationTimerRef.current) {
+        clearTimeout(notificationTimerRef.current)
+        notificationTimerRef.current = null
       }
     }
-  }, [lastCheckedInGuest, checkInNotification, isAdmin])
+  }, [lastCheckedInGuest, isAdmin])
 
   const handleScanSuccess = (data: { name: string; phone: string }) => {
     setShowScanner(false)

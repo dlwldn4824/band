@@ -3,7 +3,7 @@ import {
   getFirestoreData, 
   setFirestoreData
 } from '../services/firestoreService'
-import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore'
+import { collection, getDocs, deleteDoc, doc, onSnapshot } from 'firebase/firestore'
 import { db } from '../config/firebase'
 
 export interface Guest {
@@ -344,6 +344,42 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }
 
     loadFirestoreData()
+
+    // Firestore 실시간 리스너 설정 (guests 자동 업데이트)
+    const guestsDocRef = doc(db, 'guests', 'all')
+    const unsubscribeGuests = onSnapshot(
+      guestsDocRef,
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.data()
+          let firestoreGuests: Guest[] = []
+          
+          if (data) {
+            if (Array.isArray(data)) {
+              firestoreGuests = data
+            } else if (data.guests && Array.isArray(data.guests)) {
+              firestoreGuests = data.guests
+            } else if (Array.isArray(data.data)) {
+              firestoreGuests = data.data
+            }
+          }
+          
+          if (firestoreGuests.length > 0 || guests.length > 0) {
+            // Firestore 데이터가 있으면 업데이트
+            setGuests(firestoreGuests)
+            localStorage.setItem('guests', JSON.stringify(firestoreGuests))
+          }
+        }
+      },
+      (error) => {
+        console.error('Firestore guests 실시간 리스너 오류:', error)
+      }
+    )
+
+    // cleanup 함수
+    return () => {
+      unsubscribeGuests()
+    }
   }, [])
 
   const uploadGuests = (newGuests: Guest[]) => {
