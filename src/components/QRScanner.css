@@ -14,8 +14,8 @@
 }
 
 .qr-scanner-container {
-  background: white;
-  border-radius: 12px;
+  background: #2a2a2a;
+  border-radius: 16px;
   padding: 1.5rem;
   max-width: 500px;
   width: 100%;
@@ -32,14 +32,16 @@
 .qr-scanner-header h2 {
   margin: 0;
   font-size: 1.25rem;
-  color: #333;
+  color: #ffffff;
+  font-family: 'Pretendard', sans-serif;
+  font-weight: 500;
 }
 
 .qr-scanner-close {
   background: none;
   border: none;
   font-size: 1.5rem;
-  color: #666;
+  color: #ffffff;
   cursor: pointer;
   padding: 0;
   width: 2rem;
@@ -52,7 +54,7 @@
 }
 
 .qr-scanner-close:hover {
-  background-color: #f0f0f0;
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .qr-reader {
@@ -63,17 +65,19 @@
 }
 
 .qr-scanner-error {
-  color: #e74c3c;
+  color: #FF4C4C;
   text-align: center;
   margin-top: 1rem;
   font-size: 0.875rem;
+  font-family: 'Pretendard', sans-serif;
 }
 
 .qr-scanner-instruction {
   text-align: center;
-  color: #666;
+  color: rgba(255, 255, 255, 0.8);
   margin-top: 1rem;
   font-size: 0.875rem;
+  font-family: 'Pretendard', sans-serif;
 }
 
 @media (max-width: 768px) {

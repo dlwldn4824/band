@@ -4,17 +4,17 @@
   align-items: center;
   justify-content: center;
   padding: 1rem;
-  background: #D88676;
+  background: #000000;
   box-sizing: border-box;
 }
 
 .checkin-container {
-  background: white;
-  border-radius: 12px;
+  background: #2a2a2a;
+  border-radius: 16px;
   padding: 2rem;
   max-width: 500px;
   width: 100%;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
   box-sizing: border-box;
 }
 
@@ -25,13 +25,16 @@
 
 .checkin-header h1 {
   font-size: 1.75rem;
-  color: #333;
+  color: #ffffff;
   margin-bottom: 0.5rem;
+  font-family: 'Pretendard', sans-serif;
+  font-weight: 500;
 }
 
 .checkin-header p {
-  color: #666;
+  color: rgba(255, 255, 255, 0.8);
   font-size: 1rem;
+  font-family: 'Pretendard', sans-serif;
 }
 
 .checkin-actions {
@@ -46,17 +49,19 @@
   font-size: 1.125rem;
   font-weight: 600;
   color: white;
-  background: #D88676;
+  background: #FF4C4C;
   border: none;
   border-radius: 8px;
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
   box-sizing: border-box;
+  font-family: 'Pretendard', sans-serif;
 }
 
 .checkin-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(216, 134, 118, 0.4);
+  box-shadow: 0 4px 12px rgba(255, 76, 76, 0.4);
+  background: #E63E3E;
 }
 
 .checkin-button:active {
@@ -71,12 +76,12 @@
 }
 
 .checkin-result.success {
-  background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+  background: rgba(40, 167, 69, 0.1);
   border: 2px solid #28a745;
 }
 
 .checkin-result.error {
-  background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+  background: rgba(220, 53, 69, 0.1);
   border: 2px solid #dc3545;
 }
 
@@ -96,18 +101,21 @@
 .checkin-result h2 {
   font-size: 1.5rem;
   margin-bottom: 1rem;
-  color: #333;
+  color: #ffffff;
+  font-family: 'Pretendard', sans-serif;
+  font-weight: 500;
 }
 
 .entry-number {
   font-size: 1.25rem;
   margin: 1rem 0;
-  color: #333;
+  color: #ffffff;
+  font-family: 'Pretendard', sans-serif;
 }
 
 .entry-number strong {
   font-size: 1.5rem;
-  color: #D88676;
+  color: #FF4C4C;
 }
 
 .stamp {
@@ -121,15 +129,16 @@
   justify-content: center;
   font-size: 4rem;
   color: #28a745;
-  background: white;
+  background: rgba(18, 18, 18, 0.8);
   font-weight: bold;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
 .result-message {
-  color: #666;
+  color: rgba(255, 255, 255, 0.8);
   font-size: 1rem;
   margin-top: 1rem;
+  font-family: 'Pretendard', sans-serif;
 }
 
 .retry-button {
@@ -137,19 +146,23 @@
   padding: 0.75rem 1.5rem;
   font-size: 1rem;
   color: white;
-  background: #D88676;
+  background: #FF4C4C;
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
+  font-family: 'Pretendard', sans-serif;
+  font-weight: 600;
 }
 
 .retry-button:hover {
-  background: #c57464;
+  background: #E63E3E;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 76, 76, 0.4);
 }
 
 .code-button {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  background: #FF4C4C;
 }
 
 .code-input-section {
@@ -164,20 +177,22 @@
 
 .code-input-label {
   display: block;
-  color: #333;
+  color: #ffffff;
   font-weight: 600;
   margin-bottom: 0.5rem;
   text-align: center;
+  font-family: 'Pretendard', sans-serif;
 }
 
 .code-user-info {
-  color: #666;
+  color: rgba(255, 255, 255, 0.8);
   font-size: 0.875rem;
   text-align: center;
   margin-bottom: 1rem;
   padding: 0.5rem;
-  background-color: #f0f0f0;
+  background-color: rgba(255, 255, 255, 0.1);
   border-radius: 6px;
+  font-family: 'Pretendard', sans-serif;
 }
 
 .code-input {
@@ -185,18 +200,20 @@
   padding: 1rem;
   font-size: 2rem;
   text-align: center;
-  border: 2px solid #ddd;
+  border: 2px solid rgba(255, 255, 255, 0.3);
   border-radius: 8px;
   letter-spacing: 0.5rem;
   font-family: 'Courier New', monospace;
   font-weight: bold;
   box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
 }
 
 .code-input:focus {
   outline: none;
-  border-color: #D88676;
-  box-shadow: 0 0 0 3px rgba(216, 134, 118, 0.1);
+  border-color: #FF4C4C;
+  box-shadow: 0 0 0 3px rgba(255, 76, 76, 0.2);
 }
 
 .code-input-buttons {
@@ -217,13 +234,15 @@
 }
 
 .code-submit-button {
-  background: #D88676;
+  background: #FF4C4C;
   color: white;
+  font-family: 'Pretendard', sans-serif;
 }
 
 .code-submit-button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(216, 134, 118, 0.4);
+  box-shadow: 0 4px 12px rgba(255, 76, 76, 0.4);
+  background: #E63E3E;
 }
 
 .code-submit-button:disabled {
@@ -232,25 +251,28 @@
 }
 
 .code-cancel-button {
-  background: #f0f0f0;
-  color: #333;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  font-family: 'Pretendard', sans-serif;
 }
 
 .code-cancel-button:hover {
-  background: #e0e0e0;
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .name-phone-input-section {
   margin-top: 2rem;
   padding-top: 2rem;
-  border-top: 2px solid #eee;
+  border-top: 2px solid rgba(255, 255, 255, 0.2);
 }
 
 .name-phone-input-section h3 {
   text-align: center;
-  color: #333;
+  color: #ffffff;
   margin-bottom: 1.5rem;
   font-size: 1.25rem;
+  font-family: 'Pretendard', sans-serif;
+  font-weight: 500;
 }
 
 .name-phone-form {
@@ -266,25 +288,33 @@
 }
 
 .name-phone-form .form-group label {
-  color: #333;
+  color: #ffffff;
   font-weight: 600;
   font-size: 0.95rem;
+  font-family: 'Pretendard', sans-serif;
 }
 
 .form-input {
   width: 100%;
   padding: 0.875rem;
   font-size: 1rem;
-  border: 2px solid #ddd;
+  border: 2px solid rgba(255, 255, 255, 0.3);
   border-radius: 8px;
   box-sizing: border-box;
   transition: border-color 0.2s;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  font-family: 'Pretendard', sans-serif;
 }
 
 .form-input:focus {
   outline: none;
-  border-color: #D88676;
-  box-shadow: 0 0 0 3px rgba(216, 134, 118, 0.1);
+  border-color: #FF4C4C;
+  box-shadow: 0 0 0 3px rgba(255, 76, 76, 0.2);
+}
+
+.form-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .checkin-submit-button {
@@ -293,17 +323,19 @@
   font-size: 1.125rem;
   font-weight: 600;
   color: white;
-  background: #D88676;
+  background: #FF4C4C;
   border: none;
   border-radius: 8px;
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
   box-sizing: border-box;
+  font-family: 'Pretendard', sans-serif;
 }
 
 .checkin-submit-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(216, 134, 118, 0.4);
+  box-shadow: 0 4px 12px rgba(255, 76, 76, 0.4);
+  background: #E63E3E;
 }
 
 @media (max-width: 768px) {

@@ -137,10 +137,10 @@ const CheckIn = () => {
         {!result && !showCodeInput && (
           <div className="checkin-actions">
             <button onClick={handleManualCheckIn} className="checkin-button">
-              📷 카메라 켜기
+              카메라 켜기
             </button>
             <button onClick={() => setShowCodeInput(true)} className="checkin-button code-button">
-              👤 관리자 확인 받기
+              관리자 확인 받기
             </button>
           </div>
         )}

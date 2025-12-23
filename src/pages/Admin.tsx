@@ -1,9 +1,20 @@
 import { useState, useEffect } from 'react'
 import * as XLSX from 'xlsx'
 import { QRCodeSVG } from 'qrcode.react'
-import { useData, SetlistItem, PerformanceData, BookingInfo } from '../contexts/DataContext'
+import { useData, SetlistItem, PerformanceData, BookingInfo, GuestbookMessage } from '../contexts/DataContext'
 import { formatPhoneDisplay } from '../utils/phoneFormat'
 import './Admin.css'
+
+// 메모지 디자인 타입
+type MemoDesign = 'yellow' | 'pink' | 'blue' | 'green' | 'purple'
+
+const MEMO_DESIGNS: Array<{ id: MemoDesign; name: string; color: string }> = [
+  { id: 'yellow', name: '노란색', color: '#FFF9C4' },
+  { id: 'pink', name: '분홍색', color: '#FFE0E6' },
+  { id: 'blue', name: '파란색', color: '#E3F2FD' },
+  { id: 'green', name: '초록색', color: '#E8F5E9' },
+  { id: 'purple', name: '보라색', color: '#F3E5F5' },
+]
 
 const Admin = () => {
   // 관리자 페이지에서는 body 스크롤 허용
@@ -26,7 +37,7 @@ const Admin = () => {
   const [setlistFile, setSetlistFile] = useState<File | null>(null)
   const [uploadStatus, setUploadStatus] = useState('')
   const [newPerformerName, setNewPerformerName] = useState('')
-  const { uploadGuests, setPerformanceData, guests, performanceData, checkInCode, generateCheckInCode, setCheckInCode, clearGuests, clearSetlist, bookingInfo, setBookingInfo, clearGuestbookMessages, clearChatMessages, toggleGuestPayment } = useData()
+  const { uploadGuests, setPerformanceData, guests, performanceData, checkInCode, generateCheckInCode, setCheckInCode, clearGuests, clearSetlist, bookingInfo, setBookingInfo, clearGuestbookMessages, clearChatMessages, toggleGuestPayment, addGuestbookMessage } = useData()
   
   // 예매 정보 폼 상태
   const [bookingForm, setBookingForm] = useState<BookingInfo>({
@@ -747,20 +758,63 @@ const Admin = () => {
       <div className="admin-section">
         <h2>방명록 관리</h2>
         <p className="section-description">
-          저장된 모든 방명록 메시지를 삭제할 수 있습니다.
+          데모 메모지를 생성하거나 저장된 모든 방명록 메시지를 삭제할 수 있습니다.
         </p>
-        <button 
-          onClick={async () => {
-            if (window.confirm('정말로 모든 방명록 메시지를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-              await clearGuestbookMessages()
-              setUploadStatus('✅ 모든 방명록 메시지가 삭제되었습니다.')
-            }
-          }}
-          className="reset-button"
-          style={{ background: '#ff4444', color: 'white' }}
-        >
-          🗑️ 방명록 메시지 전체 삭제
-        </button>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <button 
+            onClick={() => {
+              const dummyNames = ['김철수', '이영희', '박민수', '최지은', '정수진', '한소영', '윤태호', '강미영', '조성민', '임다은', '오준호', '신혜진']
+              const dummyMessages = [
+                '정말 즐거운 공연이었어요!',
+                '다음에도 또 오고 싶어요',
+                '너무 감동적이었습니다',
+                '공연 너무 좋았어요!',
+                '다음 공연도 기대할게요',
+                '정말 멋진 공연이었습니다',
+                '음악이 너무 좋았어요',
+                '다음에도 꼭 참석하겠습니다',
+                '정말 행복한 시간이었어요',
+                '공연 너무 재밌었습니다',
+                '다음 공연도 기대됩니다',
+                '정말 최고의 공연이었어요'
+              ]
+              
+              const newMemos: GuestbookMessage[] = []
+              for (let i = 0; i < 12; i++) {
+                newMemos.push({
+                  id: `dummy-${Date.now()}-${i}`,
+                  name: dummyNames[i] || `사용자${i + 1}`,
+                  message: dummyMessages[i] || `테스트 메시지 ${i + 1}`,
+                  timestamp: Date.now() - (12 - i) * 60000, // 시간 순서대로
+                  design: MEMO_DESIGNS[i % MEMO_DESIGNS.length].id as MemoDesign,
+                } as any)
+              }
+              
+              // 기존 메시지에 더미 메시지 추가
+              newMemos.forEach(memo => {
+                addGuestbookMessage(memo)
+              })
+              
+              setUploadStatus('✅ 데모 메모지 12개가 생성되었습니다.')
+            }}
+            className="reset-button"
+            style={{ background: '#28a745', color: 'white' }}
+          >
+            ✨ 데모 메모지 생성
+          </button>
+          <button 
+            onClick={async () => {
+              if (window.confirm('정말로 모든 방명록 메시지를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+                await clearGuestbookMessages()
+                setUploadStatus('✅ 모든 방명록 메시지가 삭제되었습니다.')
+              }
+            }}
+            className="reset-button"
+            style={{ background: '#ff4444', color: 'white' }}
+          >
+            🗑️ 방명록 메시지 전체 삭제
+          </button>
+        </div>
       </div>
 
       <div className="admin-section">

@@ -77,14 +77,14 @@ const Layout = ({ children }: LayoutProps) => {
                 <Link to="/admin/performances" className={`nav-link ${isActive('/admin/performances')}`}>
                   공연 정보
                 </Link>
-                <Link to="/admin/events" className={`nav-link ${isActive('/admin/events')}`}>
-                  이벤트
-                </Link>
                 <Link to="/admin/guestbook" className={`nav-link ${isActive('/admin/guestbook')}`}>
                   방명록
                 </Link>
                 <Link to="/admin/chat" className={`nav-link ${isActive('/admin/chat')}`}>
                   채팅
+                </Link>
+                <Link to="/admin/events" className={`nav-link ${isActive('/admin/events')}`}>
+                  기타
                 </Link>
               </>
             ) : isAuthenticated ? (
@@ -95,17 +95,17 @@ const Layout = ({ children }: LayoutProps) => {
                 <Link to="/performances" className={`nav-link ${isActive('/performances')}`}>
                   공연 정보
                 </Link>
-                {eventsEnabled && (
-                  <Link to="/events" className={`nav-link ${isActive('/events')}`}>
-                    이벤트
-                  </Link>
-                )}
                 <Link to="/guestbook" className={`nav-link ${isActive('/guestbook')}`}>
                   방명록
                 </Link>
                 <Link to="/chat" className={`nav-link ${isActive('/chat')}`}>
                   채팅
                 </Link>
+                {eventsEnabled && (
+                  <Link to="/events" className={`nav-link ${isActive('/events')}`}>
+                    기타
+                  </Link>
+                )}
               </>
             ) : (
               <>
@@ -115,14 +115,14 @@ const Layout = ({ children }: LayoutProps) => {
                 <Link to="/performances" className={`nav-link ${isActive('/performances')}`}>
                   공연 정보
                 </Link>
-                {eventsEnabled && (
-                  <Link to="/events" className={`nav-link ${isActive('/events')}`}>
-                    이벤트
-                  </Link>
-                )}
                 <Link to="/guestbook" className={`nav-link ${isActive('/guestbook')}`}>
                   방명록
                 </Link>
+                {eventsEnabled && (
+                  <Link to="/events" className={`nav-link ${isActive('/events')}`}>
+                    기타
+                  </Link>
+                )}
               </>
             )}
           </nav>

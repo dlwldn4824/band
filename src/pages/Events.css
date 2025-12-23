@@ -65,6 +65,162 @@
   color: #D88676;
 }
 
+/* 길찾기 모달 */
+.directions-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 1rem;
+  animation: fadeIn 0.3s ease;
+}
+
+.directions-modal {
+  background: #2a2a2a;
+  border-radius: 20px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  animation: slideUp 0.3s ease;
+  position: relative;
+}
+
+.directions-modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  font-size: 1.5rem;
+  color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+  z-index: 10;
+}
+
+.directions-modal-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.directions-modal-content {
+  padding: 2rem 1.5rem;
+  text-align: center;
+}
+
+.directions-modal-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 1.5rem 0;
+  font-family: 'Pretendard', sans-serif;
+}
+
+.directions-image-container {
+  width: 100%;
+  margin-bottom: 1.5rem;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.05);
+  min-height: 200px;
+  max-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.directions-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  max-width: 100%;
+  max-height: 60vh;
+}
+
+.directions-address {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+}
+
+.directions-address-title {
+  font-size: 1.5rem;
+  color: #ffffff;
+  margin: 0 0 0.75rem 0;
+  font-family: 'Pretendard', sans-serif;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.directions-address-text {
+  font-size: 1rem;
+  color: #ffffff;
+  margin: 0.5rem 0;
+  font-family: 'Pretendard', sans-serif;
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+.directions-kakao-button {
+  width: 100%;
+  padding: 1rem 2rem;
+  background: #FF4C4C;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Pretendard', sans-serif;
+}
+
+.directions-kakao-button:hover {
+  background: #E63E3E;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 76, 76, 0.4);
+}
+
+.directions-kakao-button:active {
+  transform: translateY(0);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 .games-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

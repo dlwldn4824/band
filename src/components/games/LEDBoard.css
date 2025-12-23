@@ -12,7 +12,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f5f5f5;
+  background: rgba(255, 255, 255, 0.05);
   border-radius: 12px;
   padding: 2rem;
   min-height: 200px;
@@ -88,21 +88,23 @@
 }
 
 .speed-control {
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(42, 42, 42, 0.95);
   padding: 1rem;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
   min-width: 200px;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .speed-control label {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #333;
+  color: #ffffff;
   margin: 0;
+  font-family: 'Pretendard', sans-serif;
 }
 
 .speed-slider {
@@ -120,21 +122,21 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #D88676;
+  background: #FF4C4C;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .speed-slider::-webkit-slider-thumb:hover {
   transform: scale(1.2);
-  background: #c77565;
+  background: #E63E3E;
 }
 
 .speed-slider::-moz-range-thumb {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #D88676;
+  background: #FF4C4C;
   cursor: pointer;
   border: none;
   transition: all 0.2s;
@@ -142,23 +144,24 @@
 
 .speed-slider::-moz-range-thumb:hover {
   transform: scale(1.2);
-  background: #c77565;
+  background: #E63E3E;
 }
 
 .led-board-exit {
   padding: 0.75rem 1.5rem;
-  background: rgba(255, 255, 255, 0.9);
-  color: #333;
-  border: none;
+  background: rgba(42, 42, 42, 0.95);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
   transition: all 0.2s;
+  font-family: 'Pretendard', sans-serif;
 }
 
 .led-board-exit:hover {
-  background: white;
+  background: rgba(42, 42, 42, 1);
   transform: scale(1.05);
 }
 
@@ -188,10 +191,10 @@
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
-  background: white;
+  background: rgba(255, 255, 255, 0.05);
   padding: 1.5rem;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .control-group {
@@ -202,23 +205,32 @@
 
 .control-group label {
   font-weight: 600;
-  color: #333;
+  color: #ffffff;
   font-size: 0.9rem;
+  font-family: 'Pretendard', sans-serif;
 }
 
 .led-input {
   padding: 0.75rem;
-  border: 2px solid #e0e0e0;
+  border: 2px solid rgba(255, 255, 255, 0.3);
   border-radius: 8px;
   font-size: 1rem;
   transition: border-color 0.3s;
   box-sizing: border-box;
   width: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  font-family: 'Pretendard', sans-serif;
 }
 
 .led-input:focus {
   outline: none;
-  border-color: #D88676;
+  border-color: #FF4C4C;
+  box-shadow: 0 0 0 3px rgba(255, 76, 76, 0.2);
+}
+
+.led-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .color-options {
@@ -249,8 +261,8 @@
 }
 
 .color-option.selected {
-  border-color: #333;
-  box-shadow: 0 0 0 2px white, 0 0 0 4px #333;
+  border-color: #FF4C4C;
+  box-shadow: 0 0 0 2px white, 0 0 0 4px #FF4C4C;
   transform: scale(1.15);
 }
 
@@ -269,21 +281,21 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #D88676;
+  background: #FF4C4C;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .font-size-slider::-webkit-slider-thumb:hover {
   transform: scale(1.2);
-  background: #c77565;
+  background: #E63E3E;
 }
 
 .font-size-slider::-moz-range-thumb {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #D88676;
+  background: #FF4C4C;
   cursor: pointer;
   border: none;
   transition: all 0.2s;
@@ -291,15 +303,16 @@
 
 .font-size-slider::-moz-range-thumb:hover {
   transform: scale(1.2);
-  background: #c77565;
+  background: #E63E3E;
 }
 
 .font-size-info {
   display: flex;
   justify-content: space-between;
   font-size: 0.75rem;
-  color: #666;
+  color: rgba(255, 255, 255, 0.6);
   margin-top: 0.25rem;
+  font-family: 'Pretendard', sans-serif;
 }
 
 
@@ -312,7 +325,7 @@
 .fullscreen-button {
   width: 100%;
   padding: 0.875rem 1.5rem;
-  background: #D88676;
+  background: #FF4C4C;
   color: white;
   border: none;
   border-radius: 8px;
@@ -320,12 +333,13 @@
   font-size: 1rem;
   cursor: pointer;
   transition: all 0.2s;
+  font-family: 'Pretendard', sans-serif;
 }
 
 .fullscreen-button:hover {
-  background: #c77565;
+  background: #E63E3E;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(216, 134, 118, 0.4);
+  box-shadow: 0 4px 12px rgba(255, 76, 76, 0.4);
 }
 
 @media (max-width: 768px) {

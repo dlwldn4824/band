@@ -5,6 +5,7 @@ import { useData } from '../contexts/DataContext'
 import RouletteMirror from '../components/games/RouletteMirror'
 import EntryNumberDrawMirror from '../components/games/EntryNumberDrawMirror'
 import LEDBoard from '../components/games/LEDBoard'
+import directionsImage from '../assets/배경/라디오가가_지도.png'
 import './Events.css'
 
 type GameType = 'menu' | 'roulette' | 'draw' | 'ledboard'
@@ -12,6 +13,7 @@ type GameType = 'menu' | 'roulette' | 'draw' | 'ledboard'
 const Events = () => {
   // ✅ 모든 Hook은 최상단에서 조건 없이 호출
   const [currentGame, setCurrentGame] = useState<GameType>('menu')
+  const [showDirectionsModal, setShowDirectionsModal] = useState(false)
   const { isAdmin, user, isLoading } = useAuth()
   const { eventsEnabled, setEventsEnabled } = useData()
   const navigate = useNavigate()
@@ -106,9 +108,29 @@ const Events = () => {
     )
   }
 
+  const handleDirections = () => {
+    setShowDirectionsModal(true)
+  }
+
+  const handleKakaoMap = () => {
+    // 카카오맵에서 주소 검색
+    const address = encodeURIComponent('마포구 서교동 384-12')
+    const kakaoMapUrl = `https://map.kakao.com/link/search/${address}`
+    window.open(kakaoMapUrl, '_blank')
+  }
+
   return (
     <div className="events-page">
       <div className="games-grid">
+        <div
+          className="game-card"
+          onClick={handleDirections}
+        >
+          <div className="game-icon">📍</div>
+          <h3>길찾기</h3>
+          <p>공연장 위치를 <br/>확인하세요</p>
+          <button className="play-button">확인하기</button>
+        </div>
         {games.map((game) => (
           <div
             key={game.id}
@@ -118,10 +140,60 @@ const Events = () => {
             <div className="game-icon">{game.icon}</div>
             <h3>{game.name}</h3>
             <p>{game.description}</p>
-            <button className="play-button">플레이</button>
+            <button className="play-button">만들러 가기</button>
           </div>
         ))}
       </div>
+
+      {/* 길찾기 모달 */}
+      {showDirectionsModal && (
+        <div 
+          className="directions-modal-overlay"
+          onClick={() => setShowDirectionsModal(false)}
+        >
+          <div 
+            className="directions-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="directions-modal-close"
+              onClick={() => setShowDirectionsModal(false)}
+            >
+              ×
+            </button>
+            <div className="directions-modal-content">
+              <h2 className="directions-modal-title">공연장 위치</h2>
+              
+              {/* 길 안내 이미지 */}
+              <div className="directions-image-container">
+                <img 
+                  src={directionsImage} 
+                  alt="길 안내" 
+                  className="directions-image"
+                />
+              </div>
+
+              {/* 주소 */}
+              <div className="directions-address">
+                <p className="directions-address-title">
+                 라디오 가가 공연장
+                </p>
+                <p className="directions-address-text">
+                  마포구 서교동 384-12 양화로 11길 54
+                </p>
+              </div>
+
+              {/* 카카오맵 연결 버튼 */}
+              <button
+                className="directions-kakao-button"
+                onClick={handleKakaoMap}
+              >
+                카카오맵에서 길찾기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

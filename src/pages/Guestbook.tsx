@@ -32,40 +32,6 @@ const Guestbook = () => {
   const [viewAllOpen, setViewAllOpen] = useState(false)
   const [sortBy, setSortBy] = useState<'date' | 'name'>('date')
   
-  // 테스트용 더미 메모지 생성 함수
-  const generateDummyMemos = () => {
-    const dummyNames = ['김철수', '이영희', '박민수', '최지은', '정수진', '한소영', '윤태호', '강미영', '조성민', '임다은', '오준호', '신혜진']
-    const dummyMessages = [
-      '정말 즐거운 공연이었어요!',
-      '다음에도 또 오고 싶어요',
-      '너무 감동적이었습니다',
-      '공연 너무 좋았어요!',
-      '다음 공연도 기대할게요',
-      '정말 멋진 공연이었습니다',
-      '음악이 너무 좋았어요',
-      '다음에도 꼭 참석하겠습니다',
-      '정말 행복한 시간이었어요',
-      '공연 너무 재밌었습니다',
-      '다음 공연도 기대됩니다',
-      '정말 최고의 공연이었어요'
-    ]
-    
-    const newMemos: GuestbookMessage[] = []
-    for (let i = 0; i < 12; i++) {
-      newMemos.push({
-        id: `dummy-${Date.now()}-${i}`,
-        name: dummyNames[i] || `사용자${i + 1}`,
-        message: dummyMessages[i] || `테스트 메시지 ${i + 1}`,
-        timestamp: Date.now() - (12 - i) * 60000, // 시간 순서대로
-        design: MEMO_DESIGNS[i % MEMO_DESIGNS.length].id as MemoDesign,
-      } as any)
-    }
-    
-    // 기존 메시지에 더미 메시지 추가
-    newMemos.forEach(memo => {
-      addGuestbookMessage(memo)
-    })
-  }
 
   // 메모지로 변환 (현재 페이지만 처리)
   const memoNotes: MemoNote[] = useMemo(() => {
@@ -369,13 +335,6 @@ const Guestbook = () => {
             onClick={() => setWriteOpen(true)}
           >
             메모지 붙이기
-          </button>
-          {/* 테스트용 더미 메모지 생성 버튼 */}
-          <button
-            className="dummy-button"
-            onClick={generateDummyMemos}
-          >
-            데모 메모지 생성
           </button>
         </div>
       </div>

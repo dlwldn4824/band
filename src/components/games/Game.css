@@ -2,9 +2,9 @@
   max-width: 600px;
   margin: 0 auto;
   padding: 0;
-  background: white;
+  background: #2a2a2a;
   border-radius: 16px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
   animation: fadeIn 0.5s ease-in;
   height: 100%;
   min-height: 0;
@@ -18,14 +18,25 @@
   text-align: center;
   font-size: 1.5rem;
   margin-bottom: 0.75rem;
-  color: #333;
+  color: #ffffff;
   flex-shrink: 0;
+  font-family: 'Pretendard', sans-serif;
+  font-weight: 500;
 }
 
 /* 룰렛 전용 헤더 */
 .roulette-header {
   flex: 0 0 auto;
   padding: 1rem 1.5rem 0.75rem;
+}
+
+.roulette-header h2 {
+  text-align: center;
+  font-size: 1.5rem;
+  margin-bottom: 0.75rem;
+  color: #ffffff;
+  font-family: 'Pretendard', sans-serif;
+  font-weight: 500;
 }
 
 /* 룰렛 전용 body (원판 영역) */
@@ -44,7 +55,7 @@
   flex: 0 0 auto;
   padding: 0.75rem 1.5rem;
   padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
-  background: white;
+  background: #2a2a2a;
   border-radius: 0 0 16px 16px;
 }
 
@@ -70,7 +81,7 @@
 
 .game-button {
   padding: 0.875rem 2rem;
-  background: #D88676;
+  background: #FF4C4C;
   color: white;
   border: none;
   border-radius: 8px;
@@ -85,11 +96,13 @@
   overflow: hidden;
   text-overflow: ellipsis;
   box-sizing: border-box;
+  font-family: 'Pretendard', sans-serif;
 }
 
 .game-button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 12px rgba(255, 76, 76, 0.4);
+  background: #E63E3E;
 }
 
 .game-button:disabled {
@@ -521,7 +534,7 @@
   text-align: center;
   margin-bottom: 0.75rem;
   padding: 0.75rem 1rem;
-  background: #D88676;
+  background: #FF4C4C;
   border-radius: 10px;
   color: white;
   animation: fadeInUp 0.5s ease-out;
@@ -529,6 +542,7 @@
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+  font-family: 'Pretendard', sans-serif;
 }
 
 .roulette-result .result-text {
@@ -635,18 +649,20 @@
 
 .draw-count {
   font-size: 0.95rem;
-  color: #666;
+  color: rgba(255, 255, 255, 0.8);
   margin-bottom: 0.25rem;
+  font-family: 'Pretendard', sans-serif;
 }
 
 .draw-count strong {
-  color: #D88676;
+  color: #FF4C4C;
   font-size: 1rem;
 }
 
 .draw-range {
   font-size: 0.8rem;
-  color: #999;
+  color: rgba(255, 255, 255, 0.6);
+  font-family: 'Pretendard', sans-serif;
 }
 
 .draw-display {
@@ -660,7 +676,7 @@
 .draw-number {
   font-size: 5rem;
   font-weight: 900;
-  color: #D88676;
+  color: #FF4C4C;
   text-align: center;
   line-height: 1;
   min-height: 140px;
@@ -670,16 +686,17 @@
   width: 140px;
   height: 140px;
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(216, 134, 118, 0.1) 0%, rgba(216, 134, 118, 0.2) 100%);
-  border: 6px solid #D88676;
-  box-shadow: 0 6px 20px rgba(216, 134, 118, 0.3);
+  background: linear-gradient(135deg, rgba(255, 76, 76, 0.1) 0%, rgba(255, 76, 76, 0.2) 100%);
+  border: 6px solid #FF4C4C;
+  box-shadow: 0 6px 20px rgba(255, 76, 76, 0.3);
   transition: transform 0.1s ease-out;
+  font-family: 'Pretendard', sans-serif;
 }
 
 .draw-number.placeholder {
-  color: #ccc;
-  border-color: #ddd;
-  background: #f9f9f9;
+  color: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.05);
   box-shadow: none;
 }
 
@@ -691,7 +708,7 @@
 .draw-number.final {
   animation: drawFinal 0.5s ease-out;
   transform: scale(1.08);
-  box-shadow: 0 8px 24px rgba(216, 134, 118, 0.5);
+  box-shadow: 0 8px 24px rgba(255, 76, 76, 0.5);
 }
 
 @keyframes drawPulse {
@@ -718,12 +735,13 @@
 .draw-result {
   text-align: center;
   padding: 1rem 1.5rem;
-  background: linear-gradient(135deg, #D88676 0%, #C57464 100%);
+  background: linear-gradient(135deg, #FF4C4C 0%, #E63E3E 100%);
   border-radius: 12px;
   color: white;
   animation: fadeInUp 0.5s ease-out;
   width: 100%;
   max-width: 350px;
+  font-family: 'Pretendard', sans-serif;
 }
 
 .result-name {
