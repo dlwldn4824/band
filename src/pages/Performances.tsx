@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useData, SetlistItem } from '../contexts/DataContext'
 import demoImage from '../assets/배경/데모 이미지.png'
+import vocalIcon from '../assets/배경/보컬.png'
+import guitarIcon from '../assets/배경/기타.png'
+import bassIcon from '../assets/배경/베이스.png'
+import keyboardIcon from '../assets/배경/키보드.png'
+import drumIcon from '../assets/배경/드럼.png'
 import './Performances.css'
 
 const Performances = () => {
@@ -152,37 +157,7 @@ const Performances = () => {
                 ×
               </button>
 
-              {/* 이전/다음 곡 버튼 */}
-              <div className="song-navigation">
-                <button
-                  className="song-nav-button song-nav-prev"
-                  onClick={() => {
-                    if (selectedSongIndex > 0 && performanceData.setlist) {
-                      const prevIndex = selectedSongIndex - 1
-                      setSelectedSong(performanceData.setlist[prevIndex])
-                      setSelectedSongIndex(prevIndex)
-                    }
-                  }}
-                  disabled={selectedSongIndex === 0}
-                >
-                  ‹
-                </button>
-                <button
-                  className="song-nav-button song-nav-next"
-                  onClick={() => {
-                    if (performanceData.setlist && selectedSongIndex < performanceData.setlist.length - 1) {
-                      const nextIndex = selectedSongIndex + 1
-                      setSelectedSong(performanceData.setlist[nextIndex])
-                      setSelectedSongIndex(nextIndex)
-                    }
-                  }}
-                  disabled={!performanceData.setlist || selectedSongIndex === performanceData.setlist.length - 1}
-                >
-                  ›
-                </button>
-              </div>
-
-              {/* 데모 이미지 */}
+              {/* 이미지 배너 */}
               <div className="song-image-container">
                 <img 
                   src={selectedSong.image || demoImage} 
@@ -191,27 +166,56 @@ const Performances = () => {
                 />
               </div>
 
-              {/* 곡 정보 */}
-              <div className="song-info">
-                <div className="song-number-info">
-                  {(() => {
-                    const totalSongs = performanceData.setlist.length
-                    const currentNumber = selectedSongIndex + 1
-                    // 1부/2부 구분 (대략 절반 기준)
-                    const part1Count = Math.ceil(totalSongs / 2)
-                    const part = currentNumber <= part1Count ? 1 : 2
-                    const partNumber = part === 1 ? currentNumber : currentNumber - part1Count
-                    return (
-                      <span className="song-part-info">
-                        {part}부 {partNumber}번째 곡 ({currentNumber}/{totalSongs})
-                      </span>
-                    )
-                  })()}
+              {/* 곡 정보 섹션 */}
+              <div className="song-info-section">
+                <div className="song-info-content">
+                  <div className="song-info-header">
+                    <button className="song-part-button">
+                      {(() => {
+                        const totalSongs = performanceData.setlist.length
+                        const currentNumber = selectedSongIndex + 1
+                        const part1Count = Math.ceil(totalSongs / 2)
+                        const part = currentNumber <= part1Count ? 1 : 2
+                        const partNumber = part === 1 ? currentNumber : currentNumber - part1Count
+                        return `${part}부 ${partNumber}번째 곡`
+                      })()}
+                    </button>
+                    <span className="song-number-display">
+                      {selectedSongIndex + 1}/{performanceData.setlist.length}
+                    </span>
+                  </div>
+                  <h2 className="song-title">{selectedSong.songName}</h2>
+                  {selectedSong.artist && (
+                    <p className="song-artist">{selectedSong.artist}</p>
+                  )}
+                  {/* 이전/다음 곡 버튼 */}
+                  <button
+                    className="song-nav-arrow song-nav-prev"
+                    onClick={() => {
+                      if (selectedSongIndex > 0 && performanceData.setlist) {
+                        const prevIndex = selectedSongIndex - 1
+                        setSelectedSong(performanceData.setlist[prevIndex])
+                        setSelectedSongIndex(prevIndex)
+                      }
+                    }}
+                    disabled={selectedSongIndex === 0}
+                  >
+                    ‹
+                  </button>
+                  <button
+                    className="song-nav-arrow song-nav-next"
+                    onClick={() => {
+                      if (performanceData.setlist && selectedSongIndex < performanceData.setlist.length - 1) {
+                        const nextIndex = selectedSongIndex + 1
+                        setSelectedSong(performanceData.setlist[nextIndex])
+                        setSelectedSongIndex(nextIndex)
+                      }
+                    }}
+                    disabled={!performanceData.setlist || selectedSongIndex === performanceData.setlist.length - 1}
+                  >
+                    ›
+                  </button>
                 </div>
-                <h2 className="song-title">{selectedSong.songName}</h2>
-                {selectedSong.artist && (
-                  <p className="song-artist">{selectedSong.artist}</p>
-                )}
               </div>
 
               {/* 세션 정보 */}
@@ -220,13 +224,22 @@ const Performances = () => {
                 <div className="session-list">
                   {(() => {
                     const sessionInfo = getSessionInfo(selectedSong)
-                    const sessionOrder = ['보컬', '기타', '베이스', '키보드', '드럼']
+                    const sessionOrder = [
+                      { name: '보컬', icon: vocalIcon },
+                      { name: '기타', icon: guitarIcon },
+                      { name: '베이스', icon: bassIcon },
+                      { name: '키보드', icon: keyboardIcon },
+                      { name: '드럼', icon: drumIcon }
+                    ]
                     return sessionOrder.map((session) => {
-                      const members = sessionInfo[session] || []
+                      const members = sessionInfo[session.name] || []
                       if (members.length === 0) return null
                       return (
-                        <div key={session} className="session-item">
-                          <span className="session-label">{session}</span>
+                        <div key={session.name} className="session-item">
+                          <div className="session-label-wrapper">
+                            <img src={session.icon} alt={session.name} className="session-icon" />
+                            <span className="session-label">{session.name}</span>
+                          </div>
                           <div className="session-members">
                             {members.map((member, idx) => (
                               <span key={idx} className="session-chip">
