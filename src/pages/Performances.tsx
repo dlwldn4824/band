@@ -35,6 +35,8 @@ const Performances = () => {
 
   // 곡 이름에 맞는 이미지 반환 (public 폴더 경로 사용)
   const getSongImage = (songName: string): string | undefined => {
+    if (!songName) return undefined
+    
     // 곡 이름 정규화 (공백, 특수문자 제거, 소문자 변환)
     const normalize = (str: string) => str.replace(/\s+/g, '').replace(/[^\w가-힣]/g, '').toLowerCase()
     const normalizedSongName = normalize(songName)
@@ -43,6 +45,7 @@ const Performances = () => {
     const imageMap: { [key: string]: string } = {
       '비틀비틀짝짝꿍': '/assets/곡소개/1_비틀비틀짝짜꿍.JPG',
       '비틀비틀짝짜꿍': '/assets/곡소개/1_비틀비틀짝짜꿍.JPG',
+      '비틀비틀': '/assets/곡소개/1_비틀비틀짝짜꿍.JPG',
       '대화가필요해': '/assets/곡소개/2_대화가필요해.jpeg',
       '눈이오잖아': '/assets/곡소개/3_눈이오잖아.jpeg',
       '밤이깊었네': '/assets/곡소개/4_밤이깊었네.jpeg',
@@ -55,12 +58,18 @@ const Performances = () => {
       '검을현': '/assets/곡소개/11_검을현.jpeg',
       'oddities': '/assets/곡소개/12_Oddities.jpeg',
       '용의자': '/assets/곡소개/13_용의자.png',
-      '아지랑이': '/assets/곡소개/19_아지랑이.jpeg'
+      'itsmylife': '/assets/곡소개/16_itsmylife.jpeg',
+      'its my life': '/assets/곡소개/16_itsmylife.jpeg',
+      'itsmylif': '/assets/곡소개/16_itsmylife.jpeg',
+      '아지랑이': '/assets/곡소개/19_아지랑이.jpeg',
+      '아지랑': '/assets/곡소개/19_아지랑이.jpeg',
+      '지랑이': '/assets/곡소개/19_아지랑이.jpeg',
     }
     
     // 정규화된 곡 이름으로 매칭 시도
     for (const [key, path] of Object.entries(imageMap)) {
       if (normalize(key) === normalizedSongName) {
+        console.log('[이미지 매핑] 매칭 성공:', key, '→', path)
         return path
       }
     }
@@ -68,11 +77,13 @@ const Performances = () => {
     // 정확한 매칭이 안 되면 부분 매칭 시도
     for (const [key, path] of Object.entries(imageMap)) {
       if (normalizedSongName.includes(normalize(key)) || normalize(key).includes(normalizedSongName)) {
+        console.log('[이미지 매핑] 부분 매칭 성공:', key, '→', path)
         return path
       }
     }
     
     // 매칭 실패 시 undefined 반환 (기존 이미지 사용)
+    console.log('[이미지 매핑] 매칭 실패:', songName, '정규화:', normalizedSongName)
     return undefined
   }
 
@@ -202,11 +213,27 @@ const Performances = () => {
 
               {/* 이미지 배너 */}
               <div className="song-image-container">
-                <img 
-                  src={getSongImage(selectedSong.songName) || selectedSong.image || demoImage} 
-                  alt={`${selectedSong.songName} 이미지`}
-                  className="song-image"
-                />
+                {(() => {
+                  const imagePath = getSongImage(selectedSong.songName) || selectedSong.image || demoImage
+                  console.log('[이미지 렌더링] 곡:', selectedSong.songName, '경로:', imagePath)
+                  return (
+                    <img 
+                      src={imagePath}
+                      alt={`${selectedSong.songName} 이미지`}
+                      className="song-image"
+                      onLoad={() => {
+                        console.log('[이미지 로드 성공]', imagePath)
+                      }}
+                      onError={(e) => {
+                        console.error('[이미지 로드 실패]', e.currentTarget.src, '→ 데모 이미지로 대체')
+                        // 이미지 로드 실패 시 데모 이미지로 대체
+                        if (e.currentTarget.src !== demoImage) {
+                          e.currentTarget.src = demoImage
+                        }
+                      }}
+                    />
+                  )
+                })()}
               </div>
 
               {/* 곡 정보 섹션 */}
