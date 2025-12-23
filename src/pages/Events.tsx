@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useData } from '../contexts/DataContext'
 import RouletteMirror from '../components/games/RouletteMirror'
@@ -15,6 +15,10 @@ const Events = () => {
   const { isAdmin, user, isLoading } = useAuth()
   const { eventsEnabled, setEventsEnabled } = useData()
   const navigate = useNavigate()
+  const location = useLocation()
+  
+  // 현재 경로가 /events인지 확인 (admin이 아닌 일반 사용자 페이지)
+  const isPublicEventsPage = location.pathname === '/events'
 
   // 디버깅: Events 페이지 렌더링 상태 로그
   useEffect(() => {
@@ -71,12 +75,16 @@ const Events = () => {
     { id: 'ledboard', name: '전광판 만들기', icon: '📺', description: '나만의 전광판을 만들어 응원하세요!' },
   ]
 
-  // 예약한 사람은 LED Board만 보이도록 필터링
-  const games = isAdmin 
-    ? allGames 
-    : isBookedUser 
-      ? allGames.filter(game => game.id === 'ledboard')
-      : allGames
+  // 게임 목록 필터링
+  // /events 페이지는 전광판만 보임
+  // /admin/events 페이지는 운영진은 모든 게임, 일반 사용자는 예약한 경우 전광판만
+  const games = isPublicEventsPage
+    ? allGames.filter(game => game.id === 'ledboard')
+    : isAdmin 
+      ? allGames 
+      : isBookedUser 
+        ? allGames.filter(game => game.id === 'ledboard')
+        : allGames
 
   console.log('[Events] 게임 목록:', {
     isAdmin,

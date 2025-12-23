@@ -66,12 +66,12 @@
 }
 
 .add-message-button {
-  background: #D88676;
+  background: #FF4C4C;
   color: white;
 }
 
 .add-message-button:hover {
-  background: #C57464;
+  background: #E63E3E;
 }
 
 .view-all-button {
@@ -250,6 +250,7 @@
   border: 1px solid #ddd;
   border-radius: 8px;
   font-size: 0.9rem;
+  color: #FF4C4C;
   cursor: pointer;
   transition: background 0.2s;
 }

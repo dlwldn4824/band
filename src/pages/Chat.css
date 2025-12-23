@@ -368,14 +368,14 @@
   height: 48px;
   border: none;
   border-radius: 14px;
-  background: #D88676;
+  background: #FF4C4C;
   color: white;
   text-decoration: none;
   display: grid;
   place-items: center;
   flex-shrink: 0;
   cursor: pointer;
-  box-shadow: 0 6px 14px rgba(216, 134, 118, 0.25);
+  box-shadow: 0 6px 14px rgba(255, 76, 76, 0.25);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
   padding: 0;
   overflow: hidden;
@@ -390,7 +390,7 @@
 
 .photo-upload-button:active {
   transform: scale(0.96);
-  box-shadow: 0 4px 10px rgba(216, 134, 118, 0.2);
+  box-shadow: 0 4px 10px rgba(255, 76, 76, 0.2);
 }
 
 /* 사진 공유 안내 모달 */
@@ -530,7 +530,7 @@
 }
 
 .chat-input:focus {
-  border-color: #D88676;
+  border-color: #FF4C4C;
 }
 
 .chat-input:disabled {
@@ -543,7 +543,7 @@
   padding: 0 12px;
   border: none;
   border-radius: 14px;
-  background: #D88676;
+  background: #FF4C4C;
   font-size: 16px;
   color: white;
   font-weight: 700;
@@ -558,13 +558,14 @@
 }
 
 .send-button:hover:not(:disabled) {
+  background: #E63E3E;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(216, 134, 118, 0.4);
+  box-shadow: 0 4px 12px rgba(255, 76, 76, 0.4);
 }
 
 .send-button:disabled {
   opacity: 0.5;
-  background: rgba(216, 134, 118, 0.35);
+  background: rgba(255, 76, 76, 0.35);
   cursor: not-allowed;
 }
 
