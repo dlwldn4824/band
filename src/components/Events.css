@@ -22,50 +22,92 @@
   overflow: hidden;
   width: 100%;
   box-sizing: border-box;
-  padding: 1.5rem 1.5rem 1.5rem 4rem;
-}
-
-.timeline-line {
-  position: absolute;
-  left: 2rem;
-  top: 0.75rem;
-  bottom: 1.5rem;
-  width: 2px;
-  background: rgba(255, 255, 255, 0.2);
-  z-index: 1;
-  transform: translateX(-50%);
-}
-
-.events-list {
+  padding: 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 15px;
+}
+
+/* =========================
+   Timeline
+   ========================= */
+.timeline {
   position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 15px; /* 각 행 사이 간격 (카드와 카드, dot과 dot 사이 간격) */
+}
+
+/* 레일(라인) */
+.timeline-rail {
+  --rail-center-x: 27px; /* 레일 중앙 x 좌표 (width 54px / 2) */
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 54px;
+  pointer-events: none; /* 클릭 이벤트 방해하지 않도록 */
+}
+
+/* 세로 라인: 레일 중앙 */
+.timeline-line {
+  position: absolute;
+  left: var(--rail-center-x);
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 2px;
+  transform: translateX(-50%);
+  z-index: 1;
+}
+
+/* 각 행: dot + 카드 */
+.timeline-row {
+  display: flex;
+  align-items: center;
+  gap: 27px; /* rail과 카드 사이 간격 */
+  position: relative;
+}
+
+/* 레일 아이템: dot 컨테이너 */
+.timeline-rail-item {
+  position: relative;
+  width: 54px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;     /* dot을 세로 중앙 */
+  height: 100%;            /* timeline-item과 같은 높이 */
+}
+
+/* dot: 라인 위에 포개지게 */
+.timeline-dot {
+  --rail-center-x: 27px; /* timeline-rail의 --rail-center-x와 동일 */
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #ff4c4c;
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Pretendard', sans-serif;
+  z-index: 3;
+  position: relative;
+  left: var(--rail-center-x);
+  transform: translateX(-50%); /* dot 중심이 라인 중심과 정확히 일치 */
 }
 
 .timeline-item {
   position: relative;
+  width: 100%;
   display: flex;
-  gap: 1rem;
-  margin-bottom: 2rem;
-  z-index: 2;
-}
-
-.timeline-item:last-child {
-  margin-bottom: 0;
-}
-
-.timeline-dot {
-  position: absolute;
-  left: -2rem;
-  top: 0.75rem;
-  width: 12px;
-  height: 12px;
-  background: white;
-  border-radius: 50%;
-  flex-shrink: 0;
-  z-index: 3;
-  transform: translateX(-50%) translateY(-50%);
+  align-items: center;
+  flex: 1;
+  min-height: fit-content;
 }
 
 .timeline-content {
@@ -132,24 +174,14 @@
   }
 
   .events {
-    padding: 1rem 1rem 1rem 3rem;
-  }
-
-  .timeline-line {
-    left: 1.5rem;
-    top: 0.5rem;
-    bottom: 1rem;
-    transform: translateX(-50%);
+    padding: 1rem;
+    gap: 12px;
   }
 
   .timeline-dot {
-    left: -1.5rem;
-    top: 0.5rem;
-    transform: translateX(-50%) translateY(-50%);
-  }
-
-  .timeline-item {
-    margin-bottom: 1.5rem;
+    width: 28px;
+    height: 28px;
+    font-size: 0.8rem;
   }
 
   .event-header {

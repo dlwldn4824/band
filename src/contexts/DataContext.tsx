@@ -85,6 +85,7 @@ interface DataContextType {
   clearSetlist: () => void
   setEventsEnabled: (enabled: boolean) => void
   clearGuestbookMessages: () => void
+  clearChatMessages: () => Promise<void>
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined)
@@ -642,6 +643,24 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
+  const clearChatMessages = async () => {
+    // Firestore에서 모든 채팅 메시지 삭제
+    try {
+      const chatRef = collection(db, 'chat')
+      const querySnapshot = await getDocs(chatRef)
+      
+      const deletePromises = querySnapshot.docs.map((docSnapshot) => 
+        deleteDoc(doc(db, 'chat', docSnapshot.id))
+      )
+      
+      await Promise.all(deletePromises)
+      console.log('모든 채팅 메시지가 삭제되었습니다.')
+    } catch (error) {
+      console.error('Firestore 채팅 메시지 삭제 오류:', error)
+      throw error
+    }
+  }
+
   return (
     <DataContext.Provider value={{ 
       guests, 
@@ -664,7 +683,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       clearGuests,
       clearSetlist,
       setEventsEnabled,
-      clearGuestbookMessages
+      clearGuestbookMessages,
+      clearChatMessages
     }}>
       {children}
     </DataContext.Provider>

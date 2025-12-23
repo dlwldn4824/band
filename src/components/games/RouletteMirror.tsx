@@ -23,14 +23,14 @@ const RouletteMirror = () => {
   const animationFrameRef = useRef<number | null>(null)
 
   const items = [
-    '🎁 상품 1',
-    '🎉 상품 2',
-    '🎊 상품 3',
-    '🎈 상품 4',
-    '🎀 상품 5',
-    '🎪 상품 6',
-    '🎭 상품 7',
-    '🎨 상품 8',
+    '상품 1',
+    '상품 2',
+    '상품 3',
+    '상품 4',
+    '상품 5',
+    '상품 6',
+    '상품 7',
+    '상품 8',
   ]
 
   useEffect(() => {
@@ -139,7 +139,7 @@ const RouletteMirror = () => {
   return (
     <div className="game-container">
       <div className="roulette-header">
-        <h2>🎰 룰렛</h2>
+        <h2>룰렛</h2>
       </div>
       
       <div className="roulette-body">
@@ -157,6 +157,7 @@ const RouletteMirror = () => {
                   style={{
                     transform: `rotate(${angle}deg)`,
                     '--item-angle': `${itemAngle}deg`,
+                    '--item-rotation': `${-angle}deg`,
                   } as React.CSSProperties}
                 >
                   <div className="roulette-item-content">

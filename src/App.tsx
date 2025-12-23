@@ -103,7 +103,7 @@ function App() {
             element={
               <Layout>
                 <ProtectedRoute>
-                  <Events />
+                <Events />
                 </ProtectedRoute>
               </Layout>
             }

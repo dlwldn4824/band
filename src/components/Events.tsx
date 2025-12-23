@@ -18,24 +18,31 @@ const Events = ({ events }: EventsProps) => {
         <h2>타임라인</h2>
       </div>
       <div className="events">
-        <div className="timeline-line"></div>
-        <div className="events-list">
+        <div className="timeline">
+          <div className="timeline-rail">
+            <div className="timeline-line"></div>
+          </div>
+          
           {events.map((event, index) => (
-            <div key={index} className="timeline-item">
-              <div className="timeline-dot"></div>
-              <div className="timeline-content">
-                <div className="event-header">
-                  <h3 className="event-title">{event.title}</h3>
-                  {event.time && (
-                    <div className="event-time-box">
-                      <img src={clockIcon} alt="시계" className="event-time-icon" />
-                      <span className="event-time">{event.time}</span>
-                    </div>
+            <div key={index} className="timeline-row">
+              <div className="timeline-rail-item">
+                <div className="timeline-dot">{index + 1}</div>
+              </div>
+              <div className="timeline-item">
+                <div className="timeline-content">
+                  <div className="event-header">
+                    <h3 className="event-title">{event.title}</h3>
+                    {event.time && (
+                      <div className="event-time-box">
+                        <img src={clockIcon} alt="시계" className="event-time-icon" />
+                        <span className="event-time">{event.time}</span>
+                      </div>
+                    )}
+                  </div>
+                  {event.description && (
+                    <p className="event-description">{event.description}</p>
                   )}
                 </div>
-                {event.description && (
-                  <p className="event-description">{event.description}</p>
-                )}
               </div>
             </div>
           ))}

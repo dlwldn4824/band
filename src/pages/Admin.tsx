@@ -26,7 +26,7 @@ const Admin = () => {
   const [setlistFile, setSetlistFile] = useState<File | null>(null)
   const [uploadStatus, setUploadStatus] = useState('')
   const [newPerformerName, setNewPerformerName] = useState('')
-  const { uploadGuests, setPerformanceData, guests, performanceData, checkInCode, generateCheckInCode, setCheckInCode, clearGuests, clearSetlist, bookingInfo, setBookingInfo, clearGuestbookMessages, toggleGuestPayment } = useData()
+  const { uploadGuests, setPerformanceData, guests, performanceData, checkInCode, generateCheckInCode, setCheckInCode, clearGuests, clearSetlist, bookingInfo, setBookingInfo, clearGuestbookMessages, clearChatMessages, toggleGuestPayment } = useData()
   
   // 예매 정보 폼 상태
   const [bookingForm, setBookingForm] = useState<BookingInfo>({
@@ -544,7 +544,7 @@ const Admin = () => {
                             className={`payment-confirm-button ${guest.paymentConfirmed ? 'confirmed' : 'not-confirmed'}`}
                             title={guest.paymentConfirmed ? '입금 확인 완료' : '입금 확인 대기'}
                           >
-                            {guest.paymentConfirmed ? '✅ 확인완료' : '⏳ 대기중'}
+                            {guest.paymentConfirmed ? '확인완료' : '대기중'}
                           </button>
                         ) : (
                           <span className="not-applicable">-</span>
@@ -552,7 +552,7 @@ const Admin = () => {
                       </td>
                       <td>
                         <span className={guest.checkedIn ? 'checked-in' : 'not-checked-in'}>
-                          {guest.checkedIn ? '✅ 입장 완료' : '❌ 미입장'}
+                          {guest.checkedIn ? '입장 완료' : '미입장'}
                         </span>
                       </td>
                       <td>{guest.entryNumber ? `${guest.entryNumber}번` : '-'}</td>
@@ -760,6 +760,30 @@ const Admin = () => {
           style={{ background: '#ff4444', color: 'white' }}
         >
           🗑️ 방명록 메시지 전체 삭제
+        </button>
+      </div>
+
+      <div className="admin-section">
+        <h2>채팅 관리</h2>
+        <p className="section-description">
+          저장된 모든 채팅 메시지를 삭제할 수 있습니다.
+        </p>
+        <button 
+          onClick={async () => {
+            if (window.confirm('정말로 모든 채팅 메시지를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+              try {
+                await clearChatMessages()
+                setUploadStatus('✅ 모든 채팅 메시지가 삭제되었습니다.')
+              } catch (error) {
+                setUploadStatus('❌ 채팅 메시지 삭제 중 오류가 발생했습니다.')
+                console.error(error)
+              }
+            }
+          }}
+          className="reset-button"
+          style={{ background: '#ff4444', color: 'white' }}
+        >
+          🗑️ 채팅 메시지 전체 삭제
         </button>
       </div>
 

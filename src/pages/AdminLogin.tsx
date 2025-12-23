@@ -9,7 +9,7 @@ const AdminLogin = () => {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const { performanceData } = useData()
-  const { setAdmin } = useAuth()
+  const { setAdmin, updateUser } = useAuth()
   const navigate = useNavigate()
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -66,6 +66,13 @@ const AdminLogin = () => {
 
     // 운영진 로그인 성공 - 운영진 상태 설정
     setAdmin(true, normalizedName)
+    
+    // 운영자도 user 객체를 설정하여 채팅 등 기능 사용 가능하도록
+    updateUser({
+      name: normalizedName,
+      phone: 'admin', // 운영자 식별자
+      nickname: normalizedName
+    })
     
     // Admin Dashboard로 이동
     navigate('/admin/dashboard')

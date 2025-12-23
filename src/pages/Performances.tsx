@@ -33,6 +33,46 @@ const Performances = () => {
     }
   }, [])
 
+  // 곡 이름에 맞는 이미지 반환 (public 폴더 경로 사용)
+  const getSongImage = (songName: string): string | undefined => {
+    // 곡 이름 정규화 (공백, 특수문자 제거, 소문자 변환)
+    const normalize = (str: string) => str.replace(/\s+/g, '').replace(/[^\w가-힣]/g, '').toLowerCase()
+    const normalizedSongName = normalize(songName)
+    
+    // 이미지 경로 매핑 (public 폴더 기준)
+    const imageMap: { [key: string]: string } = {
+      '비틀비틀짝짝꿍': '/assets/곡소개/1_비틀비틀짝짜꿍.JPG',
+      '비틀비틀짝짜꿍': '/assets/곡소개/1_비틀비틀짝짜꿍.JPG',
+      '대화가필요해': '/assets/곡소개/2_대화가필요해.jpeg',
+      '눈이오잖아': '/assets/곡소개/3_눈이오잖아.jpeg',
+      '무희': '/assets/곡소개/5_무희.jpeg',
+      '각자의밤': '/assets/곡소개/6_각자의밤.jpeg',
+      '지금부터': '/assets/곡소개/7_지금부터.jpeg',
+      '드라우닝': '/assets/곡소개/8_드라우닝.png',
+      '하이라이트': '/assets/곡소개/9_하이라이트.jpeg',
+      '검을현': '/assets/곡소개/11_검을현.jpeg',
+      'oddities': '/assets/곡소개/12_Oddities.jpeg',
+      '용의자': '/assets/곡소개/13_용의자.png'
+    }
+    
+    // 정규화된 곡 이름으로 매칭 시도
+    for (const [key, path] of Object.entries(imageMap)) {
+      if (normalize(key) === normalizedSongName) {
+        return path
+      }
+    }
+    
+    // 정확한 매칭이 안 되면 부분 매칭 시도
+    for (const [key, path] of Object.entries(imageMap)) {
+      if (normalizedSongName.includes(normalize(key)) || normalize(key).includes(normalizedSongName)) {
+        return path
+      }
+    }
+    
+    // 매칭 실패 시 undefined 반환 (기존 이미지 사용)
+    return undefined
+  }
+
   const getSessionInfo = (item: SetlistItem) => {
     const sessions: { [key: string]: string[] } = {
       '보컬': [],
@@ -160,7 +200,7 @@ const Performances = () => {
               {/* 이미지 배너 */}
               <div className="song-image-container">
                 <img 
-                  src={selectedSong.image || demoImage} 
+                  src={getSongImage(selectedSong.songName) || selectedSong.image || demoImage} 
                   alt={`${selectedSong.songName} 이미지`}
                   className="song-image"
                 />

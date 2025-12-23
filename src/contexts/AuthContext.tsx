@@ -41,13 +41,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // 운영진 상태 먼저 로드 (user와 독립적)
         const savedAdmin = localStorage.getItem('isAdmin')
         const savedAdminName = localStorage.getItem('adminName')
-        if (savedAdmin === 'true') {
+        if (savedAdmin === 'true' && savedAdminName) {
           setIsAdmin(true)
           setAdminName(savedAdminName)
+          
+          // 운영자인데 user가 없으면 user 객체 생성
+          const savedUser = localStorage.getItem('user')
+          if (!savedUser) {
+            const adminUser = {
+              name: savedAdminName,
+              phone: 'admin',
+              nickname: savedAdminName
+            }
+            setUser(adminUser)
+            localStorage.setItem('user', JSON.stringify(adminUser))
+          }
         }
         
-        const savedUser = localStorage.getItem('user')
-        if (savedUser) {
+    const savedUser = localStorage.getItem('user')
+    if (savedUser) {
           const userData = JSON.parse(savedUser)
           setUser(userData)
           

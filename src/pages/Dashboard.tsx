@@ -207,7 +207,7 @@ const Dashboard = () => {
       {isAdmin && checkInNotification && (
         <div className="checkin-notification">
           <div className="checkin-notification-content">
-            <span className="checkin-notification-icon">🎉</span>
+            <span className="checkin-notification-icon"></span>
             <span className="checkin-notification-text">
               {checkInNotification.name}님이 현장 체크인 하셨습니다
             </span>
@@ -225,11 +225,6 @@ const Dashboard = () => {
         <div>
           <h1>안녕하세요, {isAdmin ? adminName : user?.name}님!</h1>
           <p>{isAdmin ? '운영진 대시보드' : '내 티켓과 이벤트 정보를 확인하세요'}</p>
-          {isAdmin && (
-            <div style={{ marginTop: '0.5rem', padding: '0.5rem', background: '#D88676', color: 'white', borderRadius: '8px', fontSize: '0.9rem' }}>
-              운영진 모드
-            </div>
-          )}
           {!isAdmin && (
             <div className="nickname-section">
               {user?.nickname ? (
@@ -319,13 +314,13 @@ const Dashboard = () => {
 
         {isAdmin && (
           <section className="dashboard-section">
-            <div className="checkin-card" style={{ background: '#f0f0f0', border: '2px solid #D88676' }}>
-              <h3>⚙️ 운영진 전용 기능</h3>
+            <div className="checkin-card" style={{ background: '#000000', border: '2px solid #444', color: '#ffffff' }}>
+              <h3>운영진 전용 기능</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
-                <div style={{ padding: '0.75rem', background: 'white', borderRadius: '8px' }}>
-                  <p style={{ margin: '0 0 0.5rem 0', fontWeight: '600' }}>현재 통계</p>
-                  <p style={{ margin: '0.25rem 0', fontSize: '0.9rem' }}>총 게스트: {guests.length}명</p>
-                  <p style={{ margin: '0.25rem 0', fontSize: '0.9rem' }}>
+                <div style={{ padding: '0.75rem', background: '#111', borderRadius: '8px', border: '1px solid #333', color: '#fff' }}>
+                  <p style={{ margin: '0 0 0.5rem 0', fontWeight: '600', color: '#fff' }}>현재 통계</p>
+                  <p style={{ margin: '0.25rem 0', fontSize: '0.9rem', color: '#fff' }}>총 게스트: {guests.length}명</p>
+                  <p style={{ margin: '0.25rem 0', fontSize: '0.9rem', color: '#fff' }}>
                     체크인 완료: {guests.filter(g => g.checkedIn).length}명
                   </p>
                 </div>
@@ -333,7 +328,7 @@ const Dashboard = () => {
                   onClick={() => setShowGuestList(true)}
                   style={{
                     padding: '0.75rem 1.5rem',
-                    background: '#D88676',
+                    background: '#FF4C4C',
                     color: 'white',
                     border: 'none',
                     borderRadius: '8px',
@@ -342,10 +337,10 @@ const Dashboard = () => {
                     cursor: 'pointer',
                     transition: 'background 0.2s'
                   }}
-                  onMouseOver={(e) => e.currentTarget.style.background = '#C57464'}
-                  onMouseOut={(e) => e.currentTarget.style.background = '#D88676'}
+                  onMouseOver={(e) => e.currentTarget.style.background = '#E63E3E'}
+                  onMouseOut={(e) => e.currentTarget.style.background = '#FF4C4C'}
                 >
-                  👥 게스트 입장 여부 확인하기
+                  게스트 입장 여부 확인하기
                 </button>
               </div>
             </div>
@@ -406,7 +401,7 @@ const Dashboard = () => {
                               <td>
                                 {isWalkIn ? (
                                   <span className={guest.paymentConfirmed ? 'payment-confirmed' : 'payment-pending'}>
-                                    {guest.paymentConfirmed ? '✅ 확인완료' : '⏳ 대기중'}
+                                    {guest.paymentConfirmed ? '확인완료' : '대기중'}
                                   </span>
                                 ) : (
                                   <span className="not-applicable">-</span>
@@ -414,7 +409,7 @@ const Dashboard = () => {
                               </td>
                               <td>
                                 <span className={guest.checkedIn ? 'checked-in' : 'not-checked-in'}>
-                                  {guest.checkedIn ? '✅ 입장 완료' : '❌ 미입장'}
+                                  {guest.checkedIn ? '입장 완료' : '미입장'}
                                 </span>
                               </td>
                               <td>{guest.entryNumber ? `${guest.entryNumber}번` : '-'}</td>

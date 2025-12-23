@@ -170,12 +170,19 @@ const EntryNumberDrawMirror = () => {
               </div>
             )}
 
-            {selectedGuest && (
-              <div className="draw-result">
-                <div className="result-name">🎉 {selectedGuest.name}님</div>
-                <div className="result-number">입장 번호: {selectedGuest.entryNumber}번</div>
-              </div>
-            )}
+            {currentNumber !== null && (() => {
+              // currentNumber에 해당하는 게스트 찾기
+              const matchedGuest = eligibleGuests.find(g => g.entryNumber === currentNumber)
+              if (matchedGuest) {
+                return (
+                  <div className="draw-result">
+                    <div className="result-name">{matchedGuest.name}님</div>
+                    <div className="result-number">입장 번호: {currentNumber}번</div>
+                  </div>
+                )
+              }
+              return null
+            })()}
           </div>
         </div>
       </div>

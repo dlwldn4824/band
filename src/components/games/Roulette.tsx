@@ -7,14 +7,14 @@ const Roulette = () => {
   const [rotation, setRotation] = useState(0)
 
   const items = [
-    '🎁 상품 1',
-    '🎉 상품 2',
-    '🎊 상품 3',
-    '🎈 상품 4',
-    '🎀 상품 5',
-    '🎪 상품 6',
-    '🎭 상품 7',
-    '🎨 상품 8',
+    '상품 1',
+    '상품 2',
+    '상품 3',
+    '상품 4',
+    '상품 5',
+    '상품 6',
+    '상품 7',
+    '상품 8',
   ]
 
   const spin = () => {
@@ -65,6 +65,7 @@ const Roulette = () => {
                   style={{
                     transform: `rotate(${angle}deg)`,
                     '--item-angle': `${itemAngle}deg`,
+                    '--item-rotation': `${-angle}deg`,
                   } as React.CSSProperties}
                 >
                   <div className="roulette-item-content">

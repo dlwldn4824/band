@@ -116,10 +116,11 @@
 
 .play-button {
   padding: 0.75rem 2rem;
-  background: #D88676;
+  background: #FF4C4C;
   color: white;
   border-radius: 8px;
   font-weight: 600;
+  font-family: 'Pretendard', sans-serif;
   border: none;
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
@@ -128,7 +129,8 @@
 
 .play-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(216, 134, 118, 0.4);
+  box-shadow: 0 4px 12px rgba(255, 76, 76, 0.4);
+  background: #E63E3E;
 }
 
 @media (max-width: 768px) {
