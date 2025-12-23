@@ -8,6 +8,24 @@ import keyboardIcon from '../assets/배경/키보드.png'
 import drumIcon from '../assets/배경/드럼.png'
 import './Performances.css'
 
+// ===== 곡 소개 이미지 =====
+import img1 from '../assets/곡소개/1_비틀비틀짝짝꿍.jpg'
+import img2 from '../assets/곡소개/2_대화가필요해.jpeg'
+import img3 from '../assets/곡소개/3_눈이오잖아.jpeg'
+import img4 from '../assets/곡소개/4_밤이깊었네.jpeg'
+import img5 from '../assets/곡소개/5_무희.jpeg'
+import img6 from '../assets/곡소개/6_각자의밤.jpeg'
+import img7 from '../assets/곡소개/7_지금부터.jpeg'
+import img8 from '../assets/곡소개/8_드라우닝.png'
+import img9 from '../assets/곡소개/9_하이라이트.jpeg'
+import img10 from '../assets/곡소개/10_안티프리즈.png'
+import img11 from '../assets/곡소개/11_검을현.jpeg'
+import img12 from '../assets/곡소개/12_Oddities.jpeg'
+import img13 from '../assets/곡소개/13_용의자.png'
+import img14 from '../assets/곡소개/14_ditto.jpeg'
+import img16 from '../assets/곡소개/16_itsmylife.jpeg'
+import img19 from '../assets/곡소개/19_아지랑이.jpeg'
+
 const Performances = () => {
   const { performanceData } = useData()
   const [selectedSong, setSelectedSong] = useState<SetlistItem | null>(null)
@@ -19,12 +37,12 @@ const Performances = () => {
     const originalBodyOverflow = document.body.style.overflow
     const originalBodyPosition = document.body.style.position
     const originalHtmlOverflow = document.documentElement.style.overflow
-    
+
     // 스크롤 활성화
     document.body.style.overflow = 'auto'
     document.body.style.position = 'relative'
     document.documentElement.style.overflow = 'auto'
-    
+
     return () => {
       // 컴포넌트 언마운트 시 원래대로 복구
       document.body.style.overflow = originalBodyOverflow
@@ -33,57 +51,63 @@ const Performances = () => {
     }
   }, [])
 
-  // 곡 이름에 맞는 이미지 반환 (public 폴더 경로 사용)
+  // 이미지 매핑 (import된 이미지 사용)
+  const imageMap: { [key:string]:string } = {
+    '비틀비틀짝짝꿍': img1,
+    '비틀비틀짝짜꿍': img1, // 혹시 데이터에 오타로 들어온 경우 대비
+
+    '대화가필요해': img2,
+    '눈이오잖아': img3,
+    '밤이깊었네': img4,
+    '무희': img5,
+    '각자의밤': img6,
+    '지금부터': img7,
+    '드라우닝': img8,
+    'drowning' : img8,
+    '하이라이트': img9,
+    'highlight' : img9,
+    '안티프리즈': img10,
+    'antifreeze' : img10,
+    '검을현': img11,
+
+    'Oddities': img12,
+    'oddities': img12,
+
+    '용의자': img13,
+
+    'ditto': img14,
+    'Ditto': img14,
+
+    'itsmylife': img16,
+    'its my life': img16,
+
+    '아지랑이': img19,
+  }
+
+  // 곡 이름에 맞는 이미지 반환 (import 기반)
   const getSongImage = (songName: string): string | undefined => {
     if (!songName) return undefined
-    
-    // 곡 이름 정규화 (공백, 특수문자 제거, 소문자 변환)
-    const normalize = (str: string) => str.replace(/\s+/g, '').replace(/[^\w가-힣]/g, '').toLowerCase()
+
+    const normalize = (str: string) =>
+      str.replace(/\s+/g, '').replace(/[^\w가-힣]/g, '').toLowerCase()
+
     const normalizedSongName = normalize(songName)
-    
-    // 이미지 경로 매핑 (public 폴더 기준)
-    const imageMap: { [key: string]: string } = {
-      '비틀비틀짝짝꿍': '/assets/곡소개/1_비틀비틀짝짜꿍.JPG',
-      '비틀비틀짝짜꿍': '/assets/곡소개/1_비틀비틀짝짜꿍.JPG',
-      '비틀비틀': '/assets/곡소개/1_비틀비틀짝짜꿍.JPG',
-      '대화가필요해': '/assets/곡소개/2_대화가필요해.jpeg',
-      '눈이오잖아': '/assets/곡소개/3_눈이오잖아.jpeg',
-      '밤이깊었네': '/assets/곡소개/4_밤이깊었네.jpeg',
-      '무희': '/assets/곡소개/5_무희.jpeg',
-      '각자의밤': '/assets/곡소개/6_각자의밤.jpeg',
-      '지금부터': '/assets/곡소개/7_지금부터.jpeg',
-      '드라우닝': '/assets/곡소개/8_드라우닝.png',
-      '하이라이트': '/assets/곡소개/9_하이라이트.jpeg',
-      '안티프리즈': '/assets/곡소개/10_안티프리즈.png',
-      '검을현': '/assets/곡소개/11_검을현.jpeg',
-      'oddities': '/assets/곡소개/12_Oddities.jpeg',
-      '용의자': '/assets/곡소개/13_용의자.png',
-      'itsmylife': '/assets/곡소개/16_itsmylife.jpeg',
-      'its my life': '/assets/곡소개/16_itsmylife.jpeg',
-      'itsmylif': '/assets/곡소개/16_itsmylife.jpeg',
-      '아지랑이': '/assets/곡소개/19_아지랑이.jpeg',
-      '아지랑': '/assets/곡소개/19_아지랑이.jpeg',
-      '지랑이': '/assets/곡소개/19_아지랑이.jpeg',
-    }
-    
-    // 정규화된 곡 이름으로 매칭 시도
+
+    // 1) 정규화된 곡 이름으로 정확 매칭
     for (const [key, path] of Object.entries(imageMap)) {
       if (normalize(key) === normalizedSongName) {
-        console.log('[이미지 매핑] 매칭 성공:', key, '→', path)
         return path
       }
     }
-    
-    // 정확한 매칭이 안 되면 부분 매칭 시도
+
+    // 2) 정확 매칭이 안 되면 부분 매칭
     for (const [key, path] of Object.entries(imageMap)) {
-      if (normalizedSongName.includes(normalize(key)) || normalize(key).includes(normalizedSongName)) {
-        console.log('[이미지 매핑] 부분 매칭 성공:', key, '→', path)
+      const nk = normalize(key)
+      if (normalizedSongName.includes(nk) || nk.includes(normalizedSongName)) {
         return path
       }
     }
-    
-    // 매칭 실패 시 undefined 반환 (기존 이미지 사용)
-    console.log('[이미지 매핑] 매칭 실패:', songName, '정규화:', normalizedSongName)
+
     return undefined
   }
 
@@ -93,16 +117,20 @@ const Performances = () => {
       '기타': [],
       '베이스': [],
       '키보드': [],
-      '드럼': []
+      '드럼': [],
     }
 
     const extractMembers = (members: string | undefined, sessionName: string) => {
       if (!members || !members.trim() || members.trim() === '-') return
-      members.split(',').map(m => m.trim()).filter(m => m && m !== '-').forEach(member => {
-        if (!sessions[sessionName].includes(member)) {
-          sessions[sessionName].push(member)
-        }
-      })
+      members
+        .split(',')
+        .map((m) => m.trim())
+        .filter((m) => m && m !== '-')
+        .forEach((member) => {
+          if (!sessions[sessionName].includes(member)) {
+            sessions[sessionName].push(member)
+          }
+        })
     }
 
     extractMembers(item.vocal, '보컬')
@@ -162,7 +190,7 @@ const Performances = () => {
             <div className="timeline-rail">
               <div className="timeline-line" />
             </div>
-            
+
             {/* 각 행: dot + 카드 */}
             {displaySongs.map((item, index) => {
               const globalIndex = startIndex + index
@@ -183,9 +211,7 @@ const Performances = () => {
                         <div className="song-item-title">{item.songName}</div>
                         {(() => {
                           const artist = (item.artist ?? '').trim()
-                          return artist && artist !== '-' && (
-                            <div className="song-item-artist">{artist}</div>
-                          )
+                          return artist && artist !== '-' && <div className="song-item-artist">{artist}</div>
                         })()}
                       </div>
                       <div className="song-item-arrow">›</div>
@@ -201,7 +227,7 @@ const Performances = () => {
         {selectedSong && selectedSongIndex !== null && performanceData?.setlist && (
           <div className="song-detail-modal">
             <div className="song-detail-content">
-              <button 
+              <button
                 className="song-detail-close"
                 onClick={() => {
                   setSelectedSong(null)
@@ -213,27 +239,14 @@ const Performances = () => {
 
               {/* 이미지 배너 */}
               <div className="song-image-container">
-                {(() => {
-                  const imagePath = getSongImage(selectedSong.songName) || selectedSong.image || demoImage
-                  console.log('[이미지 렌더링] 곡:', selectedSong.songName, '경로:', imagePath)
-                  return (
-                    <img 
-                      src={imagePath}
-                      alt={`${selectedSong.songName} 이미지`}
-                      className="song-image"
-                      onLoad={() => {
-                        console.log('[이미지 로드 성공]', imagePath)
-                      }}
-                      onError={(e) => {
-                        console.error('[이미지 로드 실패]', e.currentTarget.src, '→ 데모 이미지로 대체')
-                        // 이미지 로드 실패 시 데모 이미지로 대체
-                        if (e.currentTarget.src !== demoImage) {
-                          e.currentTarget.src = demoImage
-                        }
-                      }}
-                    />
-                  )
-                })()}
+                <img
+                  src={getSongImage(selectedSong.songName) || selectedSong.image || demoImage}
+                  alt={`${selectedSong.songName} 이미지`}
+                  className="song-image"
+                  onError={(e) => {
+                    e.currentTarget.src = demoImage
+                  }}
+                />
               </div>
 
               {/* 곡 정보 섹션 */}
@@ -242,11 +255,11 @@ const Performances = () => {
                   <div className="song-info-header">
                     <button className="song-part-button">
                       {(() => {
-                        const totalSongs = performanceData.setlist.length
+                        const totalSongs2 = performanceData.setlist.length
                         const currentNumber = selectedSongIndex + 1
-                        const part1Count = Math.ceil(totalSongs / 2)
-                        const part = currentNumber <= part1Count ? 1 : 2
-                        const partNumber = part === 1 ? currentNumber : currentNumber - part1Count
+                        const part1Count2 = Math.ceil(totalSongs2 / 2)
+                        const part = currentNumber <= part1Count2 ? 1 : 2
+                        const partNumber = part === 1 ? currentNumber : currentNumber - part1Count2
                         return `${part}부 ${partNumber}번째 곡`
                       })()}
                     </button>
@@ -254,10 +267,10 @@ const Performances = () => {
                       {selectedSongIndex + 1}/{performanceData.setlist.length}
                     </span>
                   </div>
+
                   <h2 className="song-title">{selectedSong.songName}</h2>
-                  {selectedSong.artist && (
-                    <p className="song-artist">{selectedSong.artist}</p>
-                  )}
+                  {selectedSong.artist && <p className="song-artist">{selectedSong.artist}</p>}
+
                   {/* 이전/다음 곡 버튼 */}
                   <button
                     className="song-nav-arrow song-nav-prev"
@@ -299,7 +312,7 @@ const Performances = () => {
                       { name: '기타', icon: guitarIcon },
                       { name: '베이스', icon: bassIcon },
                       { name: '키보드', icon: keyboardIcon },
-                      { name: '드럼', icon: drumIcon }
+                      { name: '드럼', icon: drumIcon },
                     ]
                     return sessionOrder.map((session) => {
                       const members = sessionInfo[session.name] || []
