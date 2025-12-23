@@ -45,14 +45,17 @@ const Performances = () => {
       '비틀비틀짝짜꿍': '/assets/곡소개/1_비틀비틀짝짜꿍.JPG',
       '대화가필요해': '/assets/곡소개/2_대화가필요해.jpeg',
       '눈이오잖아': '/assets/곡소개/3_눈이오잖아.jpeg',
+      '밤이깊었네': '/assets/곡소개/4_밤이깊었네.jpeg',
       '무희': '/assets/곡소개/5_무희.jpeg',
       '각자의밤': '/assets/곡소개/6_각자의밤.jpeg',
       '지금부터': '/assets/곡소개/7_지금부터.jpeg',
       '드라우닝': '/assets/곡소개/8_드라우닝.png',
       '하이라이트': '/assets/곡소개/9_하이라이트.jpeg',
+      '안티프리즈': '/assets/곡소개/10_안티프리즈.png',
       '검을현': '/assets/곡소개/11_검을현.jpeg',
       'oddities': '/assets/곡소개/12_Oddities.jpeg',
-      '용의자': '/assets/곡소개/13_용의자.png'
+      '용의자': '/assets/곡소개/13_용의자.png',
+      '아지랑이': '/assets/곡소개/19_아지랑이.jpeg'
     }
     
     // 정규화된 곡 이름으로 매칭 시도

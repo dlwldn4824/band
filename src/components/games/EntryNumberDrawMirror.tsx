@@ -18,7 +18,6 @@ const EntryNumberDrawMirror = () => {
   const { guests } = useData()
   const [isDrawing, setIsDrawing] = useState(false)
   const [currentNumber, setCurrentNumber] = useState<number | null>(null)
-  const [selectedGuest, setSelectedGuest] = useState<{ name: string; entryNumber: number } | null>(null)
   const [eligibleGuests, setEligibleGuests] = useState<Array<{ name: string; entryNumber: number }>>([])
   const gameRef = doc(db, 'entryDraw', 'current')
   const unsubscribeRef = useRef<(() => void) | null>(null)
@@ -46,7 +45,6 @@ const EntryNumberDrawMirror = () => {
           const data = snapshot.data() as DrawState
           setIsDrawing(data.isDrawing || false)
           setCurrentNumber(data.currentNumber ?? null)
-          setSelectedGuest(data.selectedGuest || null)
           
           if (data.isDrawing && data.startTime) {
             // 애니메이션 시작
@@ -77,7 +75,6 @@ const EntryNumberDrawMirror = () => {
                 // 최종 결과
                 if (data.selectedGuest) {
                   setCurrentNumber(data.selectedGuest.entryNumber)
-                  setSelectedGuest(data.selectedGuest)
                 }
                 setIsDrawing(false)
               }
@@ -89,7 +86,6 @@ const EntryNumberDrawMirror = () => {
           // 초기화
           setIsDrawing(false)
           setCurrentNumber(null)
-          setSelectedGuest(null)
         }
       },
       (error) => {
