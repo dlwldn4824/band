@@ -17,6 +17,7 @@
 
 .header {
   background: #000 !important;
+  background-color: #000000 !important;
   color: white !important;
   padding: 0.75rem 0;
   padding-top: calc(0.75rem + env(safe-area-inset-top));
@@ -31,6 +32,11 @@
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
+  /* iOS Safari 스크롤 시 렌더링 문제 해결 */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 .header .container {
@@ -42,6 +48,7 @@
   width: 100%;
   box-sizing: border-box;
   position: relative;
+  background-color: transparent;
 }
 
 .header-top {
@@ -93,6 +100,11 @@
   z-index: 1000;
   visibility: visible !important;
   opacity: 1 !important;
+  /* iOS Safari 스크롤 시 렌더링 문제 해결 */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 .nav::-webkit-scrollbar {

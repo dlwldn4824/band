@@ -150,7 +150,7 @@ const Events = () => {
                 game.description
               )}
             </p>
-            <button className="play-button">만들러 가기</button>
+            <button className="play-button">시작하기</button>
           </div>
         ))}
       </div>

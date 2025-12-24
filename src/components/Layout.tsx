@@ -100,6 +100,16 @@ const Layout = ({ children }: LayoutProps) => {
     }
   }
 
+  // 네비게이션 링크 클릭 시 강제 리렌더링
+  const handleNavClick = (path: string, e: React.MouseEvent<HTMLAnchorElement>) => {
+    // 현재 경로와 같을 때도 리렌더링하도록 navigate 호출
+    if (location.pathname === path) {
+      e.preventDefault()
+      // replace: false로 하여 히스토리에 새 엔트리 추가하고 state 변경으로 리렌더링 트리거
+      navigate(path, { replace: false, state: { refresh: Date.now() } })
+    }
+  }
+
   return (
     <div className={`layout ${isChat ? 'layout--chat' : ''} ${isGuestbook ? 'layout--guestbook' : ''} ${isEvents ? 'layout--events' : ''} ${isPerformances ? 'layout--performances' : ''}`}>
       <header className="header">
@@ -118,55 +128,55 @@ const Layout = ({ children }: LayoutProps) => {
           <nav className="nav">
             {(adminStatus !== null ? adminStatus : isAdmin) ? (
               <>
-                <Link to="/admin/dashboard" className={`nav-link ${isActive('/admin/dashboard')}`}>
+                <Link to="/admin/dashboard" className={`nav-link ${isActive('/admin/dashboard')}`} onClick={(e) => handleNavClick('/admin/dashboard', e)}>
                   홈
                 </Link>
-                <Link to="/admin/performances" className={`nav-link ${isActive('/admin/performances')}`}>
+                <Link to="/admin/performances" className={`nav-link ${isActive('/admin/performances')}`} onClick={(e) => handleNavClick('/admin/performances', e)}>
                   공연 정보
                 </Link>
-                <Link to="/admin/guestbook" className={`nav-link ${isActive('/admin/guestbook')}`}>
+                <Link to="/admin/guestbook" className={`nav-link ${isActive('/admin/guestbook')}`} onClick={(e) => handleNavClick('/admin/guestbook', e)}>
                   방명록
                 </Link>
-                <Link to="/admin/chat" className={`nav-link ${isActive('/admin/chat')}`}>
+                <Link to="/admin/chat" className={`nav-link ${isActive('/admin/chat')}`} onClick={(e) => handleNavClick('/admin/chat', e)}>
                   채팅
                 </Link>
-                <Link to="/admin/events" className={`nav-link ${isActive('/admin/events')}`}>
+                <Link to="/admin/events" className={`nav-link ${isActive('/admin/events')}`} onClick={(e) => handleNavClick('/admin/events', e)}>
                   기타
                 </Link>
               </>
             ) : isAuthenticated ? (
               <>
-                <Link to="/dashboard" className={`nav-link ${isActive('/dashboard')}`}>
+                <Link to="/dashboard" className={`nav-link ${isActive('/dashboard')}`} onClick={(e) => handleNavClick('/dashboard', e)}>
                   홈
                 </Link>
-                <Link to="/performances" className={`nav-link ${isActive('/performances')}`}>
+                <Link to="/performances" className={`nav-link ${isActive('/performances')}`} onClick={(e) => handleNavClick('/performances', e)}>
                   공연 정보
                 </Link>
-                <Link to="/guestbook" className={`nav-link ${isActive('/guestbook')}`}>
+                <Link to="/guestbook" className={`nav-link ${isActive('/guestbook')}`} onClick={(e) => handleNavClick('/guestbook', e)}>
                   방명록
                 </Link>
-                <Link to="/chat" className={`nav-link ${isActive('/chat')}`}>
+                <Link to="/chat" className={`nav-link ${isActive('/chat')}`} onClick={(e) => handleNavClick('/chat', e)}>
                   채팅
                 </Link>
                 {eventsEnabled && (
-                  <Link to="/events" className={`nav-link ${isActive('/events')}`}>
+                  <Link to="/events" className={`nav-link ${isActive('/events')}`} onClick={(e) => handleNavClick('/events', e)}>
                     기타
                   </Link>
                 )}
               </>
             ) : (
               <>
-                <Link to="/login" className={`nav-link ${isActive('/login')}`}>
+                <Link to="/login" className={`nav-link ${isActive('/login')}`} onClick={(e) => handleNavClick('/login', e)}>
                   체크인
                 </Link>
-                <Link to="/performances" className={`nav-link ${isActive('/performances')}`}>
+                <Link to="/performances" className={`nav-link ${isActive('/performances')}`} onClick={(e) => handleNavClick('/performances', e)}>
                   공연 정보
                 </Link>
-                <Link to="/guestbook" className={`nav-link ${isActive('/guestbook')}`}>
+                <Link to="/guestbook" className={`nav-link ${isActive('/guestbook')}`} onClick={(e) => handleNavClick('/guestbook', e)}>
                   방명록
                 </Link>
                 {eventsEnabled && (
-                  <Link to="/events" className={`nav-link ${isActive('/events')}`}>
+                  <Link to="/events" className={`nav-link ${isActive('/events')}`} onClick={(e) => handleNavClick('/events', e)}>
                     기타
                   </Link>
                 )}

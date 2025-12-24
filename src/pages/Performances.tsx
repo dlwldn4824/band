@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useData, SetlistItem } from '../contexts/DataContext'
 import demoImage from '../assets/배경/데모 이미지.png'
 import vocalIcon from '../assets/배경/보컬.png'
@@ -27,8 +28,14 @@ import img16 from '../assets/곡소개/16_itsmylife.jpeg'
 import img19 from '../assets/곡소개/19_아지랑이.jpeg'
 
 const Performances = () => {
+  const location = useLocation()
   const { performanceData } = useData()
   const [selectedSong, setSelectedSong] = useState<SetlistItem | null>(null)
+  
+  // location이 변경될 때마다 리렌더링 트리거
+  useEffect(() => {
+    // location이 변경되면 컴포넌트가 리렌더링됨
+  }, [location.pathname, location.state])
   const [selectedSongIndex, setSelectedSongIndex] = useState<number | null>(null)
   const [selectedPart, setSelectedPart] = useState<1 | 2>(1)
 

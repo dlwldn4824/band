@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
 import { AuthProvider } from './contexts/AuthContext'
 import { DataProvider } from './contexts/DataContext'
@@ -87,12 +87,12 @@ function useAppHeight() {
   }, [])
 }
 
-function App() {
-  useAppHeight()
+function AppRoutes() {
+  const location = useLocation()
+  
+  // location.key를 사용하여 같은 경로로 이동해도 리렌더링되도록 함
   return (
-    <AuthProvider>
-      <DataProvider>
-        <Routes>
+    <Routes location={location} key={location.key || location.pathname}>
           <Route path="/login" element={<Login />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/staff/login" element={<AdminLogin />} />
@@ -189,6 +189,15 @@ function App() {
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+  )
+}
+
+function App() {
+  useAppHeight()
+  return (
+    <AuthProvider>
+      <DataProvider>
+        <AppRoutes />
       </DataProvider>
     </AuthProvider>
   )

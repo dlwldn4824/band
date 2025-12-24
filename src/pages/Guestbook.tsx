@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useData, GuestbookMessage } from '../contexts/DataContext'
 import './Guestbook.css'
 
@@ -32,6 +33,22 @@ const Guestbook = () => {
   const [viewAllOpen, setViewAllOpen] = useState(false)
   const [sortBy, setSortBy] = useState<'date' | 'name'>('date')
   
+  // location이 변경될 때마다 리렌더링 트리거
+  useEffect(() => {
+    // location이 변경되면 컴포넌트가 리렌더링됨
+  }, [location.pathname, location.state])
+
+  // 메시지 ID를 기반으로 결정적인 랜덤 값 생성 (0~1 사이)
+  const seededRandom = (seed: string): number => {
+    let hash = 0
+    for (let i = 0; i < seed.length; i++) {
+      const char = seed.charCodeAt(i)
+      hash = ((hash << 5) - hash) + char
+      hash = hash & hash // 32bit 정수로 변환
+    }
+    // 0~1 사이의 값으로 정규화
+    return Math.abs(hash) / 2147483647
+  }
 
   // 메모지로 변환 (현재 페이지만 처리)
   const memoNotes: MemoNote[] = useMemo(() => {
@@ -43,10 +60,18 @@ const Guestbook = () => {
     const memosForCurrentPage = guestbookMessages.slice(startIndex, endIndex)
     
     return memosForCurrentPage.map((msg, localIndex) => {
-      // 기존 메시지에 design이 없으면 랜덤으로 할당
+      // 기존 메시지에 design이 없으면 결정적으로 할당
       const design = (msg as any).design || MEMO_DESIGNS[localIndex % MEMO_DESIGNS.length].id
-      // 기존 메시지에 rotation이 없으면 랜덤으로 생성
-      const rotation = (msg as any).rotation || (Math.random() * 30 - 15) // -15 ~ 15도
+      
+      // 기존 메시지에 rotation이 없으면 메시지 ID 기반으로 결정적으로 생성
+      let rotation: number
+      if ((msg as any).rotation !== undefined) {
+        rotation = (msg as any).rotation
+      } else {
+        // 메시지 ID를 기반으로 결정적인 rotation 생성 (-15 ~ 15도)
+        const seed = msg.id || msg.name || String(localIndex)
+        rotation = (seededRandom(seed) * 30 - 15)
+      }
       
       // 기존 메시지에 position이 없으면 자동 배치 (겹침 방지)
       let position: { x: number; y: number }
@@ -59,8 +84,8 @@ const Guestbook = () => {
           rotation: memo.rotation
         }))
         
-        // 페이지 내 상대적 인덱스로 위치 계산
-        position = calculateMemoPosition(localIndex, existingMemos)
+        // 페이지 내 상대적 인덱스로 위치 계산 (메시지 ID 기반으로 결정적)
+        position = calculateMemoPosition(localIndex, existingMemos, msg.id || msg.name || String(localIndex))
       }
       
       const memoNote: MemoNote = {
@@ -157,8 +182,19 @@ const Guestbook = () => {
   // 메모지 위치 계산 (롤링페이퍼 스타일, 겹침 방지)
   function calculateMemoPosition(
     index: number,
-    existingMemos: Array<{ position: { x: number; y: number }; rotation: number }>
+    existingMemos: Array<{ position: { x: number; y: number }; rotation: number }>,
+    seed: string = String(index)
   ): { x: number; y: number } {
+    // seed 기반 결정적인 랜덤 값 생성
+    const seededRandom = (s: string): number => {
+      let hash = 0
+      for (let i = 0; i < s.length; i++) {
+        const char = s.charCodeAt(i)
+        hash = ((hash << 5) - hash) + char
+        hash = hash & hash
+      }
+      return Math.abs(hash) / 2147483647
+    }
     // 화면 크기에 따라 메모지 크기와 배치 조정
     const isMobile = typeof window !== 'undefined' && window.innerWidth <= 480
     const isTablet = typeof window !== 'undefined' && window.innerWidth <= 768 && window.innerWidth > 480
@@ -193,8 +229,8 @@ const Guestbook = () => {
     const colCenters = isMobile ? [25, 75] : isTablet ? [25, 75] : [17, 50, 83]
     const baseX = colCenters[baseCol] || 50
     
-    // 랜덤 회전 각도 생성
-    const rotation = Math.random() * 30 - 15 // -15 ~ 15도
+    // seed 기반 결정적인 회전 각도 생성
+    const rotation = seededRandom(seed + '_rotation') * 30 - 15 // -15 ~ 15도
     
     // 헤더 높이 고려 (회전된 메모지의 상단이 헤더에 가려지지 않도록)
     // 헤더 높이는 대략 140-180px (제목 + 버튼 영역)
@@ -225,10 +261,10 @@ const Guestbook = () => {
     const minX = halfRotatedWidth + 2 // 좌우 여유 공간 2%
     const maxX = 100 - halfRotatedWidth - 2 // 좌우 여유 공간 2%
     
-    // 기본 위치에서 시작 (중앙 기준, 회전 고려)
+    // 기본 위치에서 시작 (중앙 기준, 회전 고려) - seed 기반 결정적
     const xRange = isMobile ? 2 : 3 // 모바일은 더 작은 범위
-    let x = baseX + (Math.random() * xRange * 2 - xRange) // ±2~3% 랜덤 오프셋
-    let y = baseY + (Math.random() * 15 - 7.5) // ±7.5px 랜덤 오프셋
+    let x = baseX + (seededRandom(seed + '_x') * xRange * 2 - xRange) // ±2~3% 결정적 오프셋
+    let y = baseY + (seededRandom(seed + '_y') * 15 - 7.5) // ±7.5px 결정적 오프셋
     
     // 경계 체크 및 조정 (회전된 메모지가 화면 밖으로 나가지 않도록)
     x = Math.max(minX, Math.min(maxX, x))
@@ -237,9 +273,10 @@ const Guestbook = () => {
     // 충돌 감지 및 위치 조정
     let attempts = 0
     while (checkCollision({ x, y }, rotation, existingMemos) && attempts < maxAttempts) {
-      // 다른 위치 시도
-      const offsetX = (Math.random() * 8 - 4) * (attempts + 1) // 시도할수록 더 멀리
-      const offsetY = (Math.random() * 30 - 15) * (attempts + 1)
+      // 다른 위치 시도 (seed 기반 결정적)
+      const attemptSeed = seed + '_attempt_' + attempts
+      const offsetX = (seededRandom(attemptSeed + '_x') * 8 - 4) * (attempts + 1) // 시도할수록 더 멀리
+      const offsetY = (seededRandom(attemptSeed + '_y') * 30 - 15) * (attempts + 1)
       
       x = baseX + offsetX
       y = baseY + offsetY

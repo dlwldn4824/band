@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { 
   collection, 
@@ -52,6 +53,11 @@ const Chat = () => {
   const onlineUserRef = useRef<string | null>(null)
   const previousOnlineUserIdsRef = useRef<Set<string>>(new Set())
   const enteredUserIdsRef = useRef<Set<string>>(new Set()) // 한 번 입장 메시지를 보낸 사용자 추적
+
+  // location이 변경될 때마다 리렌더링 트리거
+  useEffect(() => {
+    // location이 변경되면 컴포넌트가 리렌더링됨
+  }, [location.pathname, location.state])
 
   useEffect(() => {
     if (!user) return

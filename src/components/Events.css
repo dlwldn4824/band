@@ -1,8 +1,10 @@
 .events-header {
   background: transparent;
   color: white;
-  padding: 1.25rem 0;
-  margin-bottom: 1rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  margin-top: 0.25rem;
+  margin-bottom: 0.5rem;
 }
 
 .events-header h2 {
@@ -118,7 +120,7 @@
 .event-header {
   display: flex;
   align-items: center;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
   gap: 0.55rem;
   flex-wrap: wrap;
 }
@@ -129,6 +131,7 @@
   font-weight: 500;
   color: #FF4C4C;
   font-family: 'Pretendard', sans-serif;
+  line-height: 1.3;
 }
 
 .event-time-box {
@@ -158,10 +161,11 @@
 .event-description {
   margin: 0;
   color: white;
-  line-height: 1.6;
+  line-height: 1.4;
   font-size: 0.95rem;
   font-family: 'Pretendard', sans-serif;
   font-weight: 400;
+  margin-top: 0.25rem;
 }
 
 @media (max-width: 768px) {

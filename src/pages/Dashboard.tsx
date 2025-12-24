@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useData } from '../contexts/DataContext'
 import Events from '../components/Events'
@@ -26,6 +26,12 @@ const Dashboard = () => {
   const [userNicknames, setUserNicknames] = useState<Record<string, string>>({}) // userId -> nickname 매핑
   const notificationTimerRef = useRef<NodeJS.Timeout | null>(null)
   const navigate = useNavigate()
+  const location = useLocation()
+  
+  // location이 변경될 때마다 리렌더링 트리거
+  useEffect(() => {
+    // location이 변경되면 컴포넌트가 리렌더링됨
+  }, [location.pathname, location.state])
 
   // ✅ Hook 호출 완료 후 조건부 return
   // 인증 로딩 중일 때는 로딩 UI 표시
