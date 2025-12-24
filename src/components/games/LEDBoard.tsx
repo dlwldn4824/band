@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import './LEDBoard.css'
+import { useNavigate } from 'react-router-dom'
+
 
 const LEDBoard = () => {
+  const navigate = useNavigate()
   const [text, setText] = useState('응원 메시지를 입력하세요!')
   const backgroundColor = '#000000'
   const [textColor, setTextColor] = useState('#FFFF00')
@@ -74,7 +77,7 @@ const LEDBoard = () => {
 
   let x = 0
   let rafId: number
-  const speed = animationSpeed * 0.7
+  const speed = animationSpeed * 0.4
   const resetPoint = textRef.current.scrollWidth / 2
 
   const loop = () => {
@@ -302,7 +305,7 @@ const LEDBoard = () => {
             <input
               type="range"
               min="0"
-              max="25"
+              max="10"
               value={animationSpeed}
               onChange={(e) => setAnimationSpeed(Number(e.target.value))}
               className="speed-slider"
@@ -315,6 +318,13 @@ const LEDBoard = () => {
 
   return (
     <div className="led-board-container">
+      <div
+        className="page-back-button"
+        style={{left:'60px'}}
+        onClick={() => navigate('/admin/events?tab=기타',{replace:true})}
+      >
+        ←
+      </div>
       <div className="led-board-preview" ref={previewContainerRef}>
         <div
           ref={previewTextRef}

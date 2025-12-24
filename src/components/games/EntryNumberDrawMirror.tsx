@@ -4,6 +4,7 @@ import { db } from '../../config/firebase'
 import { useAuth } from '../../contexts/AuthContext'
 import { useData } from '../../contexts/DataContext'
 import './Game.css'
+import { useNavigate } from 'react-router-dom'
 
 interface DrawState {
   isDrawing: boolean
@@ -14,6 +15,7 @@ interface DrawState {
 }
 
 const EntryNumberDrawMirror = () => {
+  const navigate = useNavigate()
   const { isAdmin } = useAuth()
   const { guests } = useData()
   const [isDrawing, setIsDrawing] = useState(false)
@@ -138,6 +140,13 @@ const EntryNumberDrawMirror = () => {
 
   return (
     <div className="game-container">
+      <div
+        className="page-back-button"
+        style={{left:'60px'}}
+        onClick={()=> navigate('/admin/events?tab=기타',{replace:true})}
+      >
+        ←
+      </div>
       <div className="roulette-header">
         <h2>🎲 입장 번호 추첨</h2>
       </div>

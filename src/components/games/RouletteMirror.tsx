@@ -3,6 +3,7 @@ import { doc, setDoc, onSnapshot, serverTimestamp } from 'firebase/firestore'
 import { db } from '../../config/firebase'
 import { useAuth } from '../../contexts/AuthContext'
 import './Game.css'
+import { useNavigate } from 'react-router-dom'
 
 interface RouletteState {
   isSpinning: boolean
@@ -24,6 +25,8 @@ const RouletteMirror = () => {
 
   const startRotationRef = useRef(0)
   const isFirstSnapshotRef = useRef(true)
+  const navigate = useNavigate()
+
 
 
   const items = [
@@ -147,6 +150,13 @@ const RouletteMirror = () => {
 
   return (
     <div className="game-container">
+      <div
+        className="page-back-button"
+        style={{left:'60px'}}
+        onClick={() => navigate('/admin/events?tab=기타',{replace:true})}
+      >
+        ←
+      </div>
       <div className="roulette-header">
         <h2>룰렛</h2>
       </div>

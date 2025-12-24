@@ -279,6 +279,9 @@
 }
 
 .admin-login-text {
+  background: transparent;
+  border: none;
+  padding: 0;
   color: #999;
   font-size: 0.75rem;
   text-decoration: none;
@@ -573,4 +576,9 @@
   color: #999;
   margin-top: 0.25rem;
   margin-bottom: 0;
+}
+
+.login-switch-wrapper {
+  margin-top: 0.75rem;
+  text-align: center;
 }

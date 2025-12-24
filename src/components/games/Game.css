@@ -853,3 +853,25 @@
   }
 }
 
+.page-back-button {
+  position: absolute;
+  top: 30px;
+  left: 28px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #FF4C4C;
+  color: white;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 100;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.page-back-button:hover {
+  background: rgba(0, 0, 0, 0.8);
+  transform: scale(1.05);
+}

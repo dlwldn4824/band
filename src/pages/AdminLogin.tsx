@@ -119,6 +119,19 @@ const AdminLogin = () => {
             로그인
           </button>
         </form>
+
+        <div className="login-switch-wrapper">
+          <div className="divider">
+          </div>
+
+          <button
+            type="button"
+            className="admin-login-text"
+            onClick={()=> navigate('/login')}
+          >
+            뒤로가기
+          </button>
+        </div>
       </div>
     </div>
   )
