@@ -87,7 +87,7 @@ const EntryNumberDraw = () => {
   return (
     <div className="game-container">
       <div className="roulette-header">
-        <h2>🎲 입장 번호 추첨</h2>
+        <h2>입장 번호 추첨</h2>
       </div>
 
       <div className="roulette-body">

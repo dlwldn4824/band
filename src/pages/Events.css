@@ -277,6 +277,7 @@
   color: white;
   border-radius: 8px;
   font-weight: 600;
+  font-size: 1.1rem;
   font-family: 'Pretendard', sans-serif;
   border: none;
   cursor: pointer;
@@ -326,6 +327,7 @@
 
   .play-button {
     padding: 0.5rem 1.25rem;
+    font-size: 1rem;
   }
 }
 

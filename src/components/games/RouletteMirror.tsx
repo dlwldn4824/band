@@ -152,7 +152,7 @@ const RouletteMirror = () => {
     <div className="game-container">
       <div
         className="page-back-button"
-        style={{left:'60px'}}
+        style={{left:'30px'}}
         onClick={() => navigate('/admin/events?tab=기타',{replace:true})}
       >
         ←

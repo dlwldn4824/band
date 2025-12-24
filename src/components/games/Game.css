@@ -27,13 +27,13 @@
 /* 룰렛 전용 헤더 */
 .roulette-header {
   flex: 0 0 auto;
-  padding: 1rem 1.5rem 0.75rem;
+  padding: 1rem 1.5rem 0.25rem;
 }
 
 .roulette-header h2 {
   text-align: center;
   font-size: 1.5rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.25rem;
   color: #ffffff;
   font-family: 'Pretendard', sans-serif;
   font-weight: 500;
@@ -698,6 +698,7 @@
 .draw-info {
   text-align: center;
   width: 100%;
+  margin-top: -1rem;
 }
 
 .draw-count {
@@ -795,6 +796,7 @@
   width: 100%;
   max-width: 350px;
   font-family: 'Pretendard', sans-serif;
+  margin-top: 0.7rem;
 }
 
 .result-name {

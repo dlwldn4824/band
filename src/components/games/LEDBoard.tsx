@@ -320,7 +320,7 @@ const LEDBoard = () => {
     <div className="led-board-container">
       <div
         className="page-back-button"
-        style={{left:'60px'}}
+        style={{left:'40px', top:'40px'}}
         onClick={() => navigate('/admin/events?tab=기타',{replace:true})}
       >
         ←

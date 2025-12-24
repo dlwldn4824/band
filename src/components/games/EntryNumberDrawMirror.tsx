@@ -142,13 +142,13 @@ const EntryNumberDrawMirror = () => {
     <div className="game-container">
       <div
         className="page-back-button"
-        style={{left:'60px'}}
+        style={{left:'30px'}}
         onClick={()=> navigate('/admin/events?tab=기타',{replace:true})}
       >
         ←
       </div>
       <div className="roulette-header">
-        <h2>🎲 입장 번호 추첨</h2>
+        <h2>입장 번호 추첨</h2>
       </div>
 
       <div className="roulette-body">
