@@ -31,6 +31,7 @@ const Layout = ({ children }: LayoutProps) => {
   const isChat = location.pathname.startsWith('/chat') || location.pathname.startsWith('/admin/chat')
   const isGuestbook = location.pathname.startsWith('/guestbook') || location.pathname.startsWith('/admin/guestbook')
   const isEvents = location.pathname.startsWith('/events') || location.pathname.startsWith('/admin/events')
+  const isPerformances = location.pathname.startsWith('/performances') || location.pathname.startsWith('/admin/performances')
 
   const handleLogout = () => {
     logout()
@@ -51,7 +52,7 @@ const Layout = ({ children }: LayoutProps) => {
   }
 
   return (
-    <div className={`layout ${isChat ? 'layout--chat' : ''} ${isGuestbook ? 'layout--guestbook' : ''} ${isEvents ? 'layout--events' : ''}`}>
+    <div className={`layout ${isChat ? 'layout--chat' : ''} ${isGuestbook ? 'layout--guestbook' : ''} ${isEvents ? 'layout--events' : ''} ${isPerformances ? 'layout--performances' : ''}`}>
       <header className="header">
         <div className="container">
           <div className="header-top">
@@ -130,11 +131,7 @@ const Layout = ({ children }: LayoutProps) => {
           {children}
         </div>
       </main>
-      <footer className="footer">
-        <div className="container">
-          <p>&copy; 밴드 공연 관리 시스템</p>
-        </div>
-      </footer>
+
     </div>
   )
 }

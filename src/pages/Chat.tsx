@@ -10,7 +10,9 @@ import {
   serverTimestamp,
   doc,
   setDoc,
-  deleteDoc
+  deleteDoc,
+  getDoc,
+  getDocs
 } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import './Chat.css'
@@ -116,20 +118,70 @@ const Chat = () => {
               userId !== onlineUserRef.current &&
               user // 현재 사용자가 로그인한 상태
             ) {
-              // 입장 메시지를 보낸 사용자로 표시
+              // 입장 메시지를 보낸 사용자로 표시 (중복 방지)
               enteredUserIdsRef.current.add(userId)
               
-              // 입장 메시지를 Firestore에 저장 (비동기 처리)
-              addDoc(collection(db, 'chat'), {
-                user: userName,
-                message: `${userName}님이 입장했습니다.`,
-                timestamp: serverTimestamp(),
-                type: 'system'
-              }).catch((error) => {
-                console.error('입장 메시지 전송 오류:', error)
-                // 실패 시 Set에서 제거하여 재시도 가능하게 함
-                enteredUserIdsRef.current.delete(userId)
-              })
+              // userProfiles에서 최신 닉네임 조회 및 중복 체크 (비동기)
+              const getUserNameAndCheckDuplicate = async () => {
+                try {
+                  // chat 컬렉션에서 해당 userId의 입장 메시지가 이미 있는지 확인
+                  // userId는 "이름_전화번호" 형식이므로, userProfiles에서 실제 닉네임/이름을 먼저 가져와서 비교
+                  const userProfileRef = doc(db, 'userProfiles', userId)
+                  const userProfileSnap = await getDoc(userProfileRef)
+                  
+                  let finalUserName = userName
+                  if (userProfileSnap.exists()) {
+                    const profileData = userProfileSnap.data()
+                    // userProfiles에 닉네임이 있으면 우선 사용
+                    if (profileData.nickname && profileData.nickname.trim() !== '') {
+                      finalUserName = profileData.nickname
+                    } else if (profileData.name && profileData.name.trim() !== '') {
+                      finalUserName = profileData.name
+                    }
+                  }
+                  
+                  // chat 컬렉션에서 이 사용자의 입장 메시지가 이미 있는지 확인
+                  const allMessagesQuery = query(
+                    collection(db, 'chat'),
+                    orderBy('timestamp', 'desc')
+                  )
+                  const allMessagesSnap = await getDocs(allMessagesQuery)
+                  
+                  // 해당 사용자의 입장 메시지가 이미 있는지 확인
+                  let hasEntryMessage = false
+                  allMessagesSnap.forEach((msgDoc) => {
+                    const msgData = msgDoc.data()
+                    if (
+                      msgData.type === 'system' && 
+                      msgData.message && 
+                      msgData.message.includes('님이 입장했습니다.') &&
+                      msgData.user === finalUserName
+                    ) {
+                      hasEntryMessage = true
+                    }
+                  })
+                  
+                  // 이미 입장 메시지가 있으면 중복이므로 메시지를 보내지 않음
+                  if (hasEntryMessage) {
+                    console.log(`[Chat] ${userId}(${finalUserName})의 입장 메시지가 이미 존재하여 중복 방지`)
+                    return
+                  }
+                  
+                  // 입장 메시지를 Firestore에 저장
+                  await addDoc(collection(db, 'chat'), {
+                    user: finalUserName,
+                    message: `${finalUserName}님이 입장했습니다.`,
+                    timestamp: serverTimestamp(),
+                    type: 'system'
+                  })
+                } catch (error) {
+                  console.error('입장 메시지 전송 오류:', error)
+                  // 실패 시 Set에서 제거하여 재시도 가능하게 함
+                  enteredUserIdsRef.current.delete(userId)
+                }
+              }
+              
+              getUserNameAndCheckDuplicate()
             }
           }
         })

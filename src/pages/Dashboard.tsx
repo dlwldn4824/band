@@ -7,6 +7,8 @@ import QRScanner from '../components/QRScanner'
 import ticketImage from '../assets/배경/티켓_최종.png'
 import editIcon from '../assets/배경/수정아이콘.png'
 import { formatPhoneDisplay } from '../utils/phoneFormat'
+import { collection, getDocs } from 'firebase/firestore'
+import { db } from '../config/firebase'
 import './Dashboard.css'
 
 const Dashboard = () => {
@@ -21,6 +23,7 @@ const Dashboard = () => {
   const [isUpdatingNickname, setIsUpdatingNickname] = useState(false)
   const [checkInNotification, setCheckInNotification] = useState<{ name: string; timestamp: number } | null>(null)
   const [showGuestList, setShowGuestList] = useState(false)
+  const [userNicknames, setUserNicknames] = useState<Record<string, string>>({}) // userId -> nickname 매핑
   const notificationTimerRef = useRef<NodeJS.Timeout | null>(null)
   const navigate = useNavigate()
 
@@ -128,6 +131,32 @@ const Dashboard = () => {
       }
     }
   }, [user, guests, updateUser])
+
+  // userProfiles에서 닉네임 로드 (admin일 때만)
+  useEffect(() => {
+    if (!isAdmin) return
+
+    const loadNicknames = async () => {
+      try {
+        const userProfilesRef = collection(db, 'userProfiles')
+        const snapshot = await getDocs(userProfilesRef)
+        const nicknameMap: Record<string, string> = {}
+        
+        snapshot.forEach((doc) => {
+          const data = doc.data()
+          if (data.nickname && data.nickname.trim() !== '') {
+            nicknameMap[doc.id] = data.nickname
+          }
+        })
+        
+        setUserNicknames(nicknameMap)
+      } catch (error) {
+        console.error('닉네임 로드 오류:', error)
+      }
+    }
+
+    loadNicknames()
+  }, [isAdmin])
 
   // 체크인 알림 표시 (admin 권한이 있을 때만)
   useEffect(() => {
@@ -403,6 +432,7 @@ const Dashboard = () => {
                         <tr>
                           <th>번호</th>
                           <th>이름</th>
+                          <th>닉네임</th>
                           <th>전화번호</th>
                           <th>예매 유형</th>
                           <th>입금 확인</th>
@@ -417,10 +447,14 @@ const Dashboard = () => {
                           const guestPhoneRaw = guest.phone || guest['전화번호'] || guest.Phone || ''
                           const guestPhone = formatPhoneDisplay(guestPhoneRaw)
                           const isWalkIn = guest.isWalkIn === true
+                          // userId 생성 (닉네임 조회용)
+                          const userId = `${guestName}_${guestPhoneRaw}`
+                          const guestNickname = userNicknames[userId] || '-'
                           return (
                             <tr key={index}>
                               <td>{index + 1}</td>
                               <td>{guestName}</td>
+                              <td>{guestNickname}</td>
                               <td>{guestPhone}</td>
                               <td>
                                 <span className={isWalkIn ? 'walk-in-badge' : 'pre-booking-badge'}>

@@ -120,6 +120,7 @@
   box-sizing: border-box;
   background-color: #000000;
   padding: 1rem;
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px) + 100px);
 }
 
 .dashboard-section {
@@ -527,18 +528,19 @@
 
 .guest-list-table th {
   background: #f5f5f5;
-  padding: 12px;
+  padding: 8px 6px;
   text-align: left;
   font-weight: 600;
   border-bottom: 2px solid #e0e0e0;
-  font-size: 0.9rem;
+  font-size: 0.75rem;
   color: #333;
+  white-space: nowrap;
 }
 
 .guest-list-table td {
-  padding: 12px;
+  padding: 8px 6px;
   border-bottom: 1px solid #f0f0f0;
-  font-size: 0.9rem;
+  font-size: 0.75rem;
 }
 
 .guest-list-table tr:hover {
@@ -562,22 +564,22 @@
 /* 예매 유형 배지 */
 .walk-in-badge {
   display: inline-block;
-  padding: 0.25rem 0.75rem;
+  padding: 0.2rem 0.5rem;
   background: #fff3cd;
   color: #856404;
-  border-radius: 12px;
-  font-size: 0.85rem;
+  border-radius: 8px;
+  font-size: 0.7rem;
   font-weight: 600;
   border: 1px solid #ffc107;
 }
 
 .pre-booking-badge {
   display: inline-block;
-  padding: 0.25rem 0.75rem;
+  padding: 0.2rem 0.5rem;
   background: #d1ecf1;
   color: #0c5460;
-  border-radius: 12px;
-  font-size: 0.85rem;
+  border-radius: 8px;
+  font-size: 0.7rem;
   font-weight: 600;
   border: 1px solid #17a2b8;
 }
@@ -637,13 +639,13 @@
   }
   
   .guest-list-table {
-    font-size: 0.85rem;
+    font-size: 0.75rem;
   }
   
   .guest-list-table th,
   .guest-list-table td {
-    padding: 8px;
-    font-size: 0.8rem;
+    padding: 6px 4px;
+    font-size: 0.7rem;
   }
 }
 

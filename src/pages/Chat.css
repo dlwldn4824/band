@@ -88,6 +88,11 @@
   display: none;
 }
 
+/* 공연 정보 페이지에서 푸터 숨기기 */
+.layout.layout--performances .footer {
+  display: none;
+}
+
 .chat-page {
   animation: fadeIn 0.5s ease-in;
   height: 100%;
