@@ -121,7 +121,6 @@ const Performances = () => {
     }
 
     try {
-      const displayName = user.nickname || user.name || '익명'
       console.log('[Performances] 응원 메시지 추가 시도:', {
         songName: selectedSong.songName,
         userName: user.name,
@@ -456,7 +455,6 @@ const Performances = () => {
                 </div>
                 {/* 세션 정보 */}
                 <div className="session-info">
-                  <h3 className="session-title">세션 정보</h3>
                   <div className="session-list">
                     {(() => {
                       const sessionInfo = getSessionInfo(selectedSong)

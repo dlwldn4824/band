@@ -43,19 +43,6 @@ const Dashboard = () => {
     )
   }
 
-  // 디버깅: 컴포넌트 렌더링 상태 로그
-  useEffect(() => {
-    console.log('=== Dashboard 렌더링 상태 ===')
-    console.log('user:', user)
-    console.log('isAdmin:', isAdmin)
-    console.log('adminName:', adminName)
-    console.log('performanceData:', performanceData)
-    console.log('performanceData?.events:', performanceData?.events)
-    console.log('performanceData?.events?.length:', performanceData?.events?.length)
-    console.log('guests.length:', guests.length)
-    console.log('checkInStatus:', checkInStatus)
-    console.log('============================')
-  }, [user, isAdmin, adminName, performanceData, guests.length, checkInStatus])
 
   // 대시보드 페이지에서는 body 스크롤 허용
   useEffect(() => {
@@ -259,11 +246,6 @@ const Dashboard = () => {
   // 렌더링 조건 디버깅
   const shouldShowEvents = performanceData?.events && performanceData.events.length > 0
   const shouldShowEmptyState = !performanceData
-  
-  console.log('[렌더링 조건] shouldShowEvents:', shouldShowEvents)
-  console.log('[렌더링 조건] shouldShowEmptyState:', shouldShowEmptyState)
-  console.log('[렌더링 조건] performanceData 존재:', !!performanceData)
-  console.log('[렌더링 조건] performanceData?.events 존재:', !!performanceData?.events)
 
   return (
     <div className="dashboard">
@@ -513,15 +495,6 @@ const Dashboard = () => {
           </div>
         )}
 
-        {(() => {
-          console.log('[렌더링] Events 섹션 체크:', {
-            hasPerformanceData: !!performanceData,
-            hasEvents: !!performanceData?.events,
-            eventsLength: performanceData?.events?.length,
-            shouldRender: shouldShowEvents
-          })
-          return null
-        })()}
         {performanceData?.events && performanceData.events.length > 0 && (
           <section className="dashboard-section">
             <Events events={performanceData.events} />
@@ -540,13 +513,6 @@ const Dashboard = () => {
           </div>
         </section>
 
-        {(() => {
-          console.log('[렌더링] Empty State 체크:', {
-            hasPerformanceData: !!performanceData,
-            shouldRender: shouldShowEmptyState
-          })
-          return null
-        })()}
         {!performanceData && (
           <div className="empty-state">
             <p>공연 정보가 아직 설정되지 않았습니다.</p>
