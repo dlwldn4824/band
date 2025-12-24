@@ -134,9 +134,6 @@ const Layout = ({ children }: LayoutProps) => {
                 <Link to="/admin/performances" className={`nav-link ${isActive('/admin/performances')}`} onClick={(e) => handleNavClick('/admin/performances', e)}>
                   공연 정보
                 </Link>
-                <Link to="/admin/guestbook" className={`nav-link ${isActive('/admin/guestbook')}`} onClick={(e) => handleNavClick('/admin/guestbook', e)}>
-                  방명록
-                </Link>
                 <Link to="/admin/chat" className={`nav-link ${isActive('/admin/chat')}`} onClick={(e) => handleNavClick('/admin/chat', e)}>
                   채팅
                 </Link>
@@ -151,9 +148,6 @@ const Layout = ({ children }: LayoutProps) => {
                 </Link>
                 <Link to="/performances" className={`nav-link ${isActive('/performances')}`} onClick={(e) => handleNavClick('/performances', e)}>
                   공연 정보
-                </Link>
-                <Link to="/guestbook" className={`nav-link ${isActive('/guestbook')}`} onClick={(e) => handleNavClick('/guestbook', e)}>
-                  방명록
                 </Link>
                 <Link to="/chat" className={`nav-link ${isActive('/chat')}`} onClick={(e) => handleNavClick('/chat', e)}>
                   채팅
@@ -171,9 +165,6 @@ const Layout = ({ children }: LayoutProps) => {
                 </Link>
                 <Link to="/performances" className={`nav-link ${isActive('/performances')}`} onClick={(e) => handleNavClick('/performances', e)}>
                   공연 정보
-                </Link>
-                <Link to="/guestbook" className={`nav-link ${isActive('/guestbook')}`} onClick={(e) => handleNavClick('/guestbook', e)}>
-                  방명록
                 </Link>
                 {eventsEnabled && (
                   <Link to="/events" className={`nav-link ${isActive('/events')}`} onClick={(e) => handleNavClick('/events', e)}>

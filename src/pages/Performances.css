@@ -223,7 +223,7 @@
    ========================= */
 .song-detail-modal {
   position: fixed;
-  top: var(--header-height, calc(0.75rem + env(safe-area-inset-top) + 1.75rem + 2.5rem + 0.75rem));
+  top: 0;
   left: 0;
   right: 0;
   bottom: 0;
@@ -231,9 +231,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
-  padding: 0.5rem;
-  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+  z-index: 10000;
+  padding: 1rem;
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
   animation: fadeIn 0.3s ease;
   box-sizing: border-box;
 }
@@ -243,16 +243,15 @@
   border-radius: 16px;
   max-width: 600px;
   width: 100%;
-  max-height: calc(100vh - var(--header-height, calc(0.75rem + env(safe-area-inset-top) + 1.75rem + 2.5rem + 0.75rem)) - 1rem - env(safe-area-inset-bottom));
+  max-height: calc(100vh - 2rem);
   overflow-y: auto;
   overflow-x: hidden;
   position: relative;
   animation: slideUp 0.3s ease;
   box-sizing: border-box;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
+  -webkit-overflow-scrolling: touch;
 }
 
 .song-image-container {
@@ -263,6 +262,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .song-image {
@@ -270,7 +270,8 @@
   height: auto;
   object-fit: contain;
   display: block;
-  max-height: 60vh;
+  max-height: 50vh;
+  flex-shrink: 0;
 }
 
 .song-detail-close {
@@ -356,10 +357,10 @@
 .song-info-section {
   position: relative;
   background: #2a2a2a;
-  padding: 1.5rem 1rem;
+  padding: 1.5rem 1rem 0.75rem 1rem;
   border-radius: 0;
   box-sizing: border-box;
-  min-height: 140px;
+  flex-shrink: 0;
 }
 
 .song-info-content {
@@ -451,13 +452,169 @@
   cursor: not-allowed;
 }
 
+/* 세션 정보 및 응원하기 스크롤 영역 */
+.song-detail-scrollable {
+  display: flex;
+  flex-direction: column;
+}
+
 /* session info */
 .session-info {
-  padding: 1rem;
-  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+  padding: 0.5rem 1rem 1rem 1rem;
   background: #2a2a2a;
   box-sizing: border-box;
-  min-height: fit-content;
+  flex-shrink: 0;
+}
+
+/* 응원하기 섹션 */
+.song-comments-section {
+  padding: 1rem;
+  background: #2a2a2a;
+  box-sizing: border-box;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.song-comments-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-shrink: 0;
+}
+
+.song-comments-title {
+  font-size: clamp(0.9rem, 3.5vw, 1.1rem);
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
+  font-family: 'Pretendard', sans-serif;
+}
+
+.song-comment-add-button {
+  padding: 0.5rem 1rem;
+  background: #FF4C4C;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Pretendard', sans-serif;
+}
+
+.song-comment-add-button:hover {
+  background: #E63E3E;
+  transform: translateY(-1px);
+}
+
+.song-comment-input-section {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.song-comment-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-family: 'Pretendard', sans-serif;
+  resize: vertical;
+  min-height: 80px;
+  box-sizing: border-box;
+}
+
+.song-comment-input:focus {
+  outline: none;
+  border-color: #FF4C4C;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.song-comment-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.song-comment-submit-button {
+  padding: 0.625rem 1.5rem;
+  background: #FF4C4C;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Pretendard', sans-serif;
+  align-self: flex-end;
+}
+
+.song-comment-submit-button:hover:not(:disabled) {
+  background: #E63E3E;
+  transform: translateY(-1px);
+}
+
+.song-comment-submit-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.song-comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.song-comments-empty {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.875rem;
+  padding: 1.5rem 0;
+  font-family: 'Pretendard', sans-serif;
+}
+
+.song-comment-item {
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.song-comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.song-comment-author {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #FF4C4C;
+  font-family: 'Pretendard', sans-serif;
+}
+
+.song-comment-time {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-family: 'Pretendard', sans-serif;
+}
+
+.song-comment-message {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #ffffff;
+  line-height: 1.5;
+  font-family: 'Pretendard', sans-serif;
+  word-break: break-word;
 }
 
 .session-title {
@@ -470,7 +627,7 @@
 
 .session-list {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 0.5rem;
 }
 
@@ -597,12 +754,13 @@
   .song-item-arrow { font-size: 1.25rem; }
 
   .song-detail-modal {
-    top: var(--header-height, calc(2rem + env(safe-area-inset-top) + 4rem));
+    top: 0;
+    padding: 1rem;
   }
   
   .song-detail-content {
     border-radius: 12px;
-    max-height: calc(100vh - var(--header-height, calc(2rem + env(safe-area-inset-top) + 4rem)) - 1rem - env(safe-area-inset-bottom));
+    max-height: calc(100vh - 2rem);
   }
 
   .song-detail-close {

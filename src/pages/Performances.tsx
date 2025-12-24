@@ -1,6 +1,18 @@
 import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useData, SetlistItem } from '../contexts/DataContext'
+import { useAuth } from '../contexts/AuthContext'
+import { 
+  collection, 
+  addDoc, 
+  query, 
+  orderBy, 
+  limit,
+  onSnapshot,
+  serverTimestamp,
+  where
+} from 'firebase/firestore'
+import { db } from '../config/firebase'
 import demoImage from '../assets/배경/데모 이미지.png'
 import vocalIcon from '../assets/배경/보컬.png'
 import guitarIcon from '../assets/배경/기타.png'
@@ -27,10 +39,23 @@ import img14 from '../assets/곡소개/14_ditto.jpeg'
 import img16 from '../assets/곡소개/16_itsmylife.jpeg'
 import img19 from '../assets/곡소개/19_아지랑이.jpeg'
 
+interface SongComment {
+  id: string
+  songName: string
+  userName: string
+  userNickname?: string
+  message: string
+  timestamp: any
+}
+
 const Performances = () => {
   const location = useLocation()
   const { performanceData } = useData()
+  const { user } = useAuth()
   const [selectedSong, setSelectedSong] = useState<SetlistItem | null>(null)
+  const [songComments, setSongComments] = useState<SongComment[]>([])
+  const [commentInput, setCommentInput] = useState('')
+  const [showCommentInput, setShowCommentInput] = useState(false)
   
   // location이 변경될 때마다 리렌더링 트리거
   useEffect(() => {
@@ -38,6 +63,88 @@ const Performances = () => {
   }, [location.pathname, location.state])
   const [selectedSongIndex, setSelectedSongIndex] = useState<number | null>(null)
   const [selectedPart, setSelectedPart] = useState<1 | 2>(1)
+
+  // 타임라인에서 클릭한 부로 이동
+  useEffect(() => {
+    if (location.state && typeof (location.state as any).part === 'number') {
+      const part = (location.state as any).part as 1 | 2
+      if (part === 1 || part === 2) {
+        setSelectedPart(part)
+      }
+    }
+  }, [location.state])
+
+  // 선택된 곡의 응원 메시지 가져오기
+  useEffect(() => {
+    if (!selectedSong) {
+      setSongComments([])
+      return
+    }
+
+    const commentsQuery = query(
+      collection(db, 'songComments'),
+      where('songName', '==', selectedSong.songName),
+      orderBy('timestamp', 'desc'),
+      limit(50)
+    )
+
+    const unsubscribe = onSnapshot(
+      commentsQuery,
+      (snapshot) => {
+        const comments: SongComment[] = []
+        snapshot.forEach((doc) => {
+          comments.push({
+            id: doc.id,
+            ...doc.data()
+          } as SongComment)
+        })
+        setSongComments(comments)
+      },
+      (error) => {
+        console.error('[Performances] 응원 메시지 구독 오류:', error)
+        setSongComments([])
+      }
+    )
+
+    return () => unsubscribe()
+  }, [selectedSong])
+
+  // 응원 메시지 추가
+  const handleAddComment = async () => {
+    if (!selectedSong || !commentInput.trim() || !user) {
+      console.error('[Performances] 응원 메시지 추가 실패:', {
+        hasSelectedSong: !!selectedSong,
+        hasCommentInput: !!commentInput.trim(),
+        hasUser: !!user
+      })
+      return
+    }
+
+    try {
+      const displayName = user.nickname || user.name || '익명'
+      console.log('[Performances] 응원 메시지 추가 시도:', {
+        songName: selectedSong.songName,
+        userName: user.name,
+        userNickname: user.nickname,
+        message: commentInput.trim()
+      })
+      
+      await addDoc(collection(db, 'songComments'), {
+        songName: selectedSong.songName,
+        userName: user.name || '익명',
+        userNickname: user.nickname || undefined,
+        message: commentInput.trim(),
+        timestamp: serverTimestamp()
+      })
+      
+      console.log('[Performances] 응원 메시지 추가 성공')
+      setCommentInput('')
+      setShowCommentInput(false)
+    } catch (error) {
+      console.error('[Performances] 응원 메시지 추가 오류:', error)
+      alert('응원 메시지 등록에 실패했습니다. 다시 시도해주세요.')
+    }
+  }
 
   // 셋리스트 페이지에서만 body 스크롤 활성화
   useEffect(() => {
@@ -57,6 +164,42 @@ const Performances = () => {
       document.documentElement.style.overflow = originalHtmlOverflow
     }
   }, [])
+
+  // 모달이 열릴 때 배경 스크롤 막기
+  useEffect(() => {
+    if (selectedSong) {
+      // 모달이 열릴 때 배경 스크롤 막기
+      const scrollY = window.scrollY
+      document.body.style.overflow = 'hidden'
+      document.body.style.position = 'fixed'
+      document.body.style.top = `-${scrollY}px`
+      document.body.style.width = '100%'
+      document.documentElement.style.overflow = 'hidden'
+    } else {
+      // 모달이 닫힐 때 배경 스크롤 복구
+      const scrollY = document.body.style.top
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.top = ''
+      document.body.style.width = ''
+      document.documentElement.style.overflow = ''
+      
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || '0') * -1)
+      }
+    }
+
+    return () => {
+      // cleanup
+      if (!selectedSong) {
+        document.body.style.overflow = ''
+        document.body.style.position = ''
+        document.body.style.top = ''
+        document.body.style.width = ''
+        document.documentElement.style.overflow = ''
+      }
+    }
+  }, [selectedSong])
 
   // 이미지 매핑 (import된 이미지 사용)
   const imageMap: { [key:string]:string } = {
@@ -310,40 +453,99 @@ const Performances = () => {
                 </div>
               </div>
 
-              {/* 세션 정보 */}
-              <div className="session-info">
-                <h3 className="session-title">세션 정보</h3>
-                <div className="session-list">
-                  {(() => {
-                    const sessionInfo = getSessionInfo(selectedSong)
-                    const sessionOrder = [
-                      { name: '보컬', icon: vocalIcon },
-                      { name: '기타', icon: guitarIcon },
-                      { name: '베이스', icon: bassIcon },
-                      { name: '키보드', icon: keyboardIcon },
-                      { name: '드럼', icon: drumIcon },
-                    ]
-                    return sessionOrder.map((session) => {
-                      const members = sessionInfo[session.name] || []
-                      if (members.length === 0) return null
-                      return (
-                        <div key={session.name} className="session-item">
-                          <div className="session-label-wrapper">
-                            <img src={session.icon} alt={session.name} className="session-icon" loading="lazy" decoding="async" />
-                            <span className="session-label">{session.name}</span>
+              {/* 세션 정보 및 응원하기 스크롤 영역 */}
+              <div className="song-detail-scrollable">
+                {/* 세션 정보 */}
+                <div className="session-info">
+                  <h3 className="session-title">세션 정보</h3>
+                  <div className="session-list">
+                    {(() => {
+                      const sessionInfo = getSessionInfo(selectedSong)
+                      const sessionOrder = [
+                        { name: '보컬', icon: vocalIcon },
+                        { name: '기타', icon: guitarIcon },
+                        { name: '베이스', icon: bassIcon },
+                        { name: '키보드', icon: keyboardIcon },
+                        { name: '드럼', icon: drumIcon },
+                      ]
+                      return sessionOrder.map((session) => {
+                        const members = sessionInfo[session.name] || []
+                        if (members.length === 0) return null
+                        return (
+                          <div key={session.name} className="session-item">
+                            <div className="session-label-wrapper">
+                              <img src={session.icon} alt={session.name} className="session-icon" loading="lazy" decoding="async" />
+                              <span className="session-label">{session.name}</span>
+                            </div>
+                            <div className="session-members">
+                              {members.map((member, idx) => (
+                                <span key={idx} className="session-chip">
+                                  {member}
+                                </span>
+                              ))}
+                            </div>
                           </div>
-                          <div className="session-members">
-                            {members.map((member, idx) => (
-                              <span key={idx} className="session-chip">
-                                {member}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )
-                    })
-                  })()}
+                        )
+                      })
+                    })()}
+                  </div>
                 </div>
+
+                {/* 응원하기 섹션 */}
+                <div className="song-comments-section">
+                <div className="song-comments-header">
+                  <h3 className="song-comments-title">응원하기</h3>
+                </div>
+
+                {/* 응원 메시지 입력 */}
+                {user && showCommentInput && (
+                  <div className="song-comment-input-section">
+                    <textarea
+                      className="song-comment-input"
+                      placeholder="이 곡에 대한 응원 메시지를 입력하세요..."
+                      value={commentInput}
+                      onChange={(e) => setCommentInput(e.target.value)}
+                      maxLength={200}
+                      rows={3}
+                    />
+                    <button
+                      className="song-comment-submit-button"
+                      onClick={handleAddComment}
+                      disabled={!commentInput.trim()}
+                    >
+                      등록
+                    </button>
+                  </div>
+                )}
+
+                {/* 응원 메시지 목록 */}
+                <div className="song-comments-list">
+                  {songComments.length === 0 ? (
+                    <p className="song-comments-empty">아직 응원 메시지가 없습니다.</p>
+                  ) : (
+                    songComments.map((comment) => (
+                      <div key={comment.id} className="song-comment-item">
+                        <div className="song-comment-header">
+                          <span className="song-comment-author">
+                            {comment.userNickname || comment.userName || '익명'}
+                          </span>
+                          <span className="song-comment-time">
+                            {comment.timestamp?.toDate 
+                              ? new Date(comment.timestamp.toDate()).toLocaleString('ko-KR', {
+                                  month: '2-digit',
+                                  day: '2-digit',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })
+                              : ''}
+                          </span>
+                        </div>
+                        <p className="song-comment-message">{comment.message}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
               </div>
             </div>
           </div>

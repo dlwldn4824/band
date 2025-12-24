@@ -101,6 +101,12 @@
   position: relative;
   left: var(--rail-center-x);
   transform: translateX(-50%); /* dot 중심이 라인 중심과 정확히 일치 */
+  transition: all 0.2s;
+}
+
+.timeline-dot:hover {
+  transform: translateX(-50%) scale(1.1);
+  box-shadow: 0 2px 8px rgba(255, 76, 76, 0.4);
 }
 
 .timeline-item {
@@ -115,6 +121,12 @@
 .timeline-content {
   flex: 1;
   color: white;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.timeline-content:hover {
+  opacity: 0.8;
+  transform: translateX(4px);
 }
 
 .event-header {
@@ -168,6 +180,23 @@
   margin-top: 0.25rem;
 }
 
+.timeline-footer-text {
+  margin: 1rem 0 0 0;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.875rem;
+  font-family: 'Pretendard', sans-serif;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.timeline-footer-text:hover {
+  color: #FF4C4C;
+  opacity: 0.9;
+}
+
 @media (max-width: 768px) {
   .events-header {
     padding: 1rem 0;
@@ -199,6 +228,12 @@
 
   .event-description {
     font-size: 0.875rem;
+  }
+
+  .timeline-footer-text {
+    font-size: 0.8rem;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
   }
 }
 

@@ -53,6 +53,11 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // 응원 메시지 컬렉션 추가
+    match /songComments/{document=**} {
+      allow read, write: if true;
+    }
+
   }
 }
 
