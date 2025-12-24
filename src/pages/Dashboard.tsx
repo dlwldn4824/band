@@ -330,6 +330,8 @@ const Dashboard = () => {
                 src={ticketImage} 
                 alt="티켓" 
                 className="ticket-image"
+                loading="eager"
+                decoding="async"
               />
               {checkInStatus === 'done' && user?.entryNumber && (
                 <div className="ticket-stamp">
@@ -526,6 +528,8 @@ const Dashboard = () => {
               src="/assets/배경/최종_포스터.PNG" 
               alt="공연 포스터" 
               className="poster-image"
+              loading="lazy"
+              decoding="async"
             />
           </div>
         </section>

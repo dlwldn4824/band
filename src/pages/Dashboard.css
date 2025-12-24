@@ -120,7 +120,7 @@
   box-sizing: border-box;
   background-color: #000000;
   padding: 1rem;
-  padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px) + 100px);
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px) + 20px);
 }
 
 .dashboard-section {
@@ -265,6 +265,7 @@
   align-items: center;
   background: transparent;
   padding: 0;
+  margin-bottom: 20px;
   border-radius: 12px;
   box-sizing: border-box;
   overflow: visible;
@@ -304,6 +305,7 @@
 
 .poster-section {
   margin-top: 2rem;
+  margin-bottom: 20px;
   width: 100%;
   max-width: 100%;
   display: flex;

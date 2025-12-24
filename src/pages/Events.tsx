@@ -180,6 +180,8 @@ const Events = () => {
                   src={directionsImage} 
                   alt="길 안내" 
                   className="directions-image"
+                  loading="lazy"
+                  decoding="async"
                 />
               </div>
 

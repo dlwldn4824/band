@@ -30,6 +30,7 @@ interface Message {
   fileName?: string
   fileType?: string
   type?: 'system' | 'user' // 시스템 메시지 구분
+  userId?: string // 입장 메시지의 경우 사용자 ID
 }
 
 interface OnlineUser {
@@ -45,6 +46,7 @@ const Chat = () => {
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([])
   const [showOnlineList, setShowOnlineList] = useState(false)
   const [showPhotoModal, setShowPhotoModal] = useState(false)
+  const [userNicknameCache, setUserNicknameCache] = useState<Record<string, string>>({}) // userId -> 최신 닉네임 캐시
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const onlineUserRef = useRef<string | null>(null)
@@ -96,12 +98,12 @@ const Chat = () => {
         const now = Date.now()
         const currentUserIds = new Set<string>()
         
-        snapshot.forEach((doc) => {
-          const data = doc.data()
+        snapshot.forEach((userDoc) => {
+          const data = userDoc.data()
           const lastSeen = data.lastSeen?.toMillis?.() || 0
           // 1분 이내 활동한 사용자만 온라인으로 표시
           if (now - lastSeen < 60000) {
-            const userId = doc.id
+            const userId = userDoc.id
             const userName = data.nickname || data.name || '익명'
             currentUserIds.add(userId)
             
@@ -131,7 +133,7 @@ const Chat = () => {
                   
                   let finalUserName = userName
                   if (userProfileSnap.exists()) {
-                    const profileData = userProfileSnap.data()
+                    const profileData = userProfileSnap.data() as { nickname?: string; name?: string }
                     // userProfiles에 닉네임이 있으면 우선 사용
                     if (profileData.nickname && profileData.nickname.trim() !== '') {
                       finalUserName = profileData.nickname
@@ -149,8 +151,8 @@ const Chat = () => {
                   
                   // 해당 사용자의 입장 메시지가 이미 있는지 확인
                   let hasEntryMessage = false
-                  allMessagesSnap.forEach((msgDoc) => {
-                    const msgData = msgDoc.data()
+                  allMessagesSnap.forEach((messageDoc) => {
+                    const msgData = messageDoc.data() as { type?: string; message?: string; user?: string }
                     if (
                       msgData.type === 'system' && 
                       msgData.message && 
@@ -167,12 +169,13 @@ const Chat = () => {
                     return
                   }
                   
-                  // 입장 메시지를 Firestore에 저장
+                  // 입장 메시지를 Firestore에 저장 (userId 포함)
                   await addDoc(collection(db, 'chat'), {
                     user: finalUserName,
                     message: `${finalUserName}님이 입장했습니다.`,
                     timestamp: serverTimestamp(),
-                    type: 'system'
+                    type: 'system',
+                    userId: userId // userId 저장하여 나중에 닉네임 업데이트 가능하도록
                   })
                 } catch (error) {
                   console.error('입장 메시지 전송 오류:', error)
@@ -205,16 +208,61 @@ const Chat = () => {
     )
     const unsubscribeMessages = onSnapshot(
       messagesQuery, 
-      (snapshot) => {
+      async (snapshot) => {
         const newMessages: Message[] = []
-        snapshot.forEach((doc) => {
+        snapshot.forEach((messageDoc) => {
           newMessages.push({
-            id: doc.id,
-            ...doc.data()
+            id: messageDoc.id,
+            ...messageDoc.data()
           } as Message)
         })
         // 시간순으로 정렬 (오래된 것부터)
-        setMessages(newMessages.reverse())
+        const sortedMessages = newMessages.reverse()
+        
+        // 입장 메시지의 최신 닉네임 업데이트
+        const updatedNicknameCache: Record<string, string> = { ...userNicknameCache }
+        const entryMessages = sortedMessages.filter(msg => msg.type === 'system' && msg.message?.includes('님이 입장했습니다.'))
+        
+        // 각 입장 메시지의 사용자에 대해 최신 닉네임 조회
+        const nicknamePromises = entryMessages.map(async (msg) => {
+          // userId가 있으면 userId로 조회, 없으면 이름으로 조회 (기존 메시지 호환)
+          const targetUserId = msg.userId || msg.user
+          if (!targetUserId) return
+          
+          try {
+            // userId로 직접 조회 (가장 정확)
+            if (msg.userId) {
+              const userProfileRef = doc(db, 'userProfiles', msg.userId)
+              const userProfileSnap = await getDoc(userProfileRef)
+              
+              if (userProfileSnap.exists()) {
+                const profileData = userProfileSnap.data() as { nickname?: string; name?: string }
+                const latestNickname = profileData.nickname || profileData.name || msg.user
+                updatedNicknameCache[msg.userId] = latestNickname
+                updatedNicknameCache[msg.user] = latestNickname // 이름으로도 캐시 (기존 호환)
+              }
+            } else {
+              // userId가 없는 기존 메시지의 경우 이름으로 찾기
+              const userProfilesRef = collection(db, 'userProfiles')
+              const profilesSnapshot = await getDocs(userProfilesRef)
+              
+              profilesSnapshot.forEach((profileDoc) => {
+                const profileData = profileDoc.data() as { nickname?: string; name?: string }
+                // 저장된 이름과 일치하는 경우
+                if (profileData.name === msg.user || profileData.nickname === msg.user) {
+                  const latestNickname = profileData.nickname || profileData.name || msg.user
+                  updatedNicknameCache[msg.user] = latestNickname
+                }
+              })
+            }
+          } catch (error) {
+            console.error('닉네임 조회 오류:', error)
+          }
+        })
+        
+        await Promise.all(nicknamePromises)
+        setUserNicknameCache(updatedNicknameCache)
+        setMessages(sortedMessages)
       },
       (error) => {
         console.error('[Chat] 메시지 구독 오류:', error)
@@ -324,9 +372,21 @@ const Chat = () => {
             messages.map((msg) => {
               // 시스템 메시지인 경우
               if (msg.type === 'system') {
+                // 입장 메시지인 경우 최신 닉네임으로 업데이트
+                let displayMessage = msg.message
+                if (msg.message?.includes('님이 입장했습니다.')) {
+                  // userId가 있으면 userId로 조회, 없으면 이름으로 조회
+                  const cacheKey = msg.userId || msg.user || ''
+                  const latestNickname = userNicknameCache[cacheKey] || userNicknameCache[msg.user || ''] || msg.user || ''
+                  
+                  if (latestNickname && latestNickname !== msg.user) {
+                    displayMessage = `${latestNickname}님이 입장했습니다.`
+                  }
+                }
+                
                 return (
                   <div key={msg.id} className="system-message">
-                    <span className="system-message-text">{msg.message}</span>
+                    <span className="system-message-text">{displayMessage}</span>
                   </div>
                 )
               }
@@ -348,6 +408,8 @@ const Chat = () => {
                         <img 
                           src={msg.imageUrl} 
                           alt={msg.fileName || '이미지'} 
+                          loading="lazy"
+                          decoding="async"
                           onClick={() => window.open(msg.imageUrl, '_blank')}
                         />
                       </div>
@@ -385,6 +447,8 @@ const Chat = () => {
                 src="/assets/배경/free-icon-image-7476903.png" 
                 alt="사진 공유"
                 className="photo-upload-icon"
+                loading="lazy"
+                decoding="async"
               />
             </button>
           <input

@@ -243,6 +243,8 @@ const Performances = () => {
                   src={getSongImage(selectedSong.songName) || selectedSong.image || demoImage}
                   alt={`${selectedSong.songName} 이미지`}
                   className="song-image"
+                  loading="lazy"
+                  decoding="async"
                   onError={(e) => {
                     e.currentTarget.src = demoImage
                   }}
@@ -320,7 +322,7 @@ const Performances = () => {
                       return (
                         <div key={session.name} className="session-item">
                           <div className="session-label-wrapper">
-                            <img src={session.icon} alt={session.name} className="session-icon" />
+                            <img src={session.icon} alt={session.name} className="session-icon" loading="lazy" decoding="async" />
                             <span className="session-label">{session.name}</span>
                           </div>
                           <div className="session-members">
