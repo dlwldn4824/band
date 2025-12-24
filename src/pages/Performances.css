@@ -224,7 +224,10 @@
    ========================= */
 .song-detail-modal {
   position: fixed;
-  inset: 0;
+  top: var(--header-height, calc(0.75rem + env(safe-area-inset-top) + 1.75rem + 2.5rem + 0.75rem));
+  left: 0;
+  right: 0;
+  bottom: 0;
   background: rgba(0, 0, 0, 0.7);
   display: flex;
   align-items: center;
@@ -241,7 +244,7 @@
   border-radius: 16px;
   max-width: 600px;
   width: 100%;
-  max-height: calc(100vh - 1rem - env(safe-area-inset-bottom));
+  max-height: calc(100vh - var(--header-height, calc(0.75rem + env(safe-area-inset-top) + 1.75rem + 2.5rem + 0.75rem)) - 1rem - env(safe-area-inset-bottom));
   overflow-y: auto;
   overflow-x: hidden;
   position: relative;
@@ -594,9 +597,13 @@
   .song-item-artist { font-size: 0.95rem; }
   .song-item-arrow { font-size: 1.25rem; }
 
+  .song-detail-modal {
+    top: var(--header-height, calc(2rem + env(safe-area-inset-top) + 4rem));
+  }
+  
   .song-detail-content {
     border-radius: 12px;
-    max-height: calc(100vh - 1rem - env(safe-area-inset-bottom));
+    max-height: calc(100vh - var(--header-height, calc(2rem + env(safe-area-inset-top) + 4rem)) - 1rem - env(safe-area-inset-bottom));
   }
 
   .song-detail-close {
