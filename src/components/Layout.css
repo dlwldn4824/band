@@ -2,6 +2,8 @@
   /* CSS 변수 우선 사용, 없으면 100dvh 사용 */
   min-height: var(--app-height, 100dvh);
   min-height: 100vh; /* fallback */
+  height: var(--app-height, 100dvh);
+  height: 100vh; /* fallback */
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
@@ -18,12 +20,19 @@
 }
 
 .header {
-  background: #000;
-  color: white;
+  background: #000 !important;
+  color: white !important;
   padding: 0.75rem 0;
   padding-top: calc(0.75rem + env(safe-area-inset-top));
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 999;
+  width: 100%;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 .header .container {
@@ -70,7 +79,7 @@
 }
 
 .nav {
-  display: flex;
+  display: flex !important;
   flex-wrap: nowrap;
   justify-content: center;
   align-items: center;
@@ -83,6 +92,9 @@
   padding: 0 0.25rem;
   box-sizing: border-box;
   position: relative;
+  z-index: 1000;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 .nav::-webkit-scrollbar {
@@ -100,6 +112,9 @@
   flex-shrink: 0;
   background-color: transparent;
   border: 1px solid white;
+  display: inline-block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 .nav-link:hover {
@@ -107,9 +122,9 @@
 }
 
 .nav-link.active {
-  background-color: white;
-  color: #333;
-  border: 1px solid white;
+  background-color: white !important;
+  color: #333 !important;
+  border: 1px solid white !important;
 }
 
 .logout-nav-button {
@@ -130,6 +145,7 @@
   min-height: 25px;
   position: absolute;
   right: 0;
+  z-index: 1001;
 }
 
 .logout-nav-button:hover {

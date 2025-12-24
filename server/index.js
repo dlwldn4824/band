@@ -4,6 +4,14 @@ import { Server } from 'socket.io'
 
 const app = express()
 
+// 캐시 방지 헤더 설정
+app.use((req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+  res.setHeader('Pragma', 'no-cache')
+  res.setHeader('Expires', '0')
+  next()
+})
+
 const httpServer = createServer(app)
 const io = new Server(httpServer, {
   cors: {
