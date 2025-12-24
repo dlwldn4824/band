@@ -243,15 +243,13 @@
   border-radius: 16px;
   max-width: 600px;
   width: 100%;
-  max-height: calc(100vh - 2rem);
-  overflow-y: auto;
-  overflow-x: hidden;
+  max-height: calc(var(--app-height, 100vh) - 2rem);
+  overflow: hidden;
   position: relative;
   animation: slideUp 0.3s ease;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  -webkit-overflow-scrolling: touch;
 }
 
 .song-image-container {
@@ -454,6 +452,11 @@
 
 /* 세션 정보 및 응원하기 스크롤 영역 */
 .song-detail-scrollable {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
 }
@@ -519,6 +522,12 @@
   flex-shrink: 0;
 }
 
+.song-comment-buttons {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
 .song-comment-input {
   width: 100%;
   padding: 0.75rem;
@@ -526,7 +535,7 @@
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.05);
   color: #ffffff;
-  font-size: 0.9rem;
+  font-size: 16px;
   font-family: 'Pretendard', sans-serif;
   resize: vertical;
   min-height: 80px;
@@ -543,18 +552,39 @@
   color: rgba(255, 255, 255, 0.5);
 }
 
-.song-comment-submit-button {
-  padding: 0.625rem 1.5rem;
-  background: #FF4C4C;
+.song-comment-cancel-button {
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.1);
   color: white;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 6px;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
   font-family: 'Pretendard', sans-serif;
-  align-self: flex-end;
+  flex: 0 0 auto;
+  min-width: 80px;
+}
+
+.song-comment-cancel-button:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+.song-comment-submit-button {
+  padding: 0.5rem 1.5rem;
+  background: #FF4C4C;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Pretendard', sans-serif;
+  flex: 1;
+  min-width: 100px;
 }
 
 .song-comment-submit-button:hover:not(:disabled) {
@@ -627,7 +657,7 @@
 
 .session-list {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 0.5rem;
 }
 
@@ -760,7 +790,7 @@
   
   .song-detail-content {
     border-radius: 12px;
-    max-height: calc(100vh - 2rem);
+    max-height: calc(var(--app-height, 100vh) - 2rem);
   }
 
   .song-detail-close {

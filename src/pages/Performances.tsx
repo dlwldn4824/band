@@ -401,60 +401,59 @@ const Performances = () => {
                 />
               </div>
 
-              {/* 곡 정보 섹션 */}
-              <div className="song-info-section">
-                <div className="song-info-content">
-                  <div className="song-info-header">
-                    <button className="song-part-button">
-                      {(() => {
-                        const totalSongs2 = performanceData.setlist.length
-                        const currentNumber = selectedSongIndex + 1
-                        const part1Count2 = Math.ceil(totalSongs2 / 2)
-                        const part = currentNumber <= part1Count2 ? 1 : 2
-                        const partNumber = part === 1 ? currentNumber : currentNumber - part1Count2
-                        return `${part}부 ${partNumber}번째 곡`
-                      })()}
-                    </button>
-                    <span className="song-number-display">
-                      {selectedSongIndex + 1}/{performanceData.setlist.length}
-                    </span>
-                  </div>
-
-                  <h2 className="song-title">{selectedSong.songName}</h2>
-                  {selectedSong.artist && <p className="song-artist">{selectedSong.artist}</p>}
-
-                  {/* 이전/다음 곡 버튼 */}
-                  <button
-                    className="song-nav-arrow song-nav-prev"
-                    onClick={() => {
-                      if (selectedSongIndex > 0 && performanceData.setlist) {
-                        const prevIndex = selectedSongIndex - 1
-                        setSelectedSong(performanceData.setlist[prevIndex])
-                        setSelectedSongIndex(prevIndex)
-                      }
-                    }}
-                    disabled={selectedSongIndex === 0}
-                  >
-                    ‹
-                  </button>
-                  <button
-                    className="song-nav-arrow song-nav-next"
-                    onClick={() => {
-                      if (performanceData.setlist && selectedSongIndex < performanceData.setlist.length - 1) {
-                        const nextIndex = selectedSongIndex + 1
-                        setSelectedSong(performanceData.setlist[nextIndex])
-                        setSelectedSongIndex(nextIndex)
-                      }
-                    }}
-                    disabled={!performanceData.setlist || selectedSongIndex === performanceData.setlist.length - 1}
-                  >
-                    ›
-                  </button>
-                </div>
-              </div>
-
-              {/* 세션 정보 및 응원하기 스크롤 영역 */}
+              {/* 곡 정보 및 세션 정보, 응원하기 스크롤 영역 */}
               <div className="song-detail-scrollable">
+                {/* 곡 정보 섹션 */}
+                <div className="song-info-section">
+                  <div className="song-info-content">
+                    <div className="song-info-header">
+                      <button className="song-part-button">
+                        {(() => {
+                          const totalSongs2 = performanceData.setlist.length
+                          const currentNumber = selectedSongIndex + 1
+                          const part1Count2 = Math.ceil(totalSongs2 / 2)
+                          const part = currentNumber <= part1Count2 ? 1 : 2
+                          const partNumber = part === 1 ? currentNumber : currentNumber - part1Count2
+                          return `${part}부 ${partNumber}번째 곡`
+                        })()}
+                      </button>
+                      <span className="song-number-display">
+                        {selectedSongIndex + 1}/{performanceData.setlist.length}
+                      </span>
+                    </div>
+
+                    <h2 className="song-title">{selectedSong.songName}</h2>
+                    {selectedSong.artist && <p className="song-artist">{selectedSong.artist}</p>}
+
+                    {/* 이전/다음 곡 버튼 */}
+                    <button
+                      className="song-nav-arrow song-nav-prev"
+                      onClick={() => {
+                        if (selectedSongIndex > 0 && performanceData.setlist) {
+                          const prevIndex = selectedSongIndex - 1
+                          setSelectedSong(performanceData.setlist[prevIndex])
+                          setSelectedSongIndex(prevIndex)
+                        }
+                      }}
+                      disabled={selectedSongIndex === 0}
+                    >
+                      ‹
+                    </button>
+                    <button
+                      className="song-nav-arrow song-nav-next"
+                      onClick={() => {
+                        if (performanceData.setlist && selectedSongIndex < performanceData.setlist.length - 1) {
+                          const nextIndex = selectedSongIndex + 1
+                          setSelectedSong(performanceData.setlist[nextIndex])
+                          setSelectedSongIndex(nextIndex)
+                        }
+                      }}
+                      disabled={!performanceData.setlist || selectedSongIndex === performanceData.setlist.length - 1}
+                    >
+                      ›
+                    </button>
+                  </div>
+                </div>
                 {/* 세션 정보 */}
                 <div className="session-info">
                   <h3 className="session-title">세션 정보</h3>
@@ -495,6 +494,34 @@ const Performances = () => {
                 <div className="song-comments-section">
                 <div className="song-comments-header">
                   <h3 className="song-comments-title">응원하기</h3>
+                  {user && !showCommentInput && (
+                    <button 
+                      className="song-comment-add-button"
+                      onClick={() => setShowCommentInput(!showCommentInput)}
+                    >
+                      응원하기
+                    </button>
+                  )}
+                  {user && showCommentInput && (
+                    <div className="song-comment-buttons">
+                      <button
+                        className="song-comment-cancel-button"
+                        onClick={() => {
+                          setShowCommentInput(false)
+                          setCommentInput('')
+                        }}
+                      >
+                        취소
+                      </button>
+                      <button
+                        className="song-comment-submit-button"
+                        onClick={handleAddComment}
+                        disabled={!commentInput.trim()}
+                      >
+                        등록하기
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* 응원 메시지 입력 */}
@@ -508,13 +535,6 @@ const Performances = () => {
                       maxLength={200}
                       rows={3}
                     />
-                    <button
-                      className="song-comment-submit-button"
-                      onClick={handleAddComment}
-                      disabled={!commentInput.trim()}
-                    >
-                      등록
-                    </button>
                   </div>
                 )}
 
