@@ -21,6 +21,7 @@
 
 .led-board-display {
   width: 100%;
+  max-width: 100%;
   text-align: center;
   padding: 2rem;
   border-radius: 8px;
@@ -28,6 +29,12 @@
   word-break: break-word;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   transition: all 0.3s ease;
+  overflow: hidden;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
 }
 
 .led-board-fullscreen {
@@ -52,30 +59,34 @@
   max-width: 100%;
   padding: 2rem;
   white-space: nowrap;
+  font-size: 130px !important; /* 전광판 보기에서 130px 고정 */
 }
 
 
 
-.led-board-controls-overlay {
+.led-board-exit-container {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 10001;
+}
+
+.led-board-speed-control-container {
   position: absolute;
   top: 1rem;
   right: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
   z-index: 10001;
-  align-items: flex-end;
 }
 
 .speed-control {
   background: rgba(42, 42, 42, 0.95);
-  padding: 1rem;
+  padding: 0.75rem 1rem;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-  min-width: 200px;
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -85,15 +96,18 @@
   color: #ffffff;
   margin: 0;
   font-family: 'Pretendard', sans-serif;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .speed-slider {
-  width: 100%;
+  width: 120px;
   height: 6px;
   border-radius: 3px;
   background: #e0e0e0;
   outline: none;
   -webkit-appearance: none;
+  flex-shrink: 0;
 }
 
 .speed-slider::-webkit-slider-thumb {
@@ -366,6 +380,7 @@
   white-space: nowrap;
   animation: marquee-scroll linear infinite;
   will-change: transform;
+  font-size: 130px !important; /* 전광판 보기에서 130px 고정 */
 }
 
 .led-text-item {

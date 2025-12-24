@@ -244,3 +244,16 @@
     margin-top: var(--header-height, calc(2rem + env(safe-area-inset-top) + 4rem));
   }
 }
+
+/* 전광판 풀스크린 모드일 때 헤더와 네비게이션 숨기기 */
+body.led-board-fullscreen-active .header,
+body.led-board-fullscreen-active .nav {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+body.led-board-fullscreen-active .main {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}

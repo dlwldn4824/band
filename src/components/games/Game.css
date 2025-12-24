@@ -441,8 +441,11 @@
   --size: min(75vw, 360px);
   width: var(--size);
   height: var(--size);
+  aspect-ratio: 1 / 1; /* 정사각형 보장 */
   flex-shrink: 0;
   margin: 0 auto;
+  border: 3px solid #bfbfbf;
+  border-radius: 50%;
 }
 
 .roulette-center {
@@ -453,22 +456,25 @@
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: #fff;
+  background: #FF4C4C;
   border: 2px solid #222;
   display: grid;
   place-items: center;
   font-weight: 700;
   font-size: 0.9rem;
+  color: #fff;
   z-index: 5;
 }
 
 
 .roulette-wheel {
   box-sizing: border-box;
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 1 / 1; /* 정사각형 보장 */
   transform-origin: 50% 50%;
   width: 100%;
   height: 100%;
+  min-width: 0;
+  min-height: 0;
   border-radius: 50%;
   border: 2px solid #222;
   position: relative;
@@ -536,29 +542,44 @@
 
 .roulette-pointer {
   position: absolute;
-  top: -10px;
+  top: -12px;
   left: 50%;
   transform: translateX(-50%);
   width: 0;
   height: 0;
-  border-left: 18px solid transparent;
-  border-right: 18px solid transparent;
-  border-top: 35px solid #000;
+  border-left: 20px solid transparent;
+  border-right: 20px solid transparent;
+  border-top: 40px solid #FF4C4C;
   z-index: 10;
-  filter: none;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
 
 .roulette-pointer::before {
   content: '';
   position: absolute;
-  top: -35px;
+  top: -40px;
   left: 50%;
   transform: translateX(-50%);
   width: 0;
   height: 0;
-  border-left: 12px solid transparent;
-  border-right: 12px solid transparent;
-  border-top: 20px solid rgba(255, 255, 255, 0.3);
+  border-left: 14px solid transparent;
+  border-right: 14px solid transparent;
+  border-top: 24px solid #ffffff;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+}
+
+.roulette-pointer::after {
+  content: '';
+  position: absolute;
+  top: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 16px solid transparent;
+  border-right: 16px solid transparent;
+  border-top: 26px solid #FF4C4C;
+  z-index: -1;
 }
 
 .roulette-result {
@@ -645,6 +666,7 @@
   .roulette-container {
     width: min(60vw, 220px);
     height: min(60vw, 220px);
+    aspect-ratio: 1 / 1; /* 정사각형 보장 */
     max-height: 30vh;
   }
 
