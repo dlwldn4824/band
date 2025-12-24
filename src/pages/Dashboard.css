@@ -464,7 +464,10 @@
   justify-content: center;
   z-index: 1000;
   padding: 1rem;
+  padding-top: calc(1rem + var(--header-height, 0));
   animation: fadeIn 0.3s ease-out;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .guest-list-modal {
@@ -473,10 +476,12 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   width: 100%;
   max-width: 900px;
-  max-height: 90vh;
+  max-height: calc(100vh - var(--header-height, 0) - 2rem);
+  max-height: calc(var(--app-height, 100dvh) - var(--header-height, 0) - 2rem);
   display: flex;
   flex-direction: column;
   animation: slideUp 0.3s ease-out;
+  overflow: hidden;
 }
 
 .guest-list-modal-header {
@@ -630,7 +635,8 @@
 @media (max-width: 768px) {
   .guest-list-modal {
     max-width: 95%;
-    max-height: 95vh;
+    max-height: calc(100vh - var(--header-height, 0) - 2rem);
+    max-height: calc(var(--app-height, 100dvh) - var(--header-height, 0) - 2rem);
   }
   
   .guest-list-modal-header {
@@ -678,6 +684,9 @@
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  padding-top: calc(1rem + var(--header-height, 0));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 1rem;
 }
 
@@ -688,9 +697,13 @@
   padding: 1.5rem;
   width: 100%;
   max-width: 400px;
-  max-height: 90vh;
+  max-height: calc(100vh - var(--header-height, 0) - 2rem);
+  max-height: calc(var(--app-height, 100dvh) - var(--header-height, 0) - 2rem);
   overflow-y: auto;
+  overflow-x: hidden;
   position: relative;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 .modal-header {

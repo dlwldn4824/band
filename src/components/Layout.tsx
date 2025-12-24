@@ -64,8 +64,8 @@ const Layout = ({ children }: LayoutProps) => {
 
   const handleLogout = () => {
     logout()
-    // 항상 일반 로그인 화면으로 이동
-    navigate('/login')
+    // 항상 일반 로그인 화면으로 이동 (window.location.replace로 React Router 리다이렉트 우회)
+    window.location.replace('/login')
   }
 
   const handleLogoClick = () => {

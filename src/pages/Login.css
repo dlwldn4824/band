@@ -171,6 +171,7 @@
   cursor: pointer;
   min-height: 50px;
   touch-action: manipulation;
+  flex-shrink: 0;
 }
 
 .login-button:hover {
@@ -301,7 +302,10 @@
   justify-content: center;
   z-index: 1000;
   padding: 1rem;
+  padding-top: calc(1rem + var(--header-height, 0));
   backdrop-filter: blur(4px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .modal-content {
@@ -311,9 +315,14 @@
   padding: 1.5rem;
   width: 100%;
   max-width: 300px;
+  max-height: calc(100vh - var(--header-height, 0) - 2rem);
+  max-height: calc(var(--app-height, 100dvh) - var(--header-height, 0) - 2rem);
+  overflow: hidden;
   animation: fadeInUp 0.3s ease-out;
   position: relative;
   z-index: 1001;
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-header {
@@ -321,6 +330,7 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
+  flex-shrink: 0;
 }
 
 .modal-header h2 {
@@ -353,12 +363,17 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .payment-info {
   background: #f9f9f9;
   border-radius: 12px;
   padding: 1.5rem;
+  flex-shrink: 0;
 }
 
 .payment-info h3 {
@@ -435,6 +450,7 @@
   background: #fff9e6;
   border-radius: 8px;
   border: 2px solid #ffd700;
+  flex-shrink: 0;
 }
 
 .checkbox-label {
