@@ -34,11 +34,8 @@ const Layout = ({ children }: LayoutProps) => {
 
   const handleLogout = () => {
     logout()
-    if (isAdmin) {
-      navigate('/admin/login')
-    } else {
-      navigate('/login')
-    }
+    // 항상 일반 로그인 화면으로 이동
+    navigate('/login')
   }
 
   const handleLogoClick = () => {

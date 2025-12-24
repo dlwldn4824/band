@@ -373,8 +373,8 @@
 }
 
 .checkin-notification-content {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: #FFD700;
+  color: #333;
   padding: 1rem 1.5rem;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
@@ -398,9 +398,9 @@
 }
 
 .checkin-notification-close {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.1);
   border: none;
-  color: white;
+  color: #333;
   width: 24px;
   height: 24px;
   border-radius: 50%;
@@ -414,7 +414,7 @@
 }
 
 .checkin-notification-close:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(0, 0, 0, 0.2);
 }
 
 @keyframes slideDown {

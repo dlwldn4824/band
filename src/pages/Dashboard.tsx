@@ -160,11 +160,11 @@ const Dashboard = () => {
           timestamp: lastCheckedInGuest.timestamp
         })
         
-        // 5초 후 알림 자동 제거
+        // 2초 후 알림 자동 제거
         notificationTimerRef.current = setTimeout(() => {
           setCheckInNotification(null)
           notificationTimerRef.current = null
-        }, 5000)
+        }, 2000)
       }
     } else {
       // lastCheckedInGuest가 null이면 알림 제거
@@ -331,13 +331,10 @@ const Dashboard = () => {
                 통해 체크인해 주세요. 체크인 완료 시에만 <br />
                 입장 팔찌 수령 및 이벤트 참여가 가능합니다.</p>
               <div className="checkin-buttons">
-                <button onClick={() => setShowScanner(true)} className="camera-button">
-                  QR 촬영하기
-                </button>
                 <button onClick={() => navigate('/checkin')} className="code-entry-button">
-                  현장 코드로
-                  <br />
-                  입장하기
+                  현장 체크인
+                  <br/>
+                  하러가기 
                 </button>
               </div>
             </div>
@@ -580,9 +577,10 @@ const Dashboard = () => {
                     await setNickname(nickname.trim())
                     setShowNicknameModal(false)
                     setNicknameInput('')
-                  } catch (error) {
+                  } catch (error: any) {
                     console.error('닉네임 저장 오류:', error)
-                    setNicknameError('닉네임 저장에 실패했습니다. 다시 시도해주세요.')
+                    // 에러 메시지가 있으면 그대로 표시, 없으면 기본 메시지
+                    setNicknameError(error?.message || '닉네임 저장에 실패했습니다. 다시 시도해주세요.')
                     setIsUpdatingNickname(false)
                   }
                 }}

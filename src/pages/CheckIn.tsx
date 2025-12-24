@@ -138,8 +138,7 @@ const CheckIn = () => {
     <div className="checkin-page">
       <div className="checkin-container">
         <div className="checkin-header">
-          <h1>현장 체크인</h1>
-          <p>체크인 방법을 선택해주세요</p>
+          <h1>현장 체크인 하기</h1>
         </div>
 
         {result && (
@@ -171,10 +170,10 @@ const CheckIn = () => {
         {!result && !showCodeInput && (
           <div className="checkin-actions">
             <button onClick={handleManualCheckIn} className="checkin-button">
-              카메라 켜기
+              QR로 체크인
             </button>
             <button onClick={() => setShowCodeInput(true)} className="checkin-button code-button">
-              관리자 확인 받기
+              코드로 체크인
             </button>
           </div>
         )}

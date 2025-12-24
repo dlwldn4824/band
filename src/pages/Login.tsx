@@ -601,9 +601,10 @@ const Login = () => {
                     setTimeout(() => {
                       navigate('/dashboard')
                     }, 150)
-                  } catch (error) {
+                  } catch (error: any) {
                     console.error('닉네임 저장 오류:', error)
-                    setProfileError('닉네임 저장에 실패했습니다. 다시 시도해주세요.')
+                    // 에러 메시지가 있으면 그대로 표시, 없으면 기본 메시지
+                    setProfileError(error?.message || '닉네임 저장에 실패했습니다. 다시 시도해주세요.')
                     setIsSettingProfile(false)
                   }
                 }}

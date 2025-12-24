@@ -281,6 +281,11 @@
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
   width: 100%;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
 .play-button:hover {

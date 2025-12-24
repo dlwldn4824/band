@@ -18,11 +18,51 @@ import CheckIn from './pages/CheckIn'
 function useAppHeight() {
   useEffect(() => {
     const setH = () => {
-      document.documentElement.style.setProperty("--app-height", `${window.innerHeight}px`)
+      // 사파리 주소창을 고려한 실제 뷰포트 높이 계산
+      const height = window.innerHeight
+      document.documentElement.style.setProperty("--app-height", `${height}px`)
     }
+    
+    // 초기 설정
     setH()
+    
+    // 지연된 재설정 (사파리 주소창 애니메이션 완료 후)
+    const timeoutId = setTimeout(setH, 100)
+    const timeoutId2 = setTimeout(setH, 300)
+    const timeoutId3 = setTimeout(setH, 500)
+    
+    // resize 이벤트 리스너
     window.addEventListener("resize", setH)
-    return () => window.removeEventListener("resize", setH)
+    window.addEventListener("orientationchange", setH)
+    
+    // 사파리 전용: visualViewport API 사용 (더 정확한 뷰포트 높이)
+    if (window.visualViewport) {
+      const handleViewportChange = () => {
+        setH()
+      }
+      window.visualViewport.addEventListener("resize", handleViewportChange)
+      window.visualViewport.addEventListener("scroll", handleViewportChange)
+      
+      return () => {
+        clearTimeout(timeoutId)
+        clearTimeout(timeoutId2)
+        clearTimeout(timeoutId3)
+        window.removeEventListener("resize", setH)
+        window.removeEventListener("orientationchange", setH)
+        if (window.visualViewport) {
+          window.visualViewport.removeEventListener("resize", handleViewportChange)
+          window.visualViewport.removeEventListener("scroll", handleViewportChange)
+        }
+      }
+    }
+    
+    return () => {
+      clearTimeout(timeoutId)
+      clearTimeout(timeoutId2)
+      clearTimeout(timeoutId3)
+      window.removeEventListener("resize", setH)
+      window.removeEventListener("orientationchange", setH)
+    }
   }, [])
 }
 

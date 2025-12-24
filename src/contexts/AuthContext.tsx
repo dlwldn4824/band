@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { doc, getDoc, setDoc, collection, getDocs, query, where } from 'firebase/firestore'
 import { db } from '../config/firebase'
 
 interface User {
@@ -119,6 +119,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     })
 
     if (foundGuest) {
+      // 일반 사용자 로그인 시 운영진 상태 초기화 (중요!)
+      setIsAdmin(false)
+      setAdminName(null)
+      localStorage.removeItem('isAdmin')
+      localStorage.removeItem('adminName')
+      
       const guestName = foundGuest.name || foundGuest['이름'] || name
       const guestPhone = foundGuest.phone || foundGuest['전화번호'] || phone
       // Firestore의 최신 체크인 상태 사용 (서버 상태 기반)
@@ -228,6 +234,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     
     const trimmedNickname = nickname.trim()
+    
+    // 중복 닉네임 체크
+    try {
+      const userProfilesRef = collection(db, 'userProfiles')
+      const querySnapshot = await getDocs(userProfilesRef)
+      
+      const currentUserId = `${user.name}_${user.phone}`
+      
+      // 현재 사용자의 기존 닉네임과 동일하면 중복 체크 통과
+      const isSameAsCurrent = user.nickname && user.nickname.trim() === trimmedNickname
+      
+      if (!isSameAsCurrent) {
+        // 다른 사용자가 같은 닉네임을 사용하는지 확인
+        const duplicateNickname = querySnapshot.docs.find((docSnapshot) => {
+          const data = docSnapshot.data()
+          const docUserId = docSnapshot.id
+          // 현재 사용자가 아니고, 닉네임이 동일한 경우
+          return docUserId !== currentUserId && data.nickname && data.nickname.trim() === trimmedNickname
+        })
+        
+        if (duplicateNickname) {
+          throw new Error('이미 사용 중인 닉네임입니다. 다른 닉네임을 선택해주세요.')
+        }
+      }
+    } catch (error: any) {
+      // 네트워크 오류가 아닌 중복 오류인 경우에만 에러 던지기
+      if (error.message && error.message.includes('이미 사용 중인 닉네임')) {
+        throw error
+      }
+      // 네트워크 오류 등은 경고만 출력하고 계속 진행 (오프라인 환경 대응)
+      console.warn('닉네임 중복 체크 실패 (계속 진행):', error)
+    }
+    
     const updatedUser = { ...user, nickname: trimmedNickname }
     
     // 로컬스토리지에 먼저 저장 (항상 성공)

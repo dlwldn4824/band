@@ -72,9 +72,9 @@ const Events = () => {
 
   // 운영진은 모든 게임 보임, 예약한 사람은 LED Board만 보임
   const allGames = [
-    { id: 'roulette', name: '룰렛', icon: '🎰', description: '룰렛을 돌려서 상품을 받아보세요!' },
-    { id: 'draw', name: '입장 번호 추첨', icon: '🎲', description: '체크인 완료된 관객 중 1명 추첨!' },
-    { id: 'ledboard', name: '전광판 만들기', icon: '📺', description: '나만의 전광판을 만들어 응원하세요!' },
+    { id: 'roulette', name: '룰렛', icon: '🎰', description: ['룰렛을 돌려서', '상품을 받아보세요!'] },
+    { id: 'draw', name: '입장 번호 추첨', icon: '🎲', description: ['체크인 완료된 관객 중', '1명 추첨!'] },
+    { id: 'ledboard', name: '전광판 만들기', icon: '📺', description: ['나만의 전광판을 만들어', '응원하세요!'] },
   ]
 
   // 게임 목록 필터링
@@ -139,7 +139,17 @@ const Events = () => {
           >
             <div className="game-icon">{game.icon}</div>
             <h3>{game.name}</h3>
-            <p>{game.description}</p>
+            <p>
+              {Array.isArray(game.description) ? (
+                <>
+                  {game.description[0]}
+                  <br />
+                  {game.description[1]}
+                </>
+              ) : (
+                game.description
+              )}
+            </p>
             <button className="play-button">만들러 가기</button>
           </div>
         ))}
