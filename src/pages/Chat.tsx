@@ -42,6 +42,7 @@ interface OnlineUser {
 
 const Chat = () => {
   const { user } = useAuth()
+  const location = useLocation()
   const [messages, setMessages] = useState<Message[]>([])
   const [inputMessage, setInputMessage] = useState('')
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([])
@@ -57,7 +58,7 @@ const Chat = () => {
   // location이 변경될 때마다 리렌더링 트리거
   useEffect(() => {
     // location이 변경되면 컴포넌트가 리렌더링됨
-  }, [location.pathname, location.state])
+  }, [location.pathname, (location.state as any)])
 
   useEffect(() => {
     if (!user) return

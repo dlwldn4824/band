@@ -24,6 +24,7 @@ const MEMOS_PER_PAGE = 12 // 한 페이지당 메모지 개수
 
 const Guestbook = () => {
   const { guestbookMessages, addGuestbookMessage } = useData()
+  const location = useLocation()
   const [writeOpen, setWriteOpen] = useState(false)
   const [selectedDesign, setSelectedDesign] = useState<MemoDesign>('yellow')
   const [name, setName] = useState('')
@@ -36,7 +37,7 @@ const Guestbook = () => {
   // location이 변경될 때마다 리렌더링 트리거
   useEffect(() => {
     // location이 변경되면 컴포넌트가 리렌더링됨
-  }, [location.pathname, location.state])
+  }, [location.pathname, (location.state as any)])
 
   // 메시지 ID를 기반으로 결정적인 랜덤 값 생성 (0~1 사이)
   const seededRandom = (seed: string): number => {

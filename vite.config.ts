@@ -19,7 +19,7 @@ export default defineConfig({
     },
     // 이미지 최적화를 위한 설정
     assetsInlineLimit: 4096, // 4kb 이하 이미지는 base64로 인라인화
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 2000, // 청크 크기 경고 임계값을 2MB로 증가
   },
   server: {
     port: 5173,
