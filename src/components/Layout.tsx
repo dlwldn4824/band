@@ -62,6 +62,26 @@ const Layout = ({ children }: LayoutProps) => {
   const isEvents = location.pathname.startsWith('/events') || location.pathname.startsWith('/admin/events')
   const isPerformances = location.pathname.startsWith('/performances') || location.pathname.startsWith('/admin/performances')
 
+  // 방명록, 채팅, 기타 페이지에서는 body 스크롤 막기
+  useEffect(() => {
+    if (isChat || isGuestbook || isEvents) {
+      document.body.style.overflow = 'hidden'
+      document.body.style.position = 'fixed'
+      document.body.style.width = '100%'
+    } else {
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.width = ''
+    }
+
+    return () => {
+      // cleanup: 페이지를 벗어날 때 스타일 초기화
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.width = ''
+    }
+  }, [isChat, isGuestbook, isEvents])
+
   const handleLogout = () => {
     logout()
     // 항상 일반 로그인 화면으로 이동 (window.location.replace로 React Router 리다이렉트 우회)

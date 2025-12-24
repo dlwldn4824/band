@@ -1,5 +1,11 @@
 /* 채팅 페이지에서만 main 스크롤 방지 */
 .layout.layout--chat {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 100vh;
   height: var(--app-height, 100dvh);
   min-height: 0;
   overflow: hidden;
@@ -12,8 +18,7 @@
   min-height: 0;
   overflow: hidden;
   padding: 0;
-  /* 헤더가 fixed이므로 헤더 높이만큼 상단 패딩 추가 */
-  padding-top: var(--header-height, calc(0.75rem + env(safe-area-inset-top) + 1.75rem + 2.5rem + 0.75rem));
+  margin-top: var(--header-height, calc(0.75rem + env(safe-area-inset-top) + 1.75rem + 2.5rem + 0.75rem));
   height: calc(100% - var(--header-height, calc(0.75rem + env(safe-area-inset-top) + 1.75rem + 2.5rem + 0.75rem)));
 }
 
@@ -33,6 +38,12 @@
 
 /* 방명록 페이지에서 main 스크롤 막고 화면 높이 고정 */
 .layout.layout--guestbook {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 100vh;
   height: var(--app-height, 100dvh);
   min-height: 0;
   overflow: hidden;
@@ -45,8 +56,7 @@
   min-height: 0;
   overflow: hidden;
   padding: 0;
-  /* 헤더가 fixed이므로 헤더 높이만큼 상단 패딩 추가 */
-  padding-top: var(--header-height, calc(0.75rem + env(safe-area-inset-top) + 1.75rem + 2.5rem + 0.75rem));
+  margin-top: var(--header-height, calc(0.75rem + env(safe-area-inset-top) + 1.75rem + 2.5rem + 0.75rem));
   height: calc(100% - var(--header-height, calc(0.75rem + env(safe-area-inset-top) + 1.75rem + 2.5rem + 0.75rem)));
 }
 
@@ -66,6 +76,12 @@
 
 /* 이벤트 페이지에서 main 스크롤 막고 화면 높이 고정 */
 .layout.layout--events {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 100vh;
   height: var(--app-height, 100dvh);
   min-height: 0;
   overflow: hidden;
@@ -78,8 +94,7 @@
   min-height: 0;
   overflow: hidden;
   padding: 0;
-  /* 헤더가 fixed이므로 헤더 높이만큼 상단 패딩 추가 */
-  padding-top: var(--header-height, calc(0.75rem + env(safe-area-inset-top) + 1.75rem + 2.5rem + 0.75rem));
+  margin-top: var(--header-height, calc(0.75rem + env(safe-area-inset-top) + 1.75rem + 2.5rem + 0.75rem));
   height: calc(100% - var(--header-height, calc(0.75rem + env(safe-area-inset-top) + 1.75rem + 2.5rem + 0.75rem)));
 }
 

@@ -1,9 +1,5 @@
 .layout {
-  /* CSS 변수 우선 사용, 없으면 100dvh 사용 */
-  min-height: var(--app-height, 100dvh);
-  min-height: 100vh; /* fallback */
-  height: var(--app-height, 100dvh);
-  height: 100vh; /* fallback */
+  min-height: 100%;
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
@@ -158,57 +154,21 @@
 .main {
   flex: 1;
   padding: 0;
-  overflow-y: auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
   background-color: #000000;
-  /* 사파리 주소창 변경 시 스크롤 위치 보정 */
-  -webkit-overflow-scrolling: touch;
-  /* 헤더가 fixed이므로 헤더 높이만큼 상단 패딩 추가 (동적으로 측정된 헤더 높이 사용) */
-  padding-top: var(--header-height, calc(0.75rem + env(safe-area-inset-top) + 1.75rem + 2.5rem + 0.75rem));
-  /* 화면 높이에서 헤더 높이를 뺀 만큼만 차지 */
-  height: calc(100vh - var(--header-height, calc(0.75rem + env(safe-area-inset-top) + 1.75rem + 2.5rem + 0.75rem)));
-  height: calc(var(--app-height, 100dvh) - var(--header-height, calc(0.75rem + env(safe-area-inset-top) + 1.75rem + 2.5rem + 0.75rem)));
+  /* 헤더가 fixed이므로 헤더 높이만큼 상단 마진 추가 (동적으로 측정된 헤더 높이 사용) */
+  margin-top: var(--header-height, calc(0.75rem + env(safe-area-inset-top) + 1.75rem + 2.5rem + 0.75rem));
 }
 
-/* 방명록 페이지에서 main 배경 투명하게 */
-.layout--guestbook {
-  height: 100vh;
-  height: 100dvh;
-  overflow: hidden;
-}
-
-.layout--guestbook .main {
-  background-color: transparent;
-  padding: 0;
-  /* 헤더가 fixed이므로 헤더 높이만큼 상단 패딩 추가 */
-  padding-top: var(--header-height, calc(0.75rem + env(safe-area-inset-top) + 1.75rem + 2.5rem + 0.75rem));
-  overflow: hidden;
-  flex: 1;
-  min-height: 0;
-  height: calc(100% - var(--header-height, calc(0.75rem + env(safe-area-inset-top) + 1.75rem + 2.5rem + 0.75rem)));
-}
-
-.layout--guestbook .main > .container {
-  padding: 0;
-  overflow: hidden;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-/* 방명록 페이지에서 footer 숨기기 */
-.layout--guestbook .footer {
-  display: none;
-}
+/* 방명록, 채팅, 이벤트 페이지는 Chat.css에서 고정 레이아웃으로 처리 */
 
 .main > .container {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  height: 100%;
 }
 
 .footer {
@@ -269,13 +229,6 @@
   }
 
   .main {
-    /* 태블릿 이상에서도 동적으로 측정된 헤더 높이 사용 */
-    padding-top: var(--header-height, calc(2rem + env(safe-area-inset-top) + 4rem));
-    height: calc(100vh - var(--header-height, calc(2rem + env(safe-area-inset-top) + 4rem)));
-    height: calc(var(--app-height, 100dvh) - var(--header-height, calc(2rem + env(safe-area-inset-top) + 4rem)));
-  }
-  
-  .main > .container {
-    height: 100%;
+    margin-top: var(--header-height, calc(2rem + env(safe-area-inset-top) + 4rem));
   }
 }

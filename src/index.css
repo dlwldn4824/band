@@ -76,13 +76,13 @@
 }
 
 html, body {
-  height: 100%;
+  height: auto;
+  min-height: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden;
-  overscroll-behavior: none;
+  overflow-y: auto;
+  overflow-x: hidden;
   background-color: #000000;
-  min-height: 100vh;
 }
 
 #root {
@@ -101,8 +101,8 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background-color: #000000;
   color: #333;
-  position: fixed;
   width: 100%;
+  -webkit-overflow-scrolling: touch;
 }
 
 a {
