@@ -22,6 +22,10 @@ const RouletteMirror = () => {
   const unsubscribeRef = useRef<(() => void) | null>(null)
   const animationFrameRef = useRef<number | null>(null)
 
+  const startRotationRef = useRef(0)
+  const isFirstSnapshotRef = useRef(true)
+
+
   const items = [
     '상품 1',
     '상품 2',
@@ -43,11 +47,18 @@ const RouletteMirror = () => {
           setIsSpinning(data.isSpinning || false)
         setResult(data.result || '')
         
+        if(isFirstSnapshotRef.current){
+          isFirstSnapshotRef.current=false
+          setIsSpinning(false)
+          setAnimationStartTime(null)
+          setResult('')
+          return
+        }
         if (data.isSpinning && data.startTime) {
           // 회전 시작 시간이 있으면 애니메이션 시작
           const startTime = data.startTime.toMillis()
+          startRotationRef.current = data.rotation || 0
           setAnimationStartTime(startTime)
-          setRotation(data.rotation || 0)
         } else {
           setRotation(data.rotation || 0)
           setAnimationStartTime(null)
@@ -76,29 +87,27 @@ const RouletteMirror = () => {
 
   // 애니메이션 프레임 업데이트
   useEffect(() => {
-    if (isSpinning && animationStartTime) {
+    if (isSpinning || !animationStartTime) return
+
+      const duration = 3000
+      const targetRotation = startRotationRef.current
+
       const animate = () => {
         const now = Date.now()
         const elapsed = now - animationStartTime
-        const duration = 3000 // 3초
+        const progress = Math.min(elapsed / duration, 1)
+        const easeOut = 1 - Math.pow(1- progress, 3)
 
-        if (elapsed < duration) {
-          // 진행률에 따라 회전 각도 업데이트
-          const progress = elapsed / duration
-          const easeOut = 1 - Math.pow(1 - progress, 3) // ease-out cubic
-          const currentRotation = rotation + (360 * 5 * easeOut)
-          setRotation(currentRotation)
-          
+        setRotation(targetRotation * easeOut)
+
+        if (progress < 1) {
           animationFrameRef.current = requestAnimationFrame(animate)
-        } else {
-          // 애니메이션 완료
-          setIsSpinning(false)
-          setAnimationStartTime(null)
         }
       }
+
       animate()
-    }
-  }, [isSpinning, animationStartTime, rotation])
+
+    }, [isSpinning, animationStartTime])
 
   // 운영진: 룰렛 돌리기
   const spin = async () => {
@@ -154,25 +163,25 @@ const RouletteMirror = () => {
                 <div
                   key={index}
                   className="roulette-item"
-                  style={{
-                    transform: `rotate(${angle}deg)`,
-                    '--item-angle': `${itemAngle}deg`,
-                    '--item-rotation': `${-angle}deg`,
-                  } as React.CSSProperties}
+                  style={{['--angle' as any]: `${angle}deg`}}
                 >
-                  <div className="roulette-item-content">
+                  <div
+                    className="roulette-item-content"
+                  >
                     {item}
                   </div>
                 </div>
               )
             })}
+
+            <div className='roulette-center'>Luck</div>
           </div>
           <div className="roulette-pointer"></div>
         </div>
       </div>
 
       <div className="roulette-footer">
-        {result && (
+        {!isSpinning && result && (
           <div className="roulette-result">
             <div className="result-text">결과: {result}</div>
           </div>

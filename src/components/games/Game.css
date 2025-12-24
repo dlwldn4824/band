@@ -438,37 +438,68 @@
 /* 룰렛 */
 .roulette-container {
   position: relative;
-  width: min(75vw, 360px);
-  height: min(75vw, 360px);
-  aspect-ratio: 1 / 1;
+  --size: min(75vw, 360px);
+  width: var(--size);
+  height: var(--size);
   flex-shrink: 0;
   margin: 0 auto;
 }
 
+.roulette-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #222;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  z-index: 5;
+}
+
+
 .roulette-wheel {
+  box-sizing: border-box;
+  aspect-ratio: 1 / 1;
+  transform-origin: 50% 50%;
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  border: 8px solid #2c2c2c;
+  border: 2px solid #222;
   position: relative;
   overflow: hidden;
   background: conic-gradient(
-    from 0deg,
-    #ff6b6b 0deg 45deg,
-    #4ecdc4 45deg 90deg,
-    #45b7d1 90deg 135deg,
-    #96ceb4 135deg 180deg,
-    #ffeaa7 180deg 225deg,
-    #fdcb6e 225deg 270deg,
-    #e17055 270deg 315deg,
-    #a29bfe 315deg 360deg
+    #fde2e2 0deg 45deg,
+    #ffffff 45deg 90deg,
+    #fde2e2 90deg 135deg,
+    #ffffff 135deg 180deg,
+    #fde2e2 180deg 225deg,
+    #ffffff 225deg 270deg,
+    #fde2e2 270deg 315deg,
+    #ffffff 315deg 360deg
   );
   transition: transform 3s cubic-bezier(0.17, 0.67, 0.12, 0.99);
-  box-shadow: 
-    0 0 0 4px rgba(255, 255, 255, 0.1),
-    0 8px 32px rgba(0, 0, 0, 0.4),
-    inset 0 0 60px rgba(0, 0, 0, 0.2);
+  box-shadow: none;
 }
+
+.roulette-wheel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    from 0deg,
+    transparent 0deg 44deg,
+    rgba(0, 0, 0, 0.2) 44deg 45deg
+  );
+  pointer-events: none;
+}
+
 
 .roulette-wheel.spinning {
   transition: transform 3s cubic-bezier(0.17, 0.67, 0.12, 0.99);
@@ -476,45 +507,45 @@
 
 .roulette-item {
   position: absolute;
-  width: 50%;
-  height: 50%;
-  left: 50%;
-  top: 0;
-  transform-origin: left bottom;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding-top: 50px;
+  inset: 0;
+  transform: rotate(var(--angle));
 }
 
+
 .roulette-item-content {
-  transform: rotate(calc(var(--item-angle) / 2 + var(--item-rotation, 0deg)));
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: white;
-  text-shadow: 
-    2px 2px 4px rgba(0, 0, 0, 0.8),
-    0 0 8px rgba(0, 0, 0, 0.5);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+
+  /* ⭐ 글씨 각도 보정 + 반지름 방향 위치 */
+  transform: translate(-50%, -50%) translateY(-60px) translateX(45px) rotate(calc(-1*var(--angle)));
+  transform-origin: center;
+
+  letter-spacing: 0.2px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #222;
+  text-shadow: none;
   white-space: nowrap;
-  text-align: center;
-  max-width: 70%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  letter-spacing: 0.5px;
+
+  translate: -50% -50%;
+
+  -webkit-font-smoothing: antialiased;
 }
+
 
 .roulette-pointer {
   position: absolute;
-  top: -12px;
+  top: -10px;
   left: 50%;
   transform: translateX(-50%);
   width: 0;
   height: 0;
   border-left: 18px solid transparent;
   border-right: 18px solid transparent;
-  border-top: 35px solid #FF4C4C;
+  border-top: 35px solid #000;
   z-index: 10;
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+  filter: none;
 }
 
 .roulette-pointer::before {

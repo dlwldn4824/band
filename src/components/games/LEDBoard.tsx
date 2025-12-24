@@ -1,15 +1,18 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import './LEDBoard.css'
 
 const LEDBoard = () => {
   const [text, setText] = useState('응원 메시지를 입력하세요!')
-  const backgroundColor = '#000000' // 검정 고정
+  const backgroundColor = '#000000'
   const [textColor, setTextColor] = useState('#FFFF00')
   const [fontSize, setFontSize] = useState(100)
   const [isFullscreen, setIsFullscreen] = useState(false)
-  const [animationSpeed, setAnimationSpeed] = useState(0) // 0 = 고정, 1-10 = 이동 속도
+  const [animationSpeed, setAnimationSpeed] = useState(0)
 
-  // 텍스트 색상 옵션 (5가지)
+  const containerRef = useRef<HTMLDivElement | null>(null)
+  const textRef = useRef<HTMLDivElement | null>(null)
+  const [loopText, setLoopText] = useState('')
+
   const textColorOptions = [
     { name: '노란색', value: '#FFFF00' },
     { name: '빨간색', value: '#FF0000' },
@@ -18,7 +21,6 @@ const LEDBoard = () => {
     { name: '분홍색', value: '#FF00FF' },
   ]
 
-  // 로컬 스토리지에서 불러오기
   useEffect(() => {
     const saved = localStorage.getItem('ledBoard')
     if (saved) {
@@ -28,64 +30,103 @@ const LEDBoard = () => {
         setTextColor(data.textColor || '#FFFF00')
         setFontSize(data.fontSize || 100)
         setAnimationSpeed(data.animationSpeed || 0)
-      } catch (e) {
-        console.error('Failed to load LED board data', e)
-      }
+      } catch {}
     }
   }, [])
 
-  // 자동 저장 (설정 변경 시)
   useEffect(() => {
-    const data = {
-      text,
-      backgroundColor: '#000000', // 검정 고정
-      textColor,
-      fontSize,
-      animationSpeed
-    }
-    localStorage.setItem('ledBoard', JSON.stringify(data))
+    localStorage.setItem(
+      'ledBoard',
+      JSON.stringify({
+        text,
+        backgroundColor: '#000000',
+        textColor,
+        fontSize,
+        animationSpeed,
+      })
+    )
   }, [text, textColor, fontSize, animationSpeed])
 
-  const handleFullscreen = () => {
-    setIsFullscreen(true)
+  /* 1️⃣ 화면보다 길어질 때까지 문자열 실제로 확장 */
+  useEffect(() => {
+    if (!isFullscreen || animationSpeed === 0) return
+    if (!containerRef.current) return
+
+    const base = text || '응원 메시지를 입력하세요!'
+    let result = base
+
+    const containerWidth = containerRef.current.offsetWidth
+    const approxCharWidth = fontSize * 0.6
+
+    while (result.length * approxCharWidth < containerWidth * 3) {
+      result += '   ' + base
+    }
+
+    setLoopText(result)
+  }, [isFullscreen, animationSpeed, text, fontSize])
+
+
+  /* 2️⃣ 문자열 자체를 회전시키는 무한 로직 */
+  useEffect(() => {
+  if (!isFullscreen || animationSpeed === 0) return
+  if (!textRef.current) return
+
+  let x = 0
+  let rafId: number
+  const speed = animationSpeed * 0.7
+  const resetPoint = textRef.current.scrollWidth / 2
+
+  const loop = () => {
+    x -= speed
+    if (Math.abs(x) >= resetPoint) {
+      x = 0
+    }
+    textRef.current!.style.transform = `translate3d(${x}px,0,0)`
+    rafId = requestAnimationFrame(loop)
   }
 
-  const exitFullscreen = () => {
-    setIsFullscreen(false)
-  }
+  loop()
+  return () => cancelAnimationFrame(rafId)
+}, [isFullscreen, animationSpeed])
+
+
+  const handleFullscreen = () => setIsFullscreen(true)
+  const exitFullscreen = () => setIsFullscreen(false)
 
   if (isFullscreen) {
-    // 애니메이션 duration 계산 (속도가 빠를수록 duration이 짧아짐)
-    // 0 = 고정, 1-25 = 이동 속도 (1이 가장 느리고 25가 가장 빠름)
-    const animationDuration = animationSpeed > 0 ? `${30 - animationSpeed * 0.8}s` : 'none'
-    const displayText = text || '응원 메시지를 입력하세요!'
-    
     return (
-      <div 
+      <div
         className="led-board-fullscreen"
-        style={{
-          backgroundColor,
-        }}
+        style={{ backgroundColor }}
         onClick={exitFullscreen}
       >
-        <div 
-          className={`led-board-text ${animationSpeed > 0 ? 'animated' : ''}`}
-          style={{
-            color: textColor,
-            fontSize: `${fontSize}px`,
-            animationDuration: animationDuration
-          }}
+        {animationSpeed > 0 ? (
+          <div className="led-board-marquee" ref={containerRef}>
+            <div
+              ref={textRef}
+              className="led-board-track"
+              style={{
+                color: textColor,
+                fontSize: `${fontSize}px`,
+              }}
+            >
+              {loopText}
+            </div>
+          </div>
+        ) : (
+          <div
+            className="led-board-text"
+            style={{ color: textColor, fontSize: `${fontSize}px` }}
+          >
+            {text}
+          </div>
+        )}
+
+        {/* ✅ 기존 속도 조절 UI 복구 */}
+        <div
+          className="led-board-controls-overlay"
+          onClick={(e) => e.stopPropagation()}
         >
-          {animationSpeed > 0 ? (
-            <>
-              <span className="led-text-item">{displayText}</span>
-              <span className="led-text-item">{displayText}</span>
-            </>
-          ) : (
-            displayText
-          )}
-        </div>
-        <div className="led-board-controls-overlay" onClick={(e) => e.stopPropagation()}>
           <div className="speed-control">
             <label>이동 속도: {animationSpeed}</label>
             <input
@@ -108,15 +149,15 @@ const LEDBoard = () => {
   return (
     <div className="led-board-container">
       <div className="led-board-preview">
-        <div 
+        <div
           className="led-board-display"
           style={{
             backgroundColor,
             color: textColor,
-            fontSize: `${fontSize}px`
+            fontSize: `${fontSize}px`,
           }}
         >
-          {text || '응원 메시지를 입력하세요!'}
+          {text}
         </div>
       </div>
 
@@ -127,7 +168,6 @@ const LEDBoard = () => {
             type="text"
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="응원 메시지를 입력하세요"
             className="led-input"
             maxLength={50}
           />
@@ -139,10 +179,11 @@ const LEDBoard = () => {
             {textColorOptions.map((option) => (
               <button
                 key={option.value}
-                className={`color-option ${textColor === option.value ? 'selected' : ''}`}
+                className={`color-option ${
+                  textColor === option.value ? 'selected' : ''
+                }`}
                 style={{ backgroundColor: option.value }}
                 onClick={() => setTextColor(option.value)}
-                title={option.name}
               >
                 {textColor === option.value && '✓'}
               </button>
@@ -160,10 +201,6 @@ const LEDBoard = () => {
             onChange={(e) => setFontSize(Number(e.target.value))}
             className="font-size-slider"
           />
-          <div className="font-size-info">
-            <span>100px</span>
-            <span>150px</span>
-          </div>
         </div>
 
         <div className="control-buttons">
@@ -177,4 +214,3 @@ const LEDBoard = () => {
 }
 
 export default LEDBoard
-

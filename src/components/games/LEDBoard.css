@@ -54,27 +54,7 @@
   white-space: nowrap;
 }
 
-.led-board-text.animated {
-  animation: scroll-left linear infinite;
-  text-align: left;
-  white-space: nowrap;
-  display: flex;
-  gap: 4rem;
-}
 
-.led-text-item {
-  display: inline-block;
-  flex-shrink: 0;
-}
-
-@keyframes scroll-left {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
-}
 
 .led-board-controls-overlay {
   position: absolute;
@@ -372,3 +352,32 @@
   }
 }
 
+/* ===== 무한 전광판 핵심 ===== */
+
+.led-board-marquee {
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.led-board-track {
+  display: inline-flex;
+  gap: 4rem;
+  white-space: nowrap;
+  animation: marquee-scroll linear infinite;
+  will-change: transform;
+}
+
+.led-text-item {
+  flex-shrink: 0;
+  font-weight: 700;
+}
+
+@keyframes marquee-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
