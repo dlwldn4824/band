@@ -24,6 +24,35 @@ const Layout = ({ children }: LayoutProps) => {
     setAdminStatus(savedAdmin === 'true')
   }, [isAdmin]) // isAdmin이 변경될 때마다 업데이트
 
+  // 헤더 높이를 동적으로 측정하여 CSS 변수로 설정
+  useEffect(() => {
+    const updateHeaderHeight = () => {
+      const header = document.querySelector('.header')
+      if (header) {
+        const height = header.getBoundingClientRect().height
+        document.documentElement.style.setProperty('--header-height', `${height}px`)
+      }
+    }
+
+    // 초기 측정
+    updateHeaderHeight()
+
+    // 리사이즈 및 오리엔테이션 변경 시 재측정
+    window.addEventListener('resize', updateHeaderHeight)
+    window.addEventListener('orientationchange', updateHeaderHeight)
+
+    // 약간의 지연 후 재측정 (렌더링 완료 후)
+    const timeoutId = setTimeout(updateHeaderHeight, 100)
+    const timeoutId2 = setTimeout(updateHeaderHeight, 300)
+
+    return () => {
+      window.removeEventListener('resize', updateHeaderHeight)
+      window.removeEventListener('orientationchange', updateHeaderHeight)
+      clearTimeout(timeoutId)
+      clearTimeout(timeoutId2)
+    }
+  }, [adminStatus, isAuthenticated]) // 헤더 내용이 변경될 수 있으므로 의존성 추가
+
   const isActive = (path: string) => {
     return location.pathname === path ? 'active' : ''
   }

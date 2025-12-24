@@ -119,7 +119,9 @@
   width: 100%;
   box-sizing: border-box;
   background-color: #000000;
-  padding: 1rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-top: 0;
   padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px) + 20px);
 }
 
@@ -354,6 +356,9 @@
 
   .dashboard-content {
     gap: 2rem;
+    /* 태블릿 이상에서 헤더 높이 고려 (기존 padding 유지) */
+    padding-top: calc(1rem + 2rem + env(safe-area-inset-top) + 4rem);
+    /* 기존 padding + safe-area + header padding + nav 높이 */
   }
 
   .poster-section {

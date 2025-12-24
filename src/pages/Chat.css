@@ -12,6 +12,9 @@
   min-height: 0;
   overflow: hidden;
   padding: 0;
+  /* 헤더가 fixed이므로 헤더 높이만큼 상단 패딩 추가 */
+  padding-top: var(--header-height, calc(0.75rem + env(safe-area-inset-top) + 1.75rem + 2.5rem + 0.75rem));
+  height: calc(100% - var(--header-height, calc(0.75rem + env(safe-area-inset-top) + 1.75rem + 2.5rem + 0.75rem)));
 }
 
 .layout.layout--chat .main .container {
@@ -42,6 +45,9 @@
   min-height: 0;
   overflow: hidden;
   padding: 0;
+  /* 헤더가 fixed이므로 헤더 높이만큼 상단 패딩 추가 */
+  padding-top: var(--header-height, calc(0.75rem + env(safe-area-inset-top) + 1.75rem + 2.5rem + 0.75rem));
+  height: calc(100% - var(--header-height, calc(0.75rem + env(safe-area-inset-top) + 1.75rem + 2.5rem + 0.75rem)));
 }
 
 .layout.layout--guestbook .main .container {
@@ -72,6 +78,9 @@
   min-height: 0;
   overflow: hidden;
   padding: 0;
+  /* 헤더가 fixed이므로 헤더 높이만큼 상단 패딩 추가 */
+  padding-top: var(--header-height, calc(0.75rem + env(safe-area-inset-top) + 1.75rem + 2.5rem + 0.75rem));
+  height: calc(100% - var(--header-height, calc(0.75rem + env(safe-area-inset-top) + 1.75rem + 2.5rem + 0.75rem)));
 }
 
 .layout.layout--events .main .container {
