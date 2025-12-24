@@ -244,8 +244,6 @@ const Dashboard = () => {
   }
 
   // 렌더링 조건 디버깅
-  const shouldShowEvents = performanceData?.events && performanceData.events.length > 0
-  const shouldShowEmptyState = !performanceData
 
   return (
     <div className="dashboard">

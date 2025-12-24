@@ -6,7 +6,7 @@
   right: 0;
   bottom: 0;
   height: 100vh;
-  height: var(--app-height, 100dvh);
+  height: var(--viewport-height, 100dvh);
   min-height: 0;
   overflow: hidden;
   display: flex;
@@ -625,4 +625,3 @@
     line-height: 1;
   }
 }
-
