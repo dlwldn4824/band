@@ -245,8 +245,8 @@
   border-radius: 16px;
   width: 95%;
   max-width: 600px;
-  height: calc(100% - 3rem);
-  max-height: calc(100% - 3rem);
+  height: calc(100% - 3rem - env(safe-area-inset-bottom, 0px));
+  max-height: calc(100% - 3rem - env(safe-area-inset-bottom, 0px));
   overflow: hidden;
   position: relative;
   animation: slideUp 0.3s ease;
@@ -792,13 +792,14 @@
     top: 0;
     padding: 0;
     padding-top: max(1rem, env(safe-area-inset-top));
+    padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
     align-items: flex-end;
   }
   
   .song-detail-content {
     border-radius: 16px;
-    height: calc(100% - 3rem);
-    max-height: calc(100% - 3rem);
+    height: calc(100% - 3rem - env(safe-area-inset-bottom, 0px));
+    max-height: calc(100% - 3rem - env(safe-area-inset-bottom, 0px));
     width: 95%;
     max-width: 95%;
     margin-bottom: 0;
