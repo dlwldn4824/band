@@ -48,6 +48,25 @@ const Chat = () => {
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([])
   const [showOnlineList, setShowOnlineList] = useState(false)
   const [showPhotoModal, setShowPhotoModal] = useState(false)
+  
+  // 개발 모드에서 100명 시뮬레이션 테스트
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      // 개발 모드에서만 작동
+      const testMode = sessionStorage.getItem('chat-test-100-users') === 'true'
+      if (testMode) {
+        const dummyUsers: OnlineUser[] = []
+        for (let i = 1; i <= 100; i++) {
+          dummyUsers.push({
+            id: `test-user-${i}`,
+            name: `테스트사용자${i}`,
+            lastSeen: { toMillis: () => Date.now() } as any
+          })
+        }
+        setOnlineUsers(dummyUsers)
+      }
+    }
+  }, [])
   const [userNicknameCache, setUserNicknameCache] = useState<Record<string, string>>({}) // userId -> 최신 닉네임 캐시
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
@@ -60,10 +79,27 @@ const Chat = () => {
     // location이 변경되면 컴포넌트가 리렌더링됨
   }, [location.pathname, (location.state as any)])
 
+  // 개발 모드에서 100명 시뮬레이션 테스트
+  const isTestMode = import.meta.env.DEV && sessionStorage.getItem('chat-test-100-users') === 'true'
+  
   useEffect(() => {
-    if (!user) return
+    if (isTestMode) {
+      const dummyUsers: OnlineUser[] = []
+      for (let i = 1; i <= 100; i++) {
+        dummyUsers.push({
+          id: `test-user-${i}`,
+          name: `테스트사용자${i}`,
+          lastSeen: { toMillis: () => Date.now() } as any
+        })
+      }
+      setOnlineUsers(dummyUsers)
+    }
+  }, [isTestMode])
 
-    // 온라인 사용자로 등록
+  useEffect(() => {
+    if (!user || isTestMode) return
+
+    // 온라인 사용자로 등록 (테스트 모드가 아닐 때만)
     const registerOnlineUser = async () => {
       const userId = `${user.name}_${user.phone}`
       onlineUserRef.current = userId
@@ -96,9 +132,11 @@ const Chat = () => {
       cleanup = cleanupFn
     })
 
-    // 온라인 사용자 실시간 구독
-    const onlineUsersQuery = query(collection(db, 'onlineUsers'))
-    const unsubscribeOnlineUsers = onSnapshot(
+    // 온라인 사용자 실시간 구독 (테스트 모드가 아닐 때만)
+    let unsubscribeOnlineUsers: (() => void) | null = null
+    if (!isTestMode) {
+      const onlineUsersQuery = query(collection(db, 'onlineUsers'))
+      unsubscribeOnlineUsers = onSnapshot(
       onlineUsersQuery, 
       (snapshot) => {
         const users: OnlineUser[] = []
@@ -206,6 +244,7 @@ const Chat = () => {
         setOnlineUsers([])
       }
     )
+    }
 
     // 채팅 메시지 실시간 구독
     const messagesQuery = query(
@@ -279,16 +318,18 @@ const Chat = () => {
 
     // 정리 함수
     return () => {
-      unsubscribeOnlineUsers()
+      if (unsubscribeOnlineUsers) {
+        unsubscribeOnlineUsers()
+      }
       unsubscribeMessages()
       if (cleanup) cleanup()
-      // 사용자 오프라인 처리
-      if (onlineUserRef.current) {
+      // 사용자 오프라인 처리 (테스트 모드가 아닐 때만)
+      if (!isTestMode && onlineUserRef.current) {
         const userRef = doc(db, 'onlineUsers', onlineUserRef.current)
         deleteDoc(userRef).catch(console.error)
       }
     }
-  }, [user])
+  }, [user, isTestMode])
 
   // 사용자가 맨 아래 근처에 있는지 확인
   const isNearBottom = (el: HTMLDivElement) => {
@@ -355,6 +396,33 @@ const Chat = () => {
         <div className="online-status" onClick={() => setShowOnlineList(!showOnlineList)}>
           <span className="online-status-text">온라인: {onlineUsers.length}명</span>
           <span className="online-status-arrow">{showOnlineList ? '▲' : '▼'}</span>
+          {import.meta.env.DEV && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                const isTestMode = sessionStorage.getItem('chat-test-100-users') === 'true'
+                if (isTestMode) {
+                  sessionStorage.removeItem('chat-test-100-users')
+                  window.location.reload()
+                } else {
+                  sessionStorage.setItem('chat-test-100-users', 'true')
+                  window.location.reload()
+                }
+              }}
+              style={{
+                marginLeft: '0.5rem',
+                padding: '0.25rem 0.5rem',
+                fontSize: '0.7rem',
+                background: sessionStorage.getItem('chat-test-100-users') === 'true' ? '#FF4C4C' : '#4caf50',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              {sessionStorage.getItem('chat-test-100-users') === 'true' ? '테스트 해제' : '100명 테스트'}
+            </button>
+          )}
           {showOnlineList && onlineUsers.length > 0 && (
             <div className="online-users-dropdown">
               <div className="online-users-content">
