@@ -9,8 +9,7 @@ import {
   orderBy, 
   limit,
   onSnapshot,
-  serverTimestamp,
-  where
+  serverTimestamp
 } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import demoImage from '../assets/배경/데모 이미지.png'
@@ -97,12 +96,12 @@ const Performances = () => {
       (snapshot) => {
         const comments: SongComment[] = []
         snapshot.forEach((doc) => {
-          const data = doc.data() as SongComment
+          const data = doc.data()
           // 클라이언트에서 songName으로 필터링 (인덱스 없이 작동)
           if (data.songName === selectedSong.songName) {
             comments.push({
-              id: doc.id,
-              ...data
+              ...data,
+              id: doc.id
             } as SongComment)
           }
         })

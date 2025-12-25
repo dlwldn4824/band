@@ -357,7 +357,6 @@ const Chat = () => {
           <span className="online-status-arrow">{showOnlineList ? '▲' : '▼'}</span>
           {showOnlineList && onlineUsers.length > 0 && (
             <div className="online-users-dropdown">
-              <div className="online-users-header">온라인 사용자</div>
               <div className="online-users-content">
                 {onlineUsers.map((onlineUser) => (
                   <div key={onlineUser.id} className="online-user-item">
@@ -484,7 +483,11 @@ const Chat = () => {
             <div className="photo-modal-content">
               <h3 className="photo-modal-title">공연에서 있었던 추억을 공유해주세요!</h3>
               <p className="photo-modal-description">
-                공연 중 찍은 사진과 영상을 구글 드라이브에 업로드하고 공유해보세요.
+                공연 중 찍은 사진과 영상을 <br /> 구글 드라이브에 업로드하고 공유해보세요.
+                <br />
+                <span style={{ fontSize: '0.85rem', color: '#999', fontStyle: 'italic' }}>
+                ※ PC에서는 업로드·다운로드가 가능하며,
+                모바일에서는 구글 드라이브 앱으로 연결 시 업로드가 가능합니다.                </span>
               </p>
             </div>
             <div className="photo-modal-buttons">
