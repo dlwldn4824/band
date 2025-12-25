@@ -21,11 +21,11 @@ import drumIcon from '../assets/배경/드럼.png'
 import './Performances.css'
 
 // ===== 곡 소개 이미지 =====
-import img1 from '../assets/곡소개/1_비틀비틀짝짝꿍.jpg'
+import img1 from '../assets/곡소개/1_비틀비틀짝짜꿍.jpg'
 import img2 from '../assets/곡소개/2_대화가필요해.jpeg'
 import img3 from '../assets/곡소개/3_눈이오잖아.jpeg'
 import img4 from '../assets/곡소개/4_밤이깊었네.jpeg'
-import img5 from '../assets/곡소개/5_무희.jpeg'
+import img5 from '../assets/곡소개/5_무희.jpg'
 import img6 from '../assets/곡소개/6_각자의밤.jpeg'
 import img7 from '../assets/곡소개/7_지금부터.jpeg'
 import img8 from '../assets/곡소개/8_드라우닝.png'
@@ -35,7 +35,10 @@ import img11 from '../assets/곡소개/11_검을현.jpeg'
 import img12 from '../assets/곡소개/12_Oddities.jpeg'
 import img13 from '../assets/곡소개/13_용의자.png'
 import img14 from '../assets/곡소개/14_ditto.jpeg'
+import img15 from '../assets/곡소개/15. 만찬가.png'
 import img16 from '../assets/곡소개/16_itsmylife.jpeg'
+import img17 from '../assets/곡소개/17_bad.jpeg'
+import img18 from '../assets/곡소개/18_stargazing.jpeg'
 import img19 from '../assets/곡소개/19_아지랑이.jpeg'
 
 interface SongComment {
@@ -251,9 +254,11 @@ const Performances = () => {
     'ditto': img14,
     'Ditto': img14,
 
+    '만찬가': img15,
     'itsmylife': img16,
     'its my life': img16,
-
+    'bad': img17,
+    'stargazing': img18,
     '아지랑이': img19,
   }
 
