@@ -81,11 +81,15 @@ const Performances = () => {
       return
     }
 
+    // 인덱스 없이도 작동하도록 쿼리 순서 조정
+    // where와 orderBy를 함께 사용할 때는 복합 인덱스가 필요하므로
+    // 먼저 모든 데이터를 가져온 후 클라이언트에서 필터링하거나
+    // 인덱스를 생성해야 합니다
+    // 임시로 orderBy만 사용하고 클라이언트에서 필터링
     const commentsQuery = query(
       collection(db, 'songComments'),
-      where('songName', '==', selectedSong.songName),
       orderBy('timestamp', 'desc'),
-      limit(50)
+      limit(100) // 더 많이 가져와서 필터링
     )
 
     const unsubscribe = onSnapshot(
@@ -93,15 +97,29 @@ const Performances = () => {
       (snapshot) => {
         const comments: SongComment[] = []
         snapshot.forEach((doc) => {
-          comments.push({
-            id: doc.id,
-            ...doc.data()
-          } as SongComment)
+          const data = doc.data() as SongComment
+          // 클라이언트에서 songName으로 필터링 (인덱스 없이 작동)
+          if (data.songName === selectedSong.songName) {
+            comments.push({
+              id: doc.id,
+              ...data
+            } as SongComment)
+          }
         })
-        setSongComments(comments)
+        // 최신순으로 정렬 (이미 orderBy로 정렬되어 있지만 확실히)
+        comments.sort((a, b) => {
+          const aTime = a.timestamp?.toDate?.()?.getTime() || 0
+          const bTime = b.timestamp?.toDate?.()?.getTime() || 0
+          return bTime - aTime
+        })
+        setSongComments(comments.slice(0, 50)) // 최대 50개만 표시
       },
       (error) => {
         console.error('[Performances] 응원 메시지 구독 오류:', error)
+        // 인덱스 에러인 경우 더 자세한 안내
+        if (error.code === 'failed-precondition') {
+          console.error('[Performances] Firestore 인덱스가 필요합니다. Firebase 콘솔에서 인덱스를 생성해주세요.')
+        }
         setSongComments([])
       }
     )
@@ -115,33 +133,40 @@ const Performances = () => {
       console.error('[Performances] 응원 메시지 추가 실패:', {
         hasSelectedSong: !!selectedSong,
         hasCommentInput: !!commentInput.trim(),
-        hasUser: !!user
+        hasUser: !!user,
+        selectedSong: selectedSong,
+        commentInput: commentInput,
+        user: user
       })
       return
     }
 
     try {
-      console.log('[Performances] 응원 메시지 추가 시도:', {
-        songName: selectedSong.songName,
-        userName: user.name,
-        userNickname: user.nickname,
-        message: commentInput.trim()
-      })
-      
-      await addDoc(collection(db, 'songComments'), {
+      const commentData = {
         songName: selectedSong.songName,
         userName: user.name || '익명',
         userNickname: user.nickname || undefined,
         message: commentInput.trim(),
         timestamp: serverTimestamp()
-      })
+      }
       
-      console.log('[Performances] 응원 메시지 추가 성공')
+      console.log('[Performances] 응원 메시지 추가 시도:', commentData)
+      console.log('[Performances] Firestore collection 경로:', 'songComments')
+      console.log('[Performances] 사용자 정보:', { name: user.name, nickname: user.nickname, phone: user.phone })
+      
+      const docRef = await addDoc(collection(db, 'songComments'), commentData)
+      
+      console.log('[Performances] 응원 메시지 추가 성공, 문서 ID:', docRef.id)
       setCommentInput('')
       setShowCommentInput(false)
-    } catch (error) {
+    } catch (error: any) {
       console.error('[Performances] 응원 메시지 추가 오류:', error)
-      alert('응원 메시지 등록에 실패했습니다. 다시 시도해주세요.')
+      console.error('[Performances] 오류 상세:', {
+        code: error?.code,
+        message: error?.message,
+        stack: error?.stack
+      })
+      alert(`응원 메시지 등록에 실패했습니다: ${error?.message || '알 수 없는 오류'}. 다시 시도해주세요.`)
     }
   }
 
