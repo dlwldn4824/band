@@ -14,7 +14,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import demoImage from '../assets/배경/데모 이미지.png'
-import vocalIcon from '../assets/배경/보컬.png'
+import vocalIcon from '../assets/배경/마이크.png'
 import guitarIcon from '../assets/배경/기타.png'
 import bassIcon from '../assets/배경/베이스.png'
 import keyboardIcon from '../assets/배경/키보드.png'
