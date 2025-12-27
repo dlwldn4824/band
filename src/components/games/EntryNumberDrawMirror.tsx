@@ -140,18 +140,16 @@ const EntryNumberDrawMirror = () => {
 
   return (
     <div className="game-container">
-      <div
-        className="page-back-button"
-        style={{left:'30px'}}
-        onClick={()=> navigate('/admin/events?tab=기타',{replace:true})}
-      >
-        ←
-      </div>
       <div className="roulette-header">
+        <button
+          className="entry-draw-close-button"
+          onClick={() => navigate('/admin/events?tab=기타', { replace: true })}
+        >
+        </button>
         <div className="draw-header-title">
-          <span className="draw-dice-icon">🎲</span>
+          <span className="draw-dice-icon"></span>
           <h2>입장 번호 추첨</h2>
-          <span className="draw-dice-icon">🎲</span>
+          <span className="draw-dice-icon"></span>
         </div>
       </div>
 

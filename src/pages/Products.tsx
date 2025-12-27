@@ -29,8 +29,7 @@ const Products = () => {
   return (
     <div className="products-page">
       <div className="products-header">
-        <button className="products-back-button" onClick={() => navigate(-1)}>
-          ← 뒤로가기
+        <button className="products-close-button" onClick={() => navigate(-1)}>
         </button>
         <h1>상품 소개</h1>
       </div>
@@ -64,7 +63,6 @@ const Products = () => {
               className="product-modal-close"
               onClick={() => setSelectedProduct(null)}
             >
-              ×
             </button>
             <div className="product-modal-image-container">
               <img

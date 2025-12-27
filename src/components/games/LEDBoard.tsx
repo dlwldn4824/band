@@ -318,13 +318,11 @@ const LEDBoard = () => {
 
   return (
     <div className="led-board-container">
-      <div
-        className="page-back-button"
-        style={{left:'40px', top:'40px'}}
-        onClick={() => navigate('/admin/events?tab=기타',{replace:true})}
+      <button
+        className="led-board-close-button"
+        onClick={() => navigate('/admin/events?tab=기타', { replace: true })}
       >
-        ←
-      </div>
+      </button>
       <div className="led-board-preview" ref={previewContainerRef}>
         <div
           ref={previewTextRef}

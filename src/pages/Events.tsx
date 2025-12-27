@@ -177,7 +177,6 @@ const Events = () => {
               className="directions-modal-close"
               onClick={() => setShowDirectionsModal(false)}
             >
-              ×
             </button>
             <div className="directions-modal-content">
               <h2 className="directions-modal-title">공연장 위치</h2>
