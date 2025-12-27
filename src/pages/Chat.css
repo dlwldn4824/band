@@ -177,14 +177,18 @@
 }
 
 .online-status:hover .online-status-header {
-  background: #858585;
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .online-status.expanded {
-  background: #757575;
+  background: #D1D1D1;
 }
 
 .online-status.expanded .online-status-header {
+  background: transparent;
+}
+
+.online-status.expanded:hover .online-status-header {
   background: transparent;
 }
 
@@ -246,7 +250,7 @@
 
 .online-user-name {
   font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.9);
+  color: #333333;
   white-space: nowrap;
 }
 
