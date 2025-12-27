@@ -148,7 +148,11 @@ const EntryNumberDrawMirror = () => {
         ←
       </div>
       <div className="roulette-header">
-        <h2>입장 번호 추첨</h2>
+        <div className="draw-header-title">
+          <span className="draw-dice-icon">🎲</span>
+          <h2>입장 번호 추첨</h2>
+          <span className="draw-dice-icon">🎲</span>
+        </div>
       </div>
 
       <div className="roulette-body">
@@ -159,7 +163,7 @@ const EntryNumberDrawMirror = () => {
             </p>
             {eligibleGuests.length > 0 && (
               <p className="draw-range">
-                입장 번호 범위: {eligibleGuests[0].entryNumber}번 ~ {eligibleGuests[eligibleGuests.length - 1].entryNumber}번
+                *입장 번호 범위: <strong className="draw-range-number">{eligibleGuests[0].entryNumber}번 ~ {eligibleGuests[eligibleGuests.length - 1].entryNumber}번</strong>
               </p>
             )}
           </div>
@@ -181,7 +185,9 @@ const EntryNumberDrawMirror = () => {
               if (matchedGuest) {
                 return (
                   <div className="draw-result">
-                    <div className="result-name">{matchedGuest.name}님</div>
+                    <div className="result-name-container">
+                      <div className="result-name">{matchedGuest.name}님</div>
+                    </div>
                     <div className="result-number">입장 번호: {currentNumber}번</div>
                   </div>
                 )

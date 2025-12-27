@@ -4,6 +4,7 @@ import { db } from '../../config/firebase'
 import { useAuth } from '../../contexts/AuthContext'
 import './Game.css'
 import { useNavigate } from 'react-router-dom'
+import pointerIcon from '../../assets/배경/포인터.png'
 
 interface RouletteState {
   isSpinning: boolean
@@ -158,7 +159,11 @@ const RouletteMirror = () => {
         ←
       </div>
       <div className="roulette-header">
-        <h2>룰렛</h2>
+        <h2>
+          <span className="roulette-header-icon">🎯</span>
+          룰렛
+          <span className="roulette-header-icon">🎯</span>
+        </h2>
       </div>
       
       <div className="roulette-body">
@@ -183,10 +188,13 @@ const RouletteMirror = () => {
                 </div>
               )
             })}
-
-            <div className='roulette-center'>Luck</div>
+            <div className='roulette-center-circle'></div>
           </div>
-          <div className="roulette-pointer"></div>
+          <img 
+            src={pointerIcon} 
+            alt="포인터" 
+            className="roulette-pointer"
+          />
         </div>
       </div>
 

@@ -2,7 +2,7 @@
   max-width: 600px;
   margin: 0 auto;
   padding: 0;
-  background: #2a2a2a;
+  background: #333333;
   border-radius: 16px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
   animation: fadeIn 0.5s ease-in;
@@ -27,16 +27,24 @@
 /* 룰렛 전용 헤더 */
 .roulette-header {
   flex: 0 0 auto;
-  padding: 1rem 1.5rem 0.25rem;
+  padding: 1rem 1.5rem 0;
 }
 
 .roulette-header h2 {
   text-align: center;
   font-size: 1.5rem;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0;
   color: #ffffff;
   font-family: 'Pretendard', sans-serif;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.roulette-header-icon {
+  font-size: 1.5rem;
 }
 
 /* 룰렛 전용 body (원판 영역) */
@@ -55,7 +63,7 @@
   flex: 0 0 auto;
   padding: 0.75rem 1.5rem;
   padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
-  background: #2a2a2a;
+  background: transparent;
   border-radius: 0 0 16px 16px;
 }
 
@@ -444,8 +452,9 @@
   aspect-ratio: 1 / 1; /* 정사각형 보장 */
   flex-shrink: 0;
   margin: 0 auto;
-  border: 3px solid #bfbfbf;
+  border: 3px solid #D1D1D1;
   border-radius: 50%;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
 }
 
 .roulette-center {
@@ -466,6 +475,23 @@
   z-index: 5;
 }
 
+.roulette-center-circle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #ffffff;
+  z-index: 5;
+  box-shadow: 
+    0 6px 16px rgba(0, 0, 0, 0.4), 
+    0 2px 6px rgba(0, 0, 0, 0.3),
+    inset 0 2px 4px rgba(0, 0, 0, 0.2),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.1);
+}
+
 
 .roulette-wheel {
   box-sizing: border-box;
@@ -480,13 +506,13 @@
   position: relative;
   overflow: hidden;
   background: conic-gradient(
-    #fde2e2 0deg 45deg,
+    #FFA6A6 0deg 45deg,
     #ffffff 45deg 90deg,
-    #fde2e2 90deg 135deg,
+    #FFA6A6 90deg 135deg,
     #ffffff 135deg 180deg,
-    #fde2e2 180deg 225deg,
+    #FFA6A6 180deg 225deg,
     #ffffff 225deg 270deg,
-    #fde2e2 270deg 315deg,
+    #FFA6A6 270deg 315deg,
     #ffffff 315deg 360deg
   );
   transition: transform 3s cubic-bezier(0.17, 0.67, 0.12, 0.99);
@@ -533,6 +559,7 @@
   color: #222;
   text-shadow: none;
   white-space: nowrap;
+  font-family: 'Pretendard', sans-serif;
 
   translate: -50% -50%;
 
@@ -542,44 +569,16 @@
 
 .roulette-pointer {
   position: absolute;
-  top: -12px;
+  top: -18px;
   left: 50%;
   transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 20px solid transparent;
-  border-right: 20px solid transparent;
-  border-top: 40px solid #FF4C4C;
+  width: auto;
+  height: auto;
+  max-width: 40px;
+  max-height: 40px;
   z-index: 10;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-}
-
-.roulette-pointer::before {
-  content: '';
-  position: absolute;
-  top: -40px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 14px solid transparent;
-  border-right: 14px solid transparent;
-  border-top: 24px solid #ffffff;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
-}
-
-.roulette-pointer::after {
-  content: '';
-  position: absolute;
-  top: -40px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 16px solid transparent;
-  border-right: 16px solid transparent;
-  border-top: 26px solid #FF4C4C;
-  z-index: -1;
+  object-fit: contain;
+  pointer-events: none;
 }
 
 .roulette-result {
@@ -698,7 +697,7 @@
 .draw-info {
   text-align: center;
   width: 100%;
-  margin-top: -1rem;
+  margin-top: 0rem;
 }
 
 .draw-count {
@@ -713,10 +712,27 @@
   font-size: 1rem;
 }
 
+.draw-header-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.draw-dice-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
 .draw-range {
   font-size: 0.8rem;
   color: rgba(255, 255, 255, 0.6);
   font-family: 'Pretendard', sans-serif;
+}
+
+.draw-range-number {
+  color: #FF4C4C;
+  font-weight: 600;
 }
 
 .draw-display {
@@ -725,6 +741,7 @@
   flex-direction: column;
   align-items: center;
   gap: 1rem;
+  margin-top: 2.5rem;
 }
 
 .draw-number {
@@ -740,10 +757,8 @@
   width: 140px;
   height: 140px;
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(255, 76, 76, 0.1) 0%, rgba(255, 76, 76, 0.2) 100%);
   border: 6px solid #FF4C4C;
-  box-shadow: 0 6px 20px rgba(255, 76, 76, 0.3);
-  transition: transform 0.1s ease-out;
+  background: transparent;
   font-family: 'Pretendard', sans-serif;
 }
 
@@ -762,7 +777,8 @@
 .draw-number.final {
   animation: drawFinal 0.5s ease-out;
   transform: scale(1.08);
-  box-shadow: 0 8px 24px rgba(255, 76, 76, 0.5);
+  box-shadow: 0 0 20px rgba(255, 76, 76, 0.6), 0 0 40px rgba(255, 76, 76, 0.3);
+  filter: drop-shadow(0 0 10px rgba(255, 76, 76, 0.5));
 }
 
 @keyframes drawPulse {
@@ -789,7 +805,7 @@
 .draw-result {
   text-align: center;
   padding: 1rem 1.5rem;
-  background: linear-gradient(135deg, #FF4C4C 0%, #E63E3E 100%);
+  background: #2A2A2A;
   border-radius: 12px;
   color: white;
   animation: fadeInUp 0.5s ease-out;
@@ -799,10 +815,19 @@
   margin-top: 0.7rem;
 }
 
+.result-name-container {
+  background: #121212;
+  border-radius: 30px;
+  padding: 0.75rem 1.5rem;
+  margin-bottom: 0.5rem;
+  display: inline-block;
+}
+
 .result-name {
   font-size: 1.25rem;
   font-weight: 700;
-  margin-bottom: 0.25rem;
+  color: white;
+  margin: 0;
 }
 
 .result-number {
