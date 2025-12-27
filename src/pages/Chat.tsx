@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import onlineIcon from '../assets/배경/온라인.png'
+import sendIconActive from '../assets/배경/전송_활성화.png'
+import sendIconInactive from '../assets/배경/전송_비활성화.png'
 import { 
   collection, 
   addDoc, 
@@ -393,38 +396,15 @@ const Chat = () => {
   return (
     <div className="chat-page">
       <div className="chat-container">
-        <div className="online-status" onClick={() => setShowOnlineList(!showOnlineList)}>
-          <span className="online-status-text">온라인: {onlineUsers.length}명</span>
-          <span className="online-status-arrow">{showOnlineList ? '▲' : '▼'}</span>
-          {import.meta.env.DEV && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                const isTestMode = sessionStorage.getItem('chat-test-100-users') === 'true'
-                if (isTestMode) {
-                  sessionStorage.removeItem('chat-test-100-users')
-                  window.location.reload()
-                } else {
-                  sessionStorage.setItem('chat-test-100-users', 'true')
-                  window.location.reload()
-                }
-              }}
-              style={{
-                marginLeft: '0.5rem',
-                padding: '0.25rem 0.5rem',
-                fontSize: '0.7rem',
-                background: sessionStorage.getItem('chat-test-100-users') === 'true' ? '#FF4C4C' : '#4caf50',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              {sessionStorage.getItem('chat-test-100-users') === 'true' ? '테스트 해제' : '100명 테스트'}
-            </button>
-          )}
+        <div className={`online-status ${showOnlineList ? 'expanded' : ''}`}>
+          <div className="online-status-header" onClick={() => setShowOnlineList(!showOnlineList)}>
+            <img src={onlineIcon} alt="온라인" className="online-status-icon" />
+            <span className="online-status-text">{onlineUsers.length}명 온라인 접속중</span>
+            <span className="online-status-arrow">{showOnlineList ? '▲' : '▼'}</span>
+          </div>
           {showOnlineList && onlineUsers.length > 0 && (
-            <div className="online-users-dropdown">
+            <>
+              <div className="online-users-divider"></div>
               <div className="online-users-content">
                 {onlineUsers.map((onlineUser) => (
                   <div key={onlineUser.id} className="online-user-item">
@@ -433,7 +413,7 @@ const Chat = () => {
                   </div>
                 ))}
               </div>
-          </div>
+            </>
           )}
         </div>
 
@@ -448,14 +428,33 @@ const Chat = () => {
               if (msg.type === 'system') {
                 // 입장 메시지인 경우 최신 닉네임으로 업데이트
                 let displayMessage = msg.message
+                let nickname = ''
                 if (msg.message?.includes('님이 입장했습니다.')) {
                   // userId가 있으면 userId로 조회, 없으면 이름으로 조회
                   const cacheKey = msg.userId || msg.user || ''
                   const latestNickname = userNicknameCache[cacheKey] || userNicknameCache[msg.user || ''] || msg.user || ''
                   
                   if (latestNickname && latestNickname !== msg.user) {
+                    nickname = latestNickname
                     displayMessage = `${latestNickname}님이 입장했습니다.`
+                  } else {
+                    // 메시지에서 닉네임 추출
+                    const match = msg.message?.match(/^(.+?)님이 입장했습니다\.$/)
+                    if (match) {
+                      nickname = match[1]
+                    }
                   }
+                }
+                
+                // 입장 메시지인 경우 닉네임 부분만 볼드 처리
+                if (msg.message?.includes('님이 입장했습니다.') && nickname) {
+                  return (
+                    <div key={msg.id} className="system-message">
+                      <span className="system-message-text">
+                        <span className="nickname">{nickname}</span>님이 입장했습니다.
+                      </span>
+                    </div>
+                  )
                 }
                 
                 return (
@@ -536,9 +535,13 @@ const Chat = () => {
           <button
             type="submit"
             className="send-button"
-              disabled={!inputMessage.trim() || !user}
+            disabled={!inputMessage.trim() || !user}
           >
-            전송
+            <img 
+              src={!inputMessage.trim() || !user ? sendIconInactive : sendIconActive} 
+              alt="전송" 
+              className="send-button-icon"
+            />
           </button>
           </div>
         </form>
