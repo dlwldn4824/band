@@ -4,18 +4,18 @@
   flex-direction: column;
   overflow-x: hidden;
   background-color: #000000;
-}
-
-.container {
+  }
+  
+  .container {
   max-width: 100%;
   margin: 0 auto;
   padding: 0 0.75rem;
   width: 100%;
   box-sizing: border-box;
   background-color: transparent;
-}
-
-.header {
+  }
+  
+  .header {
   background: #000 !important;
   background-color: #000000 !important;
   color: white !important;
@@ -37,9 +37,9 @@
   transform: translateZ(0);
   will-change: transform;
   backface-visibility: hidden;
-}
-
-.header .container {
+  }
+  
+  .header .container {
   display: flex;
   flex-direction: column;
   gap: 1.75rem;
@@ -49,25 +49,25 @@
   box-sizing: border-box;
   position: relative;
   background-color: transparent;
-}
-
-.header-top {
+  }
+  
+  .header-top {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
   gap: 1rem;
   position: relative;
-}
-
-.logo {
+  }
+  
+  .logo {
   font-size: 1.125rem;
   font-weight: bold;
   flex: 1;
   text-align: center;
-}
-
-.logo-button {
+  }
+  
+  .logo-button {
   background: none;
   border: none;
   color: white;
@@ -77,13 +77,13 @@
   cursor: pointer;
   padding: 0;
   transition: opacity 0.3s;
-}
-
-.logo-button:hover {
+  }
+  
+  .logo-button:hover {
   opacity: 0.8;
-}
-
-.nav {
+  }
+  
+  .nav {
   display: flex !important;
   flex-wrap: nowrap;
   justify-content: center;
@@ -105,13 +105,13 @@
   transform: translateZ(0);
   will-change: transform;
   backface-visibility: hidden;
-}
-
-.nav::-webkit-scrollbar {
+  }
+  
+  .nav::-webkit-scrollbar {
   display: none;
-}
-
-.nav-link {
+  }
+  
+  .nav-link {
   color: white;
   font-weight: 500;
   padding: 0.5rem 0.75rem;
@@ -125,19 +125,19 @@
   display: inline-block !important;
   visibility: visible !important;
   opacity: 1 !important;
-}
-
-.nav-link:hover {
+  }
+  
+  .nav-link:hover {
   background-color: rgba(255, 255, 255, 0.1);
-}
-
-.nav-link.active {
+  }
+  
+  .nav-link.active {
   background-color: white !important;
   color: #333 !important;
   border: 1px solid white !important;
-}
-
-.logout-nav-button {
+  }
+  
+  .logout-nav-button {
   background-color: transparent;
   border: none;
   padding: 0.4rem 0.6rem;
@@ -152,21 +152,21 @@
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.logout-nav-button img {
-  width: 20px;
-  height: 25px;
-  object-fit: contain;
-  display: block;
-}
-
-.logout-nav-button:hover {
+  }
+  
+  .logout-nav-button img {
+    width: 28px;
+    height: 32px;
+    object-fit: contain;
+    display: block;
+  }
+  
+  .logout-nav-button:hover {
   background-color: transparent;
   border-color: rgba(255, 255, 255, 0.4);
-}
-
-.main {
+  }
+  
+  .main {
   flex: 1;
   padding: 0;
   min-height: 0;
@@ -175,20 +175,18 @@
   background-color: #000000;
   /* 헤더가 fixed이므로 헤더 높이만큼 상단 마진 추가 (동적으로 측정된 헤더 높이 사용) */
   margin-top: var(--header-height, calc(0.75rem + env(safe-area-inset-top) + 1.75rem + 2.5rem + 0.75rem));
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-/* 방명록, 채팅, 이벤트 페이지는 Chat.css에서 고정 레이아웃으로 처리 */
-
-.main > .container {
+  }
+  
+  /* 방명록, 채팅, 이벤트 페이지는 Chat.css에서 고정 레이아웃으로 처리 */
+  
+  .main > .container {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
-}
-
-.footer {
+  }
+  
+  .footer {
   background-color: #333;
   color: white;
   text-align: center;
@@ -200,65 +198,65 @@
   font-size: 0.75rem;
   position: relative;
   z-index: 1;
-}
-
-@media (min-width: 768px) {
+  }
+  
+  @media (min-width: 768px) {
   .container {
-    max-width: 1200px;
-    padding: 0 20px;
+  max-width: 1200px;
+  padding: 0 20px;
   }
-
+  
   .header {
-    padding: 2rem 0;
-    padding-top: calc(2rem + env(safe-area-inset-top));
+  padding: 2rem 0;
+  padding-top: calc(2rem + env(safe-area-inset-top));
   }
-
+  
   .header .container {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    gap: 0;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0;
   }
-
+  
   .header-top {
-    flex: 1;
-    align-items: center;
-    justify-content: center;
-    position: relative;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  position: relative;
   }
-
+  
   .logo {
-    font-size: 1.75rem;
-    text-align: center;
+  font-size: 1.75rem;
+  text-align: center;
   }
   
   .logout-nav-button {
-    position: absolute;
-    right: 0;
+  position: absolute;
+  right: 0;
   }
-
+  
   .nav {
-    gap: 2.5rem;
-    flex: 1;
-    justify-content: flex-end;
-    padding-right: 0;
-    position: relative;
+  gap: 2.5rem;
+  flex: 1;
+  justify-content: flex-end;
+  padding-right: 0;
+  position: relative;
   }
-
+  
   .main {
-    margin-top: var(--header-height, calc(2rem + env(safe-area-inset-top) + 4rem));
+  margin-top: var(--header-height, calc(2rem + env(safe-area-inset-top) + 4rem));
   }
-}
-
-/* 전광판 풀스크린 모드일 때 헤더와 네비게이션 숨기기 */
-body.led-board-fullscreen-active .header,
-body.led-board-fullscreen-active .nav {
-  display: none !important;
-  visibility: hidden !important;
-  opacity: 0 !important;
-}
-
-body.led-board-fullscreen-active .main {
-  margin-top: 0 !important;
-  padding-top: 0 !important;
-}
+  }
+  
+  /* 전광판 풀스크린 모드일 때 헤더와 네비게이션 숨기기 */
+  body.led-board-fullscreen-active .header,
+  body.led-board-fullscreen-active .nav {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+  }
+  
+  body.led-board-fullscreen-active .main {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }

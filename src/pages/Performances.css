@@ -7,12 +7,10 @@
   position: relative;
   padding: 0;
   box-sizing: border-box;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-/* content */
-.performances-content {
+  }
+  
+  /* content */
+  .performances-content {
   width: 100%;
   padding-left: 1rem;
   padding-right: 1rem;
@@ -21,18 +19,17 @@
   margin-bottom: 20px;
   box-sizing: border-box;
   position: relative;
-  overflow-y: visible;
-}
-
-/* 1부/2부 선택 버튼 */
-.part-selector {
+  }
+  
+  /* 1부/2부 선택 버튼 */
+  .part-selector {
   display: flex;
   gap: 0;
   margin-bottom: 1.5rem;
   justify-content: center;
-}
-
-.part-button {
+  }
+  
+  .part-button {
   background: transparent;
   border: none;
   color: rgba(255, 255, 255, 0.6);
@@ -43,17 +40,17 @@
   position: relative;
   transition: all 0.2s;
   font-family: 'Pretendard', sans-serif;
-}
-
-.part-button:hover:not(:disabled) {
+  }
+  
+  .part-button:hover:not(:disabled) {
   color: rgba(255, 255, 255, 0.8);
-}
-
-.part-button.active {
+  }
+  
+  .part-button.active {
   color: #ffffff;
-}
-
-.part-button.active::after {
+  }
+  
+  .part-button.active::after {
   content: '';
   position: absolute;
   bottom: 0;
@@ -61,36 +58,36 @@
   right: 0;
   height: 2px;
   background: #ffffff; /* active underline 복원 */
-}
-
-.part-button:disabled {
+  }
+  
+  .part-button:disabled {
   opacity: 0.3;
   cursor: not-allowed;
-}
-
-/* setlist section centered */
-.setlist-list-section {
+  }
+  
+  /* setlist section centered */
+  .setlist-list-section {
   width: 100%;
   max-width: 420px;
   margin: 0 auto;
   position: relative;
   padding: 0 14px;
   box-sizing: border-box;
-}
-
-/* =========================
-   Timeline
-   ========================= */
-.timeline {
+  }
+  
+  /* =========================
+    Timeline
+    ========================= */
+  .timeline {
   position: relative;
   width: 100%;
   display: flex;
   flex-direction: column;
   gap: 15px; /* 각 행 사이 간격 (카드와 카드, dot과 dot 사이 간격) */
-}
-
-/* 레일(라인) */
-.timeline-rail {
+  }
+  
+  /* 레일(라인) */
+  .timeline-rail {
   --rail-center-x: 27px; /* 레일 중앙 x 좌표 (width 54px / 2) */
   position: absolute;
   left: 0;
@@ -98,10 +95,10 @@
   bottom: 0;
   width: 54px;
   pointer-events: none; /* 클릭 이벤트 방해하지 않도록 */
-}
-
-/* 세로 라인: 레일 중앙 */
-.timeline-line {
+  }
+  
+  /* 세로 라인: 레일 중앙 */
+  .timeline-line {
   position: absolute;
   left: var(--rail-center-x);
   top: 0;
@@ -111,28 +108,28 @@
   border-radius: 2px;
   transform: translateX(-50%);
   z-index: 1;
-}
-
-/* 각 행: dot + 카드 */
-.timeline-row {
+  }
+  
+  /* 각 행: dot + 카드 */
+  .timeline-row {
   display: flex;
   align-items: center;
   gap: 27px; /* rail과 카드 사이 간격 */
   position: relative;
-}
-
-/* 레일 아이템: dot 컨테이너 */
-.timeline-rail-item {
+  }
+  
+  /* 레일 아이템: dot 컨테이너 */
+  .timeline-rail-item {
   position: relative;
   width: 54px;
   flex-shrink: 0;
   display: flex;
   align-items: center;     /* dot을 세로 중앙 */
   height: 100%;            /* timeline-item과 같은 높이 */
-}
-
-/* dot: 라인 위에 포개지게 */
-.timeline-dot {
+  }
+  
+  /* dot: 라인 위에 포개지게 */
+  .timeline-dot {
   --rail-center-x: 27px; /* timeline-rail의 --rail-center-x와 동일 */
   width: 30px;
   height: 30px;
@@ -149,19 +146,19 @@
   position: relative;
   left: var(--rail-center-x);
   transform: translateX(-50%); /* dot 중심이 라인 중심과 정확히 일치 */
-}
-
-/* 각 카드 아이템 */
-.timeline-item {
+  }
+  
+  /* 각 카드 아이템 */
+  .timeline-item {
   position: relative;
   width: 100%;
   display: flex;
   align-items: center;
   flex: 1;
-}
-
-/* song card button */
-.song-item {
+  }
+  
+  /* song card button */
+  .song-item {
   background: #2a2a2a;
   border: none;
   border-radius: 16px;
@@ -177,25 +174,25 @@
   width: 100%;
   box-sizing: border-box;
   color: #ffffff;
-}
-
-.song-item:hover {
+  }
+  
+  .song-item:hover {
   background: #333333;
-}
-
-.song-item.selected {
+  }
+  
+  .song-item.selected {
   background: #3a3a3a;
-}
-
-.song-item-content {
+  }
+  
+  .song-item-content {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
   flex: 1;
   min-width: 0;
-}
-
-.song-item-title {
+  }
+  
+  .song-item-title {
   font-size: 1.125rem;
   font-weight: 500;
   color: #ffffff;
@@ -203,28 +200,28 @@
   line-height: 1.5;
   margin: 0;
   font-family: 'Pretendard', sans-serif;
-}
-
-.song-item-artist {
+  }
+  
+  .song-item-artist {
   font-size: 1rem;
   color: rgba(255, 255, 255, 0.6);
   word-break: break-word;
   line-height: 1.5;
   margin: 0;
   font-family: 'Pretendard', sans-serif;
-}
-
-.song-item-arrow {
+  }
+  
+  .song-item-arrow {
   font-size: 1.5rem;
   color: rgba(255, 255, 255, 0.4);
   flex-shrink: 0;
   line-height: 1;
-}
-
-/* =========================
-   Modal
-   ========================= */
-.song-detail-modal {
+  }
+  
+  /* =========================
+    Modal
+    ========================= */
+  .song-detail-modal {
   position: fixed;
   top: 0;
   left: 0;
@@ -234,26 +231,24 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 99999 !important;
+  z-index: 10000;
   padding: 1rem;
   padding-bottom: calc(1rem + env(safe-area-inset-bottom));
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   animation: fadeIn 0.3s ease;
   box-sizing: border-box;
-  /* stacking context 문제 해결을 위한 transform 추가 */
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
-  will-change: transform;
-}
-
-.song-detail-content {
+  }
+  
+  .song-detail-content {
   background: #2a2a2a;
   border-radius: 16px;
   width: 95%;
   max-width: 600px;
-  height: calc(100% - 3rem - env(safe-area-inset-bottom, 0px));
-  max-height: calc(100% - 3rem - env(safe-area-inset-bottom, 0px));
+    height: calc(100% - 3rem);
+    max-height: calc(100% - 3rem);
+    height: calc(100% - 3rem - env(safe-area-inset-bottom, 0px));
+    max-height: calc(100% - 3rem - env(safe-area-inset-bottom, 0px));
   overflow: hidden;
   position: relative;
   animation: slideUp 0.3s ease;
@@ -263,9 +258,9 @@
   border: none;
   outline: none;
   box-shadow: none;
-}
-
-.song-image-container {
+  }
+  
+  .song-image-container {
   width: 100%;
   overflow: hidden;
   border-radius: 16px 16px 0 0;
@@ -274,18 +269,18 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-}
-
-.song-image {
+  }
+  
+  .song-image {
   width: 100%;
   height: auto;
   object-fit: contain;
   display: block;
   max-height: 50vh;
   flex-shrink: 0;
-}
-
-.song-detail-close {
+  }
+  
+  .song-detail-close {
   position: absolute;
   top: 0.75rem;
   right: 0.75rem;
@@ -303,15 +298,15 @@
   z-index: 10;
   transition: all 0.2s;
   flex-shrink: 0;
-}
-
-.song-detail-close:hover {
+  }
+  
+  .song-detail-close:hover {
   background: rgba(0, 0, 0, 0.2);
   transform: scale(1.1);
-}
-
-/* 곡 네비게이션 버튼 */
-.song-navigation {
+  }
+  
+  /* 곡 네비게이션 버튼 */
+  .song-navigation {
   position: absolute;
   top: calc(195px + 0.75rem + 0.5rem + 0.5rem);
   left: 0;
@@ -321,9 +316,9 @@
   padding: 0 0.5rem;
   pointer-events: none;
   z-index: 5;
-}
-
-.song-nav-button {
+  }
+  
+  .song-nav-button {
   width: 44px;
   height: 44px;
   border-radius: 50%;
@@ -340,55 +335,55 @@
   transition: all 0.2s;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   flex-shrink: 0;
-}
-
-.song-nav-button:hover:not(:disabled) {
+  }
+  
+  .song-nav-button:hover:not(:disabled) {
   background: #d88676;
   color: white;
   border-color: #d88676;
   transform: scale(1.1);
   box-shadow: 0 4px 12px rgba(216, 134, 118, 0.4);
-}
-
-.song-nav-button:disabled {
+  }
+  
+  .song-nav-button:disabled {
   opacity: 0.3;
   cursor: not-allowed;
   pointer-events: none;
-}
-
-.song-nav-prev {
+  }
+  
+  .song-nav-prev {
   margin-left: 0.5rem;
-}
-
-.song-nav-next {
+  }
+  
+  .song-nav-next {
   margin-right: 0.5rem;
-}
-
-/* 곡 정보 섹션 */
-.song-info-section {
+  }
+  
+  /* 곡 정보 섹션 */
+  .song-info-section {
   position: relative;
   background: #2a2a2a;
   padding: 1.5rem 1rem 0.75rem 1rem;
   border-radius: 0;
   box-sizing: border-box;
   flex-shrink: 0;
-}
-
-.song-info-content {
+  }
+  
+  .song-info-content {
   position: relative;
   width: 100%;
   text-align: center;
-}
-
-.song-info-header {
+  }
+  
+  .song-info-header {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
   margin-bottom: 0.5rem;
-}
-
-.song-part-button {
+  }
+  
+  .song-part-button {
   background: #ff4c4c;
   color: white;
   border: none;
@@ -399,16 +394,16 @@
   font-family: 'Pretendard', sans-serif;
   cursor: pointer;
   white-space: nowrap;
-}
-
-.song-number-display {
+  }
+  
+  .song-number-display {
   color: rgba(255, 255, 255, 0.6);
   font-size: 0.875rem;
   font-weight: 500;
   font-family: 'Pretendard', sans-serif;
-}
-
-.song-title {
+  }
+  
+  .song-title {
   font-size: clamp(1.1rem, 4.5vw, 1.5rem);
   font-weight: 700;
   color: #ffffff;
@@ -416,18 +411,18 @@
   word-break: break-word;
   line-height: 1.25;
   font-family: 'Pretendard', sans-serif;
-}
-
-.song-artist {
+  }
+  
+  .song-artist {
   font-size: clamp(0.85rem, 3.5vw, 1rem);
   color: rgba(255, 255, 255, 0.8);
   margin: 0;
   word-break: break-word;
   line-height: 1.25;
   font-family: 'Pretendard', sans-serif;
-}
-
-.song-nav-arrow {
+  }
+  
+  .song-nav-arrow {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
@@ -443,28 +438,28 @@
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
-}
-
-.song-nav-prev {
+  }
+  
+  .song-nav-prev {
   left: 0;
-}
-
-.song-nav-next {
+  }
+  
+  .song-nav-next {
   right: 0;
-}
-
-.song-nav-arrow:hover:not(:disabled) {
+  }
+  
+  .song-nav-arrow:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.2);
   color: rgba(255, 255, 255, 0.9);
-}
-
-.song-nav-arrow:disabled {
+  }
+  
+  .song-nav-arrow:disabled {
   opacity: 0.3;
   cursor: not-allowed;
-}
-
-/* 세션 정보 및 응원하기 스크롤 영역 */
-.song-detail-scrollable {
+  }
+  
+  /* 세션 정보 및 응원하기 스크롤 영역 */
+  .song-detail-scrollable {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -472,18 +467,18 @@
   -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
-}
-
-/* session info */
-.session-info {
+  }
+  
+  /* session info */
+  .session-info {
   padding: 0.5rem 1rem 1rem 1rem;
   background: #2a2a2a;
   box-sizing: border-box;
   flex-shrink: 0;
-}
-
-/* 응원하기 섹션 */
-.song-comments-section {
+  }
+  
+  /* 응원하기 섹션 */
+  .song-comments-section {
   padding: 1rem;
   background: #2a2a2a;
   box-sizing: border-box;
@@ -491,25 +486,25 @@
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-}
-
-.song-comments-header {
+  }
+  
+  .song-comments-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
   flex-shrink: 0;
-}
-
-.song-comments-title {
+  }
+  
+  .song-comments-title {
   font-size: clamp(0.9rem, 3.5vw, 1.1rem);
   font-weight: 600;
   color: #ffffff;
   margin: 0;
   font-family: 'Pretendard', sans-serif;
-}
-
-.song-comment-add-button {
+  }
+  
+  .song-comment-add-button {
   padding: 0.5rem 1rem;
   background: #FF4C4C;
   color: white;
@@ -520,28 +515,28 @@
   cursor: pointer;
   transition: all 0.2s;
   font-family: 'Pretendard', sans-serif;
-}
-
-.song-comment-add-button:hover {
+  }
+  
+  .song-comment-add-button:hover {
   background: #E63E3E;
   transform: translateY(-1px);
-}
-
-.song-comment-input-section {
+  }
+  
+  .song-comment-input-section {
   margin-bottom: 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   flex-shrink: 0;
-}
-
-.song-comment-buttons {
+  }
+  
+  .song-comment-buttons {
   display: flex;
   gap: 0.75rem;
   align-items: center;
-}
-
-.song-comment-input {
+  }
+  
+  .song-comment-input {
   width: 100%;
   padding: 0.75rem;
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -553,19 +548,19 @@
   resize: vertical;
   min-height: 80px;
   box-sizing: border-box;
-}
-
-.song-comment-input:focus {
+  }
+  
+  .song-comment-input:focus {
   outline: none;
   border-color: #FF4C4C;
   background: rgba(255, 255, 255, 0.08);
-}
-
-.song-comment-input::placeholder {
+  }
+  
+  .song-comment-input::placeholder {
   color: rgba(255, 255, 255, 0.5);
-}
-
-.song-comment-cancel-button {
+  }
+  
+  .song-comment-cancel-button {
   padding: 0.5rem 1rem;
   background: rgba(255, 255, 255, 0.1);
   color: white;
@@ -578,14 +573,14 @@
   font-family: 'Pretendard', sans-serif;
   flex: 0 0 auto;
   min-width: 80px;
-}
-
-.song-comment-cancel-button:hover {
+  }
+  
+  .song-comment-cancel-button:hover {
   background: rgba(255, 255, 255, 0.15);
   transform: translateY(-1px);
-}
-
-.song-comment-submit-button {
+  }
+  
+  .song-comment-submit-button {
   padding: 0.5rem 1.5rem;
   background: #FF4C4C;
   color: white;
@@ -598,83 +593,83 @@
   font-family: 'Pretendard', sans-serif;
   flex: 1;
   min-width: 100px;
-}
-
-.song-comment-submit-button:hover:not(:disabled) {
+  }
+  
+  .song-comment-submit-button:hover:not(:disabled) {
   background: #E63E3E;
   transform: translateY(-1px);
-}
-
-.song-comment-submit-button:disabled {
+  }
+  
+  .song-comment-submit-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-.song-comments-list {
+  }
+  
+  .song-comments-list {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-}
-
-.song-comments-empty {
+  }
+  
+  .song-comments-empty {
   text-align: center;
   color: rgba(255, 255, 255, 0.5);
   font-size: 0.875rem;
   padding: 1.5rem 0;
   font-family: 'Pretendard', sans-serif;
-}
-
-.song-comment-item {
+  }
+  
+  .song-comment-item {
   padding: 0.75rem;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.song-comment-header {
+  }
+  
+  .song-comment-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 0.5rem;
-}
-
-.song-comment-author {
+  }
+  
+  .song-comment-author {
   font-size: 0.875rem;
   font-weight: 600;
   color: #FF4C4C;
   font-family: 'Pretendard', sans-serif;
-}
-
-.song-comment-time {
+  }
+  
+  .song-comment-time {
   font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.5);
   font-family: 'Pretendard', sans-serif;
-}
-
-.song-comment-message {
+  }
+  
+  .song-comment-message {
   margin: 0;
   font-size: 0.9rem;
   color: #ffffff;
   line-height: 1.5;
   font-family: 'Pretendard', sans-serif;
   word-break: break-word;
-}
-
-.session-title {
+  }
+  
+  .session-title {
   font-size: clamp(0.9rem, 3.5vw, 1.1rem);
   font-weight: 600;
   color: #ffffff;
   margin: 0 0 0.5rem 0;
   font-family: 'Pretendard', sans-serif;
-}
-
-.session-list {
+  }
+  
+  .session-list {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 0.5rem;
-}
-
-.session-item {
+  }
+  
+  .session-item {
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -684,39 +679,39 @@
   background: rgba(255, 255, 255, 0.05);
   border-radius: 8px;
   box-sizing: border-box;
-}
-
-.session-label-wrapper {
+  }
+  
+  .session-label-wrapper {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   flex-shrink: 0;
-}
-
-.session-icon {
+  }
+  
+  .session-icon {
   width: 20px;
   height: 20px;
   object-fit: contain;
-}
-
-.session-label {
+  }
+  
+  .session-label {
   font-weight: 600;
   color: rgba(255, 255, 255, 0.9);
   font-size: clamp(0.75rem, 3vw, 0.85rem);
   line-height: 1.3;
   font-family: 'Pretendard', sans-serif;
-}
-
-.session-members {
+  }
+  
+  .session-members {
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
   flex: 1;
   justify-content: flex-end;
   max-width: 150px;
-}
-
-.session-chip {
+  }
+  
+  .session-chip {
   display: inline-block;
   padding: 0.25rem 0.5rem;
   background: rgba(255, 255, 255, 0.1);
@@ -727,10 +722,10 @@
   line-height: 1.3;
   white-space: nowrap;
   font-family: 'Pretendard', sans-serif;
-}
-
-/* empty state */
-.empty-state {
+  }
+  
+  /* empty state */
+  .empty-state {
   background: #2a2a2a;
   padding: 2rem;
   border-radius: 12px;
@@ -739,133 +734,135 @@
   color: rgba(255, 255, 255, 0.6);
   margin: 2rem auto;
   max-width: 500px;
-}
-
-.empty-state p {
+  }
+  
+  .empty-state p {
   margin-bottom: 0.5rem;
-}
-
-/* animations */
-@keyframes fadeIn {
+  }
+  
+  /* animations */
+  @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
-}
-
-@keyframes slideUp {
+  }
+  
+  @keyframes slideUp {
   from { opacity: 0; transform: translateY(30px); }
   to { opacity: 1; transform: translateY(0); }
-}
-
-/* =========================
-   Responsive
-   ========================= */
-@media (max-width: 768px) {
+  }
+  
+  /* =========================
+    Responsive
+    ========================= */
+  @media (max-width: 768px) {
   .performances-content {
-    padding-left: 0.75rem;
-    padding-right: 0.75rem;
-    padding-top: 0;
-    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+  padding-top: 0;
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
   }
-
+  
   .part-button {
-    font-size: 1.1rem;
-    padding: 0.875rem 2rem;
+  font-size: 1.1rem;
+  padding: 0.875rem 2rem;
   }
-
+  
   .timeline-rail-item,
   .timeline-item {
-    height: 84px;
+  height: 84px;
   }
-
+  
   .timeline-content {
-    gap: 4px;
+  gap: 4px;
   }
-
+  
   .timeline-dot {
-    width: 28px;
-    height: 28px;
-    font-size: 0.8rem;
+  width: 28px;
+  height: 28px;
+  font-size: 0.8rem;
   }
-
+  
   .song-item {
-    padding: 1.125rem 0.875rem;
+  padding: 1.125rem 0.875rem;
   }
-
+  
   .song-item-title { font-size: 1.05rem; }
   .song-item-artist { font-size: 0.95rem; }
   .song-item-arrow { font-size: 1.25rem; }
-
+  
   .song-detail-modal {
-    top: 0;
-    padding: 0;
-    padding-top: max(1rem, env(safe-area-inset-top));
-    padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
-    align-items: flex-end;
+  top: 0;
+  padding: 0;
+  padding-top: max(1rem, env(safe-area-inset-top));
+      padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+  align-items: flex-end;
   }
   
   .song-detail-content {
-    border-radius: 16px;
-    height: calc(100% - 3rem - env(safe-area-inset-bottom, 0px));
-    max-height: calc(100% - 3rem - env(safe-area-inset-bottom, 0px));
-    width: 95%;
-    max-width: 95%;
-    margin-bottom: 0;
+  border-radius: 16px;
+      height: calc(100% - 3rem);
+      max-height: calc(100% - 3rem);
+      height: calc(100% - 3rem - env(safe-area-inset-bottom, 0px));
+      max-height: calc(100% - 3rem - env(safe-area-inset-bottom, 0px));
+  width: 95%;
+  max-width: 95%;
+  margin-bottom: 0;
   }
-
+  
   .song-detail-close {
-    top: 0.5rem;
-    right: 0.5rem;
-    width: 28px;
-    height: 28px;
-    font-size: 1.1rem;
-    color: #3a3a3a;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 28px;
+  height: 28px;
+  font-size: 1.1rem;
+  color: #3a3a3a;
   }
-
+  
   .song-image-container { border-radius: 12px 12px 0 0; }
   .song-info { padding: 0.6rem 0.75rem; }
-
+  
   .session-info {
-    padding: 0.6rem 0.75rem;
-    padding-bottom: calc(0.6rem + env(safe-area-inset-bottom));
+  padding: 0.6rem 0.75rem;
+  padding-bottom: calc(0.6rem + env(safe-area-inset-bottom));
   }
-
+  
   .session-item { padding: 0.5rem 0.6rem; }
-
+  
   .session-chip {
-    padding: 0.2rem 0.45rem;
-    font-size: clamp(0.65rem, 2.5vw, 0.75rem);
+  padding: 0.2rem 0.45rem;
+  font-size: clamp(0.65rem, 2.5vw, 0.75rem);
   }
-}
-
-@media (max-width: 480px) {
+  }
+  
+  @media (max-width: 480px) {
   .part-button {
-    font-size: 1rem;
-    padding: 0.75rem 1.75rem;
+  font-size: 1rem;
+  padding: 0.75rem 1.75rem;
   }
-
+  
   .timeline-rail-item,
   .timeline-item {
-    height: 78px;
+  height: 78px;
   }
-
+  
   .timeline-dot {
-    width: 26px;
-    height: 26px;
-    font-size: 0.75rem;
+  width: 26px;
+  height: 26px;
+  font-size: 0.75rem;
   }
-
+  
   .song-item {
-    padding: 1rem 0.75rem;
+  padding: 1rem 0.75rem;
   }
-
+  
   .song-item-title { font-size: 1rem; }
   .song-item-artist { font-size: 0.9rem; }
   .song-item-arrow { font-size: 1.1rem; }
-
+  
   .session-item { padding: 0.45rem 0.5rem; }
-
+  
   .session-chip {
-    padding: 0.18rem 0.4rem;
-    font-size: clamp(0.6rem, 2.2vw, 0.7rem);
+  padding: 0.18rem 0.4rem;
+  font-size: clamp(0.6rem, 2.2vw, 0.7rem);
   }
-}
+  }
