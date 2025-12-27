@@ -694,13 +694,9 @@
   padding: 1.5rem;
   width: 100%;
   max-width: 400px;
-  max-height: calc(100vh - var(--header-height, 0) - 2rem);
-  max-height: calc(var(--app-height, 100dvh) - var(--header-height, 0) - 2rem);
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden;
   position: relative;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
+  box-sizing: border-box;
 }
 
 .modal-header {
@@ -716,7 +712,7 @@
   margin: 0;
 }
 
-.modal-close {
+.profile-modal .modal-close {
   background: none;
   border: none;
   font-size: 2rem;
@@ -730,6 +726,14 @@
   justify-content: center;
   line-height: 1;
   transition: color 0.2s;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.profile-modal .modal-close::before,
+.profile-modal .modal-close::after {
+  display: none !important;
+  content: none !important;
 }
 
 .modal-close:hover {
@@ -741,14 +745,21 @@
 }
 
 .profile-form {
-  padding: 1.5rem 0;
+  padding: 0.5rem 0;
+  overflow: hidden;
+}
+
+.profile-form .login-button {
+  margin-top: 0.75rem;
+  box-sizing: border-box;
 }
 
 .profile-description {
   text-align: center;
   color: #666;
-  margin-bottom: 1.5rem;
-  line-height: 1.6;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+  font-size: 0.9rem;
 }
 
 .profile-hint {
@@ -763,8 +774,8 @@
   margin-bottom: 0;
 }
 
-.form-group {
-  margin-bottom: 1.5rem;
+.profile-form .form-group {
+  margin-bottom: 1rem;
 }
 
 .form-group label {

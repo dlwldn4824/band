@@ -269,42 +269,40 @@ const Dashboard = () => {
         <div>
           <h1>안녕하세요, {isAdmin ? adminName : user?.name}님!</h1>
           <p>{isAdmin ? '운영진 대시보드' : '내 티켓과 이벤트 정보를 확인하세요'}</p>
-          {!isAdmin && (
-            <div className="nickname-section">
-              {user?.nickname ? (
-                <>
-                  <span className="nickname-label">채팅 닉네임:</span>
-                  <span className="nickname-value">{user.nickname}</span>
-                  <button 
-                    onClick={() => {
-                      setNicknameInput(user.nickname || '')
-                      setNicknameError('')
-                      setShowNicknameModal(true)
-                    }}
-                    className="edit-nickname-button"
-                  >
-                    수정
-                    <img src={editIcon} alt="수정" className="edit-icon" />
-                  </button>
-                </>
-              ) : (
-                <>
-                  <span className="nickname-label">채팅 닉네임이 설정되지 않았습니다</span>
-                  <button 
-                    onClick={() => {
-                      setNicknameInput('')
-                      setNicknameError('')
-                      setShowNicknameModal(true)
-                    }}
-                    className="edit-nickname-button"
-                  >
-                    닉네임 설정
-                    <img src={editIcon} alt="수정" className="edit-icon" />
-                  </button>
-                </>
-              )}
-            </div>
-          )}
+          <div className="nickname-section">
+            {user?.nickname ? (
+              <>
+                <span className="nickname-label">채팅 닉네임:</span>
+                <span className="nickname-value">{user.nickname}</span>
+                <button 
+                  onClick={() => {
+                    setNicknameInput(user.nickname || '')
+                    setNicknameError('')
+                    setShowNicknameModal(true)
+                  }}
+                  className="edit-nickname-button"
+                >
+                  수정
+                  <img src={editIcon} alt="수정" className="edit-icon" />
+                </button>
+              </>
+            ) : (
+              <>
+                <span className="nickname-label">채팅 닉네임이 설정되지 않았습니다</span>
+                <button 
+                  onClick={() => {
+                    setNicknameInput('')
+                    setNicknameError('')
+                    setShowNicknameModal(true)
+                  }}
+                  className="edit-nickname-button"
+                >
+                  닉네임 설정
+                  <img src={editIcon} alt="수정" className="edit-icon" />
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -541,9 +539,6 @@ const Dashboard = () => {
             </div>
             
             <div className="profile-form">
-              <p className="profile-description">
-                채팅에서 사용할 닉네임을 수정해주세요.
-              </p>
               
               <div className="form-group">
                 <label htmlFor="edit-nickname">닉네임</label>
