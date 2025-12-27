@@ -232,13 +232,14 @@
   color: #ffffff;
   padding: 1rem;
   border-radius: 10px;
-  font-size: 1.125rem;
+  font-size: 0.95rem;
   font-weight: 600;
+  line-height: 1.2;
   transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
-  margin-top: 0;
   border: none;
   cursor: pointer;
   min-height: 50px;
+  margin-top: 1.25rem;
   touch-action: manipulation;
   flex-shrink: 0;
   font-family: 'Pretendard', sans-serif;
@@ -289,11 +290,6 @@
   }
 
   .login-button {
-    padding: 0.6rem;
-    font-size: 1rem;
-  }
-
-  .walk-in-button {
     font-size: 1rem;
   }
 }
@@ -331,8 +327,8 @@
   color: #000000;
   padding: 1rem;
   border-radius: 10px;
-  font-size: 1.125rem;
   font-weight: 600;
+  line-height: 1.2;
   transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
   border: none;
   cursor: pointer;
@@ -765,4 +761,16 @@
 .login-switch-wrapper {
   margin-top: 0.75rem;
   text-align: center;
+}
+
+.walk-in-button{
+  font-size: 0.95rem;
+}
+
+/* 두 버튼의 폰트 크기/폰트/두께를 완전 동일하게 맞춤 */
+.login-button,
+.walk-in-button {
+  font-size: 0.95rem !important;
+  font-family: 'Pretendard', sans-serif !important;
+  font-weight: 600 !important;
 }
