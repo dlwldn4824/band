@@ -16,6 +16,10 @@ const Events = ({ events }: EventsProps) => {
   const navigate = useNavigate()
   const location = useLocation()
   
+  // 디버깅: events 배열 확인
+  console.log('[Events] events 배열:', events)
+  console.log('[Events] events 개수:', events?.length)
+  
   // 현재 경로가 admin인지 일반 사용자인지 확인
   const isAdminPage = location.pathname.startsWith('/admin')
   
@@ -54,7 +58,7 @@ const Events = ({ events }: EventsProps) => {
                   style={{ cursor: event.title.includes('부') ? 'pointer' : 'default' }}
                   onClick={() => handleEventClick(event.title)}
                 >
-                  {index + 1}
+                  {index}
                 </div>
               </div>
               <div className="timeline-item">

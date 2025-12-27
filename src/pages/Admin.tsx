@@ -97,6 +97,11 @@ const Admin = () => {
     // 하드코딩된 공연 정보 설정 (항상 events와 ticket은 하드코딩된 값으로 덮어쓰기)
     const defaultEvents = [
       {
+        title: '관객 입장',
+        description: '관객 입장 시간입니다.',
+        time: '18:30-19:00'
+      },
+      {
         title: '1부',
         description: '멜로딕의 2번째 단독공연이 시작됩니다.',
         time: '19:00-20:00'
@@ -116,22 +121,30 @@ const Admin = () => {
     }
 
     // events와 ticket만 업데이트하고, setlist와 performers는 기존 값 유지
-    // 이미 events와 ticket이 하드코딩된 값과 같으면 업데이트하지 않음
+    // events 배열의 길이가 3개가 아니거나 첫 번째 이벤트가 '관객 입장'이 아니면 항상 업데이트
+    console.log('[Admin] performanceData.events:', performanceData.events)
+    console.log('[Admin] events 개수:', performanceData.events?.length)
+    console.log('[Admin] 첫 번째 이벤트:', performanceData.events?.[0]?.title)
+    
     const needsUpdate = 
-      JSON.stringify(performanceData.events) !== JSON.stringify(defaultEvents) ||
-      JSON.stringify(performanceData.ticket) !== JSON.stringify(defaultTicket)
+      !performanceData.events || 
+      performanceData.events.length !== 3 ||
+      performanceData.events[0]?.title !== '관객 입장'
+
+    console.log('[Admin] needsUpdate:', needsUpdate)
 
     if (needsUpdate) {
-    const updatedPerformanceData: PerformanceData = {
-      ...performanceData,
-      events: defaultEvents,
-      ticket: defaultTicket,
+      console.log('[Admin] events 업데이트 실행')
+      const updatedPerformanceData: PerformanceData = {
+        ...performanceData,
+        events: defaultEvents,
+        ticket: defaultTicket,
         // 셋리스트와 공연진은 기존 값 유지 (절대 덮어쓰지 않음)
         setlist: performanceData.setlist || [],
         performers: performanceData.performers || []
-    }
+      }
 
-    setPerformanceData(updatedPerformanceData)
+      setPerformanceData(updatedPerformanceData)
     }
   }, [performanceData]) // performanceData가 변경될 때마다 확인
 
@@ -317,6 +330,11 @@ const Admin = () => {
 
       // 하드코딩된 기본 정보
       const defaultEvents = [
+        {
+          title: '관객 입장',
+          description: '관객 입장 시간입니다.',
+          time: '18:30-19:00'
+        },
         {
           title: '1부',
           description: '멜로딕의 2번째 단독공연이 시작됩니다.',

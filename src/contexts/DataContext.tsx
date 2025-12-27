@@ -143,12 +143,60 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         // 공연 데이터 로드
         const firestorePerformanceData = await getFirestoreData('performanceData' as any, 'main')
         if (firestorePerformanceData && !Array.isArray(firestorePerformanceData)) {
-          setPerformanceDataState(firestorePerformanceData as PerformanceData)
+          const loadedData = firestorePerformanceData as PerformanceData
+          // events 배열이 3개가 아니거나 첫 번째가 '관객 입장'이 아니면 업데이트
+          if (!loadedData.events || loadedData.events.length !== 3 || loadedData.events[0]?.title !== '관객 입장') {
+            const defaultEvents = [
+              {
+                title: '관객 입장',
+                description: '관객 입장 시간입니다.',
+                time: '18:30-19:00'
+              },
+              {
+                title: '1부',
+                description: '멜로딕의 2번째 단독공연이 시작됩니다.',
+                time: '19:00-20:00'
+              },
+              {
+                title: '2부',
+                description: '10분 휴식 시간 후 2부가 시작됩니다.',
+                time: '20:10-21:00'
+              }
+            ]
+            const updatedData = { ...loadedData, events: defaultEvents }
+            setPerformanceDataState(updatedData)
+            await setFirestoreData('performanceData' as any, updatedData, 'main').catch(err => {
+              console.warn('[DataContext] 공연 데이터 Firestore 업데이트 실패:', err)
+            })
+          } else {
+            setPerformanceDataState(loadedData)
+          }
         } else {
           const savedPerformanceData = localStorage.getItem('performanceData')
           if (savedPerformanceData) {
             try {
               const parsedData = JSON.parse(savedPerformanceData)
+              // events 배열이 3개가 아니거나 첫 번째가 '관객 입장'이 아니면 업데이트
+              if (!parsedData.events || parsedData.events.length !== 3 || parsedData.events[0]?.title !== '관객 입장') {
+                const defaultEvents = [
+                  {
+                    title: '관객 입장',
+                    description: '관객 입장 시간입니다.',
+                    time: '18:30-19:00'
+                  },
+                  {
+                    title: '1부',
+                    description: '멜로딕의 2번째 단독공연이 시작됩니다.',
+                    time: '19:00-20:00'
+                  },
+                  {
+                    title: '2부',
+                    description: '10분 휴식 시간 후 2부가 시작됩니다.',
+                    time: '20:10-21:00'
+                  }
+                ]
+                parsedData.events = defaultEvents
+              }
               setPerformanceDataState(parsedData)
               // Firestore에 동기화 (실패해도 계속 진행)
               await setFirestoreData('performanceData' as any, parsedData, 'main').catch(err => {
@@ -161,6 +209,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             // 기본 공연 데이터 설정 (events와 ticket 포함)
             const defaultPerformanceData: PerformanceData = {
               events: [
+                {
+                  title: '관객 입장',
+                  description: '관객 입장 시간입니다.',
+                  time: '18:30-19:00'
+                },
                 {
                   title: '1부',
                   description: '멜로딕의 2번째 단독공연이 시작됩니다.',
