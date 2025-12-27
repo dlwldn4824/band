@@ -242,6 +242,10 @@
   touch-action: manipulation;
   flex-shrink: 0;
   font-family: 'Pretendard', sans-serif;
+  line-height: 1.2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .login-button:hover {
@@ -286,6 +290,10 @@
 
   .login-button {
     padding: 0.6rem;
+    font-size: 1rem;
+  }
+
+  .walk-in-button {
     font-size: 1rem;
   }
 }
