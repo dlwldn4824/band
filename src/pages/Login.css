@@ -71,32 +71,44 @@
 
 .login-close-button {
   position: absolute;
-  top: -0.5rem;
+  top: -0.1rem;
   right: -0.5rem;
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 2.5rem;
-  line-height: 1;
   cursor: pointer;
   padding: 0;
-  width: 2rem;
-  height: 2rem;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.2s, transform 0.2s;
-  font-family: 'Pretendard', sans-serif;
+  transition: opacity 0.2s;
   z-index: 10;
+  font-size: 0;
 }
 
-.login-close-button:hover {
-  color: #ffffff;
-  transform: scale(1.1);
+.login-close-button::before,
+.login-close-button::after {
+  content: '';
+  position: absolute;
+  width: 2px;
+  height: 18px;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 1px;
+  transition: background-color 0.2s;
 }
 
-.login-close-button:active {
-  transform: scale(0.95);
+.login-close-button::before {
+  transform: rotate(45deg);
+}
+
+.login-close-button::after {
+  transform: rotate(-45deg);
+}
+
+.login-close-button:hover::before,
+.login-close-button:hover::after {
+  background-color: #ffffff;
 }
 
 .login-header h1 {
@@ -416,25 +428,43 @@
 .modal-close {
   background: none;
   border: none;
-  font-size: 2rem;
-  color: rgba(255, 255, 255, 0.8);
   cursor: pointer;
-  line-height: 1;
   padding: 0;
   width: 32px;
   height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.2s;
+  transition: opacity 0.2s;
   position: absolute;
   right: 0;
   top: 50%;
   transform: translateY(-50%);
+  font-size: 0;
 }
 
-.modal-close:hover {
-  color: #ffffff;
+.modal-close::before,
+.modal-close::after {
+  content: '';
+  position: absolute;
+  width: 2px;
+  height: 18px;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 1px;
+  transition: background-color 0.2s;
+}
+
+.modal-close::before {
+  transform: rotate(45deg);
+}
+
+.modal-close::after {
+  transform: rotate(-45deg);
+}
+
+.modal-close:hover::before,
+.modal-close:hover::after {
+  background-color: #ffffff;
 }
 
 .walk-in-payment-step {

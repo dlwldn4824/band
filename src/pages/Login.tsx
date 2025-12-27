@@ -393,7 +393,6 @@ const Login = () => {
                   setWalkInError('')
                 }}
               >
-                ×
               </button>
             </div>
 

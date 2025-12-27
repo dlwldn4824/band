@@ -87,7 +87,6 @@ const AdminLogin = () => {
             onClick={() => navigate('/login')}
             aria-label="닫기"
           >
-            ×
           </button>
           <h1>운영진 로그인</h1>
           <p className="login-subtitle">이름과 운영진 코드를 입력해 주세요.</p>
