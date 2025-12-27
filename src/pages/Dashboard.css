@@ -533,6 +533,7 @@
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  table-layout: auto;
 }
 
 .guest-list-table th {
@@ -550,6 +551,41 @@
   padding: 8px 6px;
   border-bottom: 1px solid #f0f0f0;
   font-size: 0.75rem;
+}
+
+.guest-list-table th:nth-child(1),
+.guest-list-table td:nth-child(1) {
+  min-width: 30px;
+  padding: 8px 6px;
+}
+
+.guest-list-table th:nth-child(2),
+.guest-list-table td:nth-child(2),
+.guest-list-table th:nth-child(3),
+.guest-list-table td:nth-child(3) {
+  min-width: 45px;
+  max-width: 60px;
+  padding: 8px 4px;
+  word-break: break-word;
+  line-height: 1.3;
+}
+
+/* 번호(1), 예매 유형(5) 제외한 모든 컬럼 가운데 정렬 */
+.guest-list-table th:nth-child(2),
+.guest-list-table td:nth-child(2),
+.guest-list-table th:nth-child(3),
+.guest-list-table td:nth-child(3),
+.guest-list-table th:nth-child(4),
+.guest-list-table td:nth-child(4),
+.guest-list-table th:nth-child(6),
+.guest-list-table td:nth-child(6),
+.guest-list-table th:nth-child(7),
+.guest-list-table td:nth-child(7),
+.guest-list-table th:nth-child(8),
+.guest-list-table td:nth-child(8),
+.guest-list-table th:nth-child(9),
+.guest-list-table td:nth-child(9) {
+  text-align: center;
 }
 
 .guest-list-table tr:hover {

@@ -5,7 +5,7 @@ import { useData } from '../contexts/DataContext'
 import Events from '../components/Events'
 import QRScanner from '../components/QRScanner'
 import ticketImage from '../assets/배경/티켓_최종.png'
-import editIcon from '../assets/배경/수정아이콘.png'
+import editIcon from '../assets/배경/수정_아이콘.png'
 import { formatPhoneDisplay } from '../utils/phoneFormat'
 import { collection, getDocs } from 'firebase/firestore'
 import { db } from '../config/firebase'
@@ -24,6 +24,7 @@ const Dashboard = () => {
   const [checkInNotification, setCheckInNotification] = useState<{ name: string; timestamp: number } | null>(null)
   const [showGuestList, setShowGuestList] = useState(false)
   const [userNicknames, setUserNicknames] = useState<Record<string, string>>({}) // userId -> nickname 매핑
+  const [sortBy, setSortBy] = useState<'entryNumber' | 'name' | null>(null)
   const notificationTimerRef = useRef<NodeJS.Timeout | null>(null)
   const navigate = useNavigate()
   const location = useLocation()
@@ -412,47 +413,76 @@ const Dashboard = () => {
               </div>
               <div className="guest-list-modal-content">
                 {guests.length > 0 ? (
-                  <div className="guest-list-table">
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>번호</th>
-                          <th>이름</th>
-                          <th>닉네임</th>
-                          <th>전화번호</th>
-                          <th>예매 유형</th>
-                          <th>입금 확인</th>
-                          <th>입장 여부</th>
-                          <th>입장 번호</th>
-                          <th>체크인 시간</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {/* 운영진 정보 표시 (관리자일 때만) */}
-                        {isAdmin && adminName && (() => {
-                          const adminUserId = `${adminName}_admin`
-                          const adminNickname = userNicknames[adminUserId] || '-'
-                          return (
-                            <tr key="admin" style={{ backgroundColor: '#1a1a1a' }}>
-                              <td>운영진</td>
-                              <td>{adminName}</td>
-                              <td>{adminNickname}</td>
-                              <td>-</td>
-                              <td>
-                                <span className="pre-booking-badge">운영진</span>
-                              </td>
-                              <td>
-                                <span className="not-applicable">-</span>
-                              </td>
-                              <td>
-                                <span className="checked-in">입장 완료</span>
-                              </td>
-                              <td>-</td>
-                              <td>-</td>
-                            </tr>
-                          )
-                        })()}
-                        {guests.map((guest, index) => {
+                  <>
+                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', justifyContent: 'flex-end' }}>
+                      <button
+                        onClick={() => setSortBy(sortBy === 'entryNumber' ? null : 'entryNumber')}
+                        style={{
+                          padding: '0.375rem 0.75rem',
+                          background: sortBy === 'entryNumber' ? '#FF4C4C' : '#f5f5f5',
+                          color: sortBy === 'entryNumber' ? '#ffffff' : '#333',
+                          border: '1px solid #ddd',
+                          borderRadius: '6px',
+                          fontSize: '0.75rem',
+                          cursor: 'pointer',
+                          fontWeight: sortBy === 'entryNumber' ? '600' : '400'
+                        }}
+                      >
+                        입장 번호 순
+                      </button>
+                      <button
+                        onClick={() => setSortBy(sortBy === 'name' ? null : 'name')}
+                        style={{
+                          padding: '0.375rem 0.75rem',
+                          background: sortBy === 'name' ? '#FF4C4C' : '#f5f5f5',
+                          color: sortBy === 'name' ? '#ffffff' : '#333',
+                          border: '1px solid #ddd',
+                          borderRadius: '6px',
+                          fontSize: '0.75rem',
+                          cursor: 'pointer',
+                          fontWeight: sortBy === 'name' ? '600' : '400'
+                        }}
+                      >
+                        이름 순
+                      </button>
+                    </div>
+                    <div className="guest-list-table">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>번호</th>
+                            <th>이름</th>
+                            <th>닉네임</th>
+                            <th>전화번호</th>
+                            <th>예매 유형</th>
+                            <th>입금 확인</th>
+                            <th>입장 여부</th>
+                            <th>입장 번호</th>
+                            <th>체크인 시간</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(() => {
+                            let sortedGuests = [...guests]
+                            
+                            if (sortBy === 'entryNumber') {
+                              sortedGuests.sort((a, b) => {
+                                // 입장 번호가 있는 게스트를 먼저
+                                if (a.entryNumber && !b.entryNumber) return -1
+                                if (!a.entryNumber && b.entryNumber) return 1
+                                if (!a.entryNumber && !b.entryNumber) return 0
+                                // 입장 번호 순서대로 정렬
+                                return (a.entryNumber || 0) - (b.entryNumber || 0)
+                              })
+                            } else if (sortBy === 'name') {
+                              sortedGuests.sort((a, b) => {
+                                const nameA = (a.name || a['이름'] || a.Name || '').trim()
+                                const nameB = (b.name || b['이름'] || b.Name || '').trim()
+                                return nameA.localeCompare(nameB, 'ko')
+                              })
+                            }
+                            
+                            return sortedGuests.map((guest, index) => {
                           const guestName = guest.name || guest['이름'] || guest.Name || ''
                           const guestPhoneRaw = guest.phone || guest['전화번호'] || guest.Phone || ''
                           const guestPhone = formatPhoneDisplay(guestPhoneRaw)
@@ -500,11 +530,37 @@ const Dashboard = () => {
                                 }
                               </td>
                             </tr>
-                          )
-                        })}
+                            )
+                          })
+                        })()}
+                          {/* 운영진 정보 표시 (관리자일 때만, 항상 맨 아래) */}
+                          {isAdmin && adminName && (() => {
+                            const adminUserId = `${adminName}_admin`
+                            const adminNickname = userNicknames[adminUserId] || '-'
+                            return (
+                              <tr key="admin" style={{ backgroundColor: '#1a1a1a' }}>
+                                <td style={{ color: '#ffffff' }}>운영</td>
+                                <td style={{ color: '#ffffff' }}>{adminName}</td>
+                                <td style={{ color: '#ffffff' }}>{adminNickname}</td>
+                                <td>-</td>
+                                <td>
+                                  <span className="pre-booking-badge">운영진</span>
+                                </td>
+                                <td>
+                                  <span className="not-applicable">-</span>
+                                </td>
+                                <td>
+                                  <span className="checked-in">입장 완료</span>
+                                </td>
+                                <td>-</td>
+                                <td>-</td>
+                              </tr>
+                            )
+                          })()}
                       </tbody>
                     </table>
                   </div>
+                  </>
                 ) : (
                   <p style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
                     등록된 게스트가 없습니다.

@@ -602,6 +602,12 @@
   font-size: 0.9rem;
 }
 
+.guest-list-table th:nth-child(2),
+.guest-list-table td:nth-child(2) {
+  min-width: 60px;
+  white-space: nowrap;
+}
+
 .guest-list-table tr:hover {
   background: #f9f9f9;
 }
