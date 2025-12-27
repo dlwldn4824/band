@@ -14,9 +14,7 @@ import {
   serverTimestamp,
   doc,
   setDoc,
-  deleteDoc,
-  getDoc,
-  getDocs
+  deleteDoc
 } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import './Chat.css'
