@@ -36,7 +36,7 @@ const Admin = () => {
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null)
   const [showCheckInCodeEdit, setShowCheckInCodeEdit] = useState(false)
   const [checkInCodeInput, setCheckInCodeInput] = useState('')
-  const { uploadGuests, setPerformanceData, guests, performanceData, checkInCode, generateCheckInCode, setCheckInCode, clearGuests, clearSetlist, bookingInfo, setBookingInfo, clearChatMessages, toggleGuestPayment } = useData()
+  const { uploadGuests, setPerformanceData, guests, performanceData, checkInCode, setCheckInCode, clearGuests, clearSetlist, bookingInfo, setBookingInfo, clearChatMessages, toggleGuestPayment } = useData()
   
   // 예매 정보 폼 상태
   const [bookingForm, setBookingForm] = useState<BookingInfo>({
@@ -441,13 +441,18 @@ const Admin = () => {
     }
 
     const performerName = performanceData.performers[index]
+    const currentPerformers = performanceData.performers
     
     requirePassword(() => {
+      if (!performanceData || !performanceData.performers) {
+        return
+      }
+      
       if (!window.confirm(`"${performerName}" 공연진을 삭제하시겠습니까?`)) {
         return
       }
 
-      const updatedPerformers = performanceData.performers.filter((_, i) => i !== index)
+      const updatedPerformers = currentPerformers.filter((_, i) => i !== index)
       const updatedPerformanceData: PerformanceData = {
         ...performanceData,
         performers: updatedPerformers
