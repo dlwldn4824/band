@@ -312,7 +312,7 @@ const Login = () => {
         <div className="login-container">
           <div className="login-header">
             <h1>사전 예약자 체크인</h1>
-            <p>이름과 전화번호를 입력해주세요</p>
+            <p>이름과 전화번호를 입력해 주세요.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="login-form">
@@ -362,7 +362,7 @@ const Login = () => {
 
             <div className="admin-login-link">
               <Link to="/admin/login" className="admin-login-text">
-                운영진 로그인 가기
+                운영자 로그인 &gt;
               </Link>
             </div>
           </form>

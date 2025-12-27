@@ -138,6 +138,13 @@ const CheckIn = () => {
     <div className="checkin-page">
       <div className="checkin-container">
         <div className="checkin-header">
+          <button 
+            className="checkin-close-button"
+            onClick={() => navigate(-1)}
+            aria-label="닫기"
+          >
+            ×
+          </button>
           <h1>현장 체크인 하기</h1>
         </div>
 
