@@ -82,8 +82,15 @@ const AdminLogin = () => {
     <div className="login-page">
       <div className="login-container">
         <div className="login-header">
+          <button 
+            className="login-close-button"
+            onClick={() => navigate('/login')}
+            aria-label="닫기"
+          >
+            ×
+          </button>
           <h1>운영진 로그인</h1>
-          <p className="login-subtitle">이름과 운영진 코드를 입력해주세요</p>
+          <p className="login-subtitle">이름과 운영진 코드를 입력해 주세요.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="login-form">
@@ -102,15 +109,14 @@ const AdminLogin = () => {
             />
           </div>
 
-          <div className="input-group">
+          <div className="form-group">
             <label htmlFor="admin-password">운영진 코드</label>
             <input
               id="admin-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="운영진 코드 입력"
-              className="login-input"
+              placeholder="운영진 코드를 입력해 주세요"
               autoComplete="off"
             />
           </div>
@@ -120,18 +126,6 @@ const AdminLogin = () => {
           </button>
         </form>
 
-        <div className="login-switch-wrapper">
-          <div className="divider">
-          </div>
-
-          <button
-            type="button"
-            className="admin-login-text"
-            onClick={()=> navigate('/login')}
-          >
-            뒤로가기
-          </button>
-        </div>
       </div>
     </div>
   )

@@ -6,7 +6,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import TicketTransition from '../components/TicketTransition'
 import ticketImage from '../assets/배경/티켓_최종.png'
-import { validatePhoneNumber } from '../utils/phoneFormat'
+import { validatePhoneNumber, formatPhoneDisplay } from '../utils/phoneFormat'
 import './Login.css'
 
 const Login = () => {
@@ -404,55 +404,59 @@ const Login = () => {
                   <div className="payment-details">
                     <div className="payment-item">
                       <span className="payment-label">입금 계좌:</span>
-                      <span className="payment-value">
-                        {bookingInfo?.accountName || '(미설정)'}{' '}
-                        {bookingInfo?.bankName && (
-                          <span className="bank-name">{bookingInfo.bankName}</span>
-                        )}{' '}
+                      <div className="payment-value">
+                        <div className="account-name-bank">
+                          {bookingInfo?.accountName || '(미설정)'}{' '}
+                          {bookingInfo?.bankName && (
+                            <span className="bank-name">{bookingInfo.bankName}</span>
+                          )}
+                        </div>
                         {bookingInfo?.accountNumber && (
-                          <span 
-                            className="account-number"
-                            onClick={async () => {
-                              try {
-                                await navigator.clipboard.writeText(bookingInfo.accountNumber)
-                                alert('계좌번호가 복사되었습니다!')
-                              } catch (err) {
-                                // 클립보드 API 실패 시 fallback
-                                const textArea = document.createElement('textarea')
-                                textArea.value = bookingInfo.accountNumber
-                                textArea.style.position = 'fixed'
-                                textArea.style.opacity = '0'
-                                document.body.appendChild(textArea)
-                                textArea.select()
+                          <div>
+                            <span 
+                              className="account-number"
+                              onClick={async () => {
                                 try {
-                                  document.execCommand('copy')
+                                  await navigator.clipboard.writeText(bookingInfo.accountNumber)
                                   alert('계좌번호가 복사되었습니다!')
-                                } catch (e) {
-                                  alert('계좌번호 복사에 실패했습니다.')
+                                } catch (err) {
+                                  // 클립보드 API 실패 시 fallback
+                                  const textArea = document.createElement('textarea')
+                                  textArea.value = bookingInfo.accountNumber
+                                  textArea.style.position = 'fixed'
+                                  textArea.style.opacity = '0'
+                                  document.body.appendChild(textArea)
+                                  textArea.select()
+                                  try {
+                                    document.execCommand('copy')
+                                    alert('계좌번호가 복사되었습니다!')
+                                  } catch (e) {
+                                    alert('계좌번호 복사에 실패했습니다.')
+                                  }
+                                  document.body.removeChild(textArea)
                                 }
-                                document.body.removeChild(textArea)
-                              }
-                            }}
-                            title="클릭하여 복사"
-                          >
-                            {bookingInfo.accountNumber}
-                          </span>
+                              }}
+                              title="클릭하여 복사"
+                            >
+                              {bookingInfo.accountNumber}
+                            </span>
+                          </div>
                         )}
-                      </span>
+                      </div>
                     </div>
                     <p className="copy-hint">계좌번호를 클릭하면 복사됩니다</p>
                     <div className="payment-item">
                       <span className="payment-label">현장 예매 가격:</span>
                       <span className="payment-value">{bookingInfo?.walkInPrice || '(미설정)'}</span>
                     </div>
-                    <div className="payment-item">
-                      <span className="payment-label">환불 정책:</span>
-                      <span className="payment-value">{bookingInfo?.refundPolicy || '(미설정)'}</span>
+                    <div className="refund-notice">
+                      <div className="refund-notice-icon">!</div>
+                      <span className="refund-notice-text">환불은 불가합니다.</span>
                     </div>
                     {bookingInfo?.contactPhone && (
                       <div className="payment-item">
                         <span className="payment-label">문의 전화:</span>
-                        <span className="payment-value">{bookingInfo.contactPhone}</span>
+                        <span className="payment-value">{formatPhoneDisplay(bookingInfo.contactPhone)}</span>
                       </div>
                     )}
                   </div>
@@ -466,7 +470,7 @@ const Login = () => {
                       onChange={(e) => setPaymentConfirmed(e.target.checked)}
                       className="payment-checkbox"
                     />
-                    <span>입금을 완료했습니다.</span>
+                    <span>입금을 완료하셨다면 체크해 주세요.</span>
                   </label>
                 </div>
 
