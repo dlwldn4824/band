@@ -225,8 +225,9 @@
 .online-users-content {
   padding: 0.75rem 1.5rem;
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
 .online-user-item {
@@ -316,7 +317,7 @@
 }
 
 .message.own-message .message-content {
-  background: #e42600;
+  background: #EE6C63;
   color: white;
   border-radius: 18px 18px 4px 18px;
 }
@@ -403,7 +404,7 @@
 }
 
 .message.own-message .message-content {
-  background: #D88676;
+  background: #EE6C63;
   color: white;
 }
 

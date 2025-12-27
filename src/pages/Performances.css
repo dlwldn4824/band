@@ -234,7 +234,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10000;
+  z-index: 10001 !important;
   padding: 1rem;
   padding-bottom: calc(1rem + env(safe-area-inset-bottom));
   overflow-y: auto;
