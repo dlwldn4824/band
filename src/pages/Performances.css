@@ -234,13 +234,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10001 !important;
+  z-index: 99999 !important;
   padding: 1rem;
   padding-bottom: calc(1rem + env(safe-area-inset-bottom));
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   animation: fadeIn 0.3s ease;
   box-sizing: border-box;
+  /* stacking context 문제 해결을 위한 transform 추가 */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 .song-detail-content {
