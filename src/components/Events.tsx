@@ -23,7 +23,12 @@ const Events = ({ events }: EventsProps) => {
   // 현재 경로가 admin인지 일반 사용자인지 확인
   const isAdminPage = location.pathname.startsWith('/admin')
   
-  const handleEventClick = (eventTitle: string) => {
+  const handleEventClick = (eventTitle: string, index: number) => {
+    // 0번 dot이거나 "관객 입장"인 경우 클릭 불가
+    if (index === 0 || eventTitle.includes('관객 입장')) {
+      return
+    }
+    
     // 1부 또는 2부인지 확인
     if (eventTitle.includes('1부')) {
       const path = isAdminPage ? '/admin/performances' : '/performances'
@@ -50,39 +55,45 @@ const Events = ({ events }: EventsProps) => {
             <div className="timeline-line"></div>
           </div>
           
-          {events.map((event, index) => (
-            <div key={index} className="timeline-row">
-              <div className="timeline-rail-item">
-                <div 
-                  className="timeline-dot"
-                  style={{ cursor: event.title.includes('부') ? 'pointer' : 'default' }}
-                  onClick={() => handleEventClick(event.title)}
-                >
-                  {index}
+          {events.map((event, index) => {
+            // 0번 dot이거나 "관객 입장"인 경우 클릭 불가 및 hover 효과 제거
+            const isGuestEntry = index === 0 || event.title.includes('관객 입장')
+            const isClickable = !isGuestEntry && event.title.includes('부')
+            
+            return (
+              <div key={index} className="timeline-row">
+                <div className="timeline-rail-item">
+                  <div 
+                    className={`timeline-dot ${isGuestEntry ? 'no-hover' : ''}`}
+                    style={{ cursor: isClickable ? 'pointer' : 'default' }}
+                    onClick={() => isClickable && handleEventClick(event.title, index)}
+                  >
+                    {index}
+                  </div>
                 </div>
-              </div>
-              <div className="timeline-item">
-                <div 
-                  className="timeline-content"
-                  style={{ cursor: event.title.includes('부') ? 'pointer' : 'default' }}
-                  onClick={() => handleEventClick(event.title)}
-                >
-                  <div className="event-header">
-                    <h3 className="event-title">{event.title}</h3>
-                    {event.time && (
-                      <div className="event-time-box">
-                        <img src={clockIcon} alt="시계" className="event-time-icon" />
-                        <span className="event-time">{event.time}</span>
-                      </div>
+                <div className="timeline-item">
+                  <div 
+                    className={`timeline-content ${isGuestEntry ? 'no-hover' : ''}`}
+                    style={{ cursor: isClickable ? 'pointer' : 'default' }}
+                    onClick={() => isClickable && handleEventClick(event.title, index)}
+                  >
+                    <div className="event-header">
+                      <h3 className="event-title">{event.title}</h3>
+                      {event.time && (
+                        <div className="event-time-box">
+                          <img src={clockIcon} alt="시계" className="event-time-icon" />
+                          <span className="event-time">{event.time}</span>
+                        </div>
+                      )}
+                    </div>
+                    {event.description && (
+                      <p className="event-description">{event.description}</p>
                     )}
                   </div>
-                  {event.description && (
-                    <p className="event-description">{event.description}</p>
-                  )}
                 </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
         <p className="timeline-footer-text" onClick={handleSetlistClick}>
           타임라인의 텍스트를 클릭하면 공연정보에서 셋리스트를 확인할 수 있습니다

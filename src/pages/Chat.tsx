@@ -70,12 +70,10 @@ const Chat = () => {
       }
     }
   }, [])
-  const [userNicknameCache, setUserNicknameCache] = useState<Record<string, string>>({}) // userId -> 최신 닉네임 캐시
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const onlineUserRef = useRef<string | null>(null)
   const previousOnlineUserIdsRef = useRef<Set<string>>(new Set())
-  const enteredUserIdsRef = useRef<Set<string>>(new Set()) // 한 번 입장 메시지를 보낸 사용자 추적
 
   // location이 변경될 때마다 리렌더링 트리거
   useEffect(() => {
@@ -161,79 +159,7 @@ const Chat = () => {
               lastSeen: data.lastSeen
             })
 
-            // 새로운 사용자가 입장한 경우 (이전 목록에 없고, 현재 사용자가 아니고, 아직 입장 메시지를 보내지 않은 경우)
-            if (
-              !previousOnlineUserIdsRef.current.has(userId) &&
-              !enteredUserIdsRef.current.has(userId) &&
-              userId !== onlineUserRef.current &&
-              user // 현재 사용자가 로그인한 상태
-            ) {
-              // 입장 메시지를 보낸 사용자로 표시 (중복 방지)
-              enteredUserIdsRef.current.add(userId)
-              
-              // userProfiles에서 최신 닉네임 조회 및 중복 체크 (비동기)
-              const getUserNameAndCheckDuplicate = async () => {
-                try {
-                  // chat 컬렉션에서 해당 userId의 입장 메시지가 이미 있는지 확인
-                  // userId는 "이름_전화번호" 형식이므로, userProfiles에서 실제 닉네임/이름을 먼저 가져와서 비교
-                  const userProfileRef = doc(db, 'userProfiles', userId)
-                  const userProfileSnap = await getDoc(userProfileRef)
-                  
-                  let finalUserName = userName
-                  if (userProfileSnap.exists()) {
-                    const profileData = userProfileSnap.data() as { nickname?: string; name?: string }
-                    // userProfiles에 닉네임이 있으면 우선 사용
-                    if (profileData.nickname && profileData.nickname.trim() !== '') {
-                      finalUserName = profileData.nickname
-                    } else if (profileData.name && profileData.name.trim() !== '') {
-                      finalUserName = profileData.name
-                    }
-                  }
-                  
-                  // chat 컬렉션에서 이 사용자의 입장 메시지가 이미 있는지 확인
-                  const allMessagesQuery = query(
-                    collection(db, 'chat'),
-                    orderBy('timestamp', 'desc')
-                  )
-                  const allMessagesSnap = await getDocs(allMessagesQuery)
-                  
-                  // 해당 사용자의 입장 메시지가 이미 있는지 확인
-                  let hasEntryMessage = false
-                  allMessagesSnap.forEach((messageDoc) => {
-                    const msgData = messageDoc.data() as { type?: string; message?: string; user?: string }
-                    if (
-                      msgData.type === 'system' && 
-                      msgData.message && 
-                      msgData.message.includes('님이 입장했습니다.') &&
-                      msgData.user === finalUserName
-                    ) {
-                      hasEntryMessage = true
-                    }
-                  })
-                  
-                  // 이미 입장 메시지가 있으면 중복이므로 메시지를 보내지 않음
-                  if (hasEntryMessage) {
-                    console.log(`[Chat] ${userId}(${finalUserName})의 입장 메시지가 이미 존재하여 중복 방지`)
-                    return
-                  }
-                  
-                  // 입장 메시지를 Firestore에 저장 (userId 포함)
-                  await addDoc(collection(db, 'chat'), {
-                    user: finalUserName,
-                    message: `${finalUserName}님이 입장했습니다.`,
-                    timestamp: serverTimestamp(),
-                    type: 'system',
-                    userId: userId // userId 저장하여 나중에 닉네임 업데이트 가능하도록
-                  })
-                } catch (error) {
-                  console.error('입장 메시지 전송 오류:', error)
-                  // 실패 시 Set에서 제거하여 재시도 가능하게 함
-                  enteredUserIdsRef.current.delete(userId)
-                }
-              }
-              
-              getUserNameAndCheckDuplicate()
-            }
+            // 입장 메시지 기능 제거됨
           }
         })
         
@@ -267,50 +193,6 @@ const Chat = () => {
         })
         // 시간순으로 정렬 (오래된 것부터)
         const sortedMessages = newMessages.reverse()
-        
-        // 입장 메시지의 최신 닉네임 업데이트
-        const updatedNicknameCache: Record<string, string> = { ...userNicknameCache }
-        const entryMessages = sortedMessages.filter(msg => msg.type === 'system' && msg.message?.includes('님이 입장했습니다.'))
-        
-        // 각 입장 메시지의 사용자에 대해 최신 닉네임 조회
-        const nicknamePromises = entryMessages.map(async (msg) => {
-          // userId가 있으면 userId로 조회, 없으면 이름으로 조회 (기존 메시지 호환)
-          const targetUserId = msg.userId || msg.user
-          if (!targetUserId) return
-          
-          try {
-            // userId로 직접 조회 (가장 정확)
-            if (msg.userId) {
-              const userProfileRef = doc(db, 'userProfiles', msg.userId)
-              const userProfileSnap = await getDoc(userProfileRef)
-              
-              if (userProfileSnap.exists()) {
-                const profileData = userProfileSnap.data() as { nickname?: string; name?: string }
-                const latestNickname = profileData.nickname || profileData.name || msg.user
-                updatedNicknameCache[msg.userId] = latestNickname
-                updatedNicknameCache[msg.user] = latestNickname // 이름으로도 캐시 (기존 호환)
-              }
-            } else {
-              // userId가 없는 기존 메시지의 경우 이름으로 찾기
-              const userProfilesRef = collection(db, 'userProfiles')
-              const profilesSnapshot = await getDocs(userProfilesRef)
-              
-              profilesSnapshot.forEach((profileDoc) => {
-                const profileData = profileDoc.data() as { nickname?: string; name?: string }
-                // 저장된 이름과 일치하는 경우
-                if (profileData.name === msg.user || profileData.nickname === msg.user) {
-                  const latestNickname = profileData.nickname || profileData.name || msg.user
-                  updatedNicknameCache[msg.user] = latestNickname
-                }
-              })
-            }
-          } catch (error) {
-            console.error('닉네임 조회 오류:', error)
-          }
-        })
-        
-        await Promise.all(nicknamePromises)
-        setUserNicknameCache(updatedNicknameCache)
         setMessages(sortedMessages)
       },
       (error) => {
@@ -321,6 +203,9 @@ const Chat = () => {
 
     // 정리 함수
     return () => {
+      // 컴포넌트 언마운트 시 스크롤 위치 저장
+      saveScrollPosition()
+      
       if (unsubscribeOnlineUsers) {
         unsubscribeOnlineUsers()
       }
@@ -340,12 +225,107 @@ const Chat = () => {
     return el.scrollHeight - el.scrollTop - el.clientHeight < threshold
   }
 
-  // 초기 로드 시 맨 위로 스크롤
+  // 스크롤 위치 저장
+  const saveScrollPosition = () => {
+    const el = messagesContainerRef.current
+    if (!el) return
+    
+    const scrollTop = el.scrollTop
+    const scrollHeight = el.scrollHeight
+    const clientHeight = el.clientHeight
+    
+    // 스크롤 위치를 localStorage에 저장
+    localStorage.setItem('chatScrollPosition', JSON.stringify({
+      scrollTop,
+      scrollHeight,
+      clientHeight,
+      timestamp: Date.now()
+    }))
+  }
+
+  // 저장된 스크롤 위치 복원
+  const restoreScrollPosition = () => {
+    const el = messagesContainerRef.current
+    if (!el) return
+    
+    try {
+      const saved = localStorage.getItem('chatScrollPosition')
+      if (!saved) return
+      
+      const { scrollTop, scrollHeight: savedScrollHeight, timestamp } = JSON.parse(saved)
+      
+      // 1시간 이내의 저장된 위치만 사용
+      if (Date.now() - timestamp > 3600000) {
+        localStorage.removeItem('chatScrollPosition')
+        return
+      }
+      
+      // 메시지가 로드될 때까지 대기
+      const checkAndRestore = () => {
+        if (el.scrollHeight > 0) {
+          // 저장된 위치가 현재 스크롤 높이보다 작거나 같으면 복원
+          if (savedScrollHeight <= el.scrollHeight) {
+            el.scrollTop = scrollTop
+          } else {
+            // 스크롤 높이가 달라진 경우 비율로 계산
+            const ratio = scrollTop / savedScrollHeight
+            el.scrollTop = el.scrollHeight * ratio
+          }
+        } else {
+          // 아직 메시지가 로드되지 않았으면 잠시 후 다시 시도
+          setTimeout(checkAndRestore, 100)
+        }
+      }
+      
+      checkAndRestore()
+    } catch (error) {
+      console.error('스크롤 위치 복원 오류:', error)
+    }
+  }
+
+  // 스크롤 이벤트 리스너 등록
   useEffect(() => {
-    if (messagesContainerRef.current) {
-      messagesContainerRef.current.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior })
+    const el = messagesContainerRef.current
+    if (!el) return
+
+    let scrollTimeout: NodeJS.Timeout
+    const handleScroll = () => {
+      // 스크롤이 멈춘 후에만 저장 (성능 최적화)
+      clearTimeout(scrollTimeout)
+      scrollTimeout = setTimeout(() => {
+        saveScrollPosition()
+      }, 500)
+    }
+
+    el.addEventListener('scroll', handleScroll)
+    
+    return () => {
+      el.removeEventListener('scroll', handleScroll)
+      clearTimeout(scrollTimeout)
     }
   }, [])
+
+  // 메시지 로드 후 저장된 위치로 복원 (또는 맨 아래로)
+  useEffect(() => {
+    if (messages.length > 0) {
+      // 메시지가 로드된 후 약간의 지연을 두고 복원 (DOM 업데이트 대기)
+      const timer = setTimeout(() => {
+        const el = messagesContainerRef.current
+        if (!el) return
+        
+        const saved = localStorage.getItem('chatScrollPosition')
+        if (saved) {
+          // 저장된 위치가 있으면 복원
+          restoreScrollPosition()
+        } else {
+          // 저장된 위치가 없으면 맨 아래로 스크롤 (첫 방문)
+          el.scrollTo({ top: el.scrollHeight, behavior: 'instant' as ScrollBehavior })
+        }
+      }, 100)
+      
+      return () => clearTimeout(timer)
+    }
+  }, [messages.length])
 
   // 새 메시지 도착 시: 사용자가 아래 근처일 때만 자동 스크롤
   useEffect(() => {
@@ -354,6 +334,8 @@ const Chat = () => {
 
     if (isNearBottom(el)) {
       el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
+      // 자동 스크롤 시 위치 저장
+      setTimeout(() => saveScrollPosition(), 100)
     }
   }, [messages.length])
 
@@ -424,42 +406,16 @@ const Chat = () => {
             </div>
           ) : (
             messages.map((msg) => {
-              // 시스템 메시지인 경우
+              // 시스템 메시지인 경우 (입장 메시지는 제외)
               if (msg.type === 'system') {
-                // 입장 메시지인 경우 최신 닉네임으로 업데이트
-                let displayMessage = msg.message
-                let nickname = ''
+                // 입장 메시지는 표시하지 않음
                 if (msg.message?.includes('님이 입장했습니다.')) {
-                  // userId가 있으면 userId로 조회, 없으면 이름으로 조회
-                  const cacheKey = msg.userId || msg.user || ''
-                  const latestNickname = userNicknameCache[cacheKey] || userNicknameCache[msg.user || ''] || msg.user || ''
-                  
-                  if (latestNickname && latestNickname !== msg.user) {
-                    nickname = latestNickname
-                    displayMessage = `${latestNickname}님이 입장했습니다.`
-                  } else {
-                    // 메시지에서 닉네임 추출
-                    const match = msg.message?.match(/^(.+?)님이 입장했습니다\.$/)
-                    if (match) {
-                      nickname = match[1]
-                    }
-                  }
-                }
-                
-                // 입장 메시지인 경우 닉네임 부분만 볼드 처리
-                if (msg.message?.includes('님이 입장했습니다.') && nickname) {
-                  return (
-                    <div key={msg.id} className="system-message">
-                      <span className="system-message-text">
-                        <span className="nickname">{nickname}</span>님이 입장했습니다.
-                      </span>
-                    </div>
-                  )
+                  return null
                 }
                 
                 return (
                   <div key={msg.id} className="system-message">
-                    <span className="system-message-text">{displayMessage}</span>
+                    <span className="system-message-text">{msg.message}</span>
                   </div>
                 )
               }

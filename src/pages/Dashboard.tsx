@@ -24,6 +24,7 @@ const Dashboard = () => {
   const [checkInNotification, setCheckInNotification] = useState<{ name: string; timestamp: number } | null>(null)
   const [showGuestList, setShowGuestList] = useState(false)
   const [userNicknames, setUserNicknames] = useState<Record<string, string>>({}) // userId -> nickname 매핑
+  const [adminList, setAdminList] = useState<Array<{ name: string; nickname: string }>>([])
   const [sortBy, setSortBy] = useState<'entryNumber' | 'name' | null>(null)
   const notificationTimerRef = useRef<NodeJS.Timeout | null>(null)
   const navigate = useNavigate()
@@ -135,15 +136,25 @@ const Dashboard = () => {
         const userProfilesRef = collection(db, 'userProfiles')
         const snapshot = await getDocs(userProfilesRef)
         const nicknameMap: Record<string, string> = {}
+        const admins: Array<{ name: string; nickname: string }> = []
         
         snapshot.forEach((doc) => {
           const data = doc.data()
           if (data.nickname && data.nickname.trim() !== '') {
             nicknameMap[doc.id] = data.nickname
           }
+          
+          // 운영진 정보 수집 (phone이 'admin'인 경우)
+          if (data.phone === 'admin' && data.name) {
+            admins.push({
+              name: data.name,
+              nickname: data.nickname || '-'
+            })
+          }
         })
         
         setUserNicknames(nicknameMap)
+        setAdminList(admins)
       } catch (error) {
         console.error('닉네임 로드 오류:', error)
       }
@@ -534,29 +545,25 @@ const Dashboard = () => {
                           })
                         })()}
                           {/* 운영진 정보 표시 (관리자일 때만, 항상 맨 아래) */}
-                          {isAdmin && adminName && (() => {
-                            const adminUserId = `${adminName}_admin`
-                            const adminNickname = userNicknames[adminUserId] || '-'
-                            return (
-                              <tr key="admin" style={{ backgroundColor: '#1a1a1a' }}>
-                                <td style={{ color: '#ffffff' }}>운영</td>
-                                <td style={{ color: '#ffffff' }}>{adminName}</td>
-                                <td style={{ color: '#ffffff' }}>{adminNickname}</td>
-                                <td>-</td>
-                                <td>
-                                  <span className="pre-booking-badge">운영진</span>
-                                </td>
-                                <td>
-                                  <span className="not-applicable">-</span>
-                                </td>
-                                <td>
-                                  <span className="checked-in">입장 완료</span>
-                                </td>
-                                <td>-</td>
-                                <td>-</td>
-                              </tr>
-                            )
-                          })()}
+                          {isAdmin && adminList.map((admin, adminIndex) => (
+                            <tr key={`admin-${adminIndex}`} style={{ backgroundColor: '#1a1a1a' }}>
+                              <td style={{ color: '#ffffff' }}>운영</td>
+                              <td style={{ color: '#ffffff' }}>{admin.name}</td>
+                              <td style={{ color: '#ffffff' }}>{admin.nickname}</td>
+                              <td>-</td>
+                              <td>
+                                <span className="pre-booking-badge">운영진</span>
+                              </td>
+                              <td>
+                                <span className="not-applicable">-</span>
+                              </td>
+                              <td>
+                                <span className="checked-in">입장 완료</span>
+                              </td>
+                              <td>-</td>
+                              <td>-</td>
+                            </tr>
+                          ))}
                       </tbody>
                     </table>
                   </div>

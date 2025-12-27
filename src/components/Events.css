@@ -109,6 +109,11 @@
   box-shadow: 0 2px 8px rgba(255, 76, 76, 0.4);
 }
 
+.timeline-dot.no-hover:hover {
+  transform: translateX(-50%);
+  box-shadow: none;
+}
+
 .timeline-item {
   position: relative;
   width: 100%;
@@ -127,6 +132,11 @@
 .timeline-content:hover {
   opacity: 0.8;
   transform: translateX(4px);
+}
+
+.timeline-content.no-hover:hover {
+  opacity: 1;
+  transform: none;
 }
 
 .event-header {
