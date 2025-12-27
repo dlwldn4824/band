@@ -276,9 +276,22 @@
 }
 
 .game-icon {
-  font-size: 3rem;
   margin-bottom: 0.75rem;
 }
+
+.game-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 0.75rem;
+}
+
+.game-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
 
 .game-card h3 {
   font-size: 1.25rem;
@@ -333,7 +346,6 @@
   }
 
   .game-icon {
-    font-size: 2.5rem;
     margin-bottom: 0.6rem;
   }
 
@@ -351,5 +363,11 @@
     padding: 0.5rem 1.25rem;
     font-size: 1rem;
   }
+}
+
+/* 길찾기 아이콘만 살짝 작게 */
+.map-icon {
+  width: 56px;
+  height: 56px;
 }
 

@@ -8,6 +8,12 @@ import LEDBoard from '../components/games/LEDBoard'
 import directionsImage from '../assets/배경/라디오가가_지도.png'
 import './Events.css'
 
+import shopIcon from '../assets/icons/shop.png'
+import mapIcon from '../assets/icons/map.png'
+import randomIcon from '../assets/icons/random.png'
+import boardIcon from '../assets/icons/board.png'
+
+
 type GameType = 'menu' | 'roulette' | 'draw' | 'ledboard'
 
 const Events = () => {
@@ -73,8 +79,8 @@ const Events = () => {
   // 운영진은 모든 게임 보임, 예약한 사람은 LED Board만 보임
   const allGames = [
     // { id: 'roulette', name: '룰렛', icon: '🎰', description: ['룰렛을 돌려서', '상품을 받아보세요!'] }, // 룰렛 비활성화
-    { id: 'draw', name: '입장 번호 추첨', icon: '🎲', description: ['체크인 완료된 관객 중', '1명 추첨!'] },
-    { id: 'ledboard', name: '전광판 만들기', icon: '📺', description: ['나만의 전광판을 만들어', '응원하세요!'] },
+    { id: 'draw', name: '입장 번호 추첨', icon: randomIcon, description: ['체크인 완료된 관객 중', '1명 추첨!'] },
+    { id: 'ledboard', name: '전광판 만들기', icon: boardIcon ,description: ['나만의 전광판을 만들어', '응원하세요!'] },
   ]
 
   // 게임 목록 필터링
@@ -129,7 +135,10 @@ const Events = () => {
           className="game-card"
           onClick={() => navigate('/products')}
         >
-          <div className="game-icon">🛍️</div>
+          <div className="game-icon">
+            <img src={shopIcon} alt="상품 소개" />
+          </div>
+
           <h3>상품 소개</h3>
           <p>공연 기념품을 <br/>확인하세요</p>
           <button className="play-button">확인하기</button>
@@ -138,7 +147,10 @@ const Events = () => {
           className="game-card"
           onClick={handleDirections}
         >
-          <div className="game-icon">📍</div>
+          <div className="game-icon map-icon">
+            <img src={mapIcon} alt="길찾기" />
+          </div>
+
           <h3>길찾기</h3>
           <p>공연장 위치를 <br/>확인하세요</p>
           <button className="play-button">확인하기</button>
@@ -149,7 +161,9 @@ const Events = () => {
             className="game-card"
             onClick={() => handleGameStart(game.id as GameType)}
           >
-            <div className="game-icon">{game.icon}</div>
+            <div className="game-icon">
+              <img src={game.icon} alt={game.name}/>
+            </div>
             <h3>{game.name}</h3>
             <p>
               {Array.isArray(game.description) ? (
