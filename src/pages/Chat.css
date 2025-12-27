@@ -144,7 +144,7 @@
 
 .online-status {
   position: relative;
-  background: #757575;
+  background: #D1D1D1;
   border: none;
   border-radius: 20px;
   font-size: 0.9rem;
@@ -163,7 +163,7 @@
 }
 
 .online-status.expanded {
-  background: #333333;
+  background: #D1D1D1;
 }
 
 .online-status-header {
