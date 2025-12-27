@@ -172,6 +172,8 @@
   background-color: #000000;
   /* 헤더가 fixed이므로 헤더 높이만큼 상단 마진 추가 (동적으로 측정된 헤더 높이 사용) */
   margin-top: var(--header-height, calc(0.75rem + env(safe-area-inset-top) + 1.75rem + 2.5rem + 0.75rem));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* 방명록, 채팅, 이벤트 페이지는 Chat.css에서 고정 레이아웃으로 처리 */

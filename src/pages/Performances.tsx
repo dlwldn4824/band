@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useData, SetlistItem } from '../contexts/DataContext'
 import { useAuth } from '../contexts/AuthContext'
 import { 
@@ -52,6 +52,7 @@ interface SongComment {
 
 const Performances = () => {
   const location = useLocation()
+  const navigate = useNavigate()
   const { performanceData } = useData()
   const { user } = useAuth()
   const [selectedSong, setSelectedSong] = useState<SetlistItem | null>(null)

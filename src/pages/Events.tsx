@@ -72,21 +72,20 @@ const Events = () => {
 
   // 운영진은 모든 게임 보임, 예약한 사람은 LED Board만 보임
   const allGames = [
-    { id: 'roulette', name: '룰렛', icon: '🎰', description: ['룰렛을 돌려서', '상품을 받아보세요!'] },
+    // { id: 'roulette', name: '룰렛', icon: '🎰', description: ['룰렛을 돌려서', '상품을 받아보세요!'] }, // 룰렛 비활성화
     { id: 'draw', name: '입장 번호 추첨', icon: '🎲', description: ['체크인 완료된 관객 중', '1명 추첨!'] },
     { id: 'ledboard', name: '전광판 만들기', icon: '📺', description: ['나만의 전광판을 만들어', '응원하세요!'] },
   ]
 
   // 게임 목록 필터링
   // /events 페이지는 전광판만 보임
-  // /admin/events 페이지는 운영진은 모든 게임, 일반 사용자는 예약한 경우 전광판만
+  // /admin/events 페이지는 운영진은 모든 게임, 일반 사용자는 룰렛 제외
+  // 룰렛은 모든 페이지에서 비활성화됨
   const games = isPublicEventsPage
     ? allGames.filter(game => game.id === 'ledboard')
     : isAdmin 
       ? allGames 
-      : isBookedUser 
-        ? allGames.filter(game => game.id === 'ledboard')
-        : allGames
+      : allGames.filter(game => game.id !== 'roulette')
 
   console.log('[Events] 게임 목록:', {
     isAdmin,
@@ -122,6 +121,15 @@ const Events = () => {
   return (
     <div className="events-page">
       <div className="games-grid">
+        <div
+          className="game-card"
+          onClick={() => navigate('/products')}
+        >
+          <div className="game-icon">🛍️</div>
+          <h3>상품 소개</h3>
+          <p>공연 기념품을 <br/>확인하세요</p>
+          <button className="play-button">확인하기</button>
+        </div>
         <div
           className="game-card"
           onClick={handleDirections}
