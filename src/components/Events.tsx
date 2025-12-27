@@ -96,7 +96,7 @@ const Events = ({ events }: EventsProps) => {
           })}
         </div>
         <p className="timeline-footer-text" onClick={handleSetlistClick}>
-          타임라인의 텍스트를 클릭하면 공연정보에서 셋리스트를 확인할 수 있습니다
+          타임라인의 텍스트를 클릭하면 공연정보에서 <br/> 셋리스트를 확인할 수 있습니다
         </p>
       </div>
     </>
