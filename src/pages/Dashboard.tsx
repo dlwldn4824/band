@@ -428,6 +428,30 @@ const Dashboard = () => {
                         </tr>
                       </thead>
                       <tbody>
+                        {/* 운영진 정보 표시 (관리자일 때만) */}
+                        {isAdmin && adminName && (() => {
+                          const adminUserId = `${adminName}_admin`
+                          const adminNickname = userNicknames[adminUserId] || '-'
+                          return (
+                            <tr key="admin" style={{ backgroundColor: '#1a1a1a' }}>
+                              <td>운영진</td>
+                              <td>{adminName}</td>
+                              <td>{adminNickname}</td>
+                              <td>-</td>
+                              <td>
+                                <span className="pre-booking-badge">운영진</span>
+                              </td>
+                              <td>
+                                <span className="not-applicable">-</span>
+                              </td>
+                              <td>
+                                <span className="checked-in">입장 완료</span>
+                              </td>
+                              <td>-</td>
+                              <td>-</td>
+                            </tr>
+                          )
+                        })()}
                         {guests.map((guest, index) => {
                           const guestName = guest.name || guest['이름'] || guest.Name || ''
                           const guestPhoneRaw = guest.phone || guest['전화번호'] || guest.Phone || ''

@@ -1,22 +1,11 @@
 import { useState, useEffect } from 'react'
 import * as XLSX from 'xlsx'
 import { QRCodeSVG } from 'qrcode.react'
-import { useData, SetlistItem, PerformanceData, BookingInfo, GuestbookMessage } from '../contexts/DataContext'
+import { useData, SetlistItem, PerformanceData, BookingInfo } from '../contexts/DataContext'
 import { formatPhoneDisplay } from '../utils/phoneFormat'
-import { collection, getDocs } from 'firebase/firestore'
+import { collection, getDocs, deleteDoc, doc, query, orderBy } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import './Admin.css'
-
-// 메모지 디자인 타입
-type MemoDesign = 'yellow' | 'pink' | 'blue' | 'green' | 'purple'
-
-const MEMO_DESIGNS: Array<{ id: MemoDesign; name: string; color: string }> = [
-  { id: 'yellow', name: '노란색', color: '#FFF9C4' },
-  { id: 'pink', name: '분홍색', color: '#FFE0E6' },
-  { id: 'blue', name: '파란색', color: '#E3F2FD' },
-  { id: 'green', name: '초록색', color: '#E8F5E9' },
-  { id: 'purple', name: '보라색', color: '#F3E5F5' },
-]
 
 const Admin = () => {
   // 관리자 페이지에서는 body 스크롤 허용
@@ -40,7 +29,14 @@ const Admin = () => {
   const [uploadStatus, setUploadStatus] = useState('')
   const [newPerformerName, setNewPerformerName] = useState('')
   const [userNicknames, setUserNicknames] = useState<Record<string, string>>({}) // userId -> nickname 매핑
-  const { uploadGuests, setPerformanceData, guests, performanceData, checkInCode, generateCheckInCode, setCheckInCode, clearGuests, clearSetlist, bookingInfo, setBookingInfo, clearGuestbookMessages, clearChatMessages, toggleGuestPayment, addGuestbookMessage } = useData()
+  const [adminList, setAdminList] = useState<Array<{ name: string; nickname: string }>>([])
+  const [showPasswordModal, setShowPasswordModal] = useState(false)
+  const [passwordInput, setPasswordInput] = useState('')
+  const [passwordError, setPasswordError] = useState('')
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null)
+  const [showCheckInCodeEdit, setShowCheckInCodeEdit] = useState(false)
+  const [checkInCodeInput, setCheckInCodeInput] = useState('')
+  const { uploadGuests, setPerformanceData, guests, performanceData, checkInCode, generateCheckInCode, setCheckInCode, clearGuests, clearSetlist, bookingInfo, setBookingInfo, clearChatMessages, toggleGuestPayment } = useData()
   
   // 예매 정보 폼 상태
   const [bookingForm, setBookingForm] = useState<BookingInfo>({
@@ -67,14 +63,25 @@ const Admin = () => {
         const snapshot = await getDocs(userProfilesRef)
         
         const nicknameMap: Record<string, string> = {}
+        const admins: Array<{ name: string; nickname: string }> = []
+        
         snapshot.forEach((doc) => {
           const data = doc.data()
           if (data.nickname && data.nickname.trim() !== '') {
             nicknameMap[doc.id] = data.nickname
           }
+          
+          // 운영진 정보 수집 (phone이 'admin'인 경우)
+          if (data.phone === 'admin' && data.name) {
+            admins.push({
+              name: data.name,
+              nickname: data.nickname || '-'
+            })
+          }
         })
         
         setUserNicknames(nicknameMap)
+        setAdminList(admins)
       } catch (error) {
         console.error('닉네임 로드 오류:', error)
       }
@@ -369,6 +376,30 @@ const Admin = () => {
     setUploadStatus('✅ 셋리스트 템플릿 파일이 다운로드되었습니다.')
   }
 
+  // 비밀번호 확인 함수
+  const requirePassword = (action: () => void) => {
+    setPendingAction(() => action)
+    setShowPasswordModal(true)
+    setPasswordInput('')
+    setPasswordError('')
+  }
+
+  // 비밀번호 확인 처리
+  const handlePasswordConfirm = () => {
+    if (passwordInput === '0627') {
+      setShowPasswordModal(false)
+      setPasswordInput('')
+      setPasswordError('')
+      if (pendingAction) {
+        pendingAction()
+        setPendingAction(null)
+      }
+    } else {
+      setPasswordError('비밀번호가 일치하지 않습니다.')
+      setPasswordInput('')
+    }
+  }
+
   // 공연진 추가 함수
   const handleAddPerformer = () => {
     if (!newPerformerName.trim()) {
@@ -411,133 +442,26 @@ const Admin = () => {
 
     const performerName = performanceData.performers[index]
     
-    if (!window.confirm(`"${performerName}" 공연진을 삭제하시겠습니까?`)) {
-      return
-    }
+    requirePassword(() => {
+      if (!window.confirm(`"${performerName}" 공연진을 삭제하시겠습니까?`)) {
+        return
+      }
 
-    const updatedPerformers = performanceData.performers.filter((_, i) => i !== index)
-    const updatedPerformanceData: PerformanceData = {
-      ...performanceData,
-      performers: updatedPerformers
-    }
+      const updatedPerformers = performanceData.performers.filter((_, i) => i !== index)
+      const updatedPerformanceData: PerformanceData = {
+        ...performanceData,
+        performers: updatedPerformers
+      }
 
-    setPerformanceData(updatedPerformanceData)
-    setUploadStatus(`✅ "${performerName}" 공연진이 삭제되었습니다.`)
+      setPerformanceData(updatedPerformanceData)
+      setUploadStatus(`✅ "${performerName}" 공연진이 삭제되었습니다.`)
+    })
   }
 
   return (
     <div className="admin-page">
       <h1>관리자 페이지</h1>
       
-      <div className="admin-section">
-        <h2>게스트 정보 업로드</h2>
-        <p className="section-description">
-          엑셀 파일을 업로드하세요. 엑셀 파일에는 '이름'과 '전화번호' 컬럼이 있어야 합니다.
-        </p>
-        {guests.length > 0 && (
-          <div className="guest-count">
-            현재 등록된 게스트: <strong>{guests.length}명</strong>
-          </div>
-        )}
-        
-        <div className="upload-area">
-          <input
-            type="file"
-            accept=".xlsx,.xls"
-            onChange={handleFileChange}
-            className="file-input"
-            id="file-input"
-          />
-          <label htmlFor="file-input" className="file-label">
-            {file ? file.name : '엑셀 파일 선택'}
-          </label>
-          <button onClick={handleUpload} className="upload-button" disabled={!file}>
-            업로드
-          </button>
-        </div>
-
-        <div className="sample-buttons">
-          <button onClick={handleGenerateSampleExcel} className="sample-button">
-            📥 엑셀 템플릿 다운로드
-          </button>
-          {guests.length > 0 && (
-            <button 
-              onClick={() => {
-                if (window.confirm('정말로 모든 게스트 정보를 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-                  clearGuests()
-                  setUploadStatus('✅ 게스트 정보가 초기화되었습니다.')
-                }
-              }} 
-              className="reset-button"
-            >
-              🗑️ 게스트 리스트 초기화
-            </button>
-          )}
-        </div>
-
-        {uploadStatus && (
-          <div className={`status-message ${uploadStatus.includes('✅') ? 'success' : 'error'}`}>
-            {uploadStatus}
-          </div>
-        )}
-      </div>
-
-      {/* 공연진 리스트 섹션 */}
-      <div className="admin-section">
-        <h2>공연진 리스트</h2>
-        <p className="section-description">
-          셋리스트에서 자동으로 추출된 공연진 목록입니다. 공연진을 추가하거나 삭제할 수 있습니다.
-        </p>
-        
-        {/* 공연진 추가 폼 */}
-        <div className="performer-add-form">
-          <input
-            type="text"
-            placeholder="공연진 이름 입력"
-            value={newPerformerName}
-            onChange={(e) => setNewPerformerName(e.target.value)}
-            onKeyPress={(e) => {
-              if (e.key === 'Enter') {
-                handleAddPerformer()
-              }
-            }}
-            className="performer-input"
-          />
-          <button
-            onClick={handleAddPerformer}
-            className="performer-add-button"
-            disabled={!newPerformerName.trim()}
-          >
-            ➕ 추가
-          </button>
-        </div>
-
-        {performanceData && performanceData.performers && performanceData.performers.length > 0 ? (
-          <div className="performers-list">
-            <div className="performers-list-grid">
-              {performanceData.performers.map((performer, index) => (
-                <div key={index} className="performer-item">
-                  <span className="performer-number">{index + 1}</span>
-                  <span className="performer-name">{performer}</span>
-                  <button
-                    onClick={() => handleDeletePerformer(index)}
-                    className="performer-delete-button"
-                    title="삭제"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
-            </div>
-            <div className="performers-count">
-              총 <strong>{performanceData.performers.length}명</strong>의 공연진이 등록되어 있습니다.
-            </div>
-          </div>
-        ) : (
-          <p>등록된 공연진이 없습니다. 셋리스트를 업로드하면 공연진 정보가 자동으로 추출되거나, 위에서 직접 추가할 수 있습니다.</p>
-        )}
-      </div>
-
       {/* 게스트 리스트 섹션 */}
       <div className="admin-section">
         <h2>게스트 리스트</h2>
@@ -624,6 +548,295 @@ const Admin = () => {
       </div>
 
       <div className="admin-section">
+        <h2>현장 체크인 QR 코드</h2>
+        <p className="section-description">
+          아래 QR 코드를 현장에 출력하여 붙여놓으세요. 참가자들이 이 QR 코드를 스캔하여 체크인할 수 있습니다.
+        </p>
+        <div className="qr-code-section">
+          <div className="qr-code-container">
+            <QRCodeSVG 
+              value={`${window.location.origin}/checkin`}
+              size={300}
+              level="H"
+            />
+          </div>
+          <p className="qr-code-instruction">
+            이 QR 코드를 현장에 출력하여 붙여놓으세요.
+          </p>
+          <button 
+            onClick={() => {
+              const qrElement = document.querySelector('.qr-code-container svg')
+              if (qrElement) {
+                const svgData = new XMLSerializer().serializeToString(qrElement as Node)
+                const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' })
+                const url = URL.createObjectURL(svgBlob)
+                const link = document.createElement('a')
+                link.download = '체크인_QR코드.svg'
+                link.href = url
+                link.click()
+                URL.revokeObjectURL(url)
+              }
+            }}
+            className="download-qr-button"
+          >
+            📥 QR 코드 이미지 다운로드
+          </button>
+        </div>
+      </div>
+
+      <div className="admin-section">
+        <h2>체크인 코드 (4자리)</h2>
+        <p className="section-description">
+          현장에서 참가자들이 입력할 4자리 체크인 코드를 설정하세요. 이 코드를 현장에 안내하세요.
+        </p>
+        <div className="checkin-code-section">
+          {checkInCode ? (
+            <div className="checkin-code-display">
+              <div className="checkin-code-box">
+                <span className="checkin-code-label">현재 체크인 코드</span>
+                <div className="checkin-code-value">{checkInCode}</div>
+              </div>
+              {!showCheckInCodeEdit ? (
+                <button 
+                  onClick={() => {
+                    requirePassword(() => {
+                      setShowCheckInCodeEdit(true)
+                      setCheckInCodeInput('')
+                    })
+                  }}
+                  className="regenerate-code-button"
+                >
+                  ✏️ 코드 수정
+                </button>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
+                  <input
+                    type="text"
+                    value={checkInCodeInput}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^0-9]/g, '').slice(0, 4)
+                      setCheckInCodeInput(value)
+                    }}
+                    placeholder="4자리 코드 입력"
+                    maxLength={4}
+                    style={{
+                      padding: '0.75rem',
+                      fontSize: '1.25rem',
+                      textAlign: 'center',
+                      border: '2px solid #444',
+                      borderRadius: '8px',
+                      background: '#111',
+                      color: '#fff',
+                      letterSpacing: '0.5rem'
+                    }}
+                    autoFocus
+                  />
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                      onClick={() => {
+                        if (checkInCodeInput.length === 4) {
+                          setCheckInCode(checkInCodeInput)
+                          setShowCheckInCodeEdit(false)
+                          setCheckInCodeInput('')
+                          setUploadStatus(`✅ 체크인 코드가 "${checkInCodeInput}"로 변경되었습니다.`)
+                        } else {
+                          setUploadStatus('❌ 4자리 코드를 입력해주세요.')
+                        }
+                      }}
+                      className="regenerate-code-button"
+                      style={{ flex: 1 }}
+                    >
+                      💾 저장
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowCheckInCodeEdit(false)
+                        setCheckInCodeInput('')
+                      }}
+                      className="reset-button"
+                      style={{ flex: 1 }}
+                    >
+                      취소
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="checkin-code-generate">
+              <p>아직 체크인 코드가 설정되지 않았습니다.</p>
+              <button 
+                onClick={() => {
+                  requirePassword(() => {
+                    setShowCheckInCodeEdit(true)
+                    setCheckInCodeInput('')
+                  })
+                }}
+                className="generate-code-button"
+              >
+                ✨ 체크인 코드 설정
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 운영진 닉네임 리스트 섹션 */}
+      <div className="admin-section">
+        <h2>운영진 닉네임</h2>
+        <p className="section-description">
+          등록된 운영진 목록과 닉네임을 확인할 수 있습니다.
+        </p>
+        {adminList.length > 0 ? (
+          <div className="guest-list-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>번호</th>
+                  <th>이름</th>
+                  <th>닉네임</th>
+                </tr>
+              </thead>
+              <tbody>
+                {adminList.map((admin, index) => (
+                  <tr key={index}>
+                    <td>{index + 1}</td>
+                    <td>{admin.name}</td>
+                    <td>{admin.nickname}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p>등록된 운영진이 없습니다.</p>
+        )}
+      </div>
+
+      <div className="admin-section">
+        <h2>게스트 정보 업로드</h2>
+        <p className="section-description">
+          엑셀 파일을 업로드하세요. 엑셀 파일에는 '이름'과 '전화번호' 컬럼이 있어야 합니다.
+        </p>
+        {guests.length > 0 && (
+          <div className="guest-count">
+            현재 등록된 게스트: <strong>{guests.length}명</strong>
+          </div>
+        )}
+        
+        <div className="upload-area">
+          <input
+            type="file"
+            accept=".xlsx,.xls"
+            onChange={handleFileChange}
+            className="file-input"
+            id="file-input"
+          />
+          <label htmlFor="file-input" className="file-label">
+            {file ? file.name : '엑셀 파일 선택'}
+          </label>
+          <button 
+            onClick={() => {
+              requirePassword(() => {
+                handleUpload()
+              })
+            }} 
+            className="upload-button" 
+            disabled={!file}
+          >
+            업로드
+          </button>
+        </div>
+
+        <div className="sample-buttons">
+          <button onClick={handleGenerateSampleExcel} className="sample-button">
+            📥 엑셀 템플릿 다운로드
+          </button>
+          {guests.length > 0 && (
+            <button 
+              onClick={() => {
+                requirePassword(() => {
+                  if (window.confirm('정말로 모든 게스트 정보를 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+                    clearGuests()
+                    setUploadStatus('✅ 게스트 정보가 초기화되었습니다.')
+                  }
+                })
+              }} 
+              className="reset-button"
+            >
+              🗑️ 게스트 리스트 초기화
+            </button>
+          )}
+        </div>
+
+        {uploadStatus && (
+          <div className={`status-message ${uploadStatus.includes('✅') ? 'success' : 'error'}`}>
+            {uploadStatus}
+          </div>
+        )}
+      </div>
+
+      {/* 공연진 리스트 섹션 */}
+      <div className="admin-section">
+        <h2>공연진 리스트</h2>
+        <p className="section-description">
+          셋리스트에서 자동으로 추출된 공연진 목록입니다. 공연진을 추가하거나 삭제할 수 있습니다.
+        </p>
+        
+        {/* 공연진 추가 폼 */}
+        <div className="performer-add-form">
+          <input
+            type="text"
+            placeholder="공연진 이름 입력"
+            value={newPerformerName}
+            onChange={(e) => setNewPerformerName(e.target.value)}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                handleAddPerformer()
+              }
+            }}
+            className="performer-input"
+          />
+          <button
+            onClick={() => {
+              requirePassword(() => {
+                handleAddPerformer()
+              })
+            }}
+            className="performer-add-button"
+            disabled={!newPerformerName.trim()}
+          >
+            ➕ 추가
+          </button>
+        </div>
+
+        {performanceData && performanceData.performers && performanceData.performers.length > 0 ? (
+          <div className="performers-list">
+            <div className="performers-list-grid">
+              {performanceData.performers.map((performer, index) => (
+                <div key={index} className="performer-item">
+                  <span className="performer-number">{index + 1}</span>
+                  <span className="performer-name">{performer}</span>
+                  <button
+                    onClick={() => handleDeletePerformer(index)}
+                    className="performer-delete-button"
+                    title="삭제"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="performers-count">
+              총 <strong>{performanceData.performers.length}명</strong>의 공연진이 등록되어 있습니다.
+            </div>
+          </div>
+        ) : (
+          <p>등록된 공연진이 없습니다. 셋리스트를 업로드하면 공연진 정보가 자동으로 추출되거나, 위에서 직접 추가할 수 있습니다.</p>
+        )}
+      </div>
+
+      <div className="admin-section">
         <h2>셋리스트 업로드</h2>
         <p className="section-description">
           엑셀 파일로 셋리스트를 업로드하세요. 엑셀 파일에는 '곡명', '아티스트명' 컬럼이 필수이며, '보컬', '기타', '베이스', '키보드', '드럼', '이미지' 컬럼은 선택사항입니다.
@@ -651,7 +864,11 @@ const Admin = () => {
             {setlistFile ? setlistFile.name : '셋리스트 엑셀 파일 선택'}
           </label>
           <button 
-            onClick={handleSetlistUpload} 
+            onClick={() => {
+              requirePassword(() => {
+                handleSetlistUpload()
+              })
+            }} 
             className="upload-button" 
             disabled={!setlistFile}
           >
@@ -666,10 +883,12 @@ const Admin = () => {
           {performanceData && performanceData.setlist && performanceData.setlist.length > 0 && (
             <button 
               onClick={() => {
-                if (window.confirm('정말로 셋리스트를 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-                  clearSetlist()
-                  setUploadStatus('✅ 셋리스트가 초기화되었습니다.')
-                }
+                requirePassword(() => {
+                  if (window.confirm('정말로 셋리스트를 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+                    clearSetlist()
+                    setUploadStatus('✅ 셋리스트가 초기화되었습니다.')
+                  }
+                })
               }} 
               className="reset-button"
             >
@@ -710,141 +929,79 @@ const Admin = () => {
       </div>
 
       <div className="admin-section">
-        <h2>현장 체크인 QR 코드</h2>
+        <h2>응원하기 관리</h2>
         <p className="section-description">
-          아래 QR 코드를 현장에 출력하여 붙여놓으세요. 참가자들이 이 QR 코드를 스캔하여 체크인할 수 있습니다.
-        </p>
-        <div className="qr-code-section">
-          <div className="qr-code-container">
-            <QRCodeSVG 
-              value={`${window.location.origin}/checkin`}
-              size={300}
-              level="H"
-            />
-          </div>
-          <p className="qr-code-instruction">
-            이 QR 코드를 현장에 출력하여 붙여놓으세요.
-          </p>
-          <button 
-            onClick={() => {
-              const qrElement = document.querySelector('.qr-code-container svg')
-              if (qrElement) {
-                const svgData = new XMLSerializer().serializeToString(qrElement as Node)
-                const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' })
-                const url = URL.createObjectURL(svgBlob)
-                const link = document.createElement('a')
-                link.download = '체크인_QR코드.svg'
-                link.href = url
-                link.click()
-                URL.revokeObjectURL(url)
-              }
-            }}
-            className="download-qr-button"
-          >
-            📥 QR 코드 이미지 다운로드
-          </button>
-        </div>
-      </div>
-
-      <div className="admin-section">
-        <h2>체크인 코드 (4자리)</h2>
-        <p className="section-description">
-          현장에서 참가자들이 입력할 4자리 체크인 코드를 생성하세요. 이 코드를 현장에 안내하세요.
-        </p>
-        <div className="checkin-code-section">
-          {checkInCode ? (
-            <div className="checkin-code-display">
-              <div className="checkin-code-box">
-                <span className="checkin-code-label">현재 체크인 코드</span>
-                <div className="checkin-code-value">{checkInCode}</div>
-              </div>
-              <button 
-                onClick={() => {
-                  const newCode = generateCheckInCode()
-                  setCheckInCode(newCode)
-                  setUploadStatus(`✅ 새로운 체크인 코드가 생성되었습니다: ${newCode}`)
-                }}
-                className="regenerate-code-button"
-              >
-                🔄 새 코드 생성
-              </button>
-            </div>
-          ) : (
-            <div className="checkin-code-generate">
-              <p>아직 체크인 코드가 생성되지 않았습니다.</p>
-              <button 
-                onClick={() => {
-                  const newCode = generateCheckInCode()
-                  setCheckInCode(newCode)
-                  setUploadStatus(`✅ 체크인 코드가 생성되었습니다: ${newCode}`)
-                }}
-                className="generate-code-button"
-              >
-                ✨ 체크인 코드 생성
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="admin-section">
-        <h2>방명록 관리</h2>
-        <p className="section-description">
-          데모 메모지를 생성하거나 저장된 모든 방명록 메시지를 삭제할 수 있습니다.
+          곡별 응원 메시지를 확인하고 관리할 수 있습니다. 전체 응원 메시지를 삭제하거나 엑셀로 내보낼 수 있습니다.
         </p>
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
           <button 
-            onClick={() => {
-              const dummyNames = ['김철수', '이영희', '박민수', '최지은', '정수진', '한소영', '윤태호', '강미영', '조성민', '임다은', '오준호', '신혜진']
-              const dummyMessages = [
-                '정말 즐거운 공연이었어요!',
-                '다음에도 또 오고 싶어요',
-                '너무 감동적이었습니다',
-                '공연 너무 좋았어요!',
-                '다음 공연도 기대할게요',
-                '정말 멋진 공연이었습니다',
-                '음악이 너무 좋았어요',
-                '다음에도 꼭 참석하겠습니다',
-                '정말 행복한 시간이었어요',
-                '공연 너무 재밌었습니다',
-                '다음 공연도 기대됩니다',
-                '정말 최고의 공연이었어요'
-              ]
-              
-              const newMemos: GuestbookMessage[] = []
-              for (let i = 0; i < 12; i++) {
-                newMemos.push({
-                  id: `dummy-${Date.now()}-${i}`,
-                  name: dummyNames[i] || `사용자${i + 1}`,
-                  message: dummyMessages[i] || `테스트 메시지 ${i + 1}`,
-                  timestamp: Date.now() - (12 - i) * 60000, // 시간 순서대로
-                  design: MEMO_DESIGNS[i % MEMO_DESIGNS.length].id as MemoDesign,
-                } as any)
+            onClick={async () => {
+              try {
+                setUploadStatus('응원 메시지를 불러오는 중...')
+                const commentsRef = collection(db, 'songComments')
+                const commentsQuery = query(commentsRef, orderBy('timestamp', 'desc'))
+                const snapshot = await getDocs(commentsQuery)
+                
+                const comments: any[] = []
+                snapshot.forEach((doc) => {
+                  const data = doc.data()
+                  comments.push({
+                    곡명: data.songName || '',
+                    사용자명: data.userName || '',
+                    닉네임: data.userNickname || '',
+                    응원메시지: data.message || '',
+                    작성시간: data.timestamp?.toDate ? new Date(data.timestamp.toDate()).toLocaleString('ko-KR') : '-'
+                  })
+                })
+                
+                if (comments.length === 0) {
+                  setUploadStatus('응원 메시지가 없습니다.')
+                  return
+                }
+                
+                // 엑셀 파일 생성
+                const worksheet = XLSX.utils.json_to_sheet(comments)
+                const workbook = XLSX.utils.book_new()
+                XLSX.utils.book_append_sheet(workbook, worksheet, '응원 메시지')
+                XLSX.writeFile(workbook, `응원메시지_전체_${new Date().toISOString().split('T')[0]}.xlsx`)
+                
+                setUploadStatus(`✅ ${comments.length}개의 응원 메시지를 엑셀 파일로 저장했습니다.`)
+              } catch (error) {
+                console.error('응원 메시지 내보내기 오류:', error)
+                setUploadStatus('❌ 응원 메시지 내보내기 중 오류가 발생했습니다.')
               }
-              
-              // 기존 메시지에 더미 메시지 추가
-              newMemos.forEach(memo => {
-                addGuestbookMessage(memo)
-              })
-              
-              setUploadStatus('✅ 데모 메모지 12개가 생성되었습니다.')
             }}
             className="reset-button"
-            style={{ background: '#28a745', color: 'white' }}
+            style={{ background: '#4C4CFF', color: 'white' }}
           >
-            ✨ 데모 메모지 생성
+            📊 전체 응원 메시지 엑셀 다운로드
           </button>
           <button 
             onClick={async () => {
-              if (window.confirm('정말로 모든 방명록 메시지를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-                await clearGuestbookMessages()
-                setUploadStatus('✅ 모든 방명록 메시지가 삭제되었습니다.')
-              }
+              requirePassword(async () => {
+                if (window.confirm('정말로 모든 응원 메시지를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+                  try {
+                    setUploadStatus('응원 메시지를 삭제하는 중...')
+                    const commentsRef = collection(db, 'songComments')
+                    const snapshot = await getDocs(commentsRef)
+                    
+                    const deletePromises = snapshot.docs.map((docSnapshot) => 
+                      deleteDoc(doc(db, 'songComments', docSnapshot.id))
+                    )
+                    
+                    await Promise.all(deletePromises)
+                    setUploadStatus(`✅ 모든 응원 메시지(${snapshot.docs.length}개)가 삭제되었습니다.`)
+                  } catch (error) {
+                    console.error('응원 메시지 삭제 오류:', error)
+                    setUploadStatus('❌ 응원 메시지 삭제 중 오류가 발생했습니다.')
+                  }
+                }
+              })
             }}
             className="reset-button"
             style={{ background: '#ff4444', color: 'white' }}
           >
-            🗑️ 방명록 메시지 전체 삭제
+            🗑️ 응원 메시지 전체 삭제
           </button>
         </div>
       </div>
@@ -856,15 +1013,17 @@ const Admin = () => {
         </p>
         <button 
           onClick={async () => {
-            if (window.confirm('정말로 모든 채팅 메시지를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-              try {
-                await clearChatMessages()
-                setUploadStatus('✅ 모든 채팅 메시지가 삭제되었습니다.')
-              } catch (error) {
-                setUploadStatus('❌ 채팅 메시지 삭제 중 오류가 발생했습니다.')
-                console.error(error)
+            requirePassword(async () => {
+              if (window.confirm('정말로 모든 채팅 메시지를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+                try {
+                  await clearChatMessages()
+                  setUploadStatus('✅ 모든 채팅 메시지가 삭제되었습니다.')
+                } catch (error) {
+                  setUploadStatus('❌ 채팅 메시지 삭제 중 오류가 발생했습니다.')
+                  console.error(error)
+                }
               }
-            }
+            })
           }}
           className="reset-button"
           style={{ background: '#ff4444', color: 'white' }}
@@ -970,6 +1129,67 @@ const Admin = () => {
         </div>
 
       </div>
+
+      {/* 비밀번호 확인 모달 */}
+      {showPasswordModal && (
+        <div className="modal-overlay" onClick={() => {
+          setShowPasswordModal(false)
+          setPasswordInput('')
+          setPasswordError('')
+          setPendingAction(null)
+        }}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>비밀번호 확인</h2>
+              <button 
+                className="modal-close"
+                onClick={() => {
+                  setShowPasswordModal(false)
+                  setPasswordInput('')
+                  setPasswordError('')
+                  setPendingAction(null)
+                }}
+              >
+                ×
+              </button>
+            </div>
+            <div className="profile-form">
+              <div className="form-group">
+                <label htmlFor="password-input">비밀번호를 입력하세요</label>
+                <input
+                  type="password"
+                  id="password-input"
+                  value={passwordInput}
+                  onChange={(e) => {
+                    setPasswordInput(e.target.value)
+                    setPasswordError('')
+                  }}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handlePasswordConfirm()
+                    }
+                  }}
+                  placeholder="비밀번호 입력"
+                  autoFocus
+                />
+                {passwordError && (
+                  <div className="error-message" style={{ marginTop: '0.5rem' }}>
+                    {passwordError}
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={handlePasswordConfirm}
+                className="login-button"
+                disabled={!passwordInput.trim()}
+              >
+                확인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
