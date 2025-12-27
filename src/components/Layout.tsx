@@ -122,6 +122,7 @@ const Layout = ({ children }: LayoutProps) => {
             </h1>
             {((adminStatus !== null ? adminStatus : isAdmin) || isAuthenticated) && (
               <button onClick={handleLogout} className="logout-nav-button">
+                <img src="/assets/배경/logout-button.png" alt="로그아웃" />
               </button>
             )}
           </div>
