@@ -1,0 +1,274 @@
+.products-page {
+  min-height: 100vh;
+  background: #1a1a1a;
+  color: #ffffff;
+  padding: 1rem;
+  font-family: 'Pretendard', sans-serif;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.products-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  position: relative;
+}
+
+.products-close-button {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+  z-index: 10;
+  padding: 0;
+}
+
+.products-close-button::before,
+.products-close-button::after {
+  content: '';
+  position: absolute;
+  width: 2px;
+  height: 18px;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 1px;
+}
+
+.products-close-button::before {
+  transform: rotate(45deg);
+}
+
+.products-close-button::after {
+  transform: rotate(-45deg);
+}
+
+.products-close-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.products-close-button:hover::before,
+.products-close-button:hover::after {
+  background-color: #ffffff;
+}
+
+.products-header h1 {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #ffffff;
+  font-family: 'HakgyoansimJayeonR', sans-serif;
+  text-align: center;
+  flex: 1;
+}
+
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.product-card {
+  background: #2a2a2a;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+.product-image-container {
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: #1a1a1a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.product-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.product-name {
+  padding: 1rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #ffffff;
+  text-align: center;
+  line-height: 1.4;
+  word-break: keep-all;
+}
+
+/* 상품 상세 모달 */
+.product-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 1rem;
+  animation: fadeIn 0.3s ease;
+}
+
+.product-modal-content {
+  background: #2a2a2a;
+  border-radius: 20px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  animation: slideUp 0.3s ease;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem 1.5rem;
+}
+
+.product-modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+  z-index: 10;
+  padding: 0;
+}
+
+.product-modal-close::before,
+.product-modal-close::after {
+  content: '';
+  position: absolute;
+  width: 2px;
+  height: 22px;
+  background-color: #000000;
+  border-radius: 1px;
+  transition: background-color 0.2s;
+}
+
+.product-modal-close::before {
+  transform: rotate(45deg);
+}
+
+.product-modal-close::after {
+  transform: rotate(-45deg);
+}
+
+.product-modal-close:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.product-modal-close:hover::before,
+.product-modal-close:hover::after {
+  background-color: #000000;
+}
+
+.product-modal-image-container {
+  width: 100%;
+  max-width: 600px;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: #1a1a1a;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.product-modal-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.product-modal-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #ffffff;
+  text-align: center;
+  word-break: keep-all;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 1rem;
+  }
+
+  .products-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .product-name {
+    font-size: 0.85rem;
+    padding: 0.75rem;
+  }
+
+  .product-modal-content {
+    padding: 1.5rem;
+    max-width: 90vw;
+  }
+
+  .product-modal-name {
+    font-size: 1.1rem;
+  }
+}
+

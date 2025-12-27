@@ -14,6 +14,7 @@ import Events from './pages/Events'
 import Chat from './pages/Chat'
 import Guestbook from './pages/Guestbook'
 import CheckIn from './pages/CheckIn'
+import Products from './pages/Products'
 
 function useAppHeight() {
   useEffect(() => {
@@ -156,6 +157,14 @@ function AppRoutes() {
             element={
               <Layout>
                 <Performances />
+              </Layout>
+            }
+          />
+          <Route
+            path="/products"
+            element={
+              <Layout>
+                <Products />
               </Layout>
             }
           />

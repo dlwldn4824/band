@@ -28,6 +28,53 @@
 .roulette-header {
   flex: 0 0 auto;
   padding: 1rem 1.5rem 0;
+  position: relative;
+}
+
+.entry-draw-close-button {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+  z-index: 10;
+  padding: 0;
+}
+
+.entry-draw-close-button::before,
+.entry-draw-close-button::after {
+  content: '';
+  position: absolute;
+  width: 2px;
+  height: 22px;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 1px;
+  transition: background-color 0.2s;
+}
+
+.entry-draw-close-button::before {
+  transform: rotate(45deg);
+}
+
+.entry-draw-close-button::after {
+  transform: rotate(-45deg);
+}
+
+.entry-draw-close-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.entry-draw-close-button:hover::before,
+.entry-draw-close-button:hover::after {
+  background-color: #ffffff;
 }
 
 .roulette-header h2 {
@@ -35,7 +82,7 @@
   font-size: 1.5rem;
   margin-bottom: 0;
   color: #ffffff;
-  font-family: 'Pretendard', sans-serif;
+  font-family: 'HakgyoansimJayeonR', sans-serif;
   font-weight: 500;
   display: flex;
   align-items: center;

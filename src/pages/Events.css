@@ -19,7 +19,7 @@
 .events-header h2{
   font-size: 24px;
   color: #fff;
-  font-family: 'Pretendard', sans-serif;
+  font-family: 'HakgyoansimJayeonR', sans-serif;
   font-weight: 500;
 }
 
@@ -97,12 +97,10 @@
   position: absolute;
   top: 1rem;
   right: 1rem;
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   border: none;
   background: transparent;
-  font-size: 1.5rem;
-  color: #ffffff;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -110,11 +108,35 @@
   border-radius: 50%;
   transition: all 0.2s;
   z-index: 10;
+  padding: 0;
+}
+
+.directions-modal-close::before,
+.directions-modal-close::after {
+  content: '';
+  position: absolute;
+  width: 2px;
+  height: 22px;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 1px;
+  transition: background-color 0.2s;
+}
+
+.directions-modal-close::before {
+  transform: rotate(45deg);
+}
+
+.directions-modal-close::after {
+  transform: rotate(-45deg);
 }
 
 .directions-modal-close:hover {
   background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+}
+
+.directions-modal-close:hover::before,
+.directions-modal-close:hover::after {
+  background-color: #ffffff;
 }
 
 .directions-modal-content {
@@ -127,7 +149,7 @@
   font-weight: 700;
   color: #ffffff;
   margin: 0 0 1.5rem 0;
-  font-family: 'Pretendard', sans-serif;
+  font-family: 'HakgyoansimJayeonR', sans-serif;
 }
 
 .directions-image-container {

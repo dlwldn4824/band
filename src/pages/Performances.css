@@ -7,6 +7,8 @@
   position: relative;
   padding: 0;
   box-sizing: border-box;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* content */
@@ -19,6 +21,7 @@
   margin-bottom: 20px;
   box-sizing: border-box;
   position: relative;
+  overflow-y: visible;
 }
 
 /* 1부/2부 선택 버튼 */
