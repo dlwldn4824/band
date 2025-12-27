@@ -112,6 +112,8 @@
   padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
   background: transparent;
   border-radius: 0 0 16px 16px;
+  display: block;
+  visibility: visible;
 }
 
 .game-area {

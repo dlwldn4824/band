@@ -78,14 +78,18 @@ const Events = () => {
   ]
 
   // 게임 목록 필터링
-  // /events 페이지는 전광판만 보임
+  // /events 페이지는 전광판만 보임 (isPublicEventsPage가 true면 무조건 ledboard만, isAdmin 상태와 무관)
   // /admin/events 페이지는 운영진은 모든 게임, 일반 사용자는 룰렛 제외
   // 룰렛은 모든 페이지에서 비활성화됨
-  const games = isPublicEventsPage
-    ? allGames.filter(game => game.id === 'ledboard')
-    : isAdmin 
-      ? allGames 
-      : allGames.filter(game => game.id !== 'roulette')
+  // 로딩 중이거나 상태가 불안정할 때는 빈 배열 반환하여 깜빡임 방지
+  // isPublicEventsPage를 먼저 체크하여 /events 페이지에서는 항상 ledboard만 보이도록 보장
+  const games = isLoading
+    ? []
+    : isPublicEventsPage
+      ? allGames.filter(game => game.id === 'ledboard') // /events 페이지는 무조건 ledboard만 (isAdmin과 무관)
+      : isAdmin 
+        ? allGames 
+        : allGames.filter(game => game.id !== 'roulette') // /admin/events에서 일반 사용자는 룰렛 제외
 
   console.log('[Events] 게임 목록:', {
     isAdmin,
