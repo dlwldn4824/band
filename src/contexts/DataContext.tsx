@@ -82,6 +82,8 @@ interface DataContextType {
   setCheckInCode: (code: string) => void
   verifyCheckInCode: (code: string) => boolean
   clearGuests: () => void
+  deleteGuest: (index: number) => void
+  updateGuest: (index: number, updatedGuest: Guest) => void
   clearSetlist: () => void
   setEventsEnabled: (enabled: boolean) => void
   clearGuestbookMessages: () => void
@@ -692,6 +694,26 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     })
   }
 
+  const deleteGuest = (index: number) => {
+    const updatedGuests = guests.filter((_, i) => i !== index)
+    setGuests(updatedGuests)
+    localStorage.setItem('guests', JSON.stringify(updatedGuests))
+    // Firestore에 저장
+    setFirestoreData('guests' as any, { guests: updatedGuests }, 'all').catch((error) => {
+      console.error('Firestore 게스트 삭제 오류:', error)
+    })
+  }
+
+  const updateGuest = (index: number, updatedGuest: Guest) => {
+    const updatedGuests = guests.map((guest, i) => i === index ? updatedGuest : guest)
+    setGuests(updatedGuests)
+    localStorage.setItem('guests', JSON.stringify(updatedGuests))
+    // Firestore에 저장
+    setFirestoreData('guests' as any, { guests: updatedGuests }, 'all').catch((error) => {
+      console.error('Firestore 게스트 수정 오류:', error)
+    })
+  }
+
   const clearSetlist = () => {
     if (performanceData) {
       const updatedData: PerformanceData = {
@@ -770,6 +792,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       setCheckInCode,
       verifyCheckInCode,
       clearGuests,
+      deleteGuest,
+      updateGuest,
       clearSetlist,
       setEventsEnabled,
       clearGuestbookMessages,

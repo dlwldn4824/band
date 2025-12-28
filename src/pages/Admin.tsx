@@ -3,7 +3,7 @@ import * as XLSX from 'xlsx'
 import { QRCodeSVG } from 'qrcode.react'
 import { useData, SetlistItem, PerformanceData, BookingInfo } from '../contexts/DataContext'
 import { formatPhoneDisplay } from '../utils/phoneFormat'
-import { collection, getDocs, deleteDoc, doc, query, orderBy } from 'firebase/firestore'
+import { collection, getDocs, deleteDoc, doc, query, orderBy, getDoc } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import './Admin.css'
 
@@ -36,7 +36,12 @@ const Admin = () => {
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null)
   const [showCheckInCodeEdit, setShowCheckInCodeEdit] = useState(false)
   const [checkInCodeInput, setCheckInCodeInput] = useState('')
-  const { uploadGuests, setPerformanceData, guests, performanceData, checkInCode, setCheckInCode, clearGuests, clearSetlist, bookingInfo, setBookingInfo, clearChatMessages, toggleGuestPayment } = useData()
+  const [showGuestEditModal, setShowGuestEditModal] = useState(false)
+  const [editingGuestIndex, setEditingGuestIndex] = useState<number | null>(null)
+  const [editingGuest, setEditingGuest] = useState<{ name: string; phone: string }>({ name: '', phone: '' })
+  const [showGuestAddModal, setShowGuestAddModal] = useState(false)
+  const [newGuest, setNewGuest] = useState<{ name: string; phone: string; isWalkIn: boolean }>({ name: '', phone: '', isWalkIn: false })
+  const { uploadGuests, setPerformanceData, guests, performanceData, checkInCode, setCheckInCode, clearGuests, deleteGuest, updateGuest, clearSetlist, bookingInfo, setBookingInfo, clearChatMessages, toggleGuestPayment } = useData()
   
   // 예매 정보 폼 상태
   const [bookingForm, setBookingForm] = useState<BookingInfo>({
@@ -180,9 +185,42 @@ const Admin = () => {
         ...row
       }))
 
+      // 업로드되는 모든 게스트의 기존 userProfile 삭제 (깨끗한 상태로 시작)
+      try {
+        const deletePromises = guests.map(async (guest: any) => {
+          const guestName = guest.name || guest['이름'] || guest.Name || ''
+          const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '').replace(/[-\s()]/g, '')
+          if (guestName && guestPhone) {
+            const userId = `${guestName}_${guestPhone}`
+            const userProfileRef = doc(db, 'userProfiles', userId)
+            const userProfileSnap = await getDoc(userProfileRef)
+            if (userProfileSnap.exists()) {
+              await deleteDoc(userProfileRef)
+            }
+          }
+        })
+        await Promise.all(deletePromises)
+        console.log(`업로드된 ${guests.length}명의 게스트 userProfile 삭제 완료`)
+      } catch (error) {
+        console.error('userProfile 삭제 오류:', error)
+        // 오류가 발생해도 게스트 업로드는 계속 진행
+      }
+
       uploadGuests(guests)
-      setUploadStatus(`✅ ${guests.length}명의 게스트 정보가 업로드되었습니다.`)
+      setUploadStatus(`✅ ${guests.length}명의 게스트 정보가 업로드되었습니다. (기존 로그인 정보 삭제됨)`)
       setFile(null)
+      
+      // 닉네임 리스트 다시 로드
+      const userProfilesRef = collection(db, 'userProfiles')
+      const snapshot = await getDocs(userProfilesRef)
+      const nicknameMap: Record<string, string> = {}
+      snapshot.forEach((doc) => {
+        const data = doc.data()
+        if (data.nickname && data.nickname.trim() !== '') {
+          nicknameMap[doc.id] = data.nickname
+        }
+      })
+      setUserNicknames(nicknameMap)
     } catch (error) {
       setUploadStatus('파일 읽기 중 오류가 발생했습니다.')
       console.error(error)
@@ -487,10 +525,28 @@ const Admin = () => {
       
       {/* 게스트 리스트 섹션 */}
       <div className="admin-section">
-        <h2>게스트 리스트</h2>
-        <p className="section-description">
-          등록된 게스트 목록과 입장 여부를 확인할 수 있습니다.
-        </p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <div>
+            <h2>게스트 리스트</h2>
+            <p className="section-description">
+              등록된 게스트 목록과 입장 여부를 확인할 수 있습니다.
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              requirePassword(() => {
+                if (window.confirm('게스트를 추가하시겠습니까?')) {
+                  setNewGuest({ name: '', phone: '', isWalkIn: false })
+                  setShowGuestAddModal(true)
+                }
+              })
+            }}
+            className="add-guest-button"
+            style={{ marginTop: 0 }}
+          >
+            ➕ 게스트 추가
+          </button>
+        </div>
         {guests.length > 0 ? (
           <div className="guest-list-table">
             <table>
@@ -505,6 +561,7 @@ const Admin = () => {
                   <th>입장 여부</th>
                   <th>입장 번호</th>
                   <th>체크인 시간</th>
+                  <th>관리</th>
                 </tr>
               </thead>
               <tbody>
@@ -558,6 +615,42 @@ const Admin = () => {
                             })
                           : '-'
                         }
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                          <button
+                            onClick={() => {
+                              requirePassword(() => {
+                                if (window.confirm(`"${guestName}" 게스트를 수정하시겠습니까?`)) {
+                                  setEditingGuestIndex(index)
+                                  setEditingGuest({
+                                    name: guestName,
+                                    phone: guestPhoneRaw
+                                  })
+                                  setShowGuestEditModal(true)
+                                }
+                              })
+                            }}
+                            className="edit-guest-button"
+                            title="수정"
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            onClick={() => {
+                              requirePassword(() => {
+                                if (window.confirm(`"${guestName}" 게스트를 삭제하시겠습니까?`)) {
+                                  deleteGuest(index)
+                                  setUploadStatus(`✅ "${guestName}" 게스트가 삭제되었습니다.`)
+                                }
+                              })
+                            }}
+                            className="delete-guest-button"
+                            title="삭제"
+                          >
+                            🗑️
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   )
@@ -777,11 +870,43 @@ const Admin = () => {
           </button>
           {guests.length > 0 && (
             <button 
-              onClick={() => {
-                requirePassword(() => {
-                  if (window.confirm('정말로 모든 게스트 정보를 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+              onClick={async () => {
+                requirePassword(async () => {
+                  if (window.confirm('정말로 모든 게스트 정보와 로그인 기록(닉네임 포함)을 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+                    try {
+                      // 모든 userProfiles 삭제 (운영진 제외)
+                      const userProfilesRef = collection(db, 'userProfiles')
+                      const snapshot = await getDocs(userProfilesRef)
+                      
+                      const deletePromises = snapshot.docs
+                        .filter(docSnapshot => {
+                          const data = docSnapshot.data()
+                          // 운영진(phone === 'admin')은 제외
+                          return data.phone !== 'admin'
+                        })
+                        .map(docSnapshot => deleteDoc(doc(db, 'userProfiles', docSnapshot.id)))
+                      
+                      await Promise.all(deletePromises)
+                      console.log(`${deletePromises.length}개의 userProfile 삭제 완료`)
+                    } catch (error) {
+                      console.error('userProfile 삭제 오류:', error)
+                      // 오류가 발생해도 게스트 초기화는 계속 진행
+                    }
+                    
                     clearGuests()
-                    setUploadStatus('✅ 게스트 정보가 초기화되었습니다.')
+                    setUploadStatus('✅ 게스트 정보와 로그인 기록이 초기화되었습니다.')
+                    
+                    // 닉네임 리스트 다시 로드
+                    const userProfilesRef = collection(db, 'userProfiles')
+                    const snapshot = await getDocs(userProfilesRef)
+                    const nicknameMap: Record<string, string> = {}
+                    snapshot.forEach((doc) => {
+                      const data = doc.data()
+                      if (data.nickname && data.nickname.trim() !== '') {
+                        nicknameMap[doc.id] = data.nickname
+                      }
+                    })
+                    setUserNicknames(nicknameMap)
                   }
                 })
               }} 
@@ -1209,6 +1334,313 @@ const Admin = () => {
               >
                 확인
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 게스트 추가 모달 */}
+      {showGuestAddModal && (
+        <div className="modal-overlay" onClick={() => {
+          setShowGuestAddModal(false)
+          setNewGuest({ name: '', phone: '', isWalkIn: false })
+        }}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>게스트 추가</h2>
+              <button 
+                className="modal-close"
+                onClick={() => {
+                  setShowGuestAddModal(false)
+                  setNewGuest({ name: '', phone: '', isWalkIn: false })
+                }}
+              >
+                ×
+              </button>
+            </div>
+            <div className="profile-form">
+              <div className="form-group">
+                <label htmlFor="add-guest-name">이름</label>
+                <input
+                  type="text"
+                  id="add-guest-name"
+                  value={newGuest.name}
+                  onChange={(e) => setNewGuest({ ...newGuest, name: e.target.value })}
+                  placeholder="이름 입력"
+                  autoFocus
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="add-guest-phone">전화번호</label>
+                <input
+                  type="tel"
+                  id="add-guest-phone"
+                  value={newGuest.phone}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9]/g, '')
+                    setNewGuest({ ...newGuest, phone: value })
+                  }}
+                  placeholder="전화번호 입력 (숫자만)"
+                />
+              </div>
+              <div className="form-group">
+                <label>예매 유형</label>
+                <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                    <input
+                      type="radio"
+                      name="guest-type"
+                      checked={!newGuest.isWalkIn}
+                      onChange={() => setNewGuest({ ...newGuest, isWalkIn: false })}
+                    />
+                    <span>사전 예매</span>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                    <input
+                      type="radio"
+                      name="guest-type"
+                      checked={newGuest.isWalkIn}
+                      onChange={() => setNewGuest({ ...newGuest, isWalkIn: true })}
+                    />
+                    <span>현장 예매</span>
+                  </label>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!newGuest.name.trim() || !newGuest.phone.trim()) {
+                      setUploadStatus('❌ 이름과 전화번호를 모두 입력해주세요.')
+                      return
+                    }
+                    // 이름과 전화번호 정규화
+                    const normalizedName = newGuest.name.trim()
+                    const normalizedPhone = newGuest.phone.replace(/[-\s()]/g, '')
+                    
+                    // 이미 등록된 게스트인지 확인
+                    const existingGuest = guests.find((guest) => {
+                      const guestName = guest.name || guest['이름'] || guest.Name || ''
+                      const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '').replace(/[-\s()]/g, '')
+                      return guestName.trim() === normalizedName && guestPhone === normalizedPhone
+                    })
+                    
+                    if (existingGuest) {
+                      setUploadStatus('❌ 이미 등록된 게스트입니다.')
+                      return
+                    }
+                    
+                    // 새로운 게스트 추가
+                    const newGuestData: any = {
+                      name: normalizedName,
+                      phone: normalizedPhone,
+                      '이름': normalizedName,
+                      '전화번호': normalizedPhone,
+                      Name: normalizedName,
+                      Phone: normalizedPhone,
+                      checkedIn: false,
+                      isWalkIn: newGuest.isWalkIn,
+                      paymentConfirmed: false
+                    }
+                    
+                    // 기존 userProfile 삭제 (깨끗한 상태로 시작)
+                    try {
+                      const userId = `${normalizedName}_${normalizedPhone}`
+                      const userProfileRef = doc(db, 'userProfiles', userId)
+                      const userProfileSnap = await getDoc(userProfileRef)
+                      if (userProfileSnap.exists()) {
+                        await deleteDoc(userProfileRef)
+                        console.log(`기존 userProfile 삭제: ${userId}`)
+                      }
+                    } catch (error) {
+                      console.error('userProfile 삭제 오류:', error)
+                      // 오류가 발생해도 게스트 추가는 계속 진행
+                    }
+                    
+                    const updatedGuests = [...guests, newGuestData]
+                    // uploadGuests를 사용하여 전체 배열 업데이트
+                    uploadGuests(updatedGuests)
+                    
+                    setShowGuestAddModal(false)
+                    setNewGuest({ name: '', phone: '', isWalkIn: false })
+                    const bookingType = newGuest.isWalkIn ? '현장 예매' : '사전 예매'
+                    setUploadStatus(`✅ "${normalizedName}" 게스트가 ${bookingType}로 추가되었습니다.`)
+                    
+                    // 닉네임 리스트 다시 로드
+                    const userProfilesRef = collection(db, 'userProfiles')
+                    const snapshot = await getDocs(userProfilesRef)
+                    const nicknameMap: Record<string, string> = {}
+                    snapshot.forEach((doc) => {
+                      const data = doc.data()
+                      if (data.nickname && data.nickname.trim() !== '') {
+                        nicknameMap[doc.id] = data.nickname
+                      }
+                    })
+                    setUserNicknames(nicknameMap)
+                  }}
+                  className="login-button"
+                  style={{ flex: 1 }}
+                >
+                  추가
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowGuestAddModal(false)
+                    setNewGuest({ name: '', phone: '', isWalkIn: false })
+                  }}
+                  className="reset-button"
+                  style={{ flex: 1 }}
+                >
+                  취소
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 게스트 수정 모달 */}
+      {showGuestEditModal && editingGuestIndex !== null && (
+        <div className="modal-overlay" onClick={() => {
+          setShowGuestEditModal(false)
+          setEditingGuestIndex(null)
+          setEditingGuest({ name: '', phone: '' })
+        }}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>게스트 정보 수정</h2>
+              <button 
+                className="modal-close"
+                onClick={() => {
+                  setShowGuestEditModal(false)
+                  setEditingGuestIndex(null)
+                  setEditingGuest({ name: '', phone: '' })
+                }}
+              >
+                ×
+              </button>
+            </div>
+            <div className="profile-form">
+              <div className="form-group">
+                <label htmlFor="edit-guest-name">이름</label>
+                <input
+                  type="text"
+                  id="edit-guest-name"
+                  value={editingGuest.name}
+                  onChange={(e) => setEditingGuest({ ...editingGuest, name: e.target.value })}
+                  placeholder="이름 입력"
+                  autoFocus
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="edit-guest-phone">전화번호</label>
+                <input
+                  type="tel"
+                  id="edit-guest-phone"
+                  value={editingGuest.phone}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9]/g, '')
+                    setEditingGuest({ ...editingGuest, phone: value })
+                  }}
+                  placeholder="전화번호 입력 (숫자만)"
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!editingGuest.name.trim() || !editingGuest.phone.trim()) {
+                      setUploadStatus('❌ 이름과 전화번호를 모두 입력해주세요.')
+                      return
+                    }
+                    const currentGuest = guests[editingGuestIndex]
+                    const oldName = currentGuest.name || currentGuest['이름'] || currentGuest.Name || ''
+                    const oldPhone = String(currentGuest.phone || currentGuest['전화번호'] || currentGuest.Phone || '').replace(/[-\s()]/g, '')
+                    const newName = editingGuest.name.trim()
+                    const newPhone = editingGuest.phone.trim().replace(/[-\s()]/g, '')
+                    
+                    // 이름이나 전화번호가 변경된 경우 기존 userProfile 삭제
+                    if (oldName !== newName || oldPhone !== newPhone) {
+                      try {
+                        // 기존 userProfile 삭제
+                        if (oldName && oldPhone) {
+                          const oldUserId = `${oldName}_${oldPhone}`
+                          const oldUserProfileRef = doc(db, 'userProfiles', oldUserId)
+                          const oldUserProfileSnap = await getDoc(oldUserProfileRef)
+                          if (oldUserProfileSnap.exists()) {
+                            await deleteDoc(oldUserProfileRef)
+                          }
+                        }
+                        // 새 정보의 userProfile도 삭제 (깨끗한 상태로)
+                        const newUserId = `${newName}_${newPhone}`
+                        const newUserProfileRef = doc(db, 'userProfiles', newUserId)
+                        const newUserProfileSnap = await getDoc(newUserProfileRef)
+                        if (newUserProfileSnap.exists()) {
+                          await deleteDoc(newUserProfileRef)
+                        }
+                      } catch (error) {
+                        console.error('userProfile 삭제 오류:', error)
+                      }
+                    } else {
+                      // 이름과 전화번호가 같아도 userProfile 삭제 (깨끗한 상태로)
+                      try {
+                        const userId = `${newName}_${newPhone}`
+                        const userProfileRef = doc(db, 'userProfiles', userId)
+                        const userProfileSnap = await getDoc(userProfileRef)
+                        if (userProfileSnap.exists()) {
+                          await deleteDoc(userProfileRef)
+                        }
+                      } catch (error) {
+                        console.error('userProfile 삭제 오류:', error)
+                      }
+                    }
+                    
+                    const updatedGuest: any = {
+                      ...currentGuest,
+                      name: newName,
+                      phone: newPhone,
+                      '이름': newName,
+                      '전화번호': newPhone,
+                      Name: newName,
+                      Phone: newPhone
+                    }
+                    updateGuest(editingGuestIndex, updatedGuest)
+                    setShowGuestEditModal(false)
+                    setEditingGuestIndex(null)
+                    setEditingGuest({ name: '', phone: '' })
+                    setUploadStatus(`✅ 게스트 정보가 수정되었습니다.`)
+                    
+                    // 닉네임 리스트 다시 로드
+                    const userProfilesRef = collection(db, 'userProfiles')
+                    const snapshot = await getDocs(userProfilesRef)
+                    const nicknameMap: Record<string, string> = {}
+                    snapshot.forEach((doc) => {
+                      const data = doc.data()
+                      if (data.nickname && data.nickname.trim() !== '') {
+                        nicknameMap[doc.id] = data.nickname
+                      }
+                    })
+                    setUserNicknames(nicknameMap)
+                  }}
+                  className="login-button"
+                  style={{ flex: 1 }}
+                >
+                  저장
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowGuestEditModal(false)
+                    setEditingGuestIndex(null)
+                    setEditingGuest({ name: '', phone: '' })
+                  }}
+                  className="reset-button"
+                  style={{ flex: 1 }}
+                >
+                  취소
+                </button>
+              </div>
             </div>
           </div>
         </div>
