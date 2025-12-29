@@ -6,7 +6,6 @@ interface User {
   name: string
   phone: string
   nickname?: string // 채팅에서 사용할 닉네임
-  entryNumber?: number // 입장 번호
   checkedIn?: boolean // 체크인 여부
   checkedInAt?: number // 체크인 시간 (timestamp)
 }
@@ -58,13 +57,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
         }
         
-    const savedUser = localStorage.getItem('user')
-    if (savedUser) {
+        const savedUser = localStorage.getItem('user')
+        if (savedUser) {
           const userData = JSON.parse(savedUser)
           setUser(userData)
           
           // Firestore에서 nickname 로드 시도 (실패해도 로컬 데이터로 계속 진행)
-          if (userData.phone) {
+          if (userData.phone && userData.phone !== 'admin') {
             try {
               const userId = `${userData.name}_${userData.phone}`
               const userProfileRef = doc(db, 'userProfiles', userId)
@@ -84,9 +83,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               console.warn('Firestore 닉네임 로드 실패 (로컬 데이터 사용):', error)
             }
           }
+        } else {
+          // user가 없으면 자동으로 익명 사용자 생성
+          const anonymousUser = {
+            name: '게스트',
+            phone: `guest_${Date.now()}`,
+            checkedIn: false
+          }
+          setUser(anonymousUser)
+          localStorage.setItem('user', JSON.stringify(anonymousUser))
         }
       } catch (error) {
         console.error('사용자 정보 로드 오류:', error)
+        // 오류 발생 시에도 익명 사용자 생성
+        const anonymousUser = {
+          name: '게스트',
+          phone: `guest_${Date.now()}`,
+          checkedIn: false
+        }
+        setUser(anonymousUser)
+        localStorage.setItem('user', JSON.stringify(anonymousUser))
       } finally {
         setIsLoading(false) // 로딩 완료 (성공/실패 관계없이)
       }
@@ -188,13 +204,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // 서버 상태와 다르면 업데이트
       if (
         user.checkedIn !== foundGuest.checkedIn ||
-        user.entryNumber !== foundGuest.entryNumber ||
         user.checkedInAt !== foundGuest.checkedInAt
       ) {
         updateUser({
           ...user,
           checkedIn: foundGuest.checkedIn || false,
-          entryNumber: foundGuest.entryNumber,
           checkedInAt: foundGuest.checkedInAt
         })
       }

@@ -165,7 +165,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
                 time: '20:10-21:00'
               }
             ]
-            const updatedData = { ...loadedData, events: defaultEvents }
+            const updatedData = { 
+              ...loadedData, 
+              events: defaultEvents,
+              // 셋리스트와 공연진은 기존 값 유지 (절대 덮어쓰지 않음)
+              setlist: loadedData.setlist || [],
+              performers: loadedData.performers || []
+            }
             setPerformanceDataState(updatedData)
             await setFirestoreData('performanceData' as any, updatedData, 'main').catch(err => {
               console.warn('[DataContext] 공연 데이터 Firestore 업데이트 실패:', err)
@@ -198,6 +204,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
                   }
                 ]
                 parsedData.events = defaultEvents
+              }
+              // 셋리스트와 공연진은 기존 값 유지 (절대 덮어쓰지 않음)
+              if (!parsedData.setlist) {
+                parsedData.setlist = []
+              }
+              if (!parsedData.performers) {
+                parsedData.performers = []
               }
               setPerformanceDataState(parsedData)
               // Firestore에 동기화 (실패해도 계속 진행)
@@ -612,23 +625,14 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       console.log('이미 체크인 완료된 게스트')
       return { 
         success: false, 
-        message: `이미 체크인 완료되었습니다. 입장 번호: ${guest.entryNumber}번`,
-        entryNumber: guest.entryNumber
+        message: '이미 체크인 완료되었습니다.'
       }
     }
 
-    // 도착 순서대로 입장 번호 할당
-    const checkedInGuests = guests.filter(g => g.checkedIn && g.entryNumber !== undefined)
-    const maxEntryNumber = checkedInGuests.length > 0 
-      ? Math.max(...checkedInGuests.map(g => g.entryNumber || 0))
-      : 0
-    const newEntryNumber = maxEntryNumber + 1
-
-    // 게스트 정보 업데이트
+    // 게스트 정보 업데이트 (입장 번호 없이 체크인만 처리)
     const updatedGuests = [...guests]
     updatedGuests[guestIndex] = {
       ...guest,
-      entryNumber: newEntryNumber,
       checkedIn: true,
       checkedInAt: Date.now()
     }
@@ -652,7 +656,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       게스트이름: guestName
     })
 
-    return { success: true, entryNumber: newEntryNumber }
+    return { success: true, message: '체크인 완료!' }
   }
 
   const generateCheckInCode = (): string => {

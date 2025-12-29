@@ -25,7 +25,7 @@ const Dashboard = () => {
   const [showGuestList, setShowGuestList] = useState(false)
   const [userNicknames, setUserNicknames] = useState<Record<string, string>>({}) // userId -> nickname 매핑
   const [adminList, setAdminList] = useState<Array<{ name: string; nickname: string }>>([])
-  const [sortBy, setSortBy] = useState<'entryNumber' | 'name' | null>(null)
+  const [sortBy, setSortBy] = useState<'name' | null>(null)
   const notificationTimerRef = useRef<NodeJS.Timeout | null>(null)
   const navigate = useNavigate()
   const location = useLocation()
@@ -104,11 +104,10 @@ const Dashboard = () => {
       console.log('[체크인 상태 확인] 체크인 완료:', foundGuest)
       setCheckInStatus('done')
       // localStorage의 user 정보도 서버 상태와 동기화
-      if (!user.checkedIn || user.entryNumber !== foundGuest.entryNumber) {
+      if (!user.checkedIn) {
         updateUser({
           ...user,
           checkedIn: true,
-          entryNumber: foundGuest.entryNumber,
           checkedInAt: foundGuest.checkedInAt
         })
       }
@@ -120,7 +119,6 @@ const Dashboard = () => {
         updateUser({
           ...user,
           checkedIn: false,
-          entryNumber: undefined,
           checkedInAt: undefined
         })
       }
@@ -222,7 +220,7 @@ const Dashboard = () => {
     setShowScanner(false)
     const checkInResult = checkInGuest(data.name, data.phone)
     
-    if (checkInResult.success && checkInResult.entryNumber) {
+    if (checkInResult.success) {
       // 사용자 정보 업데이트
       const guests = JSON.parse(localStorage.getItem('guests') || '[]')
       const normalizedInputPhone = data.phone.replace(/[-\s()]/g, '')
@@ -243,7 +241,6 @@ const Dashboard = () => {
         updateUser({
           name: foundGuest.name || foundGuest['이름'] || data.name,
           phone: foundGuest.phone || foundGuest['전화번호'] || data.phone,
-          entryNumber: checkInResult.entryNumber,
           checkedIn: true,
           checkedInAt: Date.now()
         })
@@ -329,10 +326,9 @@ const Dashboard = () => {
                 loading="eager"
                 decoding="async"
               />
-              {checkInStatus === 'done' && user?.entryNumber && (
+              {checkInStatus === 'done' && (
                 <div className="ticket-stamp">
                   <div className="ticket-stamp-text">
-                    입장번호 {user.entryNumber}번<br />
                     체크인 완료
                   </div>
                 </div>
@@ -427,21 +423,6 @@ const Dashboard = () => {
                   <>
                     <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', justifyContent: 'flex-end' }}>
                       <button
-                        onClick={() => setSortBy(sortBy === 'entryNumber' ? null : 'entryNumber')}
-                        style={{
-                          padding: '0.375rem 0.75rem',
-                          background: sortBy === 'entryNumber' ? '#FF4C4C' : '#f5f5f5',
-                          color: sortBy === 'entryNumber' ? '#ffffff' : '#333',
-                          border: '1px solid #ddd',
-                          borderRadius: '6px',
-                          fontSize: '0.75rem',
-                          cursor: 'pointer',
-                          fontWeight: sortBy === 'entryNumber' ? '600' : '400'
-                        }}
-                      >
-                        입장 번호 순
-                      </button>
-                      <button
                         onClick={() => setSortBy(sortBy === 'name' ? null : 'name')}
                         style={{
                           padding: '0.375rem 0.75rem',
@@ -468,7 +449,6 @@ const Dashboard = () => {
                             <th>예매 유형</th>
                             <th>입금 확인</th>
                             <th>입장 여부</th>
-                            <th>입장 번호</th>
                             <th>체크인 시간</th>
                           </tr>
                         </thead>
@@ -476,16 +456,7 @@ const Dashboard = () => {
                           {(() => {
                             let sortedGuests = [...guests]
                             
-                            if (sortBy === 'entryNumber') {
-                              sortedGuests.sort((a, b) => {
-                                // 입장 번호가 있는 게스트를 먼저
-                                if (a.entryNumber && !b.entryNumber) return -1
-                                if (!a.entryNumber && b.entryNumber) return 1
-                                if (!a.entryNumber && !b.entryNumber) return 0
-                                // 입장 번호 순서대로 정렬
-                                return (a.entryNumber || 0) - (b.entryNumber || 0)
-                              })
-                            } else if (sortBy === 'name') {
+                            if (sortBy === 'name') {
                               sortedGuests.sort((a, b) => {
                                 const nameA = (a.name || a['이름'] || a.Name || '').trim()
                                 const nameB = (b.name || b['이름'] || b.Name || '').trim()
@@ -526,7 +497,6 @@ const Dashboard = () => {
                                   {guest.checkedIn ? '입장 완료' : '미입장'}
                                 </span>
                               </td>
-                              <td>{guest.entryNumber ? `${guest.entryNumber}번` : '-'}</td>
                               <td>
                                 {guest.checkedInAt 
                                   ? new Date(guest.checkedInAt).toLocaleString('ko-KR', {

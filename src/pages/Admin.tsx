@@ -5,6 +5,7 @@ import { useData, SetlistItem, PerformanceData, BookingInfo } from '../contexts/
 import { formatPhoneDisplay } from '../utils/phoneFormat'
 import { collection, getDocs, deleteDoc, doc, query, orderBy, getDoc } from 'firebase/firestore'
 import { db } from '../config/firebase'
+import { setFirestoreData } from '../services/firestoreService'
 import './Admin.css'
 
 const Admin = () => {
@@ -395,7 +396,7 @@ const Admin = () => {
       // 기존 공연 정보와 병합 (events와 ticket도 함께 포함하여 완전한 데이터로 저장)
       const updatedPerformanceData: PerformanceData = {
         ...(performanceData || {}),
-        setlist: setlist,
+        setlist: setlist, // 업로드한 셋리스트로 고정
         performers: uniquePerformers, // 항상 새로 추출한 공연진으로 업데이트
         events: performanceData?.events || defaultEvents, // 기존 events가 있으면 유지, 없으면 기본값
         ticket: performanceData?.ticket || defaultTicket, // 기존 ticket이 있으면 유지, 없으면 기본값
@@ -406,6 +407,15 @@ const Admin = () => {
       console.log('저장될 셋리스트:', updatedPerformanceData.setlist?.length, '곡')
 
       setPerformanceData(updatedPerformanceData)
+      
+      // 업로드한 셋리스트를 Firestore에 즉시 저장하여 고정
+      try {
+        await setFirestoreData('performanceData' as any, updatedPerformanceData, 'main')
+        console.log('[Admin] 셋리스트 Firestore 저장 완료')
+      } catch (err) {
+        console.warn('[Admin] 셋리스트 Firestore 저장 실패:', err)
+        // 저장 실패해도 계속 진행
+      }
       
       if (uniquePerformers.length > 0) {
         setUploadStatus(`✅ ${setlist.length}곡의 셋리스트가 업로드되었습니다. 공연진 ${uniquePerformers.length}명이 자동으로 업데이트되었습니다.`)
