@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import * as XLSX from 'xlsx'
 import { QRCodeSVG } from 'qrcode.react'
 import { useData, SetlistItem, PerformanceData, BookingInfo } from '../contexts/DataContext'
@@ -96,9 +96,10 @@ const Admin = () => {
     loadNicknames()
   }, [])
 
-  // 하드코딩된 공연 정보 (자동 설정)
+  // 하드코딩된 공연 정보 (자동 설정) - 한 번만 실행되도록 useRef로 보호
+  const hasInitializedEvents = useRef(false)
   useEffect(() => {
-    if (!performanceData) return // performanceData가 로드되지 않았으면 실행하지 않음
+    if (!performanceData || hasInitializedEvents.current) return // 이미 초기화했으면 실행하지 않음
 
     // 하드코딩된 공연 정보 설정 (항상 events와 ticket은 하드코딩된 값으로 덮어쓰기)
     const defaultEvents = [
@@ -126,21 +127,14 @@ const Admin = () => {
       seat: '자유석'
     }
 
-    // events와 ticket만 업데이트하고, setlist와 performers는 기존 값 유지
-    // events 배열의 길이가 3개가 아니거나 첫 번째 이벤트가 '관객 입장'이 아니면 항상 업데이트
-    console.log('[Admin] performanceData.events:', performanceData.events)
-    console.log('[Admin] events 개수:', performanceData.events?.length)
-    console.log('[Admin] 첫 번째 이벤트:', performanceData.events?.[0]?.title)
-    
+    // events 배열의 길이가 3개가 아니거나 첫 번째 이벤트가 '관객 입장'이 아니면 업데이트
     const needsUpdate = 
       !performanceData.events || 
       performanceData.events.length !== 3 ||
       performanceData.events[0]?.title !== '관객 입장'
 
-    console.log('[Admin] needsUpdate:', needsUpdate)
-
     if (needsUpdate) {
-      console.log('[Admin] events 업데이트 실행')
+      console.log('[Admin] events 초기 업데이트 실행')
       const updatedPerformanceData: PerformanceData = {
         ...performanceData,
         events: defaultEvents,
@@ -151,6 +145,9 @@ const Admin = () => {
       }
 
       setPerformanceData(updatedPerformanceData)
+      hasInitializedEvents.current = true // 초기화 완료 표시
+    } else {
+      hasInitializedEvents.current = true // 이미 올바른 상태면 초기화 완료로 표시
     }
   }, [performanceData]) // performanceData가 변경될 때마다 확인
 
@@ -180,15 +177,50 @@ const Admin = () => {
       }
 
       // 엑셀 데이터를 Guest 형식으로 변환
-      const guests = jsonData.map((row: any) => ({
+      const newGuestsFromFile = jsonData.map((row: any) => ({
         name: row['이름'] || row['name'] || row['Name'] || '',
         phone: String(row['전화번호'] || row['phone'] || row['Phone'] || ''),
         ...row
       }))
 
-      // 업로드되는 모든 게스트의 기존 userProfile 삭제 (깨끗한 상태로 시작)
+      // 기존 게스트 리스트 가져오기
+      const existingGuests = [...guests]
+      
+      // 중복 체크를 위한 함수 (이름과 전화번호로 비교)
+      const isDuplicate = (guest: any, existingList: any[]) => {
+        const normalizedName = guest.name.trim()
+        const normalizedPhone = String(guest.phone || '').replace(/[-\s()]/g, '')
+        
+        return existingList.some((existing) => {
+          const existingName = (existing.name || existing['이름'] || existing.Name || '').trim()
+          const existingPhone = String(existing.phone || existing['전화번호'] || existing.Phone || '').replace(/[-\s()]/g, '')
+          return existingName === normalizedName && existingPhone === normalizedPhone
+        })
+      }
+
+      // 중복되지 않은 게스트만 필터링
+      const guestsToAdd = newGuestsFromFile.filter((guest: any) => {
+        const guestName = guest.name || guest['이름'] || guest.Name || ''
+        const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '')
+        
+        // 이름과 전화번호가 모두 있어야 함
+        if (!guestName.trim() || !guestPhone.trim()) {
+          return false
+        }
+        
+        // 중복 체크
+        return !isDuplicate(guest, existingGuests)
+      })
+
+      if (guestsToAdd.length === 0) {
+        setUploadStatus('❌ 추가할 새로운 게스트가 없습니다. (모두 중복되거나 이름/전화번호가 비어있습니다)')
+        setFile(null)
+        return
+      }
+
+      // 업로드되는 게스트의 기존 userProfile 삭제 (깨끗한 상태로 시작)
       try {
-        const deletePromises = guests.map(async (guest: any) => {
+        const deletePromises = guestsToAdd.map(async (guest: any) => {
           const guestName = guest.name || guest['이름'] || guest.Name || ''
           const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '').replace(/[-\s()]/g, '')
           if (guestName && guestPhone) {
@@ -201,14 +233,22 @@ const Admin = () => {
           }
         })
         await Promise.all(deletePromises)
-        console.log(`업로드된 ${guests.length}명의 게스트 userProfile 삭제 완료`)
+        console.log(`추가될 ${guestsToAdd.length}명의 게스트 userProfile 삭제 완료`)
       } catch (error) {
         console.error('userProfile 삭제 오류:', error)
         // 오류가 발생해도 게스트 업로드는 계속 진행
       }
 
-      uploadGuests(guests)
-      setUploadStatus(`✅ ${guests.length}명의 게스트 정보가 업로드되었습니다. (기존 로그인 정보 삭제됨)`)
+      // 기존 게스트와 새 게스트 병합
+      const mergedGuests = [...existingGuests, ...guestsToAdd]
+      
+      uploadGuests(mergedGuests)
+      const duplicateCount = newGuestsFromFile.length - guestsToAdd.length
+      if (duplicateCount > 0) {
+        setUploadStatus(`✅ ${guestsToAdd.length}명의 게스트가 추가되었습니다. (${duplicateCount}명은 중복으로 제외됨, 기존 로그인 정보 삭제됨)`)
+      } else {
+        setUploadStatus(`✅ ${guestsToAdd.length}명의 게스트가 추가되었습니다. (기존 로그인 정보 삭제됨)`)
+      }
       setFile(null)
       
       // 닉네임 리스트 다시 로드
@@ -701,139 +741,7 @@ const Admin = () => {
         )}
       </div>
 
-      <div className="admin-section">
-        <h2>현장 체크인 QR 코드</h2>
-        <p className="section-description">
-          아래 QR 코드를 현장에 출력하여 붙여놓으세요. 참가자들이 이 QR 코드를 스캔하여 체크인할 수 있습니다.
-        </p>
-        <div className="qr-code-section">
-          <div className="qr-code-container">
-            <QRCodeSVG 
-              value={`${window.location.origin}/checkin`}
-              size={300}
-              level="H"
-            />
-          </div>
-          <p className="qr-code-instruction">
-            이 QR 코드를 현장에 출력하여 붙여놓으세요.
-          </p>
-          <button 
-            onClick={() => {
-              const qrElement = document.querySelector('.qr-code-container svg')
-              if (qrElement) {
-                const svgData = new XMLSerializer().serializeToString(qrElement as Node)
-                const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' })
-                const url = URL.createObjectURL(svgBlob)
-                const link = document.createElement('a')
-                link.download = '체크인_QR코드.svg'
-                link.href = url
-                link.click()
-                URL.revokeObjectURL(url)
-              }
-            }}
-            className="download-qr-button"
-          >
-            📥 QR 코드 이미지 다운로드
-          </button>
-        </div>
-      </div>
 
-      <div className="admin-section">
-        <h2>체크인 코드 (4자리)</h2>
-        <p className="section-description">
-          현장에서 참가자들이 입력할 4자리 체크인 코드를 설정하세요. 이 코드를 현장에 안내하세요.
-        </p>
-        <div className="checkin-code-section">
-          {checkInCode ? (
-            <div className="checkin-code-display">
-              <div className="checkin-code-box">
-                <span className="checkin-code-label">현재 체크인 코드</span>
-                <div className="checkin-code-value">{checkInCode}</div>
-              </div>
-              {!showCheckInCodeEdit ? (
-                <button 
-                  onClick={() => {
-                    requirePassword(() => {
-                      setShowCheckInCodeEdit(true)
-                      setCheckInCodeInput('')
-                    })
-                  }}
-                  className="regenerate-code-button"
-                >
-                  ✏️ 코드 수정
-                </button>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
-                  <input
-                    type="text"
-                    value={checkInCodeInput}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/[^0-9]/g, '').slice(0, 4)
-                      setCheckInCodeInput(value)
-                    }}
-                    placeholder="4자리 코드 입력"
-                    maxLength={4}
-                    style={{
-                      padding: '0.75rem',
-                      fontSize: '1.25rem',
-                      textAlign: 'center',
-                      border: '2px solid #444',
-                      borderRadius: '8px',
-                      background: '#111',
-                      color: '#fff',
-                      letterSpacing: '0.5rem'
-                    }}
-                    autoFocus
-                  />
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button
-                      onClick={() => {
-                        if (checkInCodeInput.length === 4) {
-                          setCheckInCode(checkInCodeInput)
-                          setShowCheckInCodeEdit(false)
-                          setCheckInCodeInput('')
-                          setUploadStatus(`✅ 체크인 코드가 "${checkInCodeInput}"로 변경되었습니다.`)
-                        } else {
-                          setUploadStatus('❌ 4자리 코드를 입력해주세요.')
-                        }
-                      }}
-                      className="regenerate-code-button"
-                      style={{ flex: 1 }}
-                    >
-                      💾 저장
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowCheckInCodeEdit(false)
-                        setCheckInCodeInput('')
-                      }}
-                      className="reset-button"
-                      style={{ flex: 1 }}
-                    >
-                      취소
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="checkin-code-generate">
-              <p>아직 체크인 코드가 설정되지 않았습니다.</p>
-              <button 
-                onClick={() => {
-                  requirePassword(() => {
-                    setShowCheckInCodeEdit(true)
-                    setCheckInCodeInput('')
-                  })
-                }}
-                className="generate-code-button"
-              >
-                ✨ 체크인 코드 설정
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
 
       {/* 운영진 닉네임 리스트 섹션 */}
       <div className="admin-section">

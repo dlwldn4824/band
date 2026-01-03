@@ -7,6 +7,7 @@ interface User {
   name: string
   phone: string
   nickname?: string // 채팅에서 사용할 닉네임
+  entryNumber?: number // 입장 번호
   checkedIn?: boolean // 체크인 여부
   checkedInAt?: number // 체크인 시간 (timestamp)
 }

@@ -445,9 +445,41 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       }
     )
 
+    // Firestore 실시간 리스너 설정 (performanceData 자동 업데이트) - 서버 상태 우선
+    const performanceDataDocRef = doc(db, 'performanceData', 'main')
+    const unsubscribePerformanceData = onSnapshot(
+      performanceDataDocRef,
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.data() as PerformanceData
+          // 서버의 최신 데이터로 업데이트 (셋리스트 보호)
+          if (data) {
+            setPerformanceDataState((prevData) => {
+              // 기존 셋리스트가 있고 새 데이터에 셋리스트가 없거나 비어있으면 유지
+              const mergedData: PerformanceData = {
+                ...data,
+                setlist: data.setlist && data.setlist.length > 0 
+                  ? data.setlist 
+                  : (prevData?.setlist || []),
+                performers: data.performers && data.performers.length > 0
+                  ? data.performers
+                  : (prevData?.performers || [])
+              }
+              localStorage.setItem('performanceData', JSON.stringify(mergedData))
+              return mergedData
+            })
+          }
+        }
+      },
+      (error) => {
+        console.error('Firestore performanceData 실시간 리스너 오류:', error)
+      }
+    )
+
     // cleanup 함수
     return () => {
       unsubscribeGuests()
+      unsubscribePerformanceData()
     }
   }, [])
 
@@ -533,10 +565,23 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const setPerformanceData = (data: PerformanceData) => {
-    setPerformanceDataState(data)
-    localStorage.setItem('performanceData', JSON.stringify(data))
-    // Firestore에 저장 (비동기로 처리)
-    setFirestoreData('performanceData' as any, data, 'main').catch((error) => {
+    // 기존 데이터와 안전하게 병합 (중요한 데이터 보호)
+    const mergedData: PerformanceData = {
+      ...performanceDataState, // 기존 데이터 우선
+      ...data, // 새 데이터로 덮어쓰기
+      // 셋리스트와 공연진은 기존 값이 있으면 유지 (절대 덮어쓰지 않음)
+      setlist: data.setlist && data.setlist.length > 0 
+        ? data.setlist 
+        : (performanceDataState?.setlist || []),
+      performers: data.performers && data.performers.length > 0
+        ? data.performers
+        : (performanceDataState?.performers || [])
+    }
+    
+    setPerformanceDataState(mergedData)
+    localStorage.setItem('performanceData', JSON.stringify(mergedData))
+    // Firestore에 저장 (비동기로 처리, merge 옵션으로 안전하게)
+    setFirestoreData('performanceData' as any, mergedData, 'main').catch((error) => {
       console.error('Firestore 공연 데이터 저장 오류:', error)
     })
   }

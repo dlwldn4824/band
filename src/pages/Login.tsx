@@ -273,8 +273,8 @@ const Login = () => {
       ) : (
         <div className="login-container">
           <div className="login-header">
-            <h1>결제자 로그인</h1>
-            <p>이름과 전화번호를 입력해 주세요.</p>
+            <h1>예약자 로그인</h1>
+            <p>예약을 완료하지 않으신 분은 하단에 <br/>버튼을 이용해주세요.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="login-form">

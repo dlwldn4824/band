@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useData } from '../contexts/DataContext'
 import Events from '../components/Events'
@@ -27,7 +27,6 @@ const Dashboard = () => {
   const [adminList, setAdminList] = useState<Array<{ name: string; nickname: string }>>([])
   const [sortBy, setSortBy] = useState<'name' | null>(null)
   const notificationTimerRef = useRef<NodeJS.Timeout | null>(null)
-  const navigate = useNavigate()
   const location = useLocation()
   
   // location이 변경될 때마다 리렌더링 트리거
