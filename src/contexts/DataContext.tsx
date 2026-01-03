@@ -237,7 +237,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
               ticket: {
                 eventName: '2025 멜로딕 단독 공연',
                 date: '2025년 12월 27일 (토)',
-                venue: '홍대 라디오 가가 공연장',
+                venue: '얼라이브 홀',
                 seat: '자유석'
               },
               setlist: [],

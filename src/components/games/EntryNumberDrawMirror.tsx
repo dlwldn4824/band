@@ -25,17 +25,17 @@ const EntryNumberDrawMirror = () => {
   const unsubscribeRef = useRef<(() => void) | null>(null)
   const animationRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // 입장 번호가 있는 게스트들 필터링
+  // 입장 번호가 부여된 게스트들 필터링 (입금 확인 완료된 게스트)
   useEffect(() => {
-    const checkedInGuests = guests
-      .filter(guest => guest.checkedIn && guest.entryNumber !== undefined && guest.entryNumber !== null)
+    const eligibleGuestsList = guests
+      .filter(guest => guest.entryNumber !== undefined && guest.entryNumber !== null)
       .map(guest => ({
         name: guest.name || guest['이름'] || guest.Name || '알 수 없음',
         entryNumber: guest.entryNumber!
       }))
       .sort((a, b) => a.entryNumber - b.entryNumber)
     
-    setEligibleGuests(checkedInGuests)
+    setEligibleGuests(eligibleGuestsList)
   }, [guests])
 
   useEffect(() => {
@@ -157,7 +157,7 @@ const EntryNumberDrawMirror = () => {
         <div className="draw-container">
           <div className="draw-info">
             <p className="draw-count">
-              체크인 완료: <strong>{eligibleGuests.length}명</strong>
+              입장 번호 부여: <strong>{eligibleGuests.length}명</strong>
             </p>
             {eligibleGuests.length > 0 && (
               <p className="draw-range">
@@ -204,7 +204,7 @@ const EntryNumberDrawMirror = () => {
               className="game-button" 
               disabled={isDrawing || eligibleGuests.length === 0}
             >
-              {isDrawing ? '추첨 중...' : eligibleGuests.length === 0 ? '체크인된 게스트가 없습니다' : '추첨 시작'}
+              {isDrawing ? '추첨 중...' : eligibleGuests.length === 0 ? '입장 번호가 부여된 게스트가 없습니다' : '추첨 시작'}
             </button>
           </div>
         )}

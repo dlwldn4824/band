@@ -124,7 +124,7 @@ const Admin = () => {
     const defaultTicket = {
       eventName: '2025 멜로딕 단독 공연',
       date: '2025년 12월 27일 (토)',
-      venue: '홍대 라디오 가가 공연장',
+      venue: '얼라이브 홀',
       seat: '자유석'
     }
 
@@ -430,7 +430,7 @@ const Admin = () => {
       const defaultTicket = {
         eventName: '2025 멜로딕 단독 공연',
         date: '2025년 12월 27일 (토)',
-        venue: '홍대 라디오 가가 공연장',
+        venue: '얼라이브 홀',
         seat: '자유석'
       }
 
@@ -684,6 +684,58 @@ const Admin = () => {
     return `${name}_${normalizedPhone}`
   }
 
+  // 입장 번호 자동 부여 함수
+  const assignEntryNumbers = (currentGuests: typeof guests) => {
+    // 입금 확인이 완료된 게스트들을 paymentConfirmedAt 순서로 정렬
+    const confirmedGuests = currentGuests
+      .map((guest, idx) => ({ guest, index: idx }))
+      .filter(({ guest }) => guest.paymentConfirmed && guest.paymentConfirmedAt)
+      .sort((a, b) => {
+        const timeA = a.guest.paymentConfirmedAt || 0
+        const timeB = b.guest.paymentConfirmedAt || 0
+        return timeA - timeB
+      })
+
+    // 입장 번호가 이미 부여된 게스트들의 번호 목록
+    const assignedNumbers = new Set<number>()
+    currentGuests.forEach(guest => {
+      if (guest.entryNumber !== undefined && guest.entryNumber !== null) {
+        assignedNumbers.add(guest.entryNumber)
+      }
+    })
+
+    // 입장 번호 부여
+    let nextEntryNumber = 1
+    const updatedGuests = [...currentGuests]
+    let hasChanges = false
+
+    confirmedGuests.forEach(({ guest, index }) => {
+      // 이미 입장 번호가 있으면 건너뛰기
+      if (guest.entryNumber !== undefined && guest.entryNumber !== null) {
+        return
+      }
+
+      // 다음 사용 가능한 번호 찾기
+      while (assignedNumbers.has(nextEntryNumber)) {
+        nextEntryNumber++
+      }
+
+      // 입장 번호 부여
+      updatedGuests[index] = {
+        ...guest,
+        entryNumber: nextEntryNumber
+      }
+      assignedNumbers.add(nextEntryNumber)
+      nextEntryNumber++
+      hasChanges = true
+    })
+
+    // 업데이트된 게스트 목록 저장
+    if (hasChanges) {
+      uploadGuests(updatedGuests)
+    }
+  }
+
   // 입금 확인 핸들러 (링크 생성 포함)
   const handlePaymentConfirm = async (index: number) => {
     const guest = guests[index]
@@ -774,6 +826,19 @@ const Admin = () => {
       })
     }
   }
+
+  // 입금 확인이 완료된 게스트에 대해 입장 번호 자동 부여
+  useEffect(() => {
+    // 입금 확인이 완료되었지만 입장 번호가 없는 게스트가 있는지 확인
+    const needsEntryNumber = guests.some(
+      guest => guest.paymentConfirmed && guest.paymentConfirmedAt && !guest.entryNumber
+    )
+    
+    if (needsEntryNumber) {
+      assignEntryNumbers(guests)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [guests])
 
   // 입금 확인이 완료된 게스트에 대해 링크 자동 생성
   useEffect(() => {

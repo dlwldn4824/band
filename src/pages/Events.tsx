@@ -123,7 +123,7 @@ const Events = () => {
 
   const handleKakaoMap = () => {
     // 카카오맵에서 주소 검색
-    const address = encodeURIComponent('마포구 서교동 384-12')
+    const address = encodeURIComponent('서울특별시 마포구 독막로7길 20 지하')
     const kakaoMapUrl = `https://map.kakao.com/link/search/${address}`
     window.open(kakaoMapUrl, '_blank')
   }
@@ -213,10 +213,10 @@ const Events = () => {
               {/* 주소 */}
               <div className="directions-address">
                 <p className="directions-address-title">
-                 라디오 가가 공연장
+                 얼라이브 홀
                 </p>
                 <p className="directions-address-text">
-                  마포구 서교동 384-12 양화로 11길 54
+                  서울특별시 마포구 독막로7길 20 지하
                 </p>
               </div>
 
