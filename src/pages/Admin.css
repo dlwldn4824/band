@@ -230,53 +230,6 @@
   box-shadow: 0 4px 12px rgba(216, 134, 118, 0.4);
 }
 
-.checkin-code-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 2rem;
-  background-color: #f9f9f9;
-  border-radius: 12px;
-  border: 2px dashed #ddd;
-}
-
-.checkin-code-display {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.5rem;
-}
-
-.checkin-code-box {
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  text-align: center;
-  width: 100%;
-  max-width: 400px;
-}
-
-.checkin-code-label {
-  display: block;
-  color: #666;
-  font-size: 0.95rem;
-  margin-bottom: 1rem;
-}
-
-.checkin-code-value {
-  font-size: 3rem;
-  font-weight: bold;
-  color: #D88676;
-  letter-spacing: 0.5rem;
-  font-family: 'Courier New', monospace;
-}
-
-.checkin-code-generate {
-  text-align: center;
-  width: 100%;
-}
 
 .checkin-code-generate p {
   color: #666;
@@ -741,6 +694,224 @@
   background: #218838;
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+}
+
+/* 예매 신청 승인 섹션 */
+.booking-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.booking-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem;
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  transition: all 0.2s;
+}
+
+.booking-item:hover {
+  background: #f0f0f0;
+  border-color: #D88676;
+  box-shadow: 0 2px 8px rgba(216, 134, 118, 0.2);
+}
+
+.booking-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.booking-info-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.booking-label {
+  font-weight: 600;
+  color: #666;
+  font-size: 0.9rem;
+  min-width: 80px;
+}
+
+.booking-value {
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.approve-booking-button {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  margin-left: 1rem;
+}
+
+.approve-booking-button:hover {
+  background: #218838;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+}
+
+.approve-booking-button:active {
+  transform: translateY(0);
+}
+
+@media (max-width: 768px) {
+  .booking-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .approve-booking-button {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .booking-info-row {
+    flex-wrap: wrap;
+  }
+
+  .booking-label {
+    min-width: 70px;
+  }
+}
+
+/* 게스트 추가 모달 스타일 */
+.booking-type-options {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  width: 100%;
+}
+
+.booking-type-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.95rem;
+  padding: 0.75rem 1rem;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  background: #fff;
+  transition: all 0.2s ease;
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+}
+
+.booking-type-label:hover {
+  border-color: #EC3E33;
+  background: #fff5f5;
+  transform: translateY(-1px);
+}
+
+.booking-type-label input[type="radio"] {
+  width: 0;
+  height: 0;
+  opacity: 0;
+  position: absolute;
+  margin: 0;
+  pointer-events: none;
+}
+
+.booking-type-label span {
+  user-select: none;
+  color: #333;
+  transition: color 0.2s, font-weight 0.2s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  width: 100%;
+}
+
+.booking-type-label.selected {
+  border-color: #EC3E33;
+  background: #EC3E33;
+  box-shadow: 0 2px 8px rgba(236, 62, 51, 0.3);
+  transform: translateY(-1px);
+}
+
+.booking-type-label.selected span {
+  color: #fff;
+  font-weight: 700;
+}
+
+.booking-type-label:active {
+  transform: scale(0.97) translateY(0);
+  box-shadow: 0 1px 3px rgba(236, 62, 51, 0.2);
+}
+
+.booking-type-label.selected:active {
+  transform: scale(0.97) translateY(0);
+  box-shadow: 0 1px 3px rgba(236, 62, 51, 0.4);
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.modal-add-button,
+.modal-cancel-button {
+  flex: 1;
+  margin-top: 0 !important;
+  background: #EC3E33;
+  color: white;
+  padding: 1rem;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.2;
+  transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
+  border: none;
+  cursor: pointer;
+  min-height: 50px;
+  touch-action: manipulation;
+  font-family: 'Pretendard', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-add-button:hover,
+.modal-cancel-button:hover {
+  background: #E63E3E;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(236, 62, 51, 0.4);
+}
+
+.modal-add-button:active,
+.modal-cancel-button:active {
+  transform: translateY(0);
+}
+
+.modal-cancel-button {
+  background: #666;
+}
+
+.modal-cancel-button:hover {
+  background: #555;
+  box-shadow: 0 4px 12px rgba(102, 102, 102, 0.4);
 }
 
 @media (max-width: 768px) {

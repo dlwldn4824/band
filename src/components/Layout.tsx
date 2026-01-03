@@ -161,9 +161,6 @@ const Layout = ({ children }: LayoutProps) => {
               </>
             ) : (
               <>
-                <Link to="/login" className={`nav-link ${isActive('/login')}`} onClick={(e) => handleNavClick('/login', e)}>
-                  체크인
-                </Link>
                 <Link to="/performances" className={`nav-link ${isActive('/performances')}`} onClick={(e) => handleNavClick('/performances', e)}>
                   공연 정보
                 </Link>

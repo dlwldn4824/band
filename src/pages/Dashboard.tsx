@@ -3,7 +3,6 @@ import { useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useData } from '../contexts/DataContext'
 import Events from '../components/Events'
-import QRScanner from '../components/QRScanner'
 import ticketImage from '../assets/배경/티켓_최종.png'
 import editIcon from '../assets/배경/수정_아이콘.png'
 import { formatPhoneDisplay } from '../utils/phoneFormat'
@@ -14,14 +13,11 @@ import './Dashboard.css'
 const Dashboard = () => {
   // ✅ 모든 Hook은 최상단에서 조건 없이 호출
   const { user, updateUser, setNickname, isAdmin, adminName, isLoading } = useAuth()
-  const { performanceData, checkInGuest, guests, lastCheckedInGuest } = useData()
-  const [showScanner, setShowScanner] = useState(false)
-  const [checkInStatus, setCheckInStatus] = useState<'loading' | 'notYet' | 'done'>('loading')
+  const { performanceData, guests } = useData()
   const [showNicknameModal, setShowNicknameModal] = useState(false)
   const [nickname, setNicknameInput] = useState('')
   const [nicknameError, setNicknameError] = useState('')
   const [isUpdatingNickname, setIsUpdatingNickname] = useState(false)
-  const [checkInNotification, setCheckInNotification] = useState<{ name: string; timestamp: number } | null>(null)
   const [showGuestList, setShowGuestList] = useState(false)
   const [userNicknames, setUserNicknames] = useState<Record<string, string>>({}) // userId -> nickname 매핑
   const [adminList, setAdminList] = useState<Array<{ name: string; nickname: string }>>([])
@@ -62,67 +58,6 @@ const Dashboard = () => {
     }
   }, [])
 
-  // Firestore에서 체크인 상태 확인 (서버 상태 기반)
-  useEffect(() => {
-    console.log('[체크인 상태 확인] 시작')
-    console.log('[체크인 상태 확인] user:', user)
-    console.log('[체크인 상태 확인] guests.length:', guests.length)
-    
-    if (!user) {
-      console.log('[체크인 상태 확인] user가 없음 → notYet')
-      setCheckInStatus('notYet')
-      return
-    }
-
-    // guests가 아직 로드되지 않았으면 대기
-    if (guests.length === 0) {
-      console.log('[체크인 상태 확인] guests가 비어있음 → loading')
-      setCheckInStatus('loading')
-      return
-    }
-
-    console.log('[체크인 상태 확인] 체크인 상태 확인 중...')
-    setCheckInStatus('loading')
-    
-    // Firestore의 guests 배열에서 현재 사용자의 체크인 상태 확인
-    const normalizedInputPhone = user.phone.replace(/[-\s()]/g, '')
-    const normalizedInputName = user.name.trim()
-    
-    const foundGuest = guests.find((guest) => {
-      const guestName = guest.name || guest['이름'] || guest.Name || ''
-      const nameMatch = guestName.trim() === normalizedInputName
-      
-      const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '')
-      const normalizedGuestPhone = guestPhone.replace(/[-\s()]/g, '')
-      const phoneMatch = normalizedGuestPhone === normalizedInputPhone
-      
-      return nameMatch && phoneMatch
-    })
-
-    if (foundGuest && foundGuest.checkedIn) {
-      console.log('[체크인 상태 확인] 체크인 완료:', foundGuest)
-      setCheckInStatus('done')
-      // localStorage의 user 정보도 서버 상태와 동기화
-      if (!user.checkedIn) {
-        updateUser({
-          ...user,
-          checkedIn: true,
-          checkedInAt: foundGuest.checkedInAt
-        })
-      }
-    } else {
-      console.log('[체크인 상태 확인] 체크인 안 됨:', foundGuest ? '게스트는 찾았지만 체크인 안 됨' : '게스트를 찾지 못함')
-      setCheckInStatus('notYet')
-      // 서버에서 체크인 안 된 상태면 localStorage도 업데이트
-      if (user.checkedIn) {
-        updateUser({
-          ...user,
-          checkedIn: false,
-          checkedInAt: undefined
-        })
-      }
-    }
-  }, [user, guests, updateUser])
 
   // userProfiles에서 닉네임 로드 (admin일 때만)
   useEffect(() => {
@@ -160,119 +95,11 @@ const Dashboard = () => {
     loadNicknames()
   }, [isAdmin])
 
-  // 체크인 알림 표시 (admin 권한이 있을 때만)
-  useEffect(() => {
-    // admin 권한이 없으면 알림 제거
-    if (!isAdmin) {
-      if (notificationTimerRef.current) {
-        clearTimeout(notificationTimerRef.current)
-        notificationTimerRef.current = null
-      }
-      setCheckInNotification(null)
-      return
-    }
-
-    if (lastCheckedInGuest) {
-      // 이전 알림과 다른 게스트인지 확인 (중복 방지)
-      const isNewNotification = 
-        !checkInNotification || 
-        checkInNotification.name !== lastCheckedInGuest.name || 
-        checkInNotification.timestamp !== lastCheckedInGuest.timestamp
-
-      if (isNewNotification) {
-        // 기존 타이머가 있으면 정리
-        if (notificationTimerRef.current) {
-          clearTimeout(notificationTimerRef.current)
-        }
-        
-        // 새 알림 설정
-        setCheckInNotification({
-          name: lastCheckedInGuest.name,
-          timestamp: lastCheckedInGuest.timestamp
-        })
-        
-        // 2초 후 알림 자동 제거
-        notificationTimerRef.current = setTimeout(() => {
-          setCheckInNotification(null)
-          notificationTimerRef.current = null
-        }, 2000)
-      }
-    } else {
-      // lastCheckedInGuest가 null이면 알림 제거
-      if (notificationTimerRef.current) {
-        clearTimeout(notificationTimerRef.current)
-        notificationTimerRef.current = null
-      }
-      setCheckInNotification(null)
-    }
-
-    // cleanup 함수
-    return () => {
-      if (notificationTimerRef.current) {
-        clearTimeout(notificationTimerRef.current)
-        notificationTimerRef.current = null
-      }
-    }
-  }, [lastCheckedInGuest, isAdmin])
-
-  const handleScanSuccess = (data: { name: string; phone: string }) => {
-    setShowScanner(false)
-    const checkInResult = checkInGuest(data.name, data.phone)
-    
-    if (checkInResult.success) {
-      // 사용자 정보 업데이트
-      const guests = JSON.parse(localStorage.getItem('guests') || '[]')
-      const normalizedInputPhone = data.phone.replace(/[-\s()]/g, '')
-      const normalizedInputName = data.name.trim()
-      
-      const foundGuest = guests.find((guest: any) => {
-        const guestName = guest.name || guest['이름'] || guest.Name || ''
-        const nameMatch = guestName.trim() === normalizedInputName
-        
-        const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '')
-        const normalizedGuestPhone = guestPhone.replace(/[-\s()]/g, '')
-        const phoneMatch = normalizedGuestPhone === normalizedInputPhone
-        
-        return nameMatch && phoneMatch
-      })
-
-      if (foundGuest) {
-        updateUser({
-          name: foundGuest.name || foundGuest['이름'] || data.name,
-          phone: foundGuest.phone || foundGuest['전화번호'] || data.phone,
-          checkedIn: true,
-          checkedInAt: Date.now()
-        })
-        // 체크인 상태 업데이트 (서버 상태 반영)
-        setCheckInStatus('done')
-      }
-    } else {
-      alert(checkInResult.message || '체크인에 실패했습니다.')
-    }
-  }
 
   // 렌더링 조건 디버깅
 
   return (
     <div className="dashboard">
-      {/* 체크인 알림 (admin 권한이 있을 때만 표시) */}
-      {isAdmin && checkInNotification && (
-        <div className="checkin-notification">
-          <div className="checkin-notification-content">
-            <span className="checkin-notification-icon"></span>
-            <span className="checkin-notification-text">
-              {checkInNotification.name}님이 현장 체크인 하셨습니다
-            </span>
-            <button 
-              className="checkin-notification-close"
-              onClick={() => setCheckInNotification(null)}
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
-      
       <div className="dashboard-header">
         <div>
           <h1>안녕하세요, {isAdmin ? adminName : user?.name}님!</h1>
@@ -325,24 +152,10 @@ const Dashboard = () => {
                 loading="eager"
                 decoding="async"
               />
-              {checkInStatus === 'done' && (
-                <div className="ticket-stamp">
-                  <div className="ticket-stamp-text">
-                    체크인 완료
-                  </div>
-                </div>
-              )}
             </div>
           </section>
         )}
 
-        {checkInStatus === 'loading' && (
-          <section className="dashboard-section">
-            <div className="checkin-card">
-              <p>체크인 상태 확인 중...</p>
-            </div>
-          </section>
-        )}
 
 
 
@@ -354,9 +167,6 @@ const Dashboard = () => {
                 <div style={{ padding: '0.75rem', background: '#111', borderRadius: '8px', border: '1px solid #333', color: '#fff' }}>
                   <p style={{ margin: '0 0 0.5rem 0', fontWeight: '600', color: '#fff' }}>현재 통계</p>
                   <p style={{ margin: '0.25rem 0', fontSize: '0.9rem', color: '#fff' }}>총 게스트: {guests.length}명</p>
-                  <p style={{ margin: '0.25rem 0', fontSize: '0.9rem', color: '#fff' }}>
-                    체크인 완료: {guests.filter(g => g.checkedIn).length}명
-                  </p>
                 </div>
                 <button
                   onClick={() => setShowGuestList(true)}
@@ -555,13 +365,6 @@ const Dashboard = () => {
           </div>
         )}
       </div>
-
-      {showScanner && (
-        <QRScanner
-          onScanSuccess={handleScanSuccess}
-          onClose={() => setShowScanner(false)}
-        />
-      )}
 
       {/* 닉네임 수정 모달 */}
       {showNicknameModal && (

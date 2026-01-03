@@ -13,7 +13,6 @@ import Performances from './pages/Performances'
 import Events from './pages/Events'
 import Chat from './pages/Chat'
 import Guestbook from './pages/Guestbook'
-import CheckIn from './pages/CheckIn'
 import Products from './pages/Products'
 
 function useAppHeight() {
@@ -96,8 +95,6 @@ function AppRoutes() {
     <Routes location={location} key={location.key || location.pathname}>
           <Route path="/login" element={<Login />} />
           <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/staff/login" element={<AdminLogin />} />
-          <Route path="/checkin" element={<CheckIn />} />
           <Route path="/manage" element={<Admin />} />
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route

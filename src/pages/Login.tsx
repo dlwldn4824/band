@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useData } from '../contexts/DataContext'
-import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { doc, setDoc, onSnapshot, getDoc } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import TicketTransition from '../components/TicketTransition'
 import ticketImage from '../assets/배경/티켓_최종.png'
@@ -10,19 +10,85 @@ import { validatePhoneNumber, formatPhoneDisplay } from '../utils/phoneFormat'
 import './Login.css'
 
 const Login = () => {
-  const [name, setName] = useState('')
-  const [phone, setPhone] = useState('')
-  const [error, setError] = useState('')
   const [showTicket, setShowTicket] = useState(false)
-  const [showWalkInModal, setShowWalkInModal] = useState(false)
-  const [walkInStep, setWalkInStep] = useState<'payment' | 'info'>('payment')
-  const [paymentConfirmed, setPaymentConfirmed] = useState(false)
-  const [walkInName, setWalkInName] = useState('')
-  const [walkInPhone, setWalkInPhone] = useState('')
-  const [walkInError, setWalkInError] = useState('')
+  const [showBookingConfirmation, setShowBookingConfirmation] = useState(false)
+  
+  // 예매 폼 상태
+  const [bookingName, setBookingName] = useState('')
+  const [bookingPhone, setBookingPhone] = useState('')
+  const [bookingEmail, setBookingEmail] = useState('')
+  const [bookingError, setBookingError] = useState('')
+  
+  // 정보 수정 모드
+  const [isEditingInfo, setIsEditingInfo] = useState(false)
+  const [editedName, setEditedName] = useState('')
+  const [editedPhone, setEditedPhone] = useState('')
+  const [editedEmail, setEditedEmail] = useState('')
+  
   const { login } = useAuth()
   const { guests, addWalkInGuest, bookingInfo } = useData()
   const navigate = useNavigate()
+  const location = window.location
+
+  // URL 파라미터에서 토큰 기반 자동 로그인 처리
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search)
+    const token = searchParams.get('token')
+
+    if (token && guests.length > 0) {
+      // 토큰으로 게스트 정보 조회
+      const handleTokenLogin = async () => {
+        try {
+          const tokenRef = doc(db, 'loginTokens', token)
+          const tokenSnap = await getDoc(tokenRef)
+          
+          if (tokenSnap.exists()) {
+            const tokenData = tokenSnap.data()
+            const name = tokenData.name
+            const phone = tokenData.phone
+            const expiresAt = tokenData.expiresAt?.toDate()
+            
+            // 토큰 만료 확인
+            if (expiresAt && expiresAt < new Date()) {
+              console.warn('토큰이 만료되었습니다.')
+              const newUrl = window.location.pathname
+              window.history.replaceState({}, '', newUrl)
+              return
+            }
+            
+            // 자동 로그인 시도
+            const loginSuccess = login(name, phone, guests)
+            
+            if (loginSuccess) {
+              // 로그인 성공 시 대시보드로 이동
+              setTimeout(() => {
+                navigate('/dashboard')
+              }, 200)
+              
+              // URL에서 토큰 제거
+              const newUrl = window.location.pathname
+              window.history.replaceState({}, '', newUrl)
+            } else {
+              // 로그인 실패 시 URL 파라미터 제거
+              const newUrl = window.location.pathname
+              window.history.replaceState({}, '', newUrl)
+            }
+          } else {
+            // 토큰이 존재하지 않음
+            console.warn('유효하지 않은 토큰입니다.')
+            const newUrl = window.location.pathname
+            window.history.replaceState({}, '', newUrl)
+          }
+        } catch (error) {
+          console.error('토큰 로그인 오류:', error)
+          const newUrl = window.location.pathname
+          window.history.replaceState({}, '', newUrl)
+        }
+      }
+      
+      handleTokenLogin()
+    }
+  }, [location.search, guests, login, navigate])
 
   useEffect(() => {
     // 세로 모드에서 스크롤 방지 (입력 필드와 버튼은 제외)
@@ -80,77 +146,110 @@ const Login = () => {
     navigate('/dashboard')
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
+  // 페이지 로드 시 이미 등록된 게스트인지 확인
+  useEffect(() => {
+    const checkExistingBooking = async () => {
+      // localStorage에서 예매 신청 정보 확인
+      const savedBooking = localStorage.getItem('pendingBooking')
+      if (savedBooking) {
+        try {
+          const booking = JSON.parse(savedBooking)
+          if (booking.name && booking.phone && booking.email) {
+            // Firestore에서 승인 상태 확인
+            const normalizedPhone = booking.phone.replace(/\D/g, '')
+            const userId = `${booking.name}_${normalizedPhone}`
+            const bookingRef = doc(db, 'bookings', userId)
+            
+            try {
+              const bookingSnap = await getDoc(bookingRef)
+              if (bookingSnap.exists()) {
+                const bookingData = bookingSnap.data()
+                // 이미 승인되었다면 로그인 처리
+                if (bookingData.approved === true) {
+                  const updatedGuests = [...guests]
+                  const loginSuccess = login(booking.name, normalizedPhone, updatedGuests)
+                  if (loginSuccess) {
+                    localStorage.removeItem('pendingBooking')
+                    setTimeout(() => {
+                      checkNicknameAndNavigate()
+                    }, 200)
+                    return
+                  }
+                }
+              }
+            } catch (error) {
+              console.error('Firestore 예매 정보 확인 실패:', error)
+            }
+            
+            // 승인되지 않았거나 예매 정보가 없는 경우 확인 화면 표시
+            setBookingName(booking.name)
+            setBookingPhone(booking.phone)
+            setEditedName(booking.name)
+            setEditedPhone(booking.phone)
+            setEditedEmail(booking.email)
+            setShowBookingConfirmation(true)
+          }
+        } catch (error) {
+          console.error('저장된 예매 정보 로드 실패:', error)
+        }
+      }
+    }
+    
+    checkExistingBooking()
+  }, [guests, login])
 
-    if (!name.trim() || !phone.trim()) {
-      setError('이름과 전화번호를 입력해주세요.')
+  // 예매 신청 승인 상태 확인
+  useEffect(() => {
+    if (!showBookingConfirmation || !bookingName || !bookingPhone) return
+
+    const userId = `${bookingName}_${bookingPhone.replace(/\D/g, '')}`
+    const bookingRef = doc(db, 'bookings', userId)
+
+    const unsubscribe = onSnapshot(bookingRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const bookingData = snapshot.data()
+        if (bookingData.approved === true) {
+          // 승인 완료 시 로그인 처리
+          const normalizedPhone = bookingPhone.replace(/\D/g, '')
+          const updatedGuests = [...guests]
+          const loginSuccess = login(bookingName, normalizedPhone, updatedGuests)
+          
+          if (loginSuccess) {
+            // localStorage에서 예매 정보 삭제
+            localStorage.removeItem('pendingBooking')
+            setShowBookingConfirmation(false)
+            setTimeout(() => {
+              checkNicknameAndNavigate()
+            }, 200)
+          }
+        }
+      }
+    })
+
+    return () => unsubscribe()
+  }, [showBookingConfirmation, bookingName, bookingPhone, guests, login])
+
+  // 예매 신청하기 핸들러
+  const handleBookingSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setBookingError('')
+
+    if (!bookingName.trim() || !bookingPhone.trim() || !bookingEmail.trim()) {
+      setBookingError('모든 항목을 입력해주세요.')
       return
     }
 
-    // 포커스 강제 해제 (iOS 자동 줌 방지)
-    const blurActiveElement = () => {
-      const el = document.activeElement as HTMLElement | null
-      el?.blur?.()
-    }
-
-    blurActiveElement()
-    window.scrollTo(0, 0)
-
-    // Firestore의 guests 배열 사용 (서버 상태 기반)
-    const success = login(name.trim(), phone.trim(), guests)
-    if (success) {
-        // iOS 줌 방지: 포커스 해제
-        if (document.activeElement instanceof HTMLElement) {
-          document.activeElement.blur()
-        }
-        
-        // Firestore에서 티켓 애니메이션 표시 여부 확인
-        setTimeout(async () => {
-          const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
-          if (!currentUser) {
-            setError('사용자 정보를 불러올 수 없습니다.')
-            return
-          }
-
-          try {
-            const userId = `${currentUser.name}_${currentUser.phone}`
-            const userProfileRef = doc(db, 'userProfiles', userId)
-            const userProfileSnap = await getDoc(userProfileRef)
-            
-            // 티켓 애니메이션을 이미 본 경우 건너뛰기
-            if (userProfileSnap.exists() && userProfileSnap.data().ticketShown) {
-              // 티켓 애니메이션 없이 바로 닉네임 확인 로직으로
-              checkNicknameAndNavigate()
-            } else {
-              // 티켓 애니메이션 표시
-              setShowTicket(true)
-            }
-          } catch (error) {
-            // Firestore 연결 실패 시 티켓 애니메이션 표시 (안전하게)
-            console.warn('Firestore 티켓 확인 실패, 티켓 애니메이션 표시:', error)
-            setShowTicket(true)
-          }
-        }, 150)
-    } else {
-      setError('등록된 정보가 없습니다. 이름과 전화번호를 확인해주세요.')
-    }
-  }
-
-  const handleWalkInSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setWalkInError('')
-
-    if (!walkInName.trim() || !walkInPhone.trim()) {
-      setWalkInError('이름과 전화번호를 입력해주세요.')
+    // 이메일 형식 검증
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(bookingEmail.trim())) {
+      setBookingError('올바른 이메일 형식을 입력해주세요.')
       return
     }
 
     // 전화번호 검증
-    const phoneValidation = validatePhoneNumber(walkInPhone.trim())
+    const phoneValidation = validatePhoneNumber(bookingPhone.trim())
     if (!phoneValidation.valid) {
-      setWalkInError(phoneValidation.message || '전화번호 형식이 올바르지 않습니다.')
+      setBookingError(phoneValidation.message || '전화번호 형식이 올바르지 않습니다.')
       return
     }
 
@@ -159,82 +258,342 @@ const Login = () => {
       const el = document.activeElement as HTMLElement | null
       el?.blur?.()
     }
-
     blurActiveElement()
     window.scrollTo(0, 0)
 
     // 전화번호에서 하이픈 제거하여 저장
-    const normalizedPhone = walkInPhone.trim().replace(/\D/g, '')
+    const normalizedPhone = bookingPhone.trim().replace(/\D/g, '')
     
-    // 사전 예약 등록 (결제 완료 상태이므로 isWalkIn: false)
-    const result = addWalkInGuest(walkInName.trim(), normalizedPhone, false)
-    
-    if (result.success) {
-      // 등록 성공 후 새 게스트를 포함한 배열로 로그인 처리
-      const newGuest = {
-        name: walkInName.trim(),
-        phone: normalizedPhone,
-        checkedIn: false
-      }
-      const updatedGuests = [...guests, newGuest]
-      
-      // 등록 성공 후 바로 로그인 처리 (정규화된 전화번호 사용)
-      const loginSuccess = login(walkInName.trim(), normalizedPhone, updatedGuests)
-      
-      if (loginSuccess) {
-        setShowWalkInModal(false)
-        setWalkInName('')
-        setWalkInPhone('')
-        setName(walkInName.trim())
-        setPhone(normalizedPhone)
-        
-        // iOS 줌 방지: 포커스 해제
-        if (document.activeElement instanceof HTMLElement) {
-          document.activeElement.blur()
-        }
-        
-        // Firestore에서 티켓 애니메이션 표시 여부 확인
-        setTimeout(async () => {
-          const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
-          if (!currentUser) {
-            setWalkInError('사용자 정보를 불러올 수 없습니다.')
-            return
-          }
+    try {
+      // 이미 등록된 게스트인지 확인
+      const normalizedName = bookingName.trim()
+      const normalizedPhoneForCompare = normalizedPhone.replace(/[-\s()]/g, '')
+      const existingGuest = guests.find((guest) => {
+        const guestName = guest.name || guest['이름'] || guest.Name || ''
+        const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '').replace(/[-\s()]/g, '')
+        return guestName.trim() === normalizedName && guestPhone === normalizedPhoneForCompare
+      })
 
-          try {
-            const userId = `${currentUser.name}_${currentUser.phone}`
-            const userProfileRef = doc(db, 'userProfiles', userId)
-            const userProfileSnap = await getDoc(userProfileRef)
-            
-            // 티켓 애니메이션을 이미 본 경우 건너뛰기
-            if (userProfileSnap.exists() && userProfileSnap.data().ticketShown) {
-              // 티켓 애니메이션 없이 바로 닉네임 확인 로직으로
-              checkNicknameAndNavigate()
-            } else {
-              // 티켓 애니메이션 표시
-              setShowTicket(true)
+      if (existingGuest) {
+        // 이미 등록된 게스트인 경우 Firestore에서 예매 정보 가져오기
+        const userId = `${bookingName.trim()}_${normalizedPhone}`
+        const bookingRef = doc(db, 'bookings', userId)
+        
+        try {
+          const bookingSnap = await getDoc(bookingRef)
+          let savedEmail = bookingEmail.trim()
+          
+          if (bookingSnap.exists()) {
+            const bookingData = bookingSnap.data()
+            // Firestore에 저장된 이메일이 있으면 사용
+            if (bookingData.email) {
+              savedEmail = bookingData.email
             }
-          } catch (error) {
-            // Firestore 연결 실패 시 티켓 애니메이션 표시 (안전하게)
-            console.warn('Firestore 티켓 확인 실패, 티켓 애니메이션 표시:', error)
-            setShowTicket(true)
+            
+            // 이미 승인되었다면 로그인 처리
+            if (bookingData.approved === true) {
+              const updatedGuests = [...guests]
+              const loginSuccess = login(bookingName.trim(), normalizedPhone, updatedGuests)
+              if (loginSuccess) {
+                localStorage.removeItem('pendingBooking')
+                setTimeout(() => {
+                  checkNicknameAndNavigate()
+                }, 200)
+                return
+              }
+            }
           }
-        }, 150)
-      } else {
-        setWalkInError('등록은 완료되었지만 로그인에 실패했습니다. 다시 시도해주세요.')
+          
+          // 승인되지 않았거나 예매 정보가 없는 경우 확인 화면 표시
+          setBookingName(bookingName.trim())
+          setBookingPhone(bookingPhone.trim())
+          setEditedName(bookingName.trim())
+          setEditedPhone(bookingPhone.trim())
+          setEditedEmail(savedEmail)
+          
+          // localStorage에 예매 정보 저장 (페이지 재접근 시 확인 화면 표시용)
+          localStorage.setItem('pendingBooking', JSON.stringify({
+            name: bookingName.trim(),
+            phone: bookingPhone.trim(),
+            email: savedEmail
+          }))
+          
+          // 확인 화면 표시
+          setShowBookingConfirmation(true)
+          return
+        } catch (error) {
+          console.error('Firestore 예매 정보 확인 실패:', error)
+          setBookingError('예매 정보를 확인하는 중 오류가 발생했습니다. 다시 시도해주세요.')
+          return
+        }
       }
-    } else {
-      setWalkInError(result.message || '등록에 실패했습니다.')
+
+      // 새로운 게스트인 경우 예매 신청 처리
+      // Firestore에 예매 신청 정보 저장
+      const userId = `${bookingName.trim()}_${normalizedPhone}`
+      const bookingRef = doc(db, 'bookings', userId)
+      
+      await setDoc(bookingRef, {
+        name: bookingName.trim(),
+        phone: normalizedPhone,
+        email: bookingEmail.trim(),
+        approved: false, // 관리자 승인 전까지 false
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }, { merge: true })
+
+      // 사전 예약 등록 (결제 완료 상태이므로 isWalkIn: false)
+      const result = addWalkInGuest(bookingName.trim(), normalizedPhone, false)
+      
+      if (result.success) {
+        // 정보 수정용 상태 설정
+        setEditedName(bookingName.trim())
+        setEditedPhone(bookingPhone.trim())
+        setEditedEmail(bookingEmail.trim())
+        
+        // localStorage에 예매 정보 저장 (페이지 재접근 시 확인 화면 표시용)
+        localStorage.setItem('pendingBooking', JSON.stringify({
+          name: bookingName.trim(),
+          phone: bookingPhone.trim(),
+          email: bookingEmail.trim()
+        }))
+        
+        // 확인 화면 표시
+        setShowBookingConfirmation(true)
+      } else {
+        setBookingError(result.message || '등록에 실패했습니다.')
+      }
+    } catch (error) {
+      console.error('예매 신청 처리 오류:', error)
+      setBookingError('예매 신청 처리 중 오류가 발생했습니다. 다시 시도해주세요.')
+    }
+  }
+
+  // 정보 수정 핸들러
+  const handleInfoUpdate = async () => {
+    if (!editedName.trim() || !editedPhone.trim() || !editedEmail.trim()) {
+      setBookingError('모든 항목을 입력해주세요.')
+      return
+    }
+
+    // 이메일 형식 검증
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(editedEmail.trim())) {
+      setBookingError('올바른 이메일 형식을 입력해주세요.')
+      return
+    }
+
+    // 전화번호 검증
+    const phoneValidation = validatePhoneNumber(editedPhone.trim())
+    if (!phoneValidation.valid) {
+      setBookingError(phoneValidation.message || '전화번호 형식이 올바르지 않습니다.')
+      return
+    }
+
+    try {
+      const normalizedPhone = editedPhone.trim().replace(/\D/g, '')
+      const userId = `${editedName.trim()}_${normalizedPhone}`
+      const bookingRef = doc(db, 'bookings', userId)
+      
+      await setDoc(bookingRef, {
+        name: editedName.trim(),
+        phone: normalizedPhone,
+        email: editedEmail.trim(),
+        updatedAt: new Date()
+      }, { merge: true })
+
+      setBookingName(editedName.trim())
+      setBookingPhone(editedPhone.trim())
+      setBookingEmail(editedEmail.trim())
+      setIsEditingInfo(false)
+      setBookingError('')
+    } catch (error) {
+      console.error('정보 수정 실패:', error)
+      setBookingError('정보 수정에 실패했습니다. 다시 시도해주세요.')
+    }
+  }
+
+  // 계좌번호 복사
+  const copyAccountNumber = async () => {
+    if (!bookingInfo?.accountNumber) return
+    
+    try {
+      await navigator.clipboard.writeText(bookingInfo.accountNumber)
+      alert('계좌번호가 복사되었습니다!')
+    } catch (err) {
+      // 클립보드 API 실패 시 fallback
+      const textArea = document.createElement('textarea')
+      textArea.value = bookingInfo.accountNumber
+      textArea.style.position = 'fixed'
+      textArea.style.opacity = '0'
+      document.body.appendChild(textArea)
+      textArea.select()
+      try {
+        document.execCommand('copy')
+        alert('계좌번호가 복사되었습니다!')
+      } catch (e) {
+        alert('계좌번호 복사에 실패했습니다.')
+      }
+      document.body.removeChild(textArea)
     }
   }
 
   return (
     <div className="login-page">
-      {showTicket ? (
+      {showBookingConfirmation ? (
+        <div className="login-container booking-confirmation">
+          <button 
+            className="booking-close-button"
+            onClick={() => {
+              setShowBookingConfirmation(false)
+              setBookingName('')
+              setBookingPhone('')
+              setBookingEmail('')
+              setEditedName('')
+              setEditedPhone('')
+              setEditedEmail('')
+              setBookingError('')
+              localStorage.removeItem('pendingBooking')
+            }}
+            aria-label="닫기"
+          >
+          </button>
+          <div className="confirmation-header">
+            <h1>신청이 완료되었습니다!</h1>
+          </div>
+
+          {/* 내 정보 박스 */}
+          <div className="info-box">
+            <div className="info-box-header">
+              <h3>내 정보</h3>
+              <button 
+                className="edit-info-button"
+                onClick={() => {
+                  if (isEditingInfo) {
+                    handleInfoUpdate()
+                  } else {
+                    setIsEditingInfo(true)
+                    setEditedName(bookingName)
+                    setEditedPhone(bookingPhone)
+                    setEditedEmail(bookingEmail)
+                  }
+                }}
+              >
+                {isEditingInfo ? '저장' : '내 정보 확인/수정'}
+              </button>
+            </div>
+            
+            {isEditingInfo ? (
+              <div className="info-edit-form">
+                <div className="form-group">
+                  <label>이름</label>
+                  <input
+                    type="text"
+                    value={editedName}
+                    onChange={(e) => setEditedName(e.target.value)}
+                    placeholder="이름"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>연락처</label>
+                  <input
+                    type="tel"
+                    value={editedPhone}
+                    onChange={(e) => setEditedPhone(e.target.value)}
+                    placeholder="010-1234-5678"
+                    maxLength={13}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>이메일</label>
+                  <input
+                    type="email"
+                    value={editedEmail}
+                    onChange={(e) => setEditedEmail(e.target.value)}
+                    placeholder="user@example.com"
+                  />
+                </div>
+                <button 
+                  className="cancel-edit-button"
+                  onClick={() => setIsEditingInfo(false)}
+                >
+                  취소
+                </button>
+              </div>
+            ) : (
+              <div className="info-content">
+                <div className="info-item">
+                  <span className="info-label">이름</span>
+                  <span className="info-value">{bookingName}</span>
+                </div>
+                <div className="info-item">
+                  <span className="info-label">연락처</span>
+                  <span className="info-value">{formatPhoneDisplay(bookingPhone)}</span>
+                </div>
+                <div className="info-item">
+                  <span className="info-label">이메일</span>
+                  <span className="info-value">{bookingEmail}</span>
+                </div>
+              </div>
+            )}
+            
+            {!isEditingInfo && (
+              <p className="info-notice">
+                입금 전에 정보가 맞는지 확인해주세요. 수정 시 기존 예약이 업데이트됩니다.
+              </p>
+            )}
+          </div>
+
+          {/* 결제 정보 박스 */}
+          {bookingInfo && (
+            <div className="payment-box">
+              <div className="payment-item payment-item-row">
+                <span className="payment-label">입금 계좌:</span>
+                <div className="payment-value account-info-row">
+                  <span className="account-name-bank">
+                    {bookingInfo.accountName || '(미설정)'}{' '}
+                    {bookingInfo.bankName && (
+                      <span className="bank-name">{bookingInfo.bankName}</span>
+                    )}
+                  </span>
+                  {bookingInfo.accountNumber && (
+                    <span 
+                      className="account-number"
+                      onClick={copyAccountNumber}
+                      title="클릭하여 복사"
+                      style={{ cursor: 'pointer' }}
+                    >
+                      {bookingInfo.accountNumber}
+                    </span>
+                  )}
+                </div>
+              </div>
+              {bookingInfo.accountNumber && (
+                <p className="copy-hint">계좌번호를 클릭하면 복사됩니다</p>
+              )}
+              <div className="payment-item payment-item-row">
+                <span className="payment-label">입금하실 금액:</span>
+                <span className="payment-amount">{bookingInfo.walkInPrice || '(미설정)'}</span>
+              </div>
+            </div>
+          )}
+
+          {/* 안내 문구 */}
+          <div className="instructions">
+            <p>위 계좌로 10분 이내에 입금해 주세요.</p>
+            <p>시스템이 입금을 확인하면 자동으로 이메일로 티켓을 보내드립니다. 이메일이 보이지 않으면 메일함에서 4242fire@gmail.com을 검색해 주세요.</p>
+            <p className="important-notice">
+              반드시 신청하신 "{bookingName}" 입금자명으로 입금해 주세요.
+            </p>
+          </div>
+
+          {bookingError && <div className="error-message">{bookingError}</div>}
+        </div>
+      ) : showTicket ? (
         <TicketTransition
           ticketImageUrl={ticketImage}
           info={{
-            name: name,
+            name: bookingName || '',
             date: new Date().toLocaleDateString(),
             seat: 'STANDING',
           }}
@@ -273,232 +632,60 @@ const Login = () => {
       ) : (
         <div className="login-container">
           <div className="login-header">
-            <h1>예약자 로그인</h1>
-            <p>예약을 완료하지 않으신 분은 하단에 <br/>버튼을 이용해주세요.</p>
+            <h1>공연 예매하기</h1>
+            <p>입력하신 이메일로 안내가 전송되니<br/> 정확히 작성해 주세요.</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="login-form">
-            <div className="form-group">
-              <label htmlFor="name">이름</label>
-              <input
-                type="text"
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="이름을 입력하세요"
-                autoComplete="name"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="phone">전화번호</label>
-              <input
-                type="tel"
-                id="phone"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="010-1234-5678"
-                autoComplete="tel"
-                maxLength={13}
-              />
-            </div>
-
-            {error && <div className="error-message">{error}</div>}
-
-            <button type="submit" className="login-button">
-              공연 입장하기
-            </button>
-
-            <div className="walk-in-section">
-              <div className="divider">
-                <span>또는</span>
+          <form onSubmit={handleBookingSubmit} className="login-form">
+              <div className="form-group">
+                <label htmlFor="bookingName">성함 (입금자명)</label>
+                <input
+                  type="text"
+                  id="bookingName"
+                  value={bookingName}
+                  onChange={(e) => setBookingName(e.target.value)}
+                  placeholder="예: 홍길동"
+                  autoComplete="name"
+                />
               </div>
-              <button 
-                type="button" 
-                className="walk-in-button"
-                onClick={() => setShowWalkInModal(true)}
-              >
-                사전 예약
-              </button>
-            </div>
 
-            <div className="admin-login-link">
-              <Link to="/admin/login" className="admin-login-text">
-                운영자 로그인 &gt;
-              </Link>
-            </div>
+              <div className="form-group">
+                <label htmlFor="bookingPhone">연락처</label>
+                <input
+                  type="tel"
+                  id="bookingPhone"
+                  value={bookingPhone}
+                  onChange={(e) => setBookingPhone(e.target.value)}
+                  placeholder="예: 01012345678"
+                  autoComplete="tel"
+                  maxLength={13}
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="bookingEmail">이메일</label>
+                <input
+                  type="email"
+                  id="bookingEmail"
+                  value={bookingEmail}
+                  onChange={(e) => setBookingEmail(e.target.value)}
+                  placeholder="예: user@example.com"
+                  autoComplete="email"
+                />
+              </div>
+
+              {bookingError && <div className="error-message">{bookingError}</div>}
+
+              <button type="submit" className="login-button">
+                예매 신청하기
+              </button>
           </form>
-        </div>
-      )}
 
-      {/* 사전 예약 모달 */}
-      {showWalkInModal && (
-        <div className="modal-overlay" onClick={() => {
-          setShowWalkInModal(false)
-          setWalkInStep('payment')
-          setPaymentConfirmed(false)
-          setWalkInName('')
-          setWalkInPhone('')
-          setWalkInError('')
-        }}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>사전 예약</h2>
-              <button 
-                className="modal-close"
-                onClick={() => {
-                  setShowWalkInModal(false)
-                  setWalkInStep('payment')
-                  setPaymentConfirmed(false)
-                  setWalkInName('')
-                  setWalkInPhone('')
-                  setWalkInError('')
-                }}
-              >
-              </button>
-            </div>
-
-            {walkInStep === 'payment' ? (
-              <div className="walk-in-payment-step">
-                <div className="payment-info">
-                  <h3>입금 안내</h3>
-                  <div className="payment-details">
-                    <div className="payment-item">
-                      <span className="payment-label">입금 계좌:</span>
-                      <div className="payment-value">
-                        <div className="account-name-bank">
-                          {bookingInfo?.accountName || '(미설정)'}{' '}
-                          {bookingInfo?.bankName && (
-                            <span className="bank-name">{bookingInfo.bankName}</span>
-                          )}
-                        </div>
-                        {bookingInfo?.accountNumber && (
-                          <div>
-                            <span 
-                              className="account-number"
-                              onClick={async () => {
-                                try {
-                                  await navigator.clipboard.writeText(bookingInfo.accountNumber)
-                                  alert('계좌번호가 복사되었습니다!')
-                                } catch (err) {
-                                  // 클립보드 API 실패 시 fallback
-                                  const textArea = document.createElement('textarea')
-                                  textArea.value = bookingInfo.accountNumber
-                                  textArea.style.position = 'fixed'
-                                  textArea.style.opacity = '0'
-                                  document.body.appendChild(textArea)
-                                  textArea.select()
-                                  try {
-                                    document.execCommand('copy')
-                                    alert('계좌번호가 복사되었습니다!')
-                                  } catch (e) {
-                                    alert('계좌번호 복사에 실패했습니다.')
-                                  }
-                                  document.body.removeChild(textArea)
-                                }
-                              }}
-                              title="클릭하여 복사"
-                            >
-                              {bookingInfo.accountNumber}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <p className="copy-hint">계좌번호를 클릭하면 복사됩니다</p>
-                    <div className="payment-item">
-                      <span className="payment-label">예매 가격:</span>
-                      <span className="payment-value">{bookingInfo?.walkInPrice || '(미설정)'}</span>
-                    </div>
-                    <div className="refund-notice">
-                      <div className="refund-notice-icon">!</div>
-                      <span className="refund-notice-text">환불은 불가합니다.</span>
-                    </div>
-                    {bookingInfo?.contactPhone && (
-                      <div className="payment-item">
-                        <span className="payment-label">문의 전화:</span>
-                        <span className="payment-value">{formatPhoneDisplay(bookingInfo.contactPhone)}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="payment-confirm">
-                  <label className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={paymentConfirmed}
-                      onChange={(e) => setPaymentConfirmed(e.target.checked)}
-                      className="payment-checkbox"
-                    />
-                    <span>입금을 완료하셨다면 체크해 주세요.</span>
-                  </label>
-                </div>
-
-                {walkInError && <div className="error-message">{walkInError}</div>}
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!paymentConfirmed) {
-                      setWalkInError('입금 확인을 체크해주세요.')
-                      return
-                    }
-                    setWalkInStep('info')
-                    setWalkInError('')
-                  }}
-                  className="login-button"
-                  disabled={!paymentConfirmed}
-                >
-                  다음 단계
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleWalkInSubmit} className="login-form">
-                <div className="form-group">
-                  <label htmlFor="walkInName">이름</label>
-                  <input
-                    type="text"
-                    id="walkInName"
-                    value={walkInName}
-                    onChange={(e) => setWalkInName(e.target.value)}
-                    placeholder="이름을 입력하세요"
-                    autoComplete="name"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="walkInPhone">전화번호</label>
-                  <input
-                    type="tel"
-                    id="walkInPhone"
-                    value={walkInPhone}
-                    onChange={(e) => setWalkInPhone(e.target.value)}
-                    placeholder="010-1234-5678"
-                    autoComplete="tel"
-                    maxLength={13}
-                  />
-                </div>
-
-                {walkInError && <div className="error-message">{walkInError}</div>}
-
-                <div className="walk-in-buttons">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setWalkInStep('payment')
-                      setWalkInError('')
-                    }}
-                    className="login-button"
-                  >
-                    이전
-                  </button>
-                  <button type="submit" className="login-button">
-                    등록하고 입장하기
-                  </button>
-                </div>
-              </form>
-            )}
+          {/* 운영자 로그인 링크 */}
+          <div className="admin-login-link" style={{ textAlign: 'center', marginTop: '1rem' }}>
+            <Link to="/admin/login" className="admin-login-text">
+              운영자 로그인 &gt;
+            </Link>
           </div>
         </div>
       )}

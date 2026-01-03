@@ -9,6 +9,7 @@ import { db } from '../config/firebase'
 export interface Guest {
   name: string
   phone: string
+  email?: string // 이메일 주소
   entryNumber?: number // 입장 번호
   checkedIn?: boolean // 체크인 여부
   checkedInAt?: number // 체크인 시간 (timestamp)
@@ -68,20 +69,14 @@ interface DataContextType {
   guests: Guest[]
   performanceData: PerformanceData | null
   guestbookMessages: GuestbookMessage[]
-  checkInCode: string | null
   bookingInfo: BookingInfo | null
   eventsEnabled: boolean
-  lastCheckedInGuest: { name: string; timestamp: number } | null
   uploadGuests: (guests: Guest[]) => void
-  addWalkInGuest: (name: string, phone: string, isWalkIn?: boolean) => { success: boolean; message?: string }
+  addWalkInGuest: (name: string, phone: string, isWalkIn?: boolean, email?: string) => { success: boolean; message?: string }
   toggleGuestPayment: (index: number) => void
   setPerformanceData: (data: PerformanceData) => void
   setBookingInfo: (info: BookingInfo) => void
   addGuestbookMessage: (message: GuestbookMessage) => void
-  checkInGuest: (name: string, phone: string) => { success: boolean; entryNumber?: number; message?: string }
-  generateCheckInCode: () => string
-  setCheckInCode: (code: string) => void
-  verifyCheckInCode: (code: string) => boolean
   clearGuests: () => void
   deleteGuest: (index: number) => void
   updateGuest: (index: number, updatedGuest: Guest) => void
@@ -97,10 +92,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [guests, setGuests] = useState<Guest[]>([])
   const [performanceData, setPerformanceDataState] = useState<PerformanceData | null>(null)
   const [guestbookMessages, setGuestbookMessages] = useState<GuestbookMessage[]>([])
-  const [checkInCode, setCheckInCodeState] = useState<string | null>('0215')
   const [bookingInfo, setBookingInfoState] = useState<BookingInfo | null>(null)
   const [eventsEnabled, setEventsEnabledState] = useState<boolean>(false)
-  const [lastCheckedInGuest, setLastCheckedInGuest] = useState<{ name: string; timestamp: number } | null>(null)
 
   useEffect(() => {
     // Firestore에서 데이터 로드
@@ -281,18 +274,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           }
         }
 
-        // 체크인 코드 로드
-        const firestoreAuth = await getFirestoreData('current' as any, 'auth')
-        if (firestoreAuth && !Array.isArray(firestoreAuth) && (firestoreAuth as any).checkInCode) {
-          setCheckInCodeState((firestoreAuth as any).checkInCode)
-        } else {
-          const fixedCode = '0215'
-          setCheckInCodeState(fixedCode)
-          localStorage.setItem('checkInCode', fixedCode)
-          // Firestore에 저장
-          await setFirestoreData('current' as any, { checkInCode: fixedCode }, 'auth')
-        }
-
         // 이벤트 활성화 상태 로드
         const firestoreEventsStatus = await getFirestoreData('current' as any, 'events')
         if (firestoreEventsStatus && !Array.isArray(firestoreEventsStatus) && typeof (firestoreEventsStatus as any).enabled === 'boolean') {
@@ -360,8 +341,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const savedGuests = localStorage.getItem('guests')
     const savedPerformanceData = localStorage.getItem('performanceData')
     const savedGuestbookMessages = localStorage.getItem('guestbookMessages')
-    const savedCheckInCode = localStorage.getItem('checkInCode')
-        const savedBookingInfo = localStorage.getItem('bookingInfo')
+    const savedBookingInfo = localStorage.getItem('bookingInfo')
     
     if (savedGuests) {
       setGuests(JSON.parse(savedGuests))
@@ -372,14 +352,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     if (savedGuestbookMessages) {
       setGuestbookMessages(JSON.parse(savedGuestbookMessages))
     }
-    if (savedCheckInCode) {
-      setCheckInCodeState(savedCheckInCode)
-        } else {
-          const fixedCode = '0215'
-          setCheckInCodeState(fixedCode)
-          localStorage.setItem('checkInCode', fixedCode)
-        }
-        if (savedBookingInfo) {
+    if (savedBookingInfo) {
           setBookingInfoState(JSON.parse(savedBookingInfo))
         } else {
           // 기본값 설정
@@ -499,7 +472,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     })
   }
 
-  const addWalkInGuest = (name: string, phone: string, isWalkIn: boolean = true): { success: boolean; message?: string } => {
+  const addWalkInGuest = (name: string, phone: string, isWalkIn: boolean = true, email?: string): { success: boolean; message?: string } => {
     // 이름과 전화번호 정규화
     const normalizedName = name.trim()
     const normalizedPhone = phone.replace(/[-\s()]/g, '')
@@ -524,6 +497,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const newGuest: Guest = {
       name: normalizedName,
       phone: normalizedPhone,
+      email: email,
       checkedIn: false,
       isWalkIn: isWalkIn,
       paymentConfirmed: isWalkIn ? false : true, // 사전 예매는 결제 완료로 간주
@@ -605,150 +579,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     })
   }
 
-  const checkInGuest = (name: string, phone: string): { success: boolean; entryNumber?: number; message?: string } => {
-    const normalizedInputPhone = phone.replace(/[-\s()]/g, '')
-    const normalizedInputName = name.trim()
-    
-    console.log('체크인 게스트 찾기:', {
-      입력이름: normalizedInputName,
-      입력전화번호: normalizedInputPhone,
-      게스트수: guests.length,
-      게스트데이터전체: guests
-    })
-    
-    // guests 배열에서 해당 게스트 찾기
-    const guestIndex = guests.findIndex((guest) => {
-      const guestName = guest.name || guest['이름'] || guest.Name || ''
-      const nameMatch = guestName.trim() === normalizedInputName
-      
-      const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '')
-      const normalizedGuestPhone = guestPhone.replace(/[-\s()]/g, '')
-      const phoneMatch = normalizedGuestPhone === normalizedInputPhone
-      
-      if (nameMatch || phoneMatch) {
-        console.log('게스트 매칭 시도:', {
-          게스트이름: guestName,
-          이름일치: nameMatch,
-          게스트전화번호: normalizedGuestPhone,
-          전화번호일치: phoneMatch,
-          전체일치: nameMatch && phoneMatch
-        })
-      }
-      
-      return nameMatch && phoneMatch
-    })
-
-    console.log('게스트 찾기 결과:', {
-      guestIndex,
-      찾음: guestIndex !== -1
-    })
-
-    if (guestIndex === -1) {
-      console.error('게스트를 찾을 수 없습니다.')
-      console.error('등록된 게스트 목록 (원본):', guests)
-      console.error('등록된 게스트 목록 (파싱):', guests.map((g, idx) => {
-        const guestName = g.name || g['이름'] || g.Name || ''
-        const guestPhone = g.phone || g['전화번호'] || g.Phone || ''
-        return {
-          인덱스: idx,
-          원본객체: g,
-          이름: guestName,
-          전화번호: guestPhone,
-          모든키: Object.keys(g)
-        }
-      }))
-      return { success: false, message: '등록된 정보가 없습니다.' }
-    }
-
-    const guest = guests[guestIndex]
-    
-    console.log('게스트 정보:', {
-      이름: guest.name || guest['이름'] || guest.Name,
-      전화번호: guest.phone || guest['전화번호'] || guest.Phone,
-      체크인여부: guest.checkedIn,
-      입장번호: guest.entryNumber
-    })
-
-    // 이미 체크인한 경우
-    if (guest.checkedIn) {
-      console.log('이미 체크인 완료된 게스트')
-      return { 
-        success: false, 
-        message: '이미 체크인 완료되었습니다.'
-      }
-    }
-
-    // 도착 순서대로 입장 번호 할당
-    const checkedInGuests = guests.filter(g => g.checkedIn && g.entryNumber !== undefined)
-    const maxEntryNumber = checkedInGuests.length > 0 
-      ? Math.max(...checkedInGuests.map(g => g.entryNumber || 0))
-      : 0
-    const newEntryNumber = maxEntryNumber + 1
-
-    // 게스트 정보 업데이트
-    const updatedGuests = [...guests]
-    updatedGuests[guestIndex] = {
-      ...guest,
-      entryNumber: newEntryNumber,
-      checkedIn: true,
-      checkedInAt: Date.now()
-    }
-
-    setGuests(updatedGuests)
-    localStorage.setItem('guests', JSON.stringify(updatedGuests))
-    // Firestore에 업데이트 (비동기로 처리) - 'all' 문서 ID로 배열 저장
-    setFirestoreData('guests' as any, { guests: updatedGuests }, 'all').catch((error) => {
-      console.error('Firestore 게스트 업데이트 오류:', error)
-    })
-
-    // 마지막 체크인 게스트 정보 업데이트 (알림용)
-    const guestName = guest.name || guest['이름'] || guest.Name || ''
-    setLastCheckedInGuest({
-      name: guestName,
-      timestamp: Date.now()
-    })
-
-    console.log('체크인 성공:', {
-      입장번호: newEntryNumber,
-      게스트이름: guestName
-    })
-
-    return { 
-      success: true, 
-      entryNumber: newEntryNumber,
-      message: `체크인 완료! 입장 번호: ${newEntryNumber}번`
-    }
-  }
-
-  const generateCheckInCode = (): string => {
-    // 체크인 코드를 "0215"로 고정
-    return '0215'
-  }
-
-  const setCheckInCode = (code: string) => {
-    setCheckInCodeState(code)
-    localStorage.setItem('checkInCode', code)
-    // Firestore에 저장 (비동기로 처리)
-    setFirestoreData('current' as any, { checkInCode: code }, 'auth').catch((error) => {
-      console.error('Firestore 체크인 코드 저장 오류:', error)
-    })
-  }
-
-  const verifyCheckInCode = (code: string): boolean => {
-    const trimmedCode = code.trim()
-    // checkInCode가 null이면 기본값 '0215' 사용
-    const currentCode = checkInCode || '0215'
-    const isValid = currentCode === trimmedCode
-    
-    // 디버깅용 로그
-    console.log('체크인 코드 검증:', {
-      입력코드: trimmedCode,
-      저장된코드: currentCode,
-      일치여부: isValid
-    })
-    
-    return isValid
-  }
 
   const clearGuests = () => {
     setGuests([])
@@ -842,20 +672,14 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       guests, 
       performanceData, 
       guestbookMessages,
-      checkInCode,
       bookingInfo,
       eventsEnabled,
-      lastCheckedInGuest,
       uploadGuests, 
       addWalkInGuest,
       toggleGuestPayment,
       setPerformanceData,
       setBookingInfo,
       addGuestbookMessage,
-      checkInGuest,
-      generateCheckInCode,
-      setCheckInCode,
-      verifyCheckInCode,
       clearGuests,
       deleteGuest,
       updateGuest,

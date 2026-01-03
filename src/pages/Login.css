@@ -43,7 +43,7 @@
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
   padding: 1.5rem;
   width: 100%;
-  max-width: 300px;
+  max-width: 400px;
   min-height: 300px;
   height: auto;
   animation: fadeInUp 0.5s ease-out;
@@ -505,6 +505,7 @@
   color: #757575;
   font-style: normal;
   font-family: 'Pretendard', sans-serif;
+  font-family: 'Pretendard', sans-serif;
 }
 
 .payment-details {
@@ -773,4 +774,309 @@
   font-size: 0.95rem !important;
   font-family: 'Pretendard', sans-serif !important;
   font-weight: 600 !important;
+}
+
+/* 예매 신청 확인 화면 */
+.booking-confirmation {
+  max-width: 400px;
+  padding: 1.5rem;
+  max-height: 90vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.confirmation-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  width: 100%;
+}
+
+.confirmation-header h1 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  color: #ffffff;
+  font-family: 'HakgyoansimJayeonR', sans-serif;
+  font-weight: normal;
+  margin: 0;
+  width: 100%;
+  word-break: keep-all;
+}
+
+.info-box {
+  background: #2a2a2a;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.info-box-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  gap: 0.75rem;
+}
+
+.info-box-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #fff;
+  flex-shrink: 0;
+  font-family: 'Pretendard', sans-serif;
+}
+
+.edit-info-button {
+  background: #4A90E2;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.edit-info-button:hover {
+  background: #357ABD;
+}
+
+.info-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.info-label {
+  font-size: 0.8rem;
+  color: #999;
+  min-width: 60px;
+  flex-shrink: 0;
+  font-family: 'Pretendard', sans-serif;
+}
+
+.info-value {
+  font-size: 0.9rem;
+  color: #fff;
+  font-weight: 500;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  font-family: 'Pretendard', sans-serif;
+}
+
+.info-notice {
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  color: #999;
+  line-height: 1.5;
+  font-family: 'Pretendard', sans-serif;
+}
+
+.info-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cancel-edit-button {
+  background: #666;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  margin-top: 0.5rem;
+}
+
+.payment-box {
+  border: 2px dashed #666;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  background: #2a2a2a;
+}
+
+.payment-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.payment-item-row {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+}
+
+.payment-item:last-child {
+  margin-bottom: 0;
+}
+
+.payment-label {
+  font-size: 0.8rem;
+  color: #999;
+  font-family: 'Pretendard', sans-serif;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.payment-value {
+  font-size: 0.85rem;
+  color: #fff;
+  font-weight: 500;
+  font-family: 'Pretendard', sans-serif;
+}
+
+.account-info-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: nowrap;
+  width: 100%;
+  min-width: 0;
+}
+
+.account-name-bank {
+  margin-bottom: 0;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
+.bank-name {
+  color: #4A90E2;
+  font-weight: 600;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  display: inline;
+}
+
+.account-number {
+  color: #4A90E2;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.account-number:hover {
+  color: #357ABD;
+}
+
+.copy-hint {
+  font-size: 0.75rem;
+  color: #999;
+  margin-top: 0.25rem;
+  margin-bottom: 0.5rem;
+  font-family: 'Pretendard', sans-serif;
+  text-align: left;
+}
+
+.payment-amount {
+  font-size: 0.8rem;
+  color: #EC3E33;
+  font-weight: 600;
+  font-family: 'Pretendard', sans-serif;
+}
+
+.instructions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.instructions p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #ccc;
+  line-height: 1.6;
+  font-family: 'Pretendard', sans-serif;
+}
+
+.important-notice {
+  color: #EC3E33 !important;
+  font-weight: 600 !important;
+  margin-top: 0.5rem !important;
+  font-family: 'Pretendard', sans-serif !important;
+}
+
+.booking-close-button {
+  position: absolute;
+  top: 1.5rem;
+  right: 0.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s;
+  z-index: 10;
+  font-size: 0;
+}
+
+.booking-close-button::before,
+.booking-close-button::after {
+  content: '';
+  position: absolute;
+  width: 2px;
+  height: 18px;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 1px;
+  transition: background-color 0.2s;
+}
+
+.booking-close-button::before {
+  transform: rotate(45deg);
+}
+
+.booking-close-button::after {
+  transform: rotate(-45deg);
+}
+
+.booking-close-button:hover::before,
+.booking-close-button:hover::after {
+  background-color: #ffffff;
+}
+
+@media (max-width: 768px) {
+  .booking-confirmation {
+    padding: 1.5rem;
+  }
+
+  .confirmation-header h1 {
+    font-size: 1.75rem;
+  }
+
+  .info-box-header {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .edit-info-button {
+    font-size: 0.7rem;
+    padding: 0.4rem 0.6rem;
+  }
 }

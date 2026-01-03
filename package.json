@@ -12,6 +12,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@emailjs/browser": "^4.4.1",
     "firebase": "^12.7.0",
     "html5-qrcode": "^2.3.8",
     "qrcode.react": "^4.2.0",

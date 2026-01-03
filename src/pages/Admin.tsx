@@ -3,9 +3,10 @@ import * as XLSX from 'xlsx'
 import { QRCodeSVG } from 'qrcode.react'
 import { useData, SetlistItem, PerformanceData, BookingInfo } from '../contexts/DataContext'
 import { formatPhoneDisplay } from '../utils/phoneFormat'
-import { collection, getDocs, deleteDoc, doc, query, orderBy, getDoc } from 'firebase/firestore'
+import { collection, getDocs, deleteDoc, doc, query, orderBy, getDoc, updateDoc, where, onSnapshot, setDoc } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import { setFirestoreData } from '../services/firestoreService'
+import emailjs from '@emailjs/browser'
 import './Admin.css'
 
 const Admin = () => {
@@ -35,14 +36,14 @@ const Admin = () => {
   const [passwordInput, setPasswordInput] = useState('')
   const [passwordError, setPasswordError] = useState('')
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null)
-  const [showCheckInCodeEdit, setShowCheckInCodeEdit] = useState(false)
-  const [checkInCodeInput, setCheckInCodeInput] = useState('')
   const [showGuestEditModal, setShowGuestEditModal] = useState(false)
   const [editingGuestIndex, setEditingGuestIndex] = useState<number | null>(null)
   const [editingGuest, setEditingGuest] = useState<{ name: string; phone: string }>({ name: '', phone: '' })
   const [showGuestAddModal, setShowGuestAddModal] = useState(false)
   const [newGuest, setNewGuest] = useState<{ name: string; phone: string; isWalkIn: boolean }>({ name: '', phone: '', isWalkIn: false })
-  const { uploadGuests, setPerformanceData, guests, performanceData, checkInCode, setCheckInCode, clearGuests, deleteGuest, updateGuest, clearSetlist, bookingInfo, setBookingInfo, clearChatMessages, toggleGuestPayment } = useData()
+  const [pendingBookings, setPendingBookings] = useState<Array<{ id: string; name: string; phone: string; email: string; createdAt: any }>>([])
+  const [guestLoginLinks, setGuestLoginLinks] = useState<Record<string, string>>({}) // 게스트 ID (name_phone) -> 로그인 링크
+  const { uploadGuests, setPerformanceData, guests, performanceData, clearGuests, deleteGuest, updateGuest, clearSetlist, bookingInfo, setBookingInfo, clearChatMessages, toggleGuestPayment, addWalkInGuest } = useData()
   
   // 예매 정보 폼 상태
   const [bookingForm, setBookingForm] = useState<BookingInfo>({
@@ -569,9 +570,345 @@ const Admin = () => {
     })
   }
 
+  // 랜덤 토큰 생성 함수
+  const generateToken = (): string => {
+    const array = new Uint8Array(32)
+    crypto.getRandomValues(array)
+    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('')
+  }
+
+  // 개별 로그인 링크 생성 함수 (토큰 기반)
+  const generateLoginLink = async (name: string, phone: string): Promise<string> => {
+    const baseUrl = window.location.origin
+    const normalizedPhone = phone.replace(/\D/g, '')
+    
+    // 랜덤 토큰 생성
+    const token = generateToken()
+    
+    // Firestore에 토큰과 게스트 정보 매핑 저장
+    try {
+      const tokenRef = doc(db, 'loginTokens', token)
+      await setDoc(tokenRef, {
+        name: name,
+        phone: normalizedPhone,
+        createdAt: new Date(),
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30일 후 만료
+      })
+    } catch (error) {
+      console.error('토큰 저장 실패:', error)
+      throw error
+    }
+    
+    return `${baseUrl}/login?token=${token}`
+  }
+
+  // 이메일 전송 함수 (EmailJS 사용)
+  const sendLoginLinkEmail = async (toEmail: string, toName: string, loginLink: string, phone: string): Promise<boolean> => {
+    try {
+      // EmailJS 설정 (환경 변수 또는 직접 설정)
+      // 사용 전에 EmailJS 계정을 만들고 서비스 ID, 템플릿 ID, Public Key를 설정해야 합니다
+      const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID || ''
+      const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || ''
+      const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || ''
+
+      if (!serviceId || !templateId || !publicKey) {
+        console.warn('EmailJS 설정이 없습니다. 환경 변수를 확인해주세요.')
+        return false
+      }
+
+      // EmailJS 초기화
+      emailjs.init(publicKey)
+
+      // 이메일 전송
+      const result = await emailjs.send(serviceId, templateId, {
+        to_name: toName,
+        to_email: toEmail,
+        login_link: loginLink,
+        phone: phone,
+        message: `안녕하세요 ${toName}님, 입금이 확인되어 로그인 링크를 보내드립니다. 아래 링크를 클릭하여 로그인해주세요: ${loginLink}`
+      })
+
+      console.log('이메일 전송 성공:', result)
+      return true
+    } catch (error) {
+      console.error('이메일 전송 실패:', error)
+      return false
+    }
+  }
+
+  // SMS 전송 함수 (선택사항 - Twilio 등 사용 가능)
+  const sendLoginLinkSMS = async (phone: string, name: string, loginLink: string): Promise<boolean> => {
+    try {
+      // SMS 전송 서비스 설정 (예: Twilio, 알리고 등)
+      // 여기서는 mailto: 링크를 생성하여 관리자가 수동으로 전송할 수 있도록 함
+      const smsBody = encodeURIComponent(`안녕하세요 ${name}님, 입금이 확인되어 로그인 링크를 보내드립니다: ${loginLink}`)
+      const smsLink = `sms:${phone}?body=${smsBody}`
+      
+      // 실제 SMS 전송을 원하면 Twilio API 등을 사용해야 합니다
+      console.log('SMS 링크 생성:', smsLink)
+      return false // 현재는 SMS 자동 전송 미구현
+    } catch (error) {
+      console.error('SMS 전송 실패:', error)
+      return false
+    }
+  }
+
+  // 링크 복사 함수
+  const copyLoginLink = async (link: string) => {
+    try {
+      await navigator.clipboard.writeText(link)
+      setUploadStatus('✅ 로그인 링크가 클립보드에 복사되었습니다.')
+      setTimeout(() => setUploadStatus(''), 3000)
+    } catch (err) {
+      const textArea = document.createElement('textarea')
+      textArea.value = link
+      textArea.style.position = 'fixed'
+      textArea.style.opacity = '0'
+      document.body.appendChild(textArea)
+      textArea.select()
+      try {
+        document.execCommand('copy')
+        setUploadStatus('✅ 로그인 링크가 클립보드에 복사되었습니다.')
+        setTimeout(() => setUploadStatus(''), 3000)
+      } catch (e) {
+        setUploadStatus('❌ 링크 복사에 실패했습니다.')
+        setTimeout(() => setUploadStatus(''), 3000)
+      }
+      document.body.removeChild(textArea)
+    }
+  }
+
+  // 게스트 고유 ID 생성 함수
+  const getGuestId = (name: string, phone: string): string => {
+    const normalizedPhone = phone.replace(/\D/g, '')
+    return `${name}_${normalizedPhone}`
+  }
+
+  // 입금 확인 핸들러 (링크 생성 포함)
+  const handlePaymentConfirm = async (index: number) => {
+    const guest = guests[index]
+    if (!guest) return
+
+    // 게스트 고유 ID
+    const guestId = getGuestId(guest.name, guest.phone)
+
+    // 현재 입금 확인 상태 확인 (토글 전)
+    const willBeConfirmed = !guest.paymentConfirmed
+
+    // 입금 확인 토글
+    toggleGuestPayment(index)
+
+    // 입금 확인 시 링크 생성 및 이메일/SMS 전송
+    if (willBeConfirmed) {
+      try {
+        console.log('링크 생성 시작:', guest.name, guest.phone)
+        const loginLink = await generateLoginLink(guest.name, guest.phone)
+        console.log('링크 생성 완료:', loginLink, 'guestId:', guestId)
+        setGuestLoginLinks(prev => {
+          const updated = { ...prev, [guestId]: loginLink }
+          console.log('링크 상태 업데이트:', updated)
+          return updated
+        })
+        
+        // 이메일 전송 (이메일이 있는 경우)
+        if (guest.email) {
+          const emailSent = await sendLoginLinkEmail(guest.email, guest.name, loginLink, guest.phone)
+          if (emailSent) {
+            setUploadStatus('✅ 로그인 링크가 생성되었고 이메일로 전송되었습니다.')
+          } else {
+            setUploadStatus('✅ 로그인 링크가 생성되었습니다. (이메일 전송 실패)')
+          }
+        } else {
+          // 이메일이 없으면 bookings 컬렉션에서 조회
+          try {
+            const bookingsQuery = query(
+              collection(db, 'bookings'),
+              where('name', '==', guest.name),
+              where('phone', '==', guest.phone.replace(/\D/g, '')),
+              where('approved', '==', true)
+            )
+            const bookingsSnapshot = await getDocs(bookingsQuery)
+            if (!bookingsSnapshot.empty) {
+              const booking = bookingsSnapshot.docs[0].data()
+              if (booking.email) {
+                // 게스트 정보에 이메일 업데이트
+                const updatedGuest = { ...guest, email: booking.email }
+                const guestIndex = guests.findIndex((g, idx) => idx === index)
+                if (guestIndex !== -1) {
+                  updateGuest(guestIndex, updatedGuest)
+                }
+                // 이메일 전송
+                const emailSent = await sendLoginLinkEmail(booking.email, guest.name, loginLink, guest.phone)
+                if (emailSent) {
+                  setUploadStatus('✅ 로그인 링크가 생성되었고 이메일로 전송되었습니다.')
+                } else {
+                  setUploadStatus('✅ 로그인 링크가 생성되었습니다. (이메일 전송 실패)')
+                }
+              } else {
+                setUploadStatus('✅ 로그인 링크가 생성되었습니다.')
+              }
+            } else {
+              setUploadStatus('✅ 로그인 링크가 생성되었습니다.')
+            }
+          } catch (error) {
+            console.error('이메일 조회 실패:', error)
+            setUploadStatus('✅ 로그인 링크가 생성되었습니다.')
+          }
+        }
+        
+        // SMS 전송 (선택사항)
+        // await sendLoginLinkSMS(guest.phone, guest.name, loginLink)
+        
+        setTimeout(() => setUploadStatus(''), 5000)
+      } catch (error) {
+        console.error('로그인 링크 생성 실패:', error)
+        setUploadStatus('❌ 로그인 링크 생성에 실패했습니다.')
+        setTimeout(() => setUploadStatus(''), 3000)
+      }
+    } else {
+      // 입금 확인 해제 시 링크 제거
+      setGuestLoginLinks(prev => {
+        const newLinks = { ...prev }
+        delete newLinks[guestId]
+        return newLinks
+      })
+    }
+  }
+
+  // 입금 확인이 완료된 게스트에 대해 링크 자동 생성
+  useEffect(() => {
+    const generateLinksForConfirmedGuests = async () => {
+      const links: Record<string, string> = {}
+      let hasNewLinks = false
+      
+      for (let i = 0; i < guests.length; i++) {
+        const guest = guests[i]
+        if (guest.paymentConfirmed && guest.paymentConfirmedAt) {
+          const guestId = getGuestId(guest.name, guest.phone)
+          
+          // 이미 링크가 있으면 스킵
+          if (guestLoginLinks[guestId]) {
+            continue
+          }
+          
+          // 링크 생성
+          try {
+            const loginLink = await generateLoginLink(guest.name, guest.phone)
+            links[guestId] = loginLink
+            hasNewLinks = true
+          } catch (error) {
+            console.error(`게스트 ${guest.name} 링크 생성 실패:`, error)
+          }
+        }
+      }
+      
+      // 생성된 링크들을 상태에 업데이트
+      if (hasNewLinks) {
+        setGuestLoginLinks(prev => ({ ...prev, ...links }))
+      }
+    }
+    
+    if (guests.length > 0) {
+      generateLinksForConfirmedGuests()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [guests]) // guests 배열 변경 시 확인 (무한 루프 방지를 위해 guestLoginLinks는 의존성에서 제외)
+
+  // 예매 신청 승인 핸들러
+  const handleApproveBooking = async (bookingId: string, name: string, phone: string, email: string) => {
+    requirePassword(async () => {
+      try {
+        // 예매 신청 승인 처리
+        const bookingRef = doc(db, 'bookings', bookingId)
+        await updateDoc(bookingRef, {
+          approved: true,
+          approvedAt: new Date(),
+          updatedAt: new Date()
+        })
+
+        // 게스트 목록에 추가 (이미 있으면 스킵)
+        const normalizedPhone = phone.replace(/\D/g, '')
+        const existingGuest = guests.find((guest) => {
+          const guestName = guest.name || guest['이름'] || guest.Name || ''
+          const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '').replace(/[-\s()]/g, '')
+          return guestName.trim() === name.trim() && guestPhone === normalizedPhone
+        })
+
+        if (!existingGuest) {
+          // 게스트가 없으면 추가 (이메일 포함)
+          const result = addWalkInGuest(name.trim(), normalizedPhone, false, email)
+          if (result.success) {
+            setUploadStatus(`✅ "${name}" 예매 신청이 승인되었고 게스트 목록에 추가되었습니다.`)
+          } else {
+            setUploadStatus(`⚠️ 예매 신청은 승인되었지만 게스트 추가에 실패했습니다: ${result.message}`)
+          }
+        } else {
+          // 기존 게스트가 있으면 이메일 업데이트
+          const existingIndex = guests.findIndex((guest) => {
+            const guestName = guest.name || guest['이름'] || guest.Name || ''
+            const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '').replace(/[-\s()]/g, '')
+            return guestName.trim() === name.trim() && guestPhone === normalizedPhone
+          })
+          if (existingIndex !== -1 && email) {
+            const updatedGuest = { ...guests[existingIndex], email: email }
+            updateGuest(existingIndex, updatedGuest)
+          }
+          setUploadStatus(`✅ "${name}" 예매 신청이 승인되었습니다. (이미 게스트 목록에 존재)`)
+        }
+      } catch (error) {
+        console.error('예매 신청 승인 오류:', error)
+        setUploadStatus(`❌ 예매 신청 승인에 실패했습니다: ${error}`)
+      }
+    })
+  }
+
   return (
     <div className="admin-page">
       <h1>관리자 페이지</h1>
+      
+      {/* 예매 신청 승인 섹션 */}
+      {pendingBookings.length > 0 && (
+        <div className="admin-section">
+          <h2>예매 신청 승인 대기</h2>
+          <p className="section-description">
+            승인 대기 중인 예매 신청 목록입니다. 승인하면 게스트 목록에 자동으로 추가됩니다.
+          </p>
+          <div className="booking-list">
+            {pendingBookings.map((booking) => (
+              <div key={booking.id} className="booking-item">
+                <div className="booking-info">
+                  <div className="booking-info-row">
+                    <span className="booking-label">이름:</span>
+                    <span className="booking-value">{booking.name}</span>
+                  </div>
+                  <div className="booking-info-row">
+                    <span className="booking-label">연락처:</span>
+                    <span className="booking-value">{formatPhoneDisplay(booking.phone)}</span>
+                  </div>
+                  <div className="booking-info-row">
+                    <span className="booking-label">이메일:</span>
+                    <span className="booking-value">{booking.email}</span>
+                  </div>
+                  {booking.createdAt && (
+                    <div className="booking-info-row">
+                      <span className="booking-label">신청 시간:</span>
+                      <span className="booking-value">
+                        {booking.createdAt.toDate ? booking.createdAt.toDate().toLocaleString('ko-KR') : new Date(booking.createdAt).toLocaleString('ko-KR')}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => handleApproveBooking(booking.id, booking.name, booking.phone, booking.email)}
+                  className="approve-booking-button"
+                >
+                  승인
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       
       {/* 게스트 리스트 섹션 */}
       <div className="admin-section">
@@ -623,6 +960,12 @@ const Admin = () => {
                   // userId 생성 (닉네임 조회용)
                   const userId = `${guestName}_${guestPhoneRaw}`
                   const guestNickname = userNicknames[userId] || '-'
+                  // 게스트 고유 ID (링크 조회용)
+                  const guestId = getGuestId(guestName, guestPhoneRaw)
+                  // 디버깅: 링크 상태 확인
+                  if (guest.paymentConfirmed && guest.paymentConfirmedAt) {
+                    console.log('게스트 입금 확인됨:', guestName, 'guestId:', guestId, '링크 존재:', !!guestLoginLinks[guestId])
+                  }
                   return (
                     <tr key={index}>
                       <td>{index + 1}</td>
@@ -638,41 +981,129 @@ const Admin = () => {
                         {isWalkIn ? (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'flex-start' }}>
                             <button
-                              onClick={() => toggleGuestPayment(index)}
+                              onClick={() => handlePaymentConfirm(index)}
                               className={`payment-confirm-button ${guest.paymentConfirmed ? 'confirmed' : 'not-confirmed'}`}
                               title={guest.paymentConfirmed && guest.paymentConfirmedAt ? `입금 확인 완료 (${new Date(guest.paymentConfirmedAt).toLocaleString('ko-KR')})` : '입금 확인 대기'}
                             >
                               {guest.paymentConfirmed ? '확인완료' : '대기중'}
                             </button>
                             {guest.paymentConfirmed && guest.paymentConfirmedAt && (
-                              <span style={{ fontSize: '0.75rem', color: '#666' }}>
-                                {new Date(guest.paymentConfirmedAt).toLocaleString('ko-KR', {
-                                  year: 'numeric',
-                                  month: '2-digit',
-                                  day: '2-digit',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
-                              </span>
+                              <>
+                                <span style={{ fontSize: '0.75rem', color: '#666' }}>
+                                  {new Date(guest.paymentConfirmedAt).toLocaleString('ko-KR', {
+                                    year: 'numeric',
+                                    month: '2-digit',
+                                    day: '2-digit',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </span>
+                                {guestLoginLinks[guestId] ? (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginTop: '0.5rem', padding: '0.5rem', background: '#f0f0f0', borderRadius: '4px', fontSize: '0.75rem', width: '100%', minWidth: '200px' }}>
+                                    <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>개별 로그인 링크:</div>
+                                    <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', width: '100%' }}>
+                                      <input
+                                        type="text"
+                                        value={guestLoginLinks[guestId]}
+                                        readOnly
+                                        style={{
+                                          flex: 1,
+                                          padding: '0.25rem 0.5rem',
+                                          border: '1px solid #ddd',
+                                          borderRadius: '4px',
+                                          fontSize: '0.7rem',
+                                          background: '#fff',
+                                          minWidth: 0
+                                        }}
+                                      />
+                                      <button
+                                        onClick={() => copyLoginLink(guestLoginLinks[guestId])}
+                                        style={{
+                                          padding: '0.25rem 0.5rem',
+                                          background: '#4A90E2',
+                                          color: 'white',
+                                          border: 'none',
+                                          borderRadius: '4px',
+                                          cursor: 'pointer',
+                                          fontSize: '0.7rem',
+                                          whiteSpace: 'nowrap'
+                                        }}
+                                      >
+                                        복사
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div style={{ fontSize: '0.7rem', color: '#999', marginTop: '0.25rem' }}>
+                                    링크 생성 중...
+                                  </div>
+                                )}
+                              </>
                             )}
                           </div>
                         ) : (
-                          guest.paymentConfirmedAt ? (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                              <span className="not-applicable">-</span>
-                              <span style={{ fontSize: '0.75rem', color: '#666' }}>
-                                {new Date(guest.paymentConfirmedAt).toLocaleString('ko-KR', {
-                                  year: 'numeric',
-                                  month: '2-digit',
-                                  day: '2-digit',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
-                              </span>
-                            </div>
-                          ) : (
-                            <span className="not-applicable">-</span>
-                          )
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'flex-start' }}>
+                            <button
+                              onClick={() => handlePaymentConfirm(index)}
+                              className={`payment-confirm-button ${guest.paymentConfirmed ? 'confirmed' : 'not-confirmed'}`}
+                              title={guest.paymentConfirmed && guest.paymentConfirmedAt ? `입금 확인 완료 (${new Date(guest.paymentConfirmedAt).toLocaleString('ko-KR')})` : '입금 확인 대기'}
+                            >
+                              {guest.paymentConfirmed ? '확인완료' : '대기중'}
+                            </button>
+                            {guest.paymentConfirmed && guest.paymentConfirmedAt && (
+                              <>
+                                <span style={{ fontSize: '0.75rem', color: '#666' }}>
+                                  {new Date(guest.paymentConfirmedAt).toLocaleString('ko-KR', {
+                                    year: 'numeric',
+                                    month: '2-digit',
+                                    day: '2-digit',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </span>
+                                {guestLoginLinks[guestId] ? (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginTop: '0.5rem', padding: '0.5rem', background: '#f0f0f0', borderRadius: '4px', fontSize: '0.75rem', width: '100%', minWidth: '200px' }}>
+                                    <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>개별 로그인 링크:</div>
+                                    <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', width: '100%' }}>
+                                      <input
+                                        type="text"
+                                        value={guestLoginLinks[guestId]}
+                                        readOnly
+                                        style={{
+                                          flex: 1,
+                                          padding: '0.25rem 0.5rem',
+                                          border: '1px solid #ddd',
+                                          borderRadius: '4px',
+                                          fontSize: '0.7rem',
+                                          background: '#fff',
+                                          minWidth: 0
+                                        }}
+                                      />
+                                      <button
+                                        onClick={() => copyLoginLink(guestLoginLinks[guestId])}
+                                        style={{
+                                          padding: '0.25rem 0.5rem',
+                                          background: '#4A90E2',
+                                          color: 'white',
+                                          border: 'none',
+                                          borderRadius: '4px',
+                                          cursor: 'pointer',
+                                          fontSize: '0.7rem',
+                                          whiteSpace: 'nowrap'
+                                        }}
+                                      >
+                                        복사
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div style={{ fontSize: '0.7rem', color: '#999', marginTop: '0.25rem' }}>
+                                    링크 생성 중...
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </div>
                         )}
                       </td>
                       <td>
@@ -1331,8 +1762,8 @@ const Admin = () => {
               </div>
               <div className="form-group">
                 <label>예매 유형</label>
-                <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                <div className="booking-type-options">
+                  <label className={`booking-type-label ${!newGuest.isWalkIn ? 'selected' : ''}`}>
                     <input
                       type="radio"
                       name="guest-type"
@@ -1341,7 +1772,7 @@ const Admin = () => {
                     />
                     <span>사전 예매</span>
                   </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                  <label className={`booking-type-label ${newGuest.isWalkIn ? 'selected' : ''}`}>
                     <input
                       type="radio"
                       name="guest-type"
@@ -1352,7 +1783,7 @@ const Admin = () => {
                   </label>
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <div className="modal-buttons">
                 <button
                   type="button"
                   onClick={async () => {
@@ -1424,8 +1855,7 @@ const Admin = () => {
                     })
                     setUserNicknames(nicknameMap)
                   }}
-                  className="login-button"
-                  style={{ flex: 1 }}
+                  className="login-button modal-add-button"
                 >
                   추가
                 </button>
@@ -1435,8 +1865,7 @@ const Admin = () => {
                     setShowGuestAddModal(false)
                     setNewGuest({ name: '', phone: '', isWalkIn: false })
                   }}
-                  className="reset-button"
-                  style={{ flex: 1 }}
+                  className="login-button modal-cancel-button"
                 >
                   취소
                 </button>
@@ -1492,7 +1921,7 @@ const Admin = () => {
                   placeholder="전화번호 입력 (숫자만)"
                 />
               </div>
-              <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <div className="modal-buttons">
                 <button
                   type="button"
                   onClick={async () => {
@@ -1569,8 +1998,7 @@ const Admin = () => {
                     })
                     setUserNicknames(nicknameMap)
                   }}
-                  className="login-button"
-                  style={{ flex: 1 }}
+                  className="login-button modal-add-button"
                 >
                   저장
                 </button>
@@ -1581,8 +2009,7 @@ const Admin = () => {
                     setEditingGuestIndex(null)
                     setEditingGuest({ name: '', phone: '' })
                   }}
-                  className="reset-button"
-                  style={{ flex: 1 }}
+                  className="login-button modal-cancel-button"
                 >
                   취소
                 </button>
