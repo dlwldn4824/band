@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useData } from '../contexts/DataContext'
@@ -12,7 +12,7 @@ import './Dashboard.css'
 
 const Dashboard = () => {
   // ✅ 모든 Hook은 최상단에서 조건 없이 호출
-  const { user, updateUser, setNickname, isAdmin, adminName, isLoading } = useAuth()
+  const { user, setNickname, isAdmin, adminName, isLoading } = useAuth()
   const { performanceData, guests } = useData()
   const [showNicknameModal, setShowNicknameModal] = useState(false)
   const [nickname, setNicknameInput] = useState('')
@@ -22,7 +22,6 @@ const Dashboard = () => {
   const [userNicknames, setUserNicknames] = useState<Record<string, string>>({}) // userId -> nickname 매핑
   const [adminList, setAdminList] = useState<Array<{ name: string; nickname: string }>>([])
   const [sortBy, setSortBy] = useState<'name' | null>(null)
-  const notificationTimerRef = useRef<NodeJS.Timeout | null>(null)
   const location = useLocation()
   
   // location이 변경될 때마다 리렌더링 트리거

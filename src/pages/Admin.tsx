@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import * as XLSX from 'xlsx'
-import { QRCodeSVG } from 'qrcode.react'
 import { useData, SetlistItem, PerformanceData, BookingInfo } from '../contexts/DataContext'
 import { formatPhoneDisplay } from '../utils/phoneFormat'
-import { collection, getDocs, deleteDoc, doc, query, orderBy, getDoc, updateDoc, where, onSnapshot, setDoc, Timestamp } from 'firebase/firestore'
+import { collection, getDocs, deleteDoc, doc, query, orderBy, getDoc, updateDoc, setDoc, Timestamp } from 'firebase/firestore'
 import { db, storage } from '../config/firebase'
 import { setFirestoreData } from '../services/firestoreService'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
@@ -47,7 +46,7 @@ const Admin = () => {
   const [editedDate, setEditedDate] = useState('')
   const [editedVenue, setEditedVenue] = useState('')
   const [editedEvents, setEditedEvents] = useState<Array<{ title: string; description: string; time?: string }>>([])
-  const [pendingBookings, setPendingBookings] = useState<Array<{ id: string; name: string; phone: string; email: string; createdAt: any }>>([])
+  const [pendingBookings] = useState<Array<{ id: string; name: string; phone: string; email: string; createdAt: any }>>([])
   const [guestLoginLinks, setGuestLoginLinks] = useState<Record<string, string>>({}) // 게스트 ID (name_phone) -> 로그인 링크
   const [clickedCopyButton, setClickedCopyButton] = useState<string | null>(null) // 클릭된 복사 버튼 ID
   const { uploadGuests, setPerformanceData, guests, performanceData, clearGuests, deleteGuest, updateGuest, clearSetlist, bookingInfo, setBookingInfo, clearChatMessages, toggleGuestPayment, addWalkInGuest } = useData()
@@ -321,8 +320,8 @@ const Admin = () => {
       const setlist: SetlistItem[] = []
       
       // 첫 번째 행의 키를 확인하여 실제 컬럼명 파악
-      if (jsonData.length > 0) {
-        console.log('[셋리스트 업로드] 첫 번째 행의 키:', Object.keys(jsonData[0]))
+      if (jsonData.length > 0 && jsonData[0] && typeof jsonData[0] === 'object') {
+        console.log('[셋리스트 업로드] 첫 번째 행의 키:', Object.keys(jsonData[0] as Record<string, unknown>))
         console.log('[셋리스트 업로드] 첫 번째 행 데이터:', jsonData[0])
       }
       
@@ -776,7 +775,8 @@ const Admin = () => {
     return `${baseUrl}/login?token=${token}`
   }
 
-  // 이메일 전송 함수 (EmailJS 사용)
+  // 이메일 전송 함수 (EmailJS 사용) - 현재 사용하지 않음
+  // @ts-ignore
   const sendLoginLinkEmail = async (toEmail: string, toName: string, loginLink: string, phone: string): Promise<boolean> => {
     try {
       // EmailJS 설정 (환경 변수 또는 직접 설정)
@@ -830,7 +830,8 @@ const Admin = () => {
     }
   }
 
-  // SMS 전송 함수 (선택사항 - Twilio 등 사용 가능)
+  // SMS 전송 함수 (선택사항 - Twilio 등 사용 가능) - 현재 사용하지 않음
+  // @ts-ignore
   const sendLoginLinkSMS = async (phone: string, name: string, loginLink: string): Promise<boolean> => {
     try {
       // SMS 전송 서비스 설정 (예: Twilio, 알리고 등)

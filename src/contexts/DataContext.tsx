@@ -459,7 +459,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [])
 
-  // 게스트 리스트를 엑셀 파일로 자동 다운로드하는 함수
+  // 게스트 리스트를 엑셀 파일로 자동 다운로드하는 함수 - 현재 사용하지 않음
+  // @ts-ignore
   const downloadGuestsToExcel = (guestsList: Guest[]) => {
     try {
       // 엑셀 데이터 형식으로 변환

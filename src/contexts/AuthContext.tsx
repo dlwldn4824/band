@@ -3,7 +3,7 @@ import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import { setFirestoreData } from '../services/firestoreService'
 
-interface User {
+export interface User {
   name: string
   phone: string
   nickname?: string // 채팅에서 사용할 닉네임
