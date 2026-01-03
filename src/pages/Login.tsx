@@ -21,12 +21,13 @@ const Login = () => {
   
   // 정보 수정 모드
   const [isEditingInfo, setIsEditingInfo] = useState(false)
+  const [isUpdatingInfo, setIsUpdatingInfo] = useState(false)
   const [editedName, setEditedName] = useState('')
   const [editedPhone, setEditedPhone] = useState('')
   const [editedEmail, setEditedEmail] = useState('')
   
   const { login } = useAuth()
-  const { guests, addWalkInGuest, bookingInfo } = useData()
+  const { guests, addWalkInGuest, updateGuest, bookingInfo } = useData()
   const navigate = useNavigate()
   const location = window.location
 
@@ -275,6 +276,19 @@ const Login = () => {
       })
 
       if (existingGuest) {
+        // 입금 확인이 완료된 게스트인 경우 바로 로그인 처리
+        if (existingGuest.paymentConfirmed === true) {
+          const updatedGuests = [...guests]
+          const loginSuccess = login(bookingName.trim(), normalizedPhone, updatedGuests)
+          if (loginSuccess) {
+            localStorage.removeItem('pendingBooking')
+            setTimeout(() => {
+              checkNicknameAndNavigate()
+            }, 200)
+            return
+          }
+        }
+        
         // 이미 등록된 게스트인 경우 Firestore에서 예매 정보 가져오기
         const userId = `${bookingName.trim()}_${normalizedPhone}`
         const bookingRef = doc(db, 'bookings', userId)
@@ -342,8 +356,8 @@ const Login = () => {
         updatedAt: new Date()
       }, { merge: true })
 
-      // 사전 예약 등록 (결제 완료 상태이므로 isWalkIn: false)
-      const result = addWalkInGuest(bookingName.trim(), normalizedPhone, false)
+      // 사전 예약 등록 (입금 확인 대기 상태이므로 isWalkIn: false)
+      const result = addWalkInGuest(bookingName.trim(), normalizedPhone, false, bookingEmail.trim())
       
       if (result.success) {
         // 정보 수정용 상태 설정
@@ -371,6 +385,8 @@ const Login = () => {
 
   // 정보 수정 핸들러
   const handleInfoUpdate = async () => {
+    if (isUpdatingInfo) return // 이미 업데이트 중이면 무시
+    
     if (!editedName.trim() || !editedPhone.trim() || !editedEmail.trim()) {
       setBookingError('모든 항목을 입력해주세요.')
       return
@@ -390,26 +406,113 @@ const Login = () => {
       return
     }
 
+    setIsUpdatingInfo(true)
+    setBookingError('')
+
     try {
       const normalizedPhone = editedPhone.trim().replace(/\D/g, '')
-      const userId = `${editedName.trim()}_${normalizedPhone}`
-      const bookingRef = doc(db, 'bookings', userId)
+      const updatedName = editedName.trim()
+      const updatedEmail = editedEmail.trim()
       
-      await setDoc(bookingRef, {
-        name: editedName.trim(),
-        phone: normalizedPhone,
-        email: editedEmail.trim(),
-        updatedAt: new Date()
-      }, { merge: true })
+      // 원래 이름과 전화번호 (게스트 찾기용)
+      const originalNormalizedPhone = bookingPhone.trim().replace(/\D/g, '').replace(/[-\s()]/g, '')
+      const originalName = bookingName.trim()
+      
+      // Firestore bookings 업데이트 (새로운 userId로)
+      const newUserId = `${updatedName}_${normalizedPhone}`
+      const bookingRef = doc(db, 'bookings', newUserId)
+      
+      // 기존 booking이 있으면 삭제하고 새로 생성 (이름이나 전화번호가 변경된 경우)
+      if (originalName !== updatedName || originalNormalizedPhone !== normalizedPhone) {
+        const oldUserId = `${originalName}_${originalNormalizedPhone}`
+        const oldBookingRef = doc(db, 'bookings', oldUserId)
+        try {
+          const oldBookingSnap = await getDoc(oldBookingRef)
+          if (oldBookingSnap.exists()) {
+            // 기존 booking 데이터 가져오기
+            const oldBookingData = oldBookingSnap.data()
+            // 새 booking에 기존 데이터 병합
+            await setDoc(bookingRef, {
+              ...oldBookingData,
+              name: updatedName,
+              phone: normalizedPhone,
+              email: updatedEmail,
+              updatedAt: new Date()
+            }, { merge: true })
+            // 기존 booking 삭제
+            await setDoc(oldBookingRef, { deleted: true }, { merge: true })
+          } else {
+            // 기존 booking이 없으면 새로 생성
+            await setDoc(bookingRef, {
+              name: updatedName,
+              phone: normalizedPhone,
+              email: updatedEmail,
+              approved: false,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            }, { merge: true })
+          }
+        } catch (error) {
+          console.warn('기존 booking 처리 오류:', error)
+          // 오류가 나도 새 booking은 생성
+          await setDoc(bookingRef, {
+            name: updatedName,
+            phone: normalizedPhone,
+            email: updatedEmail,
+            updatedAt: new Date()
+          }, { merge: true })
+        }
+      } else {
+        // 이름과 전화번호가 같으면 그냥 업데이트
+        await setDoc(bookingRef, {
+          name: updatedName,
+          phone: normalizedPhone,
+          email: updatedEmail,
+          updatedAt: new Date()
+        }, { merge: true })
+      }
 
-      setBookingName(editedName.trim())
-      setBookingPhone(editedPhone.trim())
-      setBookingEmail(editedEmail.trim())
+      // 게스트 리스트에서 기존 게스트 찾기 (원래 이름과 전화번호로)
+      const guestIndex = guests.findIndex((guest) => {
+        const guestName = guest.name || guest['이름'] || guest.Name || ''
+        const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '').replace(/[-\s()]/g, '')
+        return guestName.trim() === originalName && guestPhone === originalNormalizedPhone
+      })
+
+      // 게스트 리스트 업데이트
+      if (guestIndex !== -1) {
+        const updatedGuest = {
+          ...guests[guestIndex],
+          name: updatedName,
+          phone: normalizedPhone,
+          '이름': updatedName,
+          '전화번호': normalizedPhone,
+          Name: updatedName,
+          Phone: normalizedPhone,
+          email: updatedEmail
+        }
+        updateGuest(guestIndex, updatedGuest)
+      }
+
+      // 상태 업데이트
+      setBookingName(updatedName)
+      setBookingPhone(editedPhone.trim()) // 하이픈 포함된 형태 유지
+      setBookingEmail(updatedEmail)
+      
+      // localStorage의 pendingBooking도 업데이트 (새로고침 시 수정된 정보 유지)
+      localStorage.setItem('pendingBooking', JSON.stringify({
+        name: updatedName,
+        phone: editedPhone.trim(), // 하이픈 포함된 형태 유지
+        email: updatedEmail
+      }))
+      
       setIsEditingInfo(false)
       setBookingError('')
     } catch (error) {
       console.error('정보 수정 실패:', error)
       setBookingError('정보 수정에 실패했습니다. 다시 시도해주세요.')
+    } finally {
+      setIsUpdatingInfo(false)
     }
   }
 
@@ -478,8 +581,9 @@ const Login = () => {
                     setEditedEmail(bookingEmail)
                   }
                 }}
+                disabled={isUpdatingInfo}
               >
-                {isEditingInfo ? '저장' : '내 정보 확인/수정'}
+                {isUpdatingInfo ? '저장 중...' : (isEditingInfo ? '저장' : '내 정보 확인/수정')}
               </button>
             </div>
             

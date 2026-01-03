@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useData, SetlistItem } from '../contexts/DataContext'
 import { useAuth } from '../contexts/AuthContext'
@@ -331,15 +331,49 @@ const Performances = () => {
     )
   }
 
-  // 1부/2부 구분
-  const totalSongs = performanceData.setlist.length
-  const part1Count = Math.ceil(totalSongs / 2)
-  const part1Songs = performanceData.setlist.slice(0, part1Count)
-  const part2Songs = performanceData.setlist.slice(part1Count)
-
-  // 선택된 부에 따라 표시할 곡 목록
-  const displaySongs = selectedPart === 1 ? part1Songs : part2Songs
-  const startIndex = selectedPart === 1 ? 0 : part1Count
+  // 1부/2부 구분 - part 속성을 기반으로 분류
+  const part1Songs = performanceData.setlist.filter(song => song.part === 1)
+  const part2Songs = performanceData.setlist.filter(song => song.part === 2)
+  
+  // 디버깅: part 분류 상태 확인
+  console.log('[Performances] 전체 곡 수:', performanceData.setlist.length)
+  console.log('[Performances] 1부 곡 수:', part1Songs.length)
+  console.log('[Performances] 2부 곡 수:', part2Songs.length)
+  console.log('[Performances] part 속성 분포:', {
+    part1: part1Songs.length,
+    part2: part2Songs.length,
+    noPart: performanceData.setlist.filter(song => !song.part).length
+  })
+  
+  // part 속성이 없는 경우 (기존 데이터 호환성) - 개수로 나누기
+  const songsWithoutPart = performanceData.setlist.filter(song => !song.part)
+  let part1Count: number
+  let displaySongs: SetlistItem[]
+  let startIndex: number
+  
+  if (songsWithoutPart.length === performanceData.setlist.length) {
+    // 모든 곡에 part가 없으면 기존 방식으로 분류
+    const totalSongs = performanceData.setlist.length
+    part1Count = Math.ceil(totalSongs / 2)
+    const part1SongsFallback = performanceData.setlist.slice(0, part1Count)
+    const part2SongsFallback = performanceData.setlist.slice(part1Count)
+    
+    displaySongs = selectedPart === 1 ? part1SongsFallback : part2SongsFallback
+    startIndex = selectedPart === 1 ? 0 : part1Count
+  } else {
+    // part 속성이 있는 경우 - part 기반으로 분류
+    part1Count = part1Songs.length
+    displaySongs = selectedPart === 1 ? part1Songs : part2Songs
+    // part 기반일 때는 전체 setlist에서의 인덱스를 계산
+    startIndex = selectedPart === 1 
+      ? 0 
+      : performanceData.setlist.findIndex(song => song.part === 2)
+    if (startIndex === -1) startIndex = part1Count
+    
+    console.log('[Performances] 선택된 부:', selectedPart)
+    console.log('[Performances] 표시할 곡 수:', displaySongs.length)
+    console.log('[Performances] 시작 인덱스:', startIndex)
+  }
 
   return (
     <div className="performances-page">
@@ -354,8 +388,11 @@ const Performances = () => {
           </button>
           <button
             className={`part-button ${selectedPart === 2 ? 'active' : ''}`}
-            onClick={() => setSelectedPart(2)}
-            disabled={part2Songs.length === 0}
+            onClick={() => {
+              console.log('[Performances] 2부 버튼 클릭, part2Songs.length:', part2Songs.length)
+              setSelectedPart(2)
+            }}
+            disabled={songsWithoutPart.length === performanceData.setlist.length ? false : part2Songs.length === 0}
           >
             2부
           </button>
@@ -372,30 +409,54 @@ const Performances = () => {
             {/* 각 행: dot + 카드 */}
             {displaySongs.map((item, index) => {
               const globalIndex = startIndex + index
+              const prevItem = index > 0 ? displaySongs[index - 1] : null
+              // 첫 번째 곡이거나 이전 곡과 팀이 다를 때 팀 구분선 표시
+              const showTeamDivider = item.team && item.team.trim() !== '' && (index === 0 || !prevItem?.team || item.team !== prevItem.team)
+              
+              // 디버깅: 팀 구분선 표시 여부 확인
+              if (index < 3 || showTeamDivider) {
+                console.log(`[곡 ${index + 1}] "${item.songName}" - team: "${item.team || '(없음)'}", prevTeam: "${prevItem?.team || '(없음)'}", showDivider: ${showTeamDivider}`)
+              }
+              
               return (
-                <div key={globalIndex} className="timeline-row">
-                  <div className="timeline-rail-item">
-                    <div className="timeline-dot">{globalIndex + 1}</div>
-                  </div>
-                  <div className="timeline-item">
-                    <button
-                      className={`song-item ${selectedSong === item ? 'selected' : ''}`}
-                      onClick={() => {
-                        setSelectedSong(item)
-                        setSelectedSongIndex(globalIndex)
-                      }}
-                    >
-                      <div className="song-item-content">
-                        <div className="song-item-title">{item.songName}</div>
-                        {(() => {
-                          const artist = (item.artist ?? '').trim()
-                          return artist && artist !== '-' && <div className="song-item-artist">{artist}</div>
-                        })()}
+                <React.Fragment key={globalIndex}>
+                  {/* 팀 구분선 */}
+                  {showTeamDivider && (
+                    <div className="timeline-row team-divider-row">
+                      <div className="timeline-rail-item">
+                        <div className="timeline-dot" style={{ visibility: 'hidden' }}>0</div>
                       </div>
-                      <div className="song-item-arrow">›</div>
-                    </button>
+                      <div className="timeline-item team-divider-item">
+                        <div className="team-divider">
+                          <span className="team-divider-text">{item.team}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <div className="timeline-row">
+                    <div className="timeline-rail-item">
+                      <div className="timeline-dot">{globalIndex + 1}</div>
+                    </div>
+                    <div className="timeline-item">
+                      <button
+                        className={`song-item ${selectedSong === item ? 'selected' : ''}`}
+                        onClick={() => {
+                          setSelectedSong(item)
+                          setSelectedSongIndex(globalIndex)
+                        }}
+                      >
+                        <div className="song-item-content">
+                          <div className="song-item-title">{item.songName}</div>
+                          {(() => {
+                            const artist = (item.artist ?? '').trim()
+                            return artist && artist !== '-' && <div className="song-item-artist">{artist}</div>
+                          })()}
+                        </div>
+                        <div className="song-item-arrow">›</div>
+                      </button>
+                    </div>
                   </div>
-                </div>
+                </React.Fragment>
               )
             })}
           </div>

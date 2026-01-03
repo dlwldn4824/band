@@ -5,6 +5,7 @@ import {
 } from '../services/firestoreService'
 import { collection, getDocs, deleteDoc, doc, onSnapshot } from 'firebase/firestore'
 import { db } from '../config/firebase'
+import * as XLSX from 'xlsx'
 
 export interface Guest {
   name: string
@@ -28,6 +29,8 @@ export interface SetlistItem {
   bass?: string
   keyboard?: string
   drum?: string
+  part?: 1 | 2 // 1부 또는 2부 구분
+  team?: string // 팀명 (멜로딕, 노을, 렉사 등)
 }
 
 export interface PerformanceData {
@@ -456,6 +459,52 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [])
 
+  // 게스트 리스트를 엑셀 파일로 자동 다운로드하는 함수
+  const downloadGuestsToExcel = (guestsList: Guest[]) => {
+    try {
+      // 엑셀 데이터 형식으로 변환
+      const excelData = guestsList.map((guest, index) => {
+        const guestName = guest.name || guest['이름'] || guest.Name || ''
+        const guestPhone = guest.phone || guest['전화번호'] || guest.Phone || ''
+        return {
+          번호: index + 1,
+          이름: guestName,
+          전화번호: guestPhone,
+          이메일: guest.email || '',
+          닉네임: '', // 닉네임은 별도로 관리되므로 빈 값
+          예매유형: guest.isWalkIn ? '현장 예매' : '사전 예매',
+          입금확인: guest.paymentConfirmed ? '확인완료' : '대기중',
+          입금확인시간: guest.paymentConfirmedAt 
+            ? new Date(guest.paymentConfirmedAt).toLocaleString('ko-KR')
+            : '',
+          입장번호: guest.entryNumber || '',
+          체크인: guest.checkedIn ? '완료' : '미완료',
+          체크인시간: guest.checkedInAt 
+            ? new Date(guest.checkedInAt).toLocaleString('ko-KR')
+            : ''
+        }
+      })
+
+      // 엑셀 파일 생성
+      const worksheet = XLSX.utils.json_to_sheet(excelData)
+      const workbook = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(workbook, worksheet, '게스트 목록')
+      
+      // 파일명에 날짜와 시간 포함
+      const now = new Date()
+      const dateStr = now.toISOString().split('T')[0].replace(/-/g, '')
+      const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '')
+      const fileName = `게스트_목록_${dateStr}_${timeStr}.xlsx`
+      
+      // 엑셀 파일 다운로드
+      XLSX.writeFile(workbook, fileName)
+      console.log(`게스트 리스트가 엑셀 파일로 저장되었습니다: ${fileName}`)
+    } catch (error) {
+      console.error('엑셀 파일 다운로드 오류:', error)
+      // 오류가 발생해도 게스트 리스트 저장은 계속 진행
+    }
+  }
+
   const uploadGuests = (newGuests: Guest[]) => {
     // 엑셀에서 업로드된 게스트는 사전 예매로 설정 (isWalkIn이 명시되지 않은 경우)
     const processedGuests = newGuests.map(guest => ({
@@ -500,8 +549,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       email: email,
       checkedIn: false,
       isWalkIn: isWalkIn,
-      paymentConfirmed: isWalkIn ? false : true, // 사전 예매는 결제 완료로 간주
-      paymentConfirmedAt: isWalkIn ? undefined : Date.now() // 사전 예매는 결제 시간 기록
+      paymentConfirmed: false, // 예매 신청 시 입금 확인은 대기중
+      paymentConfirmedAt: undefined // 입금 확인 시간은 관리자가 확인할 때 설정
     }
 
     const updatedGuests = [...guests, newGuest]
@@ -541,15 +590,15 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const setPerformanceData = (data: PerformanceData) => {
     // 기존 데이터와 안전하게 병합 (중요한 데이터 보호)
     const mergedData: PerformanceData = {
-      ...performanceDataState, // 기존 데이터 우선
+      ...performanceData, // 기존 데이터 우선
       ...data, // 새 데이터로 덮어쓰기
       // 셋리스트와 공연진은 기존 값이 있으면 유지 (절대 덮어쓰지 않음)
       setlist: data.setlist && data.setlist.length > 0 
         ? data.setlist 
-        : (performanceDataState?.setlist || []),
+        : (performanceData?.setlist || []),
       performers: data.performers && data.performers.length > 0
         ? data.performers
-        : (performanceDataState?.performers || [])
+        : (performanceData?.performers || [])
     }
     
     setPerformanceDataState(mergedData)

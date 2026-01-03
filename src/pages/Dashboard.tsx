@@ -184,7 +184,7 @@ const Dashboard = () => {
                   onMouseOver={(e) => e.currentTarget.style.background = '#E63E3E'}
                   onMouseOut={(e) => e.currentTarget.style.background = '#FF4C4C'}
                 >
-                  게스트 입장 여부 확인하기
+                  게스트 리스트 확인하기
                 </button>
               </div>
             </div>
@@ -202,7 +202,7 @@ const Dashboard = () => {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="guest-list-modal-header">
-                <h2>게스트 입장 여부</h2>
+                <h2>게스트 리스트</h2>
                 <button
                   className="guest-list-modal-close"
                   onClick={() => setShowGuestList(false)}
@@ -240,8 +240,6 @@ const Dashboard = () => {
                             <th>전화번호</th>
                             <th>예매 유형</th>
                             <th>입금 확인</th>
-                            <th>입장 여부</th>
-                            <th>체크인 시간</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -284,24 +282,6 @@ const Dashboard = () => {
                                   <span className="not-applicable">-</span>
                                 )}
                               </td>
-                              <td>
-                                <span className={guest.checkedIn ? 'checked-in' : 'not-checked-in'}>
-                                  {guest.checkedIn ? '입장 완료' : '미입장'}
-                                </span>
-                              </td>
-                              <td>
-                                {guest.checkedInAt 
-                                  ? new Date(guest.checkedInAt).toLocaleString('ko-KR', {
-                                      year: 'numeric',
-                                      month: '2-digit',
-                                      day: '2-digit',
-                                      hour: '2-digit',
-                                      minute: '2-digit',
-                                      hour12: false
-                                    })
-                                  : '-'
-                                }
-                              </td>
                             </tr>
                             )
                           })
@@ -319,11 +299,6 @@ const Dashboard = () => {
                               <td>
                                 <span className="not-applicable">-</span>
                               </td>
-                              <td>
-                                <span className="checked-in">입장 완료</span>
-                              </td>
-                              <td>-</td>
-                              <td>-</td>
                             </tr>
                           ))}
                       </tbody>

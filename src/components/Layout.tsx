@@ -12,7 +12,7 @@ const Layout = ({ children }: LayoutProps) => {
   const location = useLocation()
   const navigate = useNavigate()
   const { isAuthenticated, logout, isAdmin } = useAuth()
-  const { eventsEnabled } = useData()
+  const { eventsEnabled, performanceData } = useData()
   
   // 새로고침 시 admin 상태가 아직 로드되지 않았을 수 있으므로
   // localStorage에서 직접 확인하여 깜빡임 방지
@@ -117,7 +117,7 @@ const Layout = ({ children }: LayoutProps) => {
           <div className="header-top">
             <h1 className="logo">
               <button onClick={handleLogoClick} className="logo-button">
-                2025 멜로딕 단독 공연
+                {performanceData?.ticket?.eventName || '2025 멜로딕 단독 공연'}
               </button>
             </h1>
             {((adminStatus !== null ? adminStatus : isAdmin) || isAuthenticated) && (

@@ -64,6 +64,31 @@ export const getFirestoreData = async (path: FirestorePath, docId?: string) => {
 }
 
 /**
+ * undefined 값을 제거하는 헬퍼 함수
+ */
+const removeUndefined = (obj: any): any => {
+  if (obj === null || obj === undefined) {
+    return null
+  }
+  
+  if (Array.isArray(obj)) {
+    return obj.map(item => removeUndefined(item))
+  }
+  
+  if (typeof obj === 'object') {
+    const cleaned: any = {}
+    for (const key in obj) {
+      if (obj[key] !== undefined) {
+        cleaned[key] = removeUndefined(obj[key])
+      }
+    }
+    return cleaned
+  }
+  
+  return obj
+}
+
+/**
  * Firestore에 데이터 쓰기
  */
 export const setFirestoreData = async (
@@ -72,11 +97,14 @@ export const setFirestoreData = async (
   docId?: string
 ) => {
   try {
+    // undefined 값 제거
+    const cleanedData = removeUndefined(data)
+    
     if (docId) {
       // 특정 문서 업데이트/생성
       const docRef = doc(db, path, docId)
       await setDoc(docRef, {
-        ...data,
+        ...cleanedData,
         updatedAt: Timestamp.now()
       }, { merge: true })
       return true
@@ -85,7 +113,7 @@ export const setFirestoreData = async (
       const collectionRef = collection(db, path)
       const docRef = doc(collectionRef)
       await setDoc(docRef, {
-        ...data,
+        ...cleanedData,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now()
       })

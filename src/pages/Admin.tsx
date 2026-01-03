@@ -3,9 +3,10 @@ import * as XLSX from 'xlsx'
 import { QRCodeSVG } from 'qrcode.react'
 import { useData, SetlistItem, PerformanceData, BookingInfo } from '../contexts/DataContext'
 import { formatPhoneDisplay } from '../utils/phoneFormat'
-import { collection, getDocs, deleteDoc, doc, query, orderBy, getDoc, updateDoc, where, onSnapshot, setDoc } from 'firebase/firestore'
-import { db } from '../config/firebase'
+import { collection, getDocs, deleteDoc, doc, query, orderBy, getDoc, updateDoc, where, onSnapshot, setDoc, Timestamp } from 'firebase/firestore'
+import { db, storage } from '../config/firebase'
 import { setFirestoreData } from '../services/firestoreService'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import emailjs from '@emailjs/browser'
 import './Admin.css'
 
@@ -40,9 +41,15 @@ const Admin = () => {
   const [editingGuestIndex, setEditingGuestIndex] = useState<number | null>(null)
   const [editingGuest, setEditingGuest] = useState<{ name: string; phone: string }>({ name: '', phone: '' })
   const [showGuestAddModal, setShowGuestAddModal] = useState(false)
-  const [newGuest, setNewGuest] = useState<{ name: string; phone: string; isWalkIn: boolean }>({ name: '', phone: '', isWalkIn: false })
+  const [newGuest, setNewGuest] = useState<{ name: string; phone: string; email: string; isWalkIn: boolean }>({ name: '', phone: '', email: '', isWalkIn: false })
+  const [isEditingPerformanceInfo, setIsEditingPerformanceInfo] = useState(false)
+  const [editedEventName, setEditedEventName] = useState('')
+  const [editedDate, setEditedDate] = useState('')
+  const [editedVenue, setEditedVenue] = useState('')
+  const [editedEvents, setEditedEvents] = useState<Array<{ title: string; description: string; time?: string }>>([])
   const [pendingBookings, setPendingBookings] = useState<Array<{ id: string; name: string; phone: string; email: string; createdAt: any }>>([])
   const [guestLoginLinks, setGuestLoginLinks] = useState<Record<string, string>>({}) // 게스트 ID (name_phone) -> 로그인 링크
+  const [clickedCopyButton, setClickedCopyButton] = useState<string | null>(null) // 클릭된 복사 버튼 ID
   const { uploadGuests, setPerformanceData, guests, performanceData, clearGuests, deleteGuest, updateGuest, clearSetlist, bookingInfo, setBookingInfo, clearChatMessages, toggleGuestPayment, addWalkInGuest } = useData()
   
   // 예매 정보 폼 상태
@@ -79,11 +86,17 @@ const Admin = () => {
           }
           
           // 운영진 정보 수집 (phone이 'admin'인 경우)
+          // 닉네임이 이름과 다르고 비어있지 않은 경우만 리스트에 추가
           if (data.phone === 'admin' && data.name) {
-            admins.push({
-              name: data.name,
-              nickname: data.nickname || '-'
-            })
+            const adminName = data.name
+            const adminNickname = data.nickname || ''
+            // 닉네임이 이름과 다르고 비어있지 않은 경우만 추가
+            if (adminNickname && adminNickname.trim() !== '' && adminNickname !== adminName) {
+              admins.push({
+                name: adminName,
+                nickname: adminNickname
+              })
+            }
           }
         })
         
@@ -302,62 +315,162 @@ const Admin = () => {
       }
 
       // 엑셀 데이터에서 곡명, 아티스트명, 공연진 정보, 이미지 추출
-      const setlist: SetlistItem[] = jsonData
-        .map((row: any, index: number) => {
-          const songName = row['곡명'] || ''
-          // 여러 가능한 헤더명 체크 (아티스트를 우선으로)
-          const artist = 
-            row['아티스트'] || 
-            row['아티스트명'] || 
-            row['Artist'] || 
-            row['artist'] || 
-            row['ARTIST'] ||
-            row['아티스트 '] || // 공백 붙은 경우
-            ''
-          const image = row['이미지'] || row['image'] || row['Image'] || row['이미지URL'] || row['imageUrl'] || row['img'] || ''
-          const vocal = row['보컬'] || ''
-          const guitar = row['기타'] || ''
-          const bass = row['베이스'] || ''
-          const keyboard = row['키보드'] || ''
-          const drum = row['드럼'] || ''
-          
-          if (!songName.trim()) {
-            return null
+      // 새로운 컬럼 구조: 구분, 팀명, 곡명, 아티스트, 보컬, 기타, 베이스, 키보드, 드럼
+      let currentPart: 1 | 2 | null = null
+      let currentTeam: string | null = null
+      const setlist: SetlistItem[] = []
+      
+      // 첫 번째 행의 키를 확인하여 실제 컬럼명 파악
+      if (jsonData.length > 0) {
+        console.log('[셋리스트 업로드] 첫 번째 행의 키:', Object.keys(jsonData[0]))
+        console.log('[셋리스트 업로드] 첫 번째 행 데이터:', jsonData[0])
+      }
+      
+      for (let index = 0; index < jsonData.length; index++) {
+        const row: any = jsonData[index]
+        
+        // 모든 키 확인 (디버깅)
+        if (index === 0) {
+          console.log('[셋리스트 업로드] 첫 번째 행의 모든 키:', Object.keys(row))
+          console.log('[셋리스트 업로드] 첫 번째 행의 모든 값:', row)
+        }
+        
+        // 구분 컬럼에서 1부/2부/연합곡 인식 (다양한 가능한 컬럼명 체크)
+        const gubun = (
+          row['구분'] || 
+          row['Gubun'] || 
+          row['구분 '] || 
+          row['구분\n'] ||
+          row['구분\r'] ||
+          row['구분\r\n'] ||
+          String(row['구분'] || '').trim()
+        ).trim()
+        
+        // 구분 컬럼 값이 있으면 무조건 업데이트 (각 행마다 확인)
+        if (gubun) {
+          if (gubun === '1부' || gubun.includes('1부')) {
+            currentPart = 1
+            currentTeam = null // 부가 바뀌면 팀도 초기화
+            console.log(`[${index + 1}번째 행] 구분: "${gubun}" → 1부로 설정됨`)
+          } else if (gubun === '2부' || gubun.includes('2부')) {
+            currentPart = 2
+            currentTeam = null // 부가 바뀌면 팀도 초기화
+            console.log(`[${index + 1}번째 행] 구분: "${gubun}" → 2부로 설정됨`)
+          } else if (gubun === '연합곡' || gubun.includes('연합곡')) {
+            // 연합곡은 2부에 포함
+            currentPart = 2
+            currentTeam = null // 부가 바뀌면 팀도 초기화
+            console.log(`[${index + 1}번째 행] 구분: "${gubun}" → 연합곡(2부)로 설정됨`)
           }
-          
-          // 디버깅: 첫 3개 행의 아티스트 정보 출력
-          if (index < 3) {
-            console.log(`[${index + 1}번째 행] 곡명: "${songName}", 아티스트 원본값: "${row['아티스트']}", 최종 artist: "${artist}"`)
-            console.log(`[${index + 1}번째 행] 전체 키:`, Object.keys(row))
+        }
+        
+        // 팀명 컬럼에서 팀명 읽기 (다양한 가능한 컬럼명 체크)
+        const teamName = (
+          row['팀명'] || 
+          row['Tim Myeong'] || 
+          row['팀명 '] || 
+          row['팀명\n'] ||
+          row['팀명\r'] ||
+          row['팀명\r\n'] ||
+          String(row['팀명'] || '').trim()
+        ).trim()
+        
+        // 팀명이 있으면 업데이트, 없으면 이전 팀명 유지
+        if (teamName) {
+          currentTeam = teamName
+          console.log(`[${index + 1}번째 행] 팀명: "${teamName}" → 팀명 설정됨`)
+        }
+        
+        // 곡명 컬럼에서 곡명 읽기 (다양한 가능한 컬럼명 체크)
+        const songName = (
+          row['곡명'] || 
+          row['Gok Myeong'] || 
+          row['곡명 '] || 
+          row['곡명\n'] ||
+          row['곡명\r'] ||
+          row['곡명\r\n'] ||
+          String(row['곡명'] || '').trim()
+        )
+        const songNameTrimmed = songName.trim()
+        
+        // 곡명이 없으면 스킵 (구분이나 팀명만 있는 행)
+        if (!songNameTrimmed) {
+          continue
+        }
+        
+        // 여러 가능한 헤더명 체크 (아티스트를 우선으로)
+        const artist = 
+          row['아티스트'] || 
+          row['아티스트명'] || 
+          row['Artist'] || 
+          row['artist'] || 
+          row['ARTIST'] ||
+          row['아티스트 '] || // 공백 붙은 경우
+          ''
+        const image = row['이미지'] || row['image'] || row['Image'] || row['이미지URL'] || row['imageUrl'] || row['img'] || ''
+        const vocal = row['보컬'] || ''
+        const guitar = row['기타'] || ''
+        const bass = row['베이스'] || ''
+        const keyboard = row['키보드'] || ''
+        const drum = row['드럼'] || ''
+        
+        // 디버깅: 첫 5개 행의 정보 출력
+        if (index < 5) {
+          console.log(`[${index + 1}번째 행] 구분: "${gubun}", 팀명: "${teamName}", 곡명: "${songNameTrimmed}", 현재 part: ${currentPart}, 현재 team: ${currentTeam}`)
+          console.log(`[${index + 1}번째 행] 전체 키:`, Object.keys(row))
+        }
+        
+        const item: SetlistItem = {
+          songName: songNameTrimmed,
+          artist: artist ? artist.trim() : '',
+        }
+        
+        if (image && image.trim()) {
+          item.image = image.trim()
+        }
+        if (vocal && vocal.trim() && vocal.trim() !== '-') {
+          item.vocal = vocal.trim()
+        }
+        if (guitar && guitar.trim() && guitar.trim() !== '-') {
+          item.guitar = guitar.trim()
+        }
+        if (bass && bass.trim() && bass.trim() !== '-') {
+          item.bass = bass.trim()
+        }
+        if (keyboard && keyboard.trim() && keyboard.trim() !== '-') {
+          item.keyboard = keyboard.trim()
+        }
+        if (drum && drum.trim() && drum.trim() !== '-') {
+          item.drum = drum.trim()
+        }
+        
+        // part 정보 추가 (1부 또는 2부) - currentPart가 null이 아니면 항상 할당
+        if (currentPart !== null) {
+          item.part = currentPart
+        } else {
+          // part가 없으면 이전 곡의 part 유지
+          if (setlist.length > 0 && setlist[setlist.length - 1].part) {
+            item.part = setlist[setlist.length - 1].part
+          } else {
+            // 첫 번째 곡이고 part가 없으면 기본값 1부
+            item.part = 1
           }
-          
-          const item: SetlistItem = {
-            songName: songName.trim(),
-            artist: artist ? artist.trim() : '',
+        }
+        
+        // team 정보 추가 (현재 팀명) - currentTeam이 있으면 할당, 없으면 이전 팀명 유지
+        if (currentTeam) {
+          item.team = currentTeam
+        } else {
+          // 팀명이 없으면 이전 곡의 팀명 유지
+          if (setlist.length > 0 && setlist[setlist.length - 1].team) {
+            item.team = setlist[setlist.length - 1].team
           }
-          
-          if (image && image.trim()) {
-            item.image = image.trim()
-          }
-          if (vocal && vocal.trim() && vocal.trim() !== '-') {
-            item.vocal = vocal.trim()
-          }
-          if (guitar && guitar.trim() && guitar.trim() !== '-') {
-            item.guitar = guitar.trim()
-          }
-          if (bass && bass.trim() && bass.trim() !== '-') {
-            item.bass = bass.trim()
-          }
-          if (keyboard && keyboard.trim() && keyboard.trim() !== '-') {
-            item.keyboard = keyboard.trim()
-          }
-          if (drum && drum.trim() && drum.trim() !== '-') {
-            item.drum = drum.trim()
-          }
-          
-          return item
-        })
-        .filter((item): item is SetlistItem => item !== null)
+          // 첫 번째 곡이고 팀명이 없으면 team 속성 없음 (undefined)
+        }
+        
+        console.log(`[${index + 1}번째 곡] "${songNameTrimmed}" - part: ${item.part}, team: ${item.team || '(없음)'}`)
+        setlist.push(item)
+      }
 
       if (setlist.length === 0) {
         setUploadStatus('셋리스트 데이터를 찾을 수 없습니다. "곡명" 컬럼을 확인해주세요.')
@@ -458,8 +571,69 @@ const Admin = () => {
         // 저장 실패해도 계속 진행
       }
       
+      // 셋리스트 업로드 후 운영진 닉네임 자동 리셋 및 이전 운영진 삭제
+      try {
+        const userProfilesRef = collection(db, 'userProfiles')
+        const userProfilesSnapshot = await getDocs(userProfilesRef)
+        const resetPromises: Promise<void>[] = []
+        const deletePromises: Promise<void>[] = []
+        
+        // 현재 공연진 목록을 Set으로 변환 (빠른 조회를 위해)
+        const currentPerformersSet = new Set(uniquePerformers.map(p => p.trim()))
+        
+        userProfilesSnapshot.forEach((docSnapshot) => {
+          const data = docSnapshot.data()
+          // 운영진(phone === 'admin')인 경우
+          if (data.phone === 'admin' && data.name) {
+            const adminName = data.name.trim()
+            
+            // 현재 공연진 목록에 있는 운영진: 닉네임만 리셋
+            if (currentPerformersSet.has(adminName)) {
+              const resetPromise = updateDoc(doc(db, 'userProfiles', docSnapshot.id), {
+                nickname: adminName, // 이름으로 닉네임 리셋
+                updatedAt: Timestamp.now()
+              })
+              resetPromises.push(resetPromise)
+              console.log(`[Admin] 운영진 "${adminName}" 닉네임 리셋: "${data.nickname || '(없음)'}" → "${adminName}"`)
+            } else {
+              // 현재 공연진 목록에 없는 이전 운영진: userProfile 삭제
+              const deletePromise = deleteDoc(doc(db, 'userProfiles', docSnapshot.id))
+              deletePromises.push(deletePromise)
+              console.log(`[Admin] 이전 운영진 "${adminName}" userProfile 삭제 (더 이상 공연진 목록에 없음)`)
+            }
+          }
+        })
+        
+        await Promise.all([...resetPromises, ...deletePromises])
+        console.log(`[Admin] ${resetPromises.length}명의 운영진 닉네임이 리셋되었습니다.`)
+        console.log(`[Admin] ${deletePromises.length}명의 이전 운영진 userProfile이 삭제되었습니다.`)
+        
+        // 닉네임 리스트 다시 로드 (삭제 후 최신 데이터)
+        const updatedSnapshot = await getDocs(userProfilesRef)
+        const nicknameMap: Record<string, string> = {}
+        const admins: Array<{ name: string; nickname: string }> = []
+        updatedSnapshot.forEach((docSnapshot) => {
+          const data = docSnapshot.data()
+          if (data.nickname && data.nickname.trim() !== '') {
+            nicknameMap[docSnapshot.id] = data.nickname
+          }
+          // 운영진 정보 수집 (phone이 'admin'인 경우)
+          if (data.phone === 'admin') {
+            admins.push({
+              name: data.name || '-',
+              nickname: data.nickname || '-'
+            })
+          }
+        })
+        setUserNicknames(nicknameMap)
+        setAdminList(admins)
+      } catch (err) {
+        console.warn('[Admin] 운영진 닉네임 리셋/삭제 실패:', err)
+        // 실패해도 계속 진행
+      }
+      
       if (uniquePerformers.length > 0) {
-        setUploadStatus(`✅ ${setlist.length}곡의 셋리스트가 업로드되었습니다. 공연진 ${uniquePerformers.length}명이 자동으로 업데이트되었습니다.`)
+        setUploadStatus(`✅ ${setlist.length}곡의 셋리스트가 업로드되었습니다. 공연진 ${uniquePerformers.length}명이 자동으로 업데이트되었습니다. 운영진 닉네임이 자동으로 리셋되었습니다.`)
       } else {
         setUploadStatus(`✅ ${setlist.length}곡의 셋리스트가 업로드되었습니다. (공연진 정보가 없습니다. 엑셀 파일에 보컬, 기타, 베이스, 키보드, 드럼 컬럼을 확인해주세요.)`)
       }
@@ -611,8 +785,21 @@ const Admin = () => {
       const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || ''
       const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || ''
 
+      console.log('EmailJS 설정 확인:', {
+        serviceId: serviceId ? '설정됨' : '없음',
+        templateId: templateId ? '설정됨' : '없음',
+        publicKey: publicKey ? '설정됨' : '없음',
+        toEmail,
+        toName
+      })
+
       if (!serviceId || !templateId || !publicKey) {
-        console.warn('EmailJS 설정이 없습니다. 환경 변수를 확인해주세요.')
+        console.error('EmailJS 설정이 없습니다. 환경 변수를 확인해주세요.')
+        console.error('필요한 환경 변수:', {
+          VITE_EMAILJS_SERVICE_ID: serviceId || '없음',
+          VITE_EMAILJS_TEMPLATE_ID: templateId || '없음',
+          VITE_EMAILJS_PUBLIC_KEY: publicKey ? '설정됨' : '없음'
+        })
         return false
       }
 
@@ -620,6 +807,7 @@ const Admin = () => {
       emailjs.init(publicKey)
 
       // 이메일 전송
+      console.log('이메일 전송 시도:', { serviceId, templateId, toEmail, toName })
       const result = await emailjs.send(serviceId, templateId, {
         to_name: toName,
         to_email: toEmail,
@@ -630,8 +818,14 @@ const Admin = () => {
 
       console.log('이메일 전송 성공:', result)
       return true
-    } catch (error) {
+    } catch (error: any) {
       console.error('이메일 전송 실패:', error)
+      console.error('에러 상세:', {
+        message: error?.message,
+        status: error?.status,
+        text: error?.text,
+        response: error?.response
+      })
       return false
     }
   }
@@ -654,7 +848,11 @@ const Admin = () => {
   }
 
   // 링크 복사 함수
-  const copyLoginLink = async (link: string) => {
+  const copyLoginLink = async (link: string, buttonId: string) => {
+    // 클릭 피드백
+    setClickedCopyButton(buttonId)
+    setTimeout(() => setClickedCopyButton(null), 200)
+    
     try {
       await navigator.clipboard.writeText(link)
       setUploadStatus('✅ 로그인 링크가 클립보드에 복사되었습니다.')
@@ -750,7 +948,7 @@ const Admin = () => {
     // 입금 확인 토글
     toggleGuestPayment(index)
 
-    // 입금 확인 시 링크 생성 및 이메일/SMS 전송
+    // 입금 확인 시 링크 생성
     if (willBeConfirmed) {
       try {
         console.log('링크 생성 시작:', guest.name, guest.phone)
@@ -762,56 +960,8 @@ const Admin = () => {
           return updated
         })
         
-        // 이메일 전송 (이메일이 있는 경우)
-        if (guest.email) {
-          const emailSent = await sendLoginLinkEmail(guest.email, guest.name, loginLink, guest.phone)
-          if (emailSent) {
-            setUploadStatus('✅ 로그인 링크가 생성되었고 이메일로 전송되었습니다.')
-          } else {
-            setUploadStatus('✅ 로그인 링크가 생성되었습니다. (이메일 전송 실패)')
-          }
-        } else {
-          // 이메일이 없으면 bookings 컬렉션에서 조회
-          try {
-            const bookingsQuery = query(
-              collection(db, 'bookings'),
-              where('name', '==', guest.name),
-              where('phone', '==', guest.phone.replace(/\D/g, '')),
-              where('approved', '==', true)
-            )
-            const bookingsSnapshot = await getDocs(bookingsQuery)
-            if (!bookingsSnapshot.empty) {
-              const booking = bookingsSnapshot.docs[0].data()
-              if (booking.email) {
-                // 게스트 정보에 이메일 업데이트
-                const updatedGuest = { ...guest, email: booking.email }
-                const guestIndex = guests.findIndex((g, idx) => idx === index)
-                if (guestIndex !== -1) {
-                  updateGuest(guestIndex, updatedGuest)
-                }
-                // 이메일 전송
-                const emailSent = await sendLoginLinkEmail(booking.email, guest.name, loginLink, guest.phone)
-                if (emailSent) {
-                  setUploadStatus('✅ 로그인 링크가 생성되었고 이메일로 전송되었습니다.')
-                } else {
-                  setUploadStatus('✅ 로그인 링크가 생성되었습니다. (이메일 전송 실패)')
-                }
-              } else {
-                setUploadStatus('✅ 로그인 링크가 생성되었습니다.')
-              }
-            } else {
-              setUploadStatus('✅ 로그인 링크가 생성되었습니다.')
-            }
-          } catch (error) {
-            console.error('이메일 조회 실패:', error)
-            setUploadStatus('✅ 로그인 링크가 생성되었습니다.')
-          }
-        }
-        
-        // SMS 전송 (선택사항)
-        // await sendLoginLinkSMS(guest.phone, guest.name, loginLink)
-        
-        setTimeout(() => setUploadStatus(''), 5000)
+        setUploadStatus('✅ 로그인 링크가 생성되었습니다.')
+        setTimeout(() => setUploadStatus(''), 3000)
       } catch (error) {
         console.error('로그인 링크 생성 실패:', error)
         setUploadStatus('❌ 로그인 링크 생성에 실패했습니다.')
@@ -839,6 +989,55 @@ const Admin = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [guests])
+
+  // 게스트 리스트를 Firebase Storage의 단일 엑셀 파일로 업데이트
+  const updateExcelFileInStorage = async (guestsList: typeof guests) => {
+    try {
+      // 엑셀 데이터 형식으로 변환
+      const excelData = guestsList.map((guest, index) => {
+        const guestName = guest.name || guest['이름'] || guest.Name || ''
+        const guestPhone = guest.phone || guest['전화번호'] || guest.Phone || ''
+        return {
+          번호: index + 1,
+          이름: guestName,
+          전화번호: guestPhone,
+          이메일: guest.email || '',
+          닉네임: '', // 닉네임은 별도로 관리되므로 빈 값
+          예매유형: guest.isWalkIn ? '현장 예매' : '사전 예매',
+          입금확인: guest.paymentConfirmed ? '확인완료' : '대기중',
+          입금확인시간: guest.paymentConfirmedAt 
+            ? new Date(guest.paymentConfirmedAt).toLocaleString('ko-KR')
+            : '',
+          입장번호: guest.entryNumber || '',
+          체크인: guest.checkedIn ? '완료' : '미완료',
+          체크인시간: guest.checkedInAt 
+            ? new Date(guest.checkedInAt).toLocaleString('ko-KR')
+            : ''
+        }
+      })
+
+      // 엑셀 파일 생성
+      const worksheet = XLSX.utils.json_to_sheet(excelData)
+      const workbook = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(workbook, worksheet, '게스트 목록')
+      
+      // 엑셀을 Blob으로 변환
+      const excelBuffer = XLSX.write(workbook, { type: 'array', bookType: 'xlsx' })
+      const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+      
+      // Firebase Storage에 업로드 (같은 파일명으로 덮어쓰기)
+      const fileName = '게스트_목록.xlsx'
+      const storageRef = ref(storage, `guests/${fileName}`)
+      
+      await uploadBytes(storageRef, blob)
+      const downloadURL = await getDownloadURL(storageRef)
+      
+      console.log(`게스트 리스트 엑셀 파일이 업데이트되었습니다: ${downloadURL}`)
+    } catch (error) {
+      console.error('엑셀 파일 업데이트 오류:', error)
+      // 오류가 발생해도 게스트 리스트 저장은 계속 진행
+    }
+  }
 
   // 입금 확인이 완료된 게스트에 대해 링크 자동 생성
   useEffect(() => {
@@ -875,6 +1074,8 @@ const Admin = () => {
     
     if (guests.length > 0) {
       generateLinksForConfirmedGuests()
+      // 게스트 리스트가 변경될 때마다 엑셀 파일 업데이트
+      updateExcelFileInStorage(guests)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [guests]) // guests 배열 변경 시 확인 (무한 루프 방지를 위해 guestLoginLinks는 의존성에서 제외)
@@ -981,14 +1182,14 @@ const Admin = () => {
           <div>
             <h2>게스트 리스트</h2>
             <p className="section-description">
-              등록된 게스트 목록과 입장 여부를 확인할 수 있습니다.
+              등록된 게스트 목록을 확인할 수 있습니다.
             </p>
           </div>
           <button
             onClick={() => {
               requirePassword(() => {
                 if (window.confirm('게스트를 추가하시겠습니까?')) {
-                  setNewGuest({ name: '', phone: '', isWalkIn: false })
+                  setNewGuest({ name: '', phone: '', email: '', isWalkIn: false })
                   setShowGuestAddModal(true)
                 }
               })
@@ -1007,12 +1208,12 @@ const Admin = () => {
                   <th>번호</th>
                   <th>이름</th>
                   <th>전화번호</th>
+                  <th>이메일</th>
                   <th>닉네임</th>
                   <th>예매 유형</th>
                   <th>입금 확인</th>
-                  <th>입장 여부</th>
+                  <th>로그인 링크</th>
                   <th>입장 번호</th>
-                  <th>체크인 시간</th>
                   <th>관리</th>
                 </tr>
               </thead>
@@ -1027,15 +1228,12 @@ const Admin = () => {
                   const guestNickname = userNicknames[userId] || '-'
                   // 게스트 고유 ID (링크 조회용)
                   const guestId = getGuestId(guestName, guestPhoneRaw)
-                  // 디버깅: 링크 상태 확인
-                  if (guest.paymentConfirmed && guest.paymentConfirmedAt) {
-                    console.log('게스트 입금 확인됨:', guestName, 'guestId:', guestId, '링크 존재:', !!guestLoginLinks[guestId])
-                  }
                   return (
                     <tr key={index}>
                       <td>{index + 1}</td>
                       <td>{guestName}</td>
                       <td>{guestPhone}</td>
+                      <td>{guest.email || '-'}</td>
                       <td>{guestNickname}</td>
                       <td>
                         <span className={isWalkIn ? 'walk-in-badge' : 'pre-booking-badge'}>
@@ -1043,153 +1241,74 @@ const Admin = () => {
                         </span>
                       </td>
                       <td>
-                        {isWalkIn ? (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'flex-start' }}>
-                            <button
-                              onClick={() => handlePaymentConfirm(index)}
-                              className={`payment-confirm-button ${guest.paymentConfirmed ? 'confirmed' : 'not-confirmed'}`}
-                              title={guest.paymentConfirmed && guest.paymentConfirmedAt ? `입금 확인 완료 (${new Date(guest.paymentConfirmedAt).toLocaleString('ko-KR')})` : '입금 확인 대기'}
-                            >
-                              {guest.paymentConfirmed ? '확인완료' : '대기중'}
-                            </button>
-                            {guest.paymentConfirmed && guest.paymentConfirmedAt && (
-                              <>
-                                <span style={{ fontSize: '0.75rem', color: '#666' }}>
-                                  {new Date(guest.paymentConfirmedAt).toLocaleString('ko-KR', {
-                                    year: 'numeric',
-                                    month: '2-digit',
-                                    day: '2-digit',
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                  })}
-                                </span>
-                                {guestLoginLinks[guestId] ? (
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginTop: '0.5rem', padding: '0.5rem', background: '#f0f0f0', borderRadius: '4px', fontSize: '0.75rem', width: '100%', minWidth: '200px' }}>
-                                    <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>개별 로그인 링크:</div>
-                                    <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', width: '100%' }}>
-                                      <input
-                                        type="text"
-                                        value={guestLoginLinks[guestId]}
-                                        readOnly
-                                        style={{
-                                          flex: 1,
-                                          padding: '0.25rem 0.5rem',
-                                          border: '1px solid #ddd',
-                                          borderRadius: '4px',
-                                          fontSize: '0.7rem',
-                                          background: '#fff',
-                                          minWidth: 0
-                                        }}
-                                      />
-                                      <button
-                                        onClick={() => copyLoginLink(guestLoginLinks[guestId])}
-                                        style={{
-                                          padding: '0.25rem 0.5rem',
-                                          background: '#4A90E2',
-                                          color: 'white',
-                                          border: 'none',
-                                          borderRadius: '4px',
-                                          cursor: 'pointer',
-                                          fontSize: '0.7rem',
-                                          whiteSpace: 'nowrap'
-                                        }}
-                                      >
-                                        복사
-                                      </button>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div style={{ fontSize: '0.7rem', color: '#999', marginTop: '0.25rem' }}>
-                                    링크 생성 중...
-                                  </div>
-                                )}
-                              </>
-                            )}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'flex-start' }}>
+                          <button
+                            onClick={() => handlePaymentConfirm(index)}
+                            className={`payment-confirm-button ${guest.paymentConfirmed ? 'confirmed' : 'not-confirmed'}`}
+                            title={guest.paymentConfirmed && guest.paymentConfirmedAt ? `입금 확인 완료 (${new Date(guest.paymentConfirmedAt).toLocaleString('ko-KR')})` : '입금 확인 대기'}
+                          >
+                            {guest.paymentConfirmed ? '확인완료' : '대기중'}
+                          </button>
+                          {guest.paymentConfirmed && guest.paymentConfirmedAt && (
+                            <span style={{ fontSize: '0.75rem', color: '#666' }}>
+                              {new Date(guest.paymentConfirmedAt).toLocaleString('ko-KR', {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        {guest.paymentConfirmed && guestLoginLinks[guestId] ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', padding: '0.5rem', background: '#f0f0f0', borderRadius: '4px', fontSize: '0.75rem', width: '100%', minWidth: '200px' }}>
+                            <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', width: '100%' }}>
+                              <input
+                                type="text"
+                                value={guestLoginLinks[guestId]}
+                                readOnly
+                                style={{
+                                  flex: 1,
+                                  padding: '0.25rem 0.5rem',
+                                  border: '1px solid #ddd',
+                                  borderRadius: '4px',
+                                  fontSize: '0.7rem',
+                                  background: '#fff',
+                                  minWidth: 0
+                                }}
+                              />
+                              <button
+                                onClick={() => copyLoginLink(guestLoginLinks[guestId], `copy-${guestId}-${isWalkIn ? 'walkin' : 'prebook'}`)}
+                                style={{
+                                  padding: '0.25rem 0.5rem',
+                                  background: clickedCopyButton === `copy-${guestId}-${isWalkIn ? 'walkin' : 'prebook'}` ? '#357ABD' : '#4A90E2',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '4px',
+                                  cursor: 'pointer',
+                                  fontSize: '0.7rem',
+                                  whiteSpace: 'nowrap',
+                                  transform: clickedCopyButton === `copy-${guestId}-${isWalkIn ? 'walkin' : 'prebook'}` ? 'scale(0.95)' : 'scale(1)',
+                                  transition: 'all 0.1s ease',
+                                  boxShadow: clickedCopyButton === `copy-${guestId}-${isWalkIn ? 'walkin' : 'prebook'}` ? 'inset 0 2px 4px rgba(0,0,0,0.2)' : 'none'
+                                }}
+                              >
+                                복사
+                              </button>
+                            </div>
+                          </div>
+                        ) : guest.paymentConfirmed ? (
+                          <div style={{ fontSize: '0.7rem', color: '#999' }}>
+                            링크 생성 중...
                           </div>
                         ) : (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'flex-start' }}>
-                            <button
-                              onClick={() => handlePaymentConfirm(index)}
-                              className={`payment-confirm-button ${guest.paymentConfirmed ? 'confirmed' : 'not-confirmed'}`}
-                              title={guest.paymentConfirmed && guest.paymentConfirmedAt ? `입금 확인 완료 (${new Date(guest.paymentConfirmedAt).toLocaleString('ko-KR')})` : '입금 확인 대기'}
-                            >
-                              {guest.paymentConfirmed ? '확인완료' : '대기중'}
-                            </button>
-                            {guest.paymentConfirmed && guest.paymentConfirmedAt && (
-                              <>
-                                <span style={{ fontSize: '0.75rem', color: '#666' }}>
-                                  {new Date(guest.paymentConfirmedAt).toLocaleString('ko-KR', {
-                                    year: 'numeric',
-                                    month: '2-digit',
-                                    day: '2-digit',
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                  })}
-                                </span>
-                                {guestLoginLinks[guestId] ? (
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginTop: '0.5rem', padding: '0.5rem', background: '#f0f0f0', borderRadius: '4px', fontSize: '0.75rem', width: '100%', minWidth: '200px' }}>
-                                    <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>개별 로그인 링크:</div>
-                                    <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', width: '100%' }}>
-                                      <input
-                                        type="text"
-                                        value={guestLoginLinks[guestId]}
-                                        readOnly
-                                        style={{
-                                          flex: 1,
-                                          padding: '0.25rem 0.5rem',
-                                          border: '1px solid #ddd',
-                                          borderRadius: '4px',
-                                          fontSize: '0.7rem',
-                                          background: '#fff',
-                                          minWidth: 0
-                                        }}
-                                      />
-                                      <button
-                                        onClick={() => copyLoginLink(guestLoginLinks[guestId])}
-                                        style={{
-                                          padding: '0.25rem 0.5rem',
-                                          background: '#4A90E2',
-                                          color: 'white',
-                                          border: 'none',
-                                          borderRadius: '4px',
-                                          cursor: 'pointer',
-                                          fontSize: '0.7rem',
-                                          whiteSpace: 'nowrap'
-                                        }}
-                                      >
-                                        복사
-                                      </button>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div style={{ fontSize: '0.7rem', color: '#999', marginTop: '0.25rem' }}>
-                                    링크 생성 중...
-                                  </div>
-                                )}
-                              </>
-                            )}
-                          </div>
+                          <span style={{ color: '#999' }}>-</span>
                         )}
                       </td>
-                      <td>
-                        <span className={guest.checkedIn ? 'checked-in' : 'not-checked-in'}>
-                          {guest.checkedIn ? '입장 완료' : '미입장'}
-                        </span>
-                      </td>
                       <td>{guest.entryNumber ? `${guest.entryNumber}번` : '-'}</td>
-                      <td>
-                        {guest.checkedInAt 
-                          ? new Date(guest.checkedInAt).toLocaleString('ko-KR', {
-                              year: 'numeric',
-                              month: '2-digit',
-                              day: '2-digit',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              hour12: false
-                            })
-                          : '-'
-                        }
-                      </td>
                       <td>
                         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
                           <button
@@ -1241,7 +1360,79 @@ const Admin = () => {
 
       {/* 운영진 닉네임 리스트 섹션 */}
       <div className="admin-section">
-        <h2>운영진 닉네임</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h2 style={{ margin: 0 }}>운영진 닉네임</h2>
+          <button
+            onClick={() => {
+              requirePassword(async () => {
+                if (window.confirm('모든 운영진의 닉네임을 이름으로 초기화하시겠습니까?')) {
+                  try {
+                    const userProfilesRef = collection(db, 'userProfiles')
+                    const userProfilesSnapshot = await getDocs(userProfilesRef)
+                    const resetPromises: Promise<void>[] = []
+                    
+                    userProfilesSnapshot.forEach((docSnapshot) => {
+                      const data = docSnapshot.data()
+                      // 운영진(phone === 'admin')인 경우 닉네임을 이름으로 리셋
+                      if (data.phone === 'admin' && data.name) {
+                        const resetPromise = updateDoc(doc(db, 'userProfiles', docSnapshot.id), {
+                          nickname: data.name, // 이름으로 닉네임 리셋
+                          updatedAt: Timestamp.now()
+                        })
+                        resetPromises.push(resetPromise)
+                      }
+                    })
+                    
+                    await Promise.all(resetPromises)
+                    setUploadStatus(`✅ ${resetPromises.length}명의 운영진 닉네임이 초기화되었습니다.`)
+                    
+                    // 닉네임 리스트 다시 로드
+                    const updatedSnapshot = await getDocs(userProfilesRef)
+                    const nicknameMap: Record<string, string> = {}
+                    const admins: Array<{ name: string; nickname: string }> = []
+                    updatedSnapshot.forEach((docSnapshot) => {
+                      const data = docSnapshot.data()
+                      if (data.nickname && data.nickname.trim() !== '') {
+                        nicknameMap[docSnapshot.id] = data.nickname
+                      }
+                      // 운영진 정보 수집 (phone이 'admin'인 경우)
+                      // 닉네임이 이름과 다르고 비어있지 않은 경우만 리스트에 추가
+                      if (data.phone === 'admin' && data.name) {
+                        const adminName = data.name
+                        const adminNickname = data.nickname || ''
+                        // 닉네임이 이름과 다르고 비어있지 않은 경우만 추가
+                        if (adminNickname && adminNickname.trim() !== '' && adminNickname !== adminName) {
+                          admins.push({
+                            name: adminName,
+                            nickname: adminNickname
+                          })
+                        }
+                      }
+                    })
+                    setUserNicknames(nicknameMap)
+                    setAdminList(admins)
+                  } catch (err) {
+                    console.error('운영진 닉네임 초기화 오류:', err)
+                    setUploadStatus('❌ 운영진 닉네임 초기화에 실패했습니다.')
+                  }
+                }
+              })
+            }}
+            className="config-button"
+            style={{
+              padding: '0.5rem 1rem',
+              background: '#FF4C4C',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              fontWeight: '600'
+            }}
+          >
+            운영진 닉네임 초기화
+          </button>
+        </div>
         <p className="section-description">
           등록된 운영진 목록과 닉네임을 확인할 수 있습니다.
         </p>
@@ -1275,7 +1466,9 @@ const Admin = () => {
         <h2>게스트 정보 업로드</h2>
         <p className="section-description">
           엑셀 파일을 업로드하세요. 엑셀 파일에는 '이름'과 '전화번호' 컬럼이 있어야 합니다.
+          게스트 리스트가 업데이트되면 Firebase Storage의 '게스트_목록.xlsx' 파일이 자동으로 업데이트됩니다.
         </p>
+        
         {guests.length > 0 && (
           <div className="guest-count">
             현재 등록된 게스트: <strong>{guests.length}명</strong>
@@ -1307,6 +1500,35 @@ const Admin = () => {
         </div>
 
         <div className="sample-buttons">
+          <button
+            onClick={async () => {
+              try {
+                const fileName = '게스트_목록.xlsx'
+                const storageRef = ref(storage, `guests/${fileName}`)
+                const downloadURL = await getDownloadURL(storageRef)
+                
+                // 새 창에서 다운로드
+                const link = document.createElement('a')
+                link.href = downloadURL
+                link.download = fileName
+                link.target = '_blank'
+                document.body.appendChild(link)
+                link.click()
+                document.body.removeChild(link)
+                
+                setUploadStatus('✅ 엑셀 파일 다운로드가 시작되었습니다.')
+                setTimeout(() => setUploadStatus(''), 3000)
+              } catch (error) {
+                console.error('엑셀 파일 다운로드 오류:', error)
+                setUploadStatus('❌ 엑셀 파일을 찾을 수 없습니다. 게스트 리스트를 먼저 업데이트해주세요.')
+                setTimeout(() => setUploadStatus(''), 3000)
+              }
+            }}
+            className="sample-button"
+            style={{ background: '#4C4CFF', color: 'white' }}
+          >
+            📥 최신 엑셀 파일 다운로드
+          </button>
           <button onClick={handleGenerateSampleExcel} className="sample-button">
             📥 엑셀 템플릿 다운로드
           </button>
@@ -1489,32 +1711,263 @@ const Admin = () => {
       </div>
 
       <div className="admin-section">
+        <h2>공연 정보 관리</h2>
         <p className="section-description">
-          공연 정보는 자동으로 설정됩니다. 공연진은 셋리스트 업로드 시 자동으로 반영됩니다.
+          공연 정보를 수정할 수 있습니다. 공연진은 셋리스트 업로드 시 자동으로 반영됩니다.
         </p>
         {performanceData && (performanceData.events || performanceData.ticket) && (
-          <div className="performance-info-display">
-            {performanceData.ticket && (
-              <div className="info-item">
-                <strong>공연명:</strong> {performanceData.ticket.eventName}
+          <>
+            {!isEditingPerformanceInfo ? (
+              <div className="performance-info-display">
+                {performanceData.ticket && (
+                  <div className="info-item">
+                    <strong>공연명:</strong> {performanceData.ticket.eventName}
+                  </div>
+                )}
+                {performanceData.ticket && (
+                  <div className="info-item">
+                    <strong>날짜:</strong> {performanceData.ticket.date}
+                  </div>
+                )}
+                {performanceData.ticket && (
+                  <div className="info-item">
+                    <strong>공연장:</strong> {performanceData.ticket.venue}
+                  </div>
+                )}
+                {performanceData.events && performanceData.events.length > 0 && (
+                  <>
+                    <div className="info-item">
+                      <strong>이벤트:</strong> {performanceData.events.length}개
+                    </div>
+                    <div style={{ marginTop: '1.5rem' }}>
+                      <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem', fontWeight: '600' }}>타임라인 이벤트</h3>
+                      {performanceData.events.map((event, index) => (
+                        <div key={index} style={{ marginBottom: '1rem', padding: '1rem', background: '#f9f9f9', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
+                          <div style={{ marginBottom: '0.5rem', fontWeight: '600', color: '#333' }}>
+                            {event.title}
+                          </div>
+                          {event.time && (
+                            <div style={{ marginBottom: '0.5rem', color: '#666', fontSize: '0.9rem' }}>
+                              <strong>시간:</strong> {event.time}
+                            </div>
+                          )}
+                          {event.description && (
+                            <div style={{ color: '#666', fontSize: '0.9rem' }}>
+                              <strong>설명:</strong> {event.description}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+                <div style={{ marginTop: '1rem' }}>
+                  <button
+                    onClick={() => {
+                      setEditedEventName(performanceData.ticket?.eventName || '')
+                      setEditedDate(performanceData.ticket?.date || '')
+                      setEditedVenue(performanceData.ticket?.venue || '')
+                      setEditedEvents(performanceData.events ? [...performanceData.events] : [])
+                      setIsEditingPerformanceInfo(true)
+                    }}
+                    className="config-button"
+                  >
+                    공연 정보 수정
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="booking-info-form">
+                <div className="form-group">
+                  <label htmlFor="event-name">공연명</label>
+                  <input
+                    type="text"
+                    id="event-name"
+                    value={editedEventName}
+                    onChange={(e) => setEditedEventName(e.target.value)}
+                    placeholder="공연명을 입력하세요"
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="event-date">날짜</label>
+                  <input
+                    type="text"
+                    id="event-date"
+                    value={editedDate}
+                    onChange={(e) => setEditedDate(e.target.value)}
+                    placeholder="예: 2025년 12월 27일 (토)"
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="event-venue">공연장</label>
+                  <input
+                    type="text"
+                    id="event-venue"
+                    value={editedVenue}
+                    onChange={(e) => setEditedVenue(e.target.value)}
+                    placeholder="공연장을 입력하세요"
+                  />
+                </div>
+                {editedEvents.length > 0 && (
+                  <div style={{ marginTop: '1.5rem' }}>
+                    <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem', fontWeight: '600' }}>타임라인 이벤트</h3>
+                    {editedEvents.map((event, index) => (
+                      <div key={index} style={{ marginBottom: '1.5rem', padding: '1rem', background: '#f9f9f9', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
+                        <div style={{ marginBottom: '0.5rem', fontWeight: '600', color: '#333' }}>
+                          {event.title}
+                        </div>
+                        <div className="form-group" style={{ marginBottom: '0.75rem' }}>
+                          <label htmlFor={`event-time-${index}`}>시간</label>
+                          <input
+                            type="text"
+                            id={`event-time-${index}`}
+                            value={event.time || ''}
+                            onChange={(e) => {
+                              const updated = [...editedEvents]
+                              updated[index] = { ...updated[index], time: e.target.value }
+                              setEditedEvents(updated)
+                            }}
+                            placeholder="예: 18:30-19:00"
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label htmlFor={`event-description-${index}`}>설명</label>
+                          <input
+                            type="text"
+                            id={`event-description-${index}`}
+                            value={event.description || ''}
+                            onChange={(e) => {
+                              const updated = [...editedEvents]
+                              updated[index] = { ...updated[index], description: e.target.value }
+                              setEditedEvents(updated)
+                            }}
+                            placeholder="이벤트 설명을 입력하세요"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', position: 'relative', zIndex: 10 }}>
+                  <button
+                    type="button"
+                    onClick={async (e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      
+                      console.log('저장 버튼 클릭됨')
+                      console.log('입력값:', { editedEventName, editedDate, editedVenue })
+                      
+                      if (!editedEventName.trim() || !editedDate.trim() || !editedVenue.trim()) {
+                        setUploadStatus('모든 필드를 입력해주세요.')
+                        setTimeout(() => setUploadStatus(''), 3000)
+                        return
+                      }
+
+                      if (!performanceData) {
+                        setUploadStatus('❌ 공연 데이터가 없습니다.')
+                        setTimeout(() => setUploadStatus(''), 3000)
+                        return
+                      }
+
+                      const updatedPerformanceData: PerformanceData = {
+                        ...performanceData,
+                        ticket: {
+                          ...(performanceData.ticket || {}),
+                          eventName: editedEventName.trim(),
+                          date: editedDate.trim(),
+                          venue: editedVenue.trim(),
+                          seat: performanceData.ticket?.seat || '자유석'
+                        },
+                        events: editedEvents.length > 0 ? editedEvents.map(event => ({
+                          title: event.title, // 제목은 변경 불가
+                          description: event.description.trim(),
+                          time: event.time?.trim() || ''
+                        })) : performanceData.events
+                      }
+
+                      console.log('저장할 데이터:', updatedPerformanceData)
+                      
+                      // 먼저 로컬 상태 업데이트
+                      setPerformanceData(updatedPerformanceData)
+                      
+                      try {
+                        // 직접 Firestore에 저장 (더 확실한 방법)
+                        const performanceDataRef = doc(db, 'performanceData', 'main')
+                        await setDoc(performanceDataRef, {
+                          ...updatedPerformanceData,
+                          updatedAt: Timestamp.now()
+                        }, { merge: true })
+                        
+                        console.log('Firestore 저장 완료')
+                        setUploadStatus('✅ 공연 정보가 저장되었습니다.')
+                        setTimeout(() => setUploadStatus(''), 3000)
+                        setIsEditingPerformanceInfo(false)
+                      } catch (error: any) {
+                        console.error('공연 정보 저장 오류:', error)
+                        const errorCode = error?.code || 'unknown'
+                        const errorMessage = error?.message || '알 수 없는 오류가 발생했습니다.'
+                        console.error('에러 코드:', errorCode)
+                        console.error('에러 메시지:', errorMessage)
+                        
+                        if (errorCode === 'permission-denied') {
+                          setUploadStatus('❌ 공연 정보 저장에 실패했습니다. Firestore 권한을 확인해주세요.')
+                        } else if (errorCode === 'unavailable') {
+                          setUploadStatus('❌ 네트워크 오류로 저장에 실패했습니다. 인터넷 연결을 확인해주세요.')
+                        } else {
+                          setUploadStatus(`❌ 공연 정보 저장에 실패했습니다: ${errorMessage}`)
+                        }
+                        setTimeout(() => setUploadStatus(''), 5000)
+                        // 로컬 상태는 이미 업데이트되었으므로 유지
+                        setIsEditingPerformanceInfo(false)
+                      }
+                    }}
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                    }}
+                    className="config-button"
+                    style={{ 
+                      cursor: 'pointer', 
+                      position: 'relative', 
+                      zIndex: 100,
+                      pointerEvents: 'auto',
+                      userSelect: 'none'
+                    }}
+                  >
+                    저장
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      setIsEditingPerformanceInfo(false)
+                      setEditedEventName('')
+                      setEditedDate('')
+                      setEditedVenue('')
+                      setEditedEvents([])
+                    }}
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                    }}
+                    className="config-button"
+                    style={{ 
+                      background: '#999', 
+                      cursor: 'pointer',
+                      position: 'relative',
+                      zIndex: 100,
+                      pointerEvents: 'auto',
+                      userSelect: 'none'
+                    }}
+                  >
+                    취소
+                  </button>
+                </div>
               </div>
             )}
-            {performanceData.ticket && (
-              <div className="info-item">
-                <strong>날짜:</strong> {performanceData.ticket.date}
-              </div>
-            )}
-            {performanceData.ticket && (
-              <div className="info-item">
-                <strong>공연장:</strong> {performanceData.ticket.venue}
-              </div>
-            )}
-            {performanceData.events && performanceData.events.length > 0 && (
-              <div className="info-item">
-                <strong>이벤트:</strong> {performanceData.events.length}개
-              </div>
-            )}
-          </div>
+          </>
         )}
       </div>
 
@@ -1785,7 +2238,7 @@ const Admin = () => {
       {showGuestAddModal && (
         <div className="modal-overlay" onClick={() => {
           setShowGuestAddModal(false)
-          setNewGuest({ name: '', phone: '', isWalkIn: false })
+          setNewGuest({ name: '', phone: '', email: '', isWalkIn: false })
         }}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
@@ -1794,7 +2247,7 @@ const Admin = () => {
                 className="modal-close"
                 onClick={() => {
                   setShowGuestAddModal(false)
-                  setNewGuest({ name: '', phone: '', isWalkIn: false })
+                  setNewGuest({ name: '', phone: '', email: '', isWalkIn: false })
                 }}
               >
                 ×
@@ -1823,6 +2276,16 @@ const Admin = () => {
                     setNewGuest({ ...newGuest, phone: value })
                   }}
                   placeholder="전화번호 입력 (숫자만)"
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="add-guest-email">이메일 (선택사항)</label>
+                <input
+                  type="email"
+                  id="add-guest-email"
+                  value={newGuest.email}
+                  onChange={(e) => setNewGuest({ ...newGuest, email: e.target.value })}
+                  placeholder="이메일 입력"
                 />
               </div>
               <div className="form-group">
@@ -1880,6 +2343,7 @@ const Admin = () => {
                       '전화번호': normalizedPhone,
                       Name: normalizedName,
                       Phone: normalizedPhone,
+                      email: newGuest.email.trim() || undefined,
                       checkedIn: false,
                       isWalkIn: newGuest.isWalkIn,
                       paymentConfirmed: false
@@ -1904,7 +2368,7 @@ const Admin = () => {
                     uploadGuests(updatedGuests)
                     
                     setShowGuestAddModal(false)
-                    setNewGuest({ name: '', phone: '', isWalkIn: false })
+                    setNewGuest({ name: '', phone: '', email: '', isWalkIn: false })
                     const bookingType = newGuest.isWalkIn ? '현장 예매' : '사전 예매'
                     setUploadStatus(`✅ "${normalizedName}" 게스트가 ${bookingType}로 추가되었습니다.`)
                     
@@ -1928,7 +2392,7 @@ const Admin = () => {
                   type="button"
                   onClick={() => {
                     setShowGuestAddModal(false)
-                    setNewGuest({ name: '', phone: '', isWalkIn: false })
+                    setNewGuest({ name: '', phone: '', email: '', isWalkIn: false })
                   }}
                   className="login-button modal-cancel-button"
                 >

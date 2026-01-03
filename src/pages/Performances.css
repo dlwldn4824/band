@@ -27,6 +27,19 @@
   gap: 0;
   margin-bottom: 1.5rem;
   justify-content: center;
+  width: 100%;
+  max-width: 420px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 14px;
+  box-sizing: border-box;
+  position: relative;
+  }
+  
+  .part-selector::before {
+  content: '';
+  width: calc(54px + 27px); /* 레일(54px) + gap(27px) */
+  flex-shrink: 0;
   }
   
   .part-button {
@@ -155,6 +168,47 @@
   display: flex;
   align-items: center;
   flex: 1;
+  }
+  
+  /* 팀 구분선 */
+  .team-divider-row {
+  margin: 1rem 0;
+  }
+  
+  .team-divider-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  }
+  
+  .team-divider {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  }
+  
+  .team-divider::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.3), transparent);
+  z-index: 1;
+  }
+  
+  .team-divider-text {
+  position: relative;
+  background: #000000;
+  padding: 0 1rem;
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 500;
+  z-index: 2;
+  font-family: 'Pretendard', sans-serif;
   }
   
   /* song card button */
