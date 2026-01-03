@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore'
 import { db } from '../config/firebase'
+import { setFirestoreData } from '../services/firestoreService'
 
 interface User {
   name: string
@@ -83,15 +84,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               console.warn('Firestore 닉네임 로드 실패 (로컬 데이터 사용):', error)
             }
           }
-        } else {
-          // user가 없으면 자동으로 익명 사용자 생성
-          const anonymousUser = {
-            name: '게스트',
-            phone: `guest_${Date.now()}`,
-            checkedIn: false
-          }
-          setUser(anonymousUser)
-          localStorage.setItem('user', JSON.stringify(anonymousUser))
         }
       } catch (error) {
         console.error('사용자 정보 로드 오류:', error)
@@ -121,7 +113,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const normalizedInputPhone = phone.replace(/[-\s()]/g, '')
     const normalizedInputName = name.trim()
     
-    const foundGuest = guestList.find((guest: any) => {
+    const foundGuestIndex = guestList.findIndex((guest: any) => {
       // 이름 매칭 (한글 키 또는 영문 키 지원)
       const guestName = guest.name || guest['이름'] || guest.Name || ''
       const nameMatch = guestName.trim() === normalizedInputName
@@ -134,7 +126,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return nameMatch && phoneMatch
     })
 
-    if (foundGuest) {
+    if (foundGuestIndex !== -1) {
+      const foundGuest = guestList[foundGuestIndex]
+      
       // 일반 사용자 로그인 시 운영진 상태 초기화 (중요!)
       setIsAdmin(false)
       setAdminName(null)
@@ -143,18 +137,47 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       const guestName = foundGuest.name || foundGuest['이름'] || name
       const guestPhone = foundGuest.phone || foundGuest['전화번호'] || phone
+      
+      // 입장번호가 없으면 로그인 순서대로 할당
+      let entryNumber = foundGuest.entryNumber
+      if (!entryNumber) {
+        // 이미 입장번호가 있는 게스트들의 최대값 찾기
+        const guestsWithEntryNumber = guestList.filter((g: any) => g.entryNumber !== undefined && g.entryNumber !== null)
+        const maxEntryNumber = guestsWithEntryNumber.length > 0
+          ? Math.max(...guestsWithEntryNumber.map((g: any) => g.entryNumber || 0))
+          : 0
+        entryNumber = maxEntryNumber + 1
+        
+        // 게스트 정보에 입장번호 할당
+        const updatedGuestList = [...guestList]
+        updatedGuestList[foundGuestIndex] = {
+          ...foundGuest,
+          entryNumber: entryNumber,
+          checkedIn: true,
+          checkedInAt: Date.now()
+        }
+        
+        // localStorage 업데이트
+        localStorage.setItem('guests', JSON.stringify(updatedGuestList))
+        
+        // Firestore 업데이트 (비동기)
+        setFirestoreData('guests' as any, { guests: updatedGuestList }, 'all').catch((error: any) => {
+          console.error('Firestore 입장번호 업데이트 오류:', error)
+        })
+      }
+      
       // Firestore의 최신 체크인 상태 사용 (서버 상태 기반)
       const userData = { 
         name: guestName, 
         phone: guestPhone,
-        entryNumber: foundGuest.entryNumber,
-        checkedIn: foundGuest.checkedIn || false,
-        checkedInAt: foundGuest.checkedInAt
+        entryNumber: entryNumber,
+        checkedIn: foundGuest.checkedIn !== false,
+        checkedInAt: foundGuest.checkedInAt || Date.now()
       }
       setUser(userData)
       localStorage.setItem('user', JSON.stringify(userData))
       
-      // Firestore에서 닉네임 로드 (비동기, 실패해도 계속 진행)
+      // Firestore에서 닉네임 로드 및 자동 설정 (비동기, 실패해도 계속 진행)
       const loadNickname = async () => {
         try {
           const userId = `${guestName}_${guestPhone}`
@@ -164,14 +187,47 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (userProfileSnap.exists()) {
             const profileData = userProfileSnap.data()
             if (profileData.nickname && profileData.nickname.trim() !== '') {
+              // 기존 닉네임이 있으면 사용
               const updatedUser = { ...userData, nickname: profileData.nickname }
               setUser(updatedUser)
               localStorage.setItem('user', JSON.stringify(updatedUser))
+            } else {
+              // 닉네임이 없으면 이름을 닉네임으로 자동 설정
+              const autoNickname = guestName
+              const updatedUser = { ...userData, nickname: autoNickname }
+              setUser(updatedUser)
+              localStorage.setItem('user', JSON.stringify(updatedUser))
+              
+              // Firestore에 저장
+              await setDoc(userProfileRef, {
+                name: guestName,
+                phone: guestPhone,
+                nickname: autoNickname,
+                updatedAt: new Date()
+              }, { merge: true })
             }
+          } else {
+            // userProfile이 없으면 이름을 닉네임으로 자동 설정하고 생성
+            const autoNickname = guestName
+            const updatedUser = { ...userData, nickname: autoNickname }
+            setUser(updatedUser)
+            localStorage.setItem('user', JSON.stringify(updatedUser))
+            
+            // Firestore에 저장
+            await setDoc(userProfileRef, {
+              name: guestName,
+              phone: guestPhone,
+              nickname: autoNickname,
+              updatedAt: new Date()
+            }, { merge: true })
           }
         } catch (error) {
-          // Firestore 연결 실패해도 로그인은 성공으로 처리
-          console.warn('Firestore 닉네임 로드 실패 (로그인은 성공):', error)
+          // Firestore 연결 실패 시에도 로컬에 이름을 닉네임으로 설정
+          console.warn('Firestore 닉네임 로드 실패, 로컬에 이름을 닉네임으로 설정:', error)
+          const autoNickname = guestName
+          const updatedUser = { ...userData, nickname: autoNickname }
+          setUser(updatedUser)
+          localStorage.setItem('user', JSON.stringify(updatedUser))
         }
       }
       loadNickname()

@@ -20,11 +20,7 @@ const Login = () => {
   const [walkInName, setWalkInName] = useState('')
   const [walkInPhone, setWalkInPhone] = useState('')
   const [walkInError, setWalkInError] = useState('')
-  const [showProfileModal, setShowProfileModal] = useState(false)
-  const [nickname, setNickname] = useState('')
-  const [profileError, setProfileError] = useState('')
-  const [isSettingProfile, setIsSettingProfile] = useState(false)
-  const { login, setNickname: saveNickname } = useAuth()
+  const { login } = useAuth()
   const { guests, addWalkInGuest, bookingInfo } = useData()
   const navigate = useNavigate()
 
@@ -79,39 +75,9 @@ const Login = () => {
     }
   }, [])
 
-  // 닉네임 확인 및 네비게이션 로직 (공통 함수)
-  const checkNicknameAndNavigate = async (currentUser: any) => {
-    // Firestore에서 닉네임 확인
-    try {
-      const userId = `${currentUser.name}_${currentUser.phone}`
-      const userProfileRef = doc(db, 'userProfiles', userId)
-      const userProfileSnap = await getDoc(userProfileRef)
-      
-      const profileData = userProfileSnap.exists() ? userProfileSnap.data() : null
-      const hasNickname = profileData?.nickname && profileData.nickname.trim() !== ''
-      
-      // Firestore에 닉네임이 있으면 바로 대시보드로
-      if (hasNickname) {
-        // 로컬스토리지도 업데이트
-        const updatedUser = { ...currentUser, nickname: profileData.nickname }
-        localStorage.setItem('user', JSON.stringify(updatedUser))
-        navigate('/dashboard')
-      } else {
-        // Firestore에 닉네임이 없으면 첫 로그인으로 간주하고 프로필 설정 모달 표시
-        console.log('닉네임이 없어서 프로필 설정 모달 표시')
-        setShowProfileModal(true)
-      }
-    } catch (error) {
-      // Firestore 연결 실패 시 로컬스토리지 확인
-      console.warn('Firestore 닉네임 확인 실패, 로컬스토리지 확인:', error)
-      const hasLocalNickname = currentUser?.nickname && currentUser.nickname.trim() !== ''
-      if (hasLocalNickname) {
-        navigate('/dashboard')
-      } else {
-        console.log('로컬스토리지에도 닉네임이 없어서 프로필 설정 모달 표시')
-        setShowProfileModal(true)
-      }
-    }
+  // 네비게이션 로직 (닉네임 확인 없이 바로 대시보드로)
+  const checkNicknameAndNavigate = async () => {
+    navigate('/dashboard')
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -156,7 +122,7 @@ const Login = () => {
             // 티켓 애니메이션을 이미 본 경우 건너뛰기
             if (userProfileSnap.exists() && userProfileSnap.data().ticketShown) {
               // 티켓 애니메이션 없이 바로 닉네임 확인 로직으로
-              checkNicknameAndNavigate(currentUser)
+              checkNicknameAndNavigate()
             } else {
               // 티켓 애니메이션 표시
               setShowTicket(true)
@@ -200,8 +166,8 @@ const Login = () => {
     // 전화번호에서 하이픈 제거하여 저장
     const normalizedPhone = walkInPhone.trim().replace(/\D/g, '')
     
-    // 현장 구매자 등록
-    const result = addWalkInGuest(walkInName.trim(), normalizedPhone)
+    // 사전 예약 등록 (결제 완료 상태이므로 isWalkIn: false)
+    const result = addWalkInGuest(walkInName.trim(), normalizedPhone, false)
     
     if (result.success) {
       // 등록 성공 후 새 게스트를 포함한 배열로 로그인 처리
@@ -243,7 +209,7 @@ const Login = () => {
             // 티켓 애니메이션을 이미 본 경우 건너뛰기
             if (userProfileSnap.exists() && userProfileSnap.data().ticketShown) {
               // 티켓 애니메이션 없이 바로 닉네임 확인 로직으로
-              checkNicknameAndNavigate(currentUser)
+              checkNicknameAndNavigate()
             } else {
               // 티켓 애니메이션 표시
               setShowTicket(true)
@@ -298,20 +264,16 @@ const Login = () => {
               }
             }
             
-            // 닉네임 확인 및 네비게이션
+            // 네비게이션
             setTimeout(() => {
-              if (currentUser) {
-                checkNicknameAndNavigate(currentUser)
-              } else {
-                navigate('/dashboard')
-              }
+              checkNicknameAndNavigate()
             }, 200)
           }}
         />
       ) : (
         <div className="login-container">
           <div className="login-header">
-            <h1>사전 예약자 체크인</h1>
+            <h1>결제자 로그인</h1>
             <p>이름과 전화번호를 입력해 주세요.</p>
           </div>
 
@@ -356,7 +318,7 @@ const Login = () => {
                 className="walk-in-button"
                 onClick={() => setShowWalkInModal(true)}
               >
-                현장 구매
+                사전 예약
               </button>
             </div>
 
@@ -369,7 +331,7 @@ const Login = () => {
         </div>
       )}
 
-      {/* 현장 구매 모달 */}
+      {/* 사전 예약 모달 */}
       {showWalkInModal && (
         <div className="modal-overlay" onClick={() => {
           setShowWalkInModal(false)
@@ -381,7 +343,7 @@ const Login = () => {
         }}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>현장 구매</h2>
+              <h2>사전 예약</h2>
               <button 
                 className="modal-close"
                 onClick={() => {
@@ -445,7 +407,7 @@ const Login = () => {
                     </div>
                     <p className="copy-hint">계좌번호를 클릭하면 복사됩니다</p>
                     <div className="payment-item">
-                      <span className="payment-label">현장 예매 가격:</span>
+                      <span className="payment-label">예매 가격:</span>
                       <span className="payment-value">{bookingInfo?.walkInPrice || '(미설정)'}</span>
                     </div>
                     <div className="refund-notice">
@@ -541,85 +503,6 @@ const Login = () => {
         </div>
       )}
 
-      {/* 프로필 설정 모달 */}
-      {showProfileModal && (
-        <div className="modal-overlay" onClick={(e) => {
-          // 모달 외부 클릭으로 닫기 방지 (닉네임 설정 필수)
-          e.stopPropagation()
-        }}>
-          <div className="modal-content profile-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>프로필 설정</h2>
-            </div>
-            
-            <div className="profile-form">
-              <p className="profile-description">
-                채팅에서 사용할 닉네임을 설정해주세요.
-                <br />
-                <span className="profile-hint">(나중에 변경할 수 있습니다)</span>
-              </p>
-              
-              <div className="form-group">
-                <label htmlFor="nickname">닉네임</label>
-                <input
-                  type="text"
-                  id="nickname"
-                  value={nickname}
-                  onChange={(e) => {
-                    setNickname(e.target.value)
-                    setProfileError('')
-                  }}
-                  placeholder="닉네임을 입력하세요"
-                  maxLength={20}
-                  disabled={isSettingProfile}
-                />
-                <p className="input-hint">최대 20자까지 입력 가능합니다</p>
-              </div>
-
-              {profileError && <div className="error-message">{profileError}</div>}
-
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!nickname.trim()) {
-                    setProfileError('닉네임을 입력해주세요.')
-                    return
-                  }
-
-                  if (nickname.trim().length < 2) {
-                    setProfileError('닉네임은 최소 2자 이상이어야 합니다.')
-                    return
-                  }
-
-                  setIsSettingProfile(true)
-                  setProfileError('')
-
-                  try {
-                    await saveNickname(nickname.trim())
-                    // iOS 줌 방지: 포커스 해제
-                    if (document.activeElement instanceof HTMLElement) {
-                      document.activeElement.blur()
-                    }
-                    setShowProfileModal(false)
-                    setTimeout(() => {
-                      navigate('/dashboard')
-                    }, 150)
-                  } catch (error: any) {
-                    console.error('닉네임 저장 오류:', error)
-                    // 에러 메시지가 있으면 그대로 표시, 없으면 기본 메시지
-                    setProfileError(error?.message || '닉네임 저장에 실패했습니다. 다시 시도해주세요.')
-                    setIsSettingProfile(false)
-                  }
-                }}
-                className="login-button"
-                disabled={isSettingProfile || !nickname.trim()}
-              >
-                {isSettingProfile ? '저장 중...' : '완료'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

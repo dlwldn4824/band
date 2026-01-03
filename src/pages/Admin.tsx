@@ -596,15 +596,43 @@ const Admin = () => {
                       </td>
                       <td>
                         {isWalkIn ? (
-                          <button
-                            onClick={() => toggleGuestPayment(index)}
-                            className={`payment-confirm-button ${guest.paymentConfirmed ? 'confirmed' : 'not-confirmed'}`}
-                            title={guest.paymentConfirmed ? '입금 확인 완료' : '입금 확인 대기'}
-                          >
-                            {guest.paymentConfirmed ? '확인완료' : '대기중'}
-                          </button>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'flex-start' }}>
+                            <button
+                              onClick={() => toggleGuestPayment(index)}
+                              className={`payment-confirm-button ${guest.paymentConfirmed ? 'confirmed' : 'not-confirmed'}`}
+                              title={guest.paymentConfirmed && guest.paymentConfirmedAt ? `입금 확인 완료 (${new Date(guest.paymentConfirmedAt).toLocaleString('ko-KR')})` : '입금 확인 대기'}
+                            >
+                              {guest.paymentConfirmed ? '확인완료' : '대기중'}
+                            </button>
+                            {guest.paymentConfirmed && guest.paymentConfirmedAt && (
+                              <span style={{ fontSize: '0.75rem', color: '#666' }}>
+                                {new Date(guest.paymentConfirmedAt).toLocaleString('ko-KR', {
+                                  year: 'numeric',
+                                  month: '2-digit',
+                                  day: '2-digit',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </span>
+                            )}
+                          </div>
                         ) : (
-                          <span className="not-applicable">-</span>
+                          guest.paymentConfirmedAt ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                              <span className="not-applicable">-</span>
+                              <span style={{ fontSize: '0.75rem', color: '#666' }}>
+                                {new Date(guest.paymentConfirmedAt).toLocaleString('ko-KR', {
+                                  year: 'numeric',
+                                  month: '2-digit',
+                                  day: '2-digit',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="not-applicable">-</span>
+                          )
                         )}
                       </td>
                       <td>

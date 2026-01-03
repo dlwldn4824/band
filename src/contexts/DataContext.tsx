@@ -14,6 +14,7 @@ export interface Guest {
   checkedInAt?: number // 체크인 시간 (timestamp)
   isWalkIn?: boolean // 현장 예매 여부
   paymentConfirmed?: boolean // 입금 확인 완료 여부
+  paymentConfirmedAt?: number // 입금 확인 시간 (timestamp)
   [key: string]: any
 }
 
@@ -72,7 +73,7 @@ interface DataContextType {
   eventsEnabled: boolean
   lastCheckedInGuest: { name: string; timestamp: number } | null
   uploadGuests: (guests: Guest[]) => void
-  addWalkInGuest: (name: string, phone: string) => { success: boolean; message?: string }
+  addWalkInGuest: (name: string, phone: string, isWalkIn?: boolean) => { success: boolean; message?: string }
   toggleGuestPayment: (index: number) => void
   setPerformanceData: (data: PerformanceData) => void
   setBookingInfo: (info: BookingInfo) => void
@@ -466,7 +467,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     })
   }
 
-  const addWalkInGuest = (name: string, phone: string): { success: boolean; message?: string } => {
+  const addWalkInGuest = (name: string, phone: string, isWalkIn: boolean = true): { success: boolean; message?: string } => {
     // 이름과 전화번호 정규화
     const normalizedName = name.trim()
     const normalizedPhone = phone.replace(/[-\s()]/g, '')
@@ -487,13 +488,14 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       return { success: false, message: '이미 등록된 게스트입니다.' }
     }
 
-    // 새로운 현장 구매자 추가
+    // 새로운 게스트 추가 (사전 예매 또는 현장 예매)
     const newGuest: Guest = {
       name: normalizedName,
       phone: normalizedPhone,
       checkedIn: false,
-      isWalkIn: true, // 현장 예매로 등록
-      paymentConfirmed: false // 입금 확인은 아직 안됨
+      isWalkIn: isWalkIn,
+      paymentConfirmed: isWalkIn ? false : true, // 사전 예매는 결제 완료로 간주
+      paymentConfirmedAt: isWalkIn ? undefined : Date.now() // 사전 예매는 결제 시간 기록
     }
 
     const updatedGuests = [...guests, newGuest]
@@ -514,9 +516,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const updatedGuests = [...guests]
+    const currentPaymentStatus = updatedGuests[index].paymentConfirmed
     updatedGuests[index] = {
       ...updatedGuests[index],
-      paymentConfirmed: !updatedGuests[index].paymentConfirmed
+      paymentConfirmed: !currentPaymentStatus,
+      paymentConfirmedAt: !currentPaymentStatus ? Date.now() : undefined // 결제 확인 시 시간 기록, 취소 시 삭제
     }
 
     setGuests(updatedGuests)
@@ -629,10 +633,18 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       }
     }
 
-    // 게스트 정보 업데이트 (입장 번호 없이 체크인만 처리)
+    // 도착 순서대로 입장 번호 할당
+    const checkedInGuests = guests.filter(g => g.checkedIn && g.entryNumber !== undefined)
+    const maxEntryNumber = checkedInGuests.length > 0 
+      ? Math.max(...checkedInGuests.map(g => g.entryNumber || 0))
+      : 0
+    const newEntryNumber = maxEntryNumber + 1
+
+    // 게스트 정보 업데이트
     const updatedGuests = [...guests]
     updatedGuests[guestIndex] = {
       ...guest,
+      entryNumber: newEntryNumber,
       checkedIn: true,
       checkedInAt: Date.now()
     }
@@ -656,7 +668,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       게스트이름: guestName
     })
 
-    return { success: true, message: '체크인 완료!' }
+    return { 
+      success: true, 
+      entryNumber: newEntryNumber,
+      message: `체크인 완료! 입장 번호: ${newEntryNumber}번`
+    }
   }
 
   const generateCheckInCode = (): string => {

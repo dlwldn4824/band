@@ -346,23 +346,6 @@ const Dashboard = () => {
         )}
 
 
-        {checkInStatus === 'notYet' && user && !isAdmin && (
-          <section className="dashboard-section">
-            <div className="checkin-card">
-              <h3>현장 체크인</h3>
-              <p>공연장 도착 후 반드시 QR 코드 또는 현장 코드를 <br />
-                통해 체크인해 주세요. 체크인 완료 시에만 <br />
-                입장 팔찌 수령 및 이벤트 참여가 가능합니다.</p>
-              <div className="checkin-buttons">
-                <button onClick={() => navigate('/checkin')} className="code-entry-button">
-                  현장 체크인
-                  <br/>
-                  하러가기 
-                </button>
-              </div>
-            </div>
-          </section>
-        )}
 
         {isAdmin && (
           <section className="dashboard-section">

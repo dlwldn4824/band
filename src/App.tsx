@@ -94,11 +94,12 @@ function AppRoutes() {
   // location.key를 사용하여 같은 경로로 이동해도 리렌더링되도록 함
   return (
     <Routes location={location} key={location.key || location.pathname}>
+          <Route path="/login" element={<Login />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/staff/login" element={<AdminLogin />} />
           <Route path="/checkin" element={<CheckIn />} />
           <Route path="/manage" element={<Admin />} />
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/" element={<Navigate to="/login" replace />} />
           <Route
             path="/dashboard"
             element={
@@ -171,7 +172,9 @@ function AppRoutes() {
             path="/events"
             element={
               <Layout>
-                <Events />
+                <ProtectedRoute>
+                  <Events />
+                </ProtectedRoute>
               </Layout>
             }
           />
@@ -179,7 +182,9 @@ function AppRoutes() {
             path="/chat"
             element={
               <Layout>
-                <Chat />
+                <ProtectedRoute>
+                  <Chat />
+                </ProtectedRoute>
               </Layout>
             }
           />
