@@ -1003,6 +1003,7 @@
   flex-direction: column;
   gap: 0.5rem;
   margin-bottom: 1rem;
+  text-align: left;
 }
 
 .instructions p {
@@ -1011,6 +1012,7 @@
   color: #ccc;
   line-height: 1.6;
   font-family: 'Pretendard', sans-serif;
+  text-align: left;
 }
 
 .important-notice {

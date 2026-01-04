@@ -160,7 +160,7 @@
   /* 팀명 레이블 (첫 번째 곡 버튼 왼쪽 위) */
   .team-name-label {
   position: absolute;
-  top: -1.75rem;
+  top: -2rem;
   left: 10px;
   color: #ffffff;
   font-size: 1.3rem;
@@ -171,12 +171,12 @@
   
   /* 팀명이 있는 경우 timeline-item에 아래쪽 여백 추가 */
   .timeline-item.has-team-label {
-  padding-top: 0.25rem;
+  padding-top: 0.75rem;
   }
   
   /* 팀명이 있는 경우 timeline-row에 여백 추가 (새 팀 시작 시 위쪽 간격만 추가) */
   .timeline-row.has-team-row {
-  margin-top: 2rem;
+  margin-top: 3rem;
   }
   
   /* song card button */
