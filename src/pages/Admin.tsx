@@ -774,61 +774,10 @@ const Admin = () => {
     return `${baseUrl}/login?token=${token}`
   }
 
-  // 이메일 전송 함수 (Gmail SMTP 사용)
-  const sendLoginLinkEmail = async (toEmail: string, toName: string, loginLink: string, phone: string): Promise<boolean> => {
-    try {
-      const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
-      
-      const emailHtml = `
-        <div style="font-family: 'Pretendard', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h2 style="color: #333; margin-bottom: 20px;">공연 예매 안내</h2>
-          <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
-            안녕하세요 <strong>${toName}</strong>님,
-          </p>
-          <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
-            입금이 확인되어 로그인 링크를 보내드립니다. 아래 링크를 클릭하여 로그인해주세요.
-          </p>
-          <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
-            <a href="${loginLink}" 
-               style="display: inline-block; background: #FF4C4C; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">
-              로그인하기
-            </a>
-          </div>
-          <p style="color: #999; font-size: 12px; margin-top: 20px;">
-            또는 아래 링크를 복사하여 브라우저에 붙여넣으세요:<br/>
-            <span style="color: #666; word-break: break-all;">${loginLink}</span>
-          </p>
-        </div>
-      `
-
-      const response = await fetch(`${serverUrl}/api/send-email`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          to: toEmail,
-          toName: toName,
-          subject: '공연 예매 안내 - 로그인 링크',
-          html: emailHtml,
-          text: `안녕하세요 ${toName}님, 입금이 확인되어 로그인 링크를 보내드립니다. 아래 링크를 클릭하여 로그인해주세요: ${loginLink}`
-        })
-      })
-
-      const result = await response.json()
-      
-      if (result.success) {
-        console.log('이메일 전송 성공:', result.messageId)
-        return true
-      } else {
-        console.error('이메일 전송 실패:', result.error)
-        return false
-      }
-    } catch (error: any) {
-      console.error('이메일 전송 실패:', error)
-      return false
-    }
-  }
+  // 이메일 전송 함수 (Gmail SMTP 사용) - 현재 사용하지 않음
+  // const sendLoginLinkEmail = async (toEmail: string, toName: string, loginLink: string): Promise<boolean> => {
+  //   ... (removed - not used)
+  // }
 
   // SMS 전송 함수 (선택사항 - Twilio 등 사용 가능) - 현재 사용하지 않음
   // @ts-ignore
