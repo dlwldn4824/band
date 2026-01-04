@@ -1,6 +1,7 @@
 .events-page {
   animation: fadeIn 0.5s ease-in;
-  height: 100%;
+  height: calc(100vh - var(--header-height, 0px));
+  height: calc(100dvh - var(--header-height, 0px));
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -243,6 +244,84 @@
   }
 }
 
+.purchase-info {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  margin: 1rem;
+  margin-bottom: 1rem;
+}
+
+.purchase-info-content {
+  display: flex;
+  flex-direction: row;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+}
+
+.purchase-info-title {
+  font-size: 1rem;
+  color: #ffffff;
+  font-family: 'Pretendard', sans-serif;
+  font-weight: 600;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.purchase-item {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0;
+  font-size: 0.9rem;
+  color: #ffffff;
+  font-family: 'Pretendard', sans-serif;
+}
+
+.purchase-name {
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.purchase-price {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.purchase-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0 0.5rem 0;
+  margin-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  font-family: 'Pretendard', sans-serif;
+}
+
+.purchase-total-label {
+  font-size: 1rem;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.purchase-total-price {
+  font-size: 1.1rem;
+  color: #FF4C4C;
+  font-weight: 700;
+}
+
+.events-content-scrollable {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+}
+
 .games-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -369,5 +448,386 @@
 .map-icon {
   width: 56px;
   height: 56px;
+}
+
+/* 주류 사전 구매 모달 */
+.drink-notice {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background-color: rgba(255, 193, 7, 0.15);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.drink-notice-text {
+  margin: 0;
+  color: #FFC107;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
+  font-family: 'Pretendard', sans-serif;
+}
+
+.drink-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.drink-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+}
+
+.drink-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.drink-name {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #ffffff;
+  font-family: 'Pretendard', sans-serif;
+}
+
+.drink-price {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: 'Pretendard', sans-serif;
+}
+
+.drink-button {
+  padding: 0.6rem 1.5rem;
+  background-color: #FF4C4C;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Pretendard', sans-serif;
+}
+
+.drink-button:hover {
+  background-color: #E63E3E;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 76, 76, 0.4);
+}
+
+.drink-button:active {
+  background-color: #CC3333;
+  transform: translateY(0);
+}
+
+.drink-quantity-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.quantity-button {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  font-size: 1.2rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  font-family: 'Pretendard', sans-serif;
+}
+
+.quantity-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.quantity-button:active {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.quantity-value {
+  min-width: 24px;
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #ffffff;
+  font-family: 'Pretendard', sans-serif;
+}
+
+.drink-purchase-button {
+  width: 100%;
+  padding: 1rem 2rem;
+  background: #FF4C4C;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Pretendard', sans-serif;
+  margin-top: 1rem;
+}
+
+.drink-purchase-button:hover {
+  background: #E63E3E;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 76, 76, 0.4);
+}
+
+.drink-purchase-button:active {
+  transform: translateY(0);
+}
+
+.drink-order-summary {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+}
+
+.order-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.order-item:last-of-type,
+.order-item.last-order-item {
+  border-bottom: none;
+}
+
+.order-name {
+  font-size: 1rem;
+  color: #ffffff;
+  font-family: 'Pretendard', sans-serif;
+  font-weight: 500;
+}
+
+.order-price {
+  font-size: 1rem;
+  color: #ffffff;
+  font-family: 'Pretendard', sans-serif;
+  font-weight: 600;
+}
+
+.order-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0 0.5rem 0;
+  margin-top: 0.5rem;
+  border-top: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.total-label {
+  font-size: 1.1rem;
+  color: #ffffff;
+  font-family: 'Pretendard', sans-serif;
+  font-weight: 600;
+}
+
+.total-price {
+  font-size: 1.3rem;
+  color: #FF4C4C;
+  font-family: 'Pretendard', sans-serif;
+  font-weight: 700;
+}
+
+.payment-box {
+  border: 2px dashed #666;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  background: #2a2a2a;
+}
+
+.payment-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.payment-item-row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  flex-wrap: nowrap;
+}
+
+.payment-item:last-child {
+  margin-bottom: 0;
+}
+
+.payment-label {
+  font-size: 0.8rem;
+  color: #999;
+  font-family: 'Pretendard', sans-serif;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-right: 0rem;
+}
+
+.payment-value {
+  font-size: 0.85rem;
+  color: #fff;
+  font-weight: 500;
+  font-family: 'Pretendard', sans-serif;
+}
+
+.account-info-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  width: 100%;
+  min-width: 0;
+}
+
+.bank-name {
+  color: #4A90E2;
+  font-weight: 600;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  display: inline;
+}
+
+.account-number {
+  color: #4A90E2;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.85rem;
+  word-break: break-all;
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+
+.account-number:hover {
+  color: #357ABD;
+}
+
+.copy-hint {
+  font-size: 0.75rem;
+  color: #999;
+  margin-top: 0.25rem;
+  margin-bottom: 0.5rem;
+  font-family: 'Pretendard', sans-serif;
+  text-align: center;
+}
+
+.instructions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  text-align: left;
+}
+
+.instructions p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #ccc;
+  line-height: 1.6;
+  font-family: 'Pretendard', sans-serif;
+  text-align: left;
+}
+
+.refund-warning {
+  color: #ff0000 !important;
+  font-weight: bold !important;
+}
+
+.payment-confirm {
+  padding: 0.75rem 1rem;
+  background: #2A2A2A;
+  border-radius: 20.5px;
+  border: 1px solid #BDBDBD;
+  flex-shrink: 0;
+  margin-top: 1.5rem;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: #ffffff;
+  user-select: none;
+  font-family: 'Pretendard', sans-serif;
+  transition: color 0.2s;
+}
+
+.payment-checkbox {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: #91D752;
+  transition: all 0.2s;
+}
+
+.payment-checkbox:checked + span,
+.checkbox-label:has(.payment-checkbox:checked) {
+  color: #91D752;
+}
+
+.payment-confirm:has(.payment-checkbox:checked) {
+  border-color: #91D752;
+}
+
+.drink-confirm-button {
+  width: 100%;
+  background: #FF4C4C;
+  color: #ffffff;
+  padding: 1rem;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  margin-top: 1rem;
+  transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
+  font-family: 'Pretendard', sans-serif;
+}
+
+.drink-confirm-button:hover:not(:disabled) {
+  background: #E63E3E;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 76, 76, 0.4);
+}
+
+.drink-confirm-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.drink-confirm-button:disabled {
+  background: #666666;
+  color: #999999;
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 

@@ -48,6 +48,7 @@ const Admin = () => {
   const [pendingBookings] = useState<Array<{ id: string; name: string; phone: string; email: string; createdAt: any }>>([])
   const [guestLoginLinks, setGuestLoginLinks] = useState<Record<string, string>>({}) // 게스트 ID (name_phone) -> 로그인 링크
   const [clickedCopyButton, setClickedCopyButton] = useState<string | null>(null) // 클릭된 복사 버튼 ID
+  const [drinkOrders, setDrinkOrders] = useState<Array<{ id: string; name: string; phone: string; beerQuantity: number; mojitoQuantity: number; totalAmount: number; createdAt: any }>>([])
   const { uploadGuests, setPerformanceData, guests, performanceData, clearGuests, deleteGuest, updateGuest, clearSetlist, bookingInfo, setBookingInfo, clearChatMessages, toggleGuestPayment, addWalkInGuest } = useData()
   
   // 예매 정보 폼 상태
@@ -106,6 +107,39 @@ const Admin = () => {
     }
     
     loadNicknames()
+  }, [])
+
+  // 주류 구매 내역 불러오기
+  useEffect(() => {
+    const loadDrinkOrders = async () => {
+      try {
+        const ordersRef = collection(db, 'drinkOrders')
+        const snapshot = await getDocs(query(ordersRef, orderBy('createdAt', 'desc')))
+        
+        const orders: Array<{ id: string; name: string; phone: string; beerQuantity: number; mojitoQuantity: number; totalAmount: number; createdAt: any }> = []
+        
+        snapshot.forEach((doc) => {
+          const data = doc.data()
+          if (data.confirmed) {
+            orders.push({
+              id: doc.id,
+              name: data.name || '',
+              phone: data.phone || '',
+              beerQuantity: data.beerQuantity || 0,
+              mojitoQuantity: data.mojitoQuantity || 0,
+              totalAmount: data.totalAmount || 0,
+              createdAt: data.createdAt
+            })
+          }
+        })
+        
+        setDrinkOrders(orders)
+      } catch (error) {
+        console.error('주류 구매 내역 불러오기 실패:', error)
+      }
+    }
+
+    loadDrinkOrders()
   }, [])
 
   // 하드코딩된 공연 정보 (자동 설정) - 한 번만 실행되도록 useRef로 보호
@@ -1126,6 +1160,57 @@ const Admin = () => {
         </div>
       )}
       
+      {/* 주류 구매 내역 섹션 */}
+      <div className="admin-section">
+        <h2>주류 구매 내역</h2>
+        <p className="section-description">
+          주류 사전 구매 내역을 확인할 수 있습니다.
+        </p>
+        {drinkOrders.length > 0 ? (
+          <div className="guest-list-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>번호</th>
+                  <th>이름</th>
+                  <th>전화번호</th>
+                  <th>캔 맥주</th>
+                  <th>모히또</th>
+                  <th>총 금액</th>
+                  <th>주문 시간</th>
+                </tr>
+              </thead>
+              <tbody>
+                {drinkOrders.map((order, index) => (
+                  <tr key={order.id}>
+                    <td>{index + 1}</td>
+                    <td>{order.name}</td>
+                    <td>{formatPhoneDisplay(order.phone)}</td>
+                    <td>{order.beerQuantity}개</td>
+                    <td>{order.mojitoQuantity}개</td>
+                    <td>{order.totalAmount.toLocaleString()}원</td>
+                    <td>
+                      {order.createdAt?.toDate ? 
+                        new Date(order.createdAt.toDate()).toLocaleString('ko-KR', {
+                          year: 'numeric',
+                          month: '2-digit',
+                          day: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        }) : '-'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p style={{ color: '#999', textAlign: 'center', padding: '2rem' }}>
+            주류 구매 내역이 없습니다.
+          </p>
+        )}
+      </div>
+
       {/* 게스트 리스트 섹션 */}
       <div className="admin-section">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>

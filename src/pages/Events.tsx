@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useData } from '../contexts/DataContext'
+import { doc, setDoc, getDoc, Timestamp } from 'firebase/firestore'
+import { db } from '../config/firebase'
 import RouletteMirror from '../components/games/RouletteMirror'
 import EntryNumberDrawMirror from '../components/games/EntryNumberDrawMirror'
 import LEDBoard from '../components/games/LEDBoard'
@@ -20,8 +22,16 @@ const Events = () => {
   // ✅ 모든 Hook은 최상단에서 조건 없이 호출
   const [currentGame, setCurrentGame] = useState<GameType>('menu')
   const [showDirectionsModal, setShowDirectionsModal] = useState(false)
+  const [showDrinkModal, setShowDrinkModal] = useState(false)
+  const [beerQuantity, setBeerQuantity] = useState(0)
+  const [mojitoQuantity, setMojitoQuantity] = useState(0)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [paymentConfirmed, setPaymentConfirmed] = useState(false)
+  const [purchasedBeerQuantity, setPurchasedBeerQuantity] = useState(0)
+  const [purchasedMojitoQuantity, setPurchasedMojitoQuantity] = useState(0)
+  const [additionalOrderConfirmed, setAdditionalOrderConfirmed] = useState(false)
   const { isAdmin, user, isLoading } = useAuth()
-  const { eventsEnabled, setEventsEnabled } = useData()
+  const { eventsEnabled, setEventsEnabled, bookingInfo } = useData()
   const navigate = useNavigate()
   const location = useLocation()
   
@@ -48,6 +58,59 @@ const Events = () => {
       console.log('[Events] 접근 허용')
     }
   }, [isAdmin, eventsEnabled, navigate])
+
+  // 구매 모달의 수량은 항상 0부터 시작
+  // 내 구매 정보 섹션은 Firestore의 주문 정보를 기반으로 별도로 표시
+  useEffect(() => {
+    if (!user) {
+      setPurchasedBeerQuantity(0)
+      setPurchasedMojitoQuantity(0)
+      return
+    }
+
+    const loadPurchasedDrinks = async () => {
+      try {
+        const userId = `${user.name}_${user.phone}`
+        const orderRef = doc(db, 'drinkOrders', userId)
+        const orderSnap = await getDoc(orderRef)
+
+        if (orderSnap.exists()) {
+          const orderData = orderSnap.data()
+          if (orderData.confirmed) {
+            setPurchasedBeerQuantity(orderData.beerQuantity || 0)
+            setPurchasedMojitoQuantity(orderData.mojitoQuantity || 0)
+          } else {
+            setPurchasedBeerQuantity(0)
+            setPurchasedMojitoQuantity(0)
+          }
+        } else {
+          setPurchasedBeerQuantity(0)
+          setPurchasedMojitoQuantity(0)
+        }
+      } catch (error) {
+        console.error('구매 정보 불러오기 실패:', error)
+        setPurchasedBeerQuantity(0)
+        setPurchasedMojitoQuantity(0)
+      }
+    }
+
+    loadPurchasedDrinks()
+  }, [user])
+
+  // 결제 모달이 열릴 때 추가 주문 확인란 초기화
+  useEffect(() => {
+    if (!showPaymentModal) {
+      setAdditionalOrderConfirmed(false)
+    }
+  }, [showPaymentModal])
+
+  // 주류 구매 모달이 닫힐 때 수량 초기화
+  useEffect(() => {
+    if (!showDrinkModal) {
+      setBeerQuantity(0)
+      setMojitoQuantity(0)
+    }
+  }, [showDrinkModal])
 
   // ✅ Hook 호출 완료 후 조건부 return
   // 인증 로딩 중일 때는 로딩 UI 표시
@@ -130,7 +193,23 @@ const Events = () => {
 
   return (
     <div className="events-page">
-      <div className="games-grid">
+      <div className="events-content-scrollable">
+        {/* 내 구매 정보 */}
+        {(purchasedBeerQuantity > 0 || purchasedMojitoQuantity > 0) && (
+          <div className="purchase-info">
+            <div className="purchase-info-content">
+              <span className="purchase-info-title">내 구매 정보:</span>
+              {purchasedBeerQuantity > 0 && (
+                <span className="purchase-name">캔 맥주 x {purchasedBeerQuantity}</span>
+              )}
+              {purchasedMojitoQuantity > 0 && (
+                <span className="purchase-name">모히또 x {purchasedMojitoQuantity}</span>
+              )}
+            </div>
+          </div>
+        )}
+
+        <div className="games-grid">
         <div
           className="game-card"
           onClick={() => navigate('/products')}
@@ -142,6 +221,18 @@ const Events = () => {
           <h3>상품 소개</h3>
           <p>공연 기념품을 <br/>확인하세요</p>
           <button className="play-button">확인하기</button>
+        </div>
+        <div
+          className="game-card"
+          onClick={() => setShowDrinkModal(true)}
+        >
+          <div className="game-icon">
+            <img src={shopIcon} alt="주류 사전 구매" />
+          </div>
+
+          <h3>주류 사전 구매</h3>
+          <p>캔 맥주, 모히또 <br/>사전 구매하기</p>
+          <button className="play-button">구매하기</button>
         </div>
         <div
           className="game-card"
@@ -179,7 +270,258 @@ const Events = () => {
             <button className="play-button">시작하기</button>
           </div>
         ))}
+        </div>
       </div>
+
+      {/* 주류 사전 구매 모달 */}
+      {showDrinkModal && (
+        <div 
+          className="directions-modal-overlay"
+          onClick={() => setShowDrinkModal(false)}
+        >
+          <div 
+            className="directions-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="directions-modal-close"
+              onClick={() => setShowDrinkModal(false)}
+            >
+            </button>
+            <div className="directions-modal-content">
+              <h2 className="directions-modal-title">주류 사전 구매</h2>
+              
+              <div className="drink-notice">
+                <p className="drink-notice-text">
+                  ⚠️ 외부 주류 반입은 불가합니다
+                </p>
+              </div>
+
+              <div className="drink-list">
+                <div className="drink-item">
+                  <div className="drink-info">
+                    <h3 className="drink-name">캔 맥주</h3>
+                    <p className="drink-price">3,500원</p>
+                  </div>
+                  <div className="drink-quantity-controls">
+                    <button 
+                      className="quantity-button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setBeerQuantity(Math.max(0, beerQuantity - 1))
+                      }}
+                    >-</button>
+                    <span className="quantity-value">{beerQuantity}</span>
+                    <button 
+                      className="quantity-button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setBeerQuantity(beerQuantity + 1)
+                      }}
+                    >+</button>
+                  </div>
+                </div>
+                <div className="drink-item">
+                  <div className="drink-info">
+                    <h3 className="drink-name">모히또</h3>
+                    <p className="drink-price">3,000원</p>
+                  </div>
+                  <div className="drink-quantity-controls">
+                    <button 
+                      className="quantity-button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setMojitoQuantity(Math.max(0, mojitoQuantity - 1))
+                      }}
+                    >-</button>
+                    <span className="quantity-value">{mojitoQuantity}</span>
+                    <button 
+                      className="quantity-button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setMojitoQuantity(mojitoQuantity + 1)
+                      }}
+                    >+</button>
+                  </div>
+                </div>
+              </div>
+
+              {(beerQuantity > 0 || mojitoQuantity > 0) && (
+                <button 
+                  className="drink-purchase-button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setShowPaymentModal(true)
+                  }}
+                >
+                  구매하기
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 주류 구매 계좌 안내 모달 */}
+      {showPaymentModal && (
+        <div 
+          className="directions-modal-overlay"
+          onClick={() => setShowPaymentModal(false)}
+        >
+          <div 
+            className="directions-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="directions-modal-close"
+              onClick={() => {
+                setShowPaymentModal(false)
+                setPaymentConfirmed(false)
+                setAdditionalOrderConfirmed(false)
+              }}
+            >
+            </button>
+            <div className="directions-modal-content">
+              <h2 className="directions-modal-title">주류 구매 결제 안내</h2>
+              
+              <div className="drink-order-summary">
+                {beerQuantity > 0 && (
+                  <div className={`order-item ${mojitoQuantity === 0 ? 'last-order-item' : ''}`}>
+                    <span className="order-name">캔 맥주 x {beerQuantity}</span>
+                    <span className="order-price">{beerQuantity * 3500}원</span>
+                  </div>
+                )}
+                {mojitoQuantity > 0 && (
+                  <div className="order-item last-order-item">
+                    <span className="order-name">모히또 x {mojitoQuantity}</span>
+                    <span className="order-price">{mojitoQuantity * 3000}원</span>
+                  </div>
+                )}
+                <div className="order-total">
+                  <span className="total-label">총 금액</span>
+                  <span className="total-price">{(beerQuantity * 3500) + (mojitoQuantity * 3000)}원</span>
+                </div>
+              </div>
+
+              {bookingInfo && (
+                <div className="payment-box">
+                  <div className="payment-item payment-item-row">
+                    <span className="payment-label">입금 계좌:</span>
+                    <div className="payment-value account-info-row">
+                      {bookingInfo.bankName && (
+                        <span className="bank-name">{bookingInfo.bankName}</span>
+                      )}
+                      {bookingInfo.accountNumber && (
+                        <span 
+                          className="account-number"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            const accountNumber = bookingInfo.accountNumber
+                            navigator.clipboard.writeText(accountNumber).then(() => {
+                              alert('계좌번호가 복사되었습니다!')
+                            }).catch(() => {
+                              alert('계좌번호 복사에 실패했습니다.')
+                            })
+                          }}
+                          title="클릭하여 복사"
+                          style={{ cursor: 'pointer' }}
+                        >
+                          {bookingInfo.accountNumber}
+                        </span>
+                      )}
+                      {!bookingInfo.bankName && !bookingInfo.accountNumber && (
+                        <span>(미설정)</span>
+                      )}
+                    </div>
+                  </div>
+                  {bookingInfo.accountNumber && (
+                    <p className="copy-hint">입금주: {bookingInfo.accountName || '이지우'} 계좌번호를 클릭하면 복사됩니다</p>
+                  )}
+                </div>
+              )}
+
+              {/* 안내 문구 */}
+                <div className="instructions">
+                  <p>위 계좌로 입금해 주세요.</p>
+                  <p>입금이 확인되면 공연 당일 주류를 준비해드립니다</p>
+                  <p className="refund-warning">확인하기 버튼을 누르면 구매가 확정되며 환불은 불가합니다</p>
+                </div>
+
+              <div className="payment-confirm">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    className="payment-checkbox"
+                    checked={paymentConfirmed}
+                    onChange={(e) => setPaymentConfirmed(e.target.checked)}
+                  />
+                  <span>입금을 완료했습니다</span>
+                </label>
+              </div>
+
+              {(purchasedBeerQuantity > 0 || purchasedMojitoQuantity > 0) && (
+                <div className="payment-confirm">
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      className="payment-checkbox"
+                      checked={additionalOrderConfirmed}
+                      onChange={(e) => setAdditionalOrderConfirmed(e.target.checked)}
+                    />
+                    <span>구매이력이 있습니다. 추가 주문하시겠습니까?</span>
+                  </label>
+                </div>
+              )}
+
+              <button
+                className="drink-confirm-button"
+                disabled={!paymentConfirmed}
+                onClick={async (e) => {
+                  e.stopPropagation()
+                  if (!user || !paymentConfirmed) return
+
+                  try {
+                    // 사용자 ID 생성 (name_phone)
+                    const userId = `${user.name}_${user.phone}`
+                    const orderRef = doc(db, 'drinkOrders', userId)
+                    
+                    const totalAmount = (beerQuantity * 3500) + (mojitoQuantity * 3000)
+                    
+                    // Firestore에 주문 정보 저장
+                    await setDoc(orderRef, {
+                      userId,
+                      name: user.name,
+                      phone: user.phone,
+                      beerQuantity,
+                      mojitoQuantity,
+                      totalAmount,
+                      confirmed: true,
+                      createdAt: Timestamp.now(),
+                      updatedAt: Timestamp.now()
+                    }, { merge: true })
+
+                    // 모달 닫기 및 상태 초기화
+                    setShowPaymentModal(false)
+                    setPaymentConfirmed(false)
+                    setAdditionalOrderConfirmed(false)
+                    setBeerQuantity(0)
+                    setMojitoQuantity(0)
+                    
+                    // 구매 정보 업데이트
+                    setPurchasedBeerQuantity(beerQuantity)
+                    setPurchasedMojitoQuantity(mojitoQuantity)
+                  } catch (error) {
+                    console.error('주문 저장 실패:', error)
+                    alert('주문 저장에 실패했습니다. 다시 시도해주세요.')
+                  }
+                }}
+              >
+                확인하기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 길찾기 모달 */}
       {showDirectionsModal && (
