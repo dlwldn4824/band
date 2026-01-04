@@ -1,8 +1,17 @@
 import express from 'express'
 import { createServer } from 'http'
 import { Server } from 'socket.io'
+import nodemailer from 'nodemailer'
+import cors from 'cors'
+import dotenv from 'dotenv'
+
+dotenv.config()
 
 const app = express()
+
+// JSON 파싱 미들웨어
+app.use(express.json())
+app.use(cors())
 
 // 캐시 방지 헤더 설정
 app.use((req, res, next) => {
@@ -10,6 +19,46 @@ app.use((req, res, next) => {
   res.setHeader('Pragma', 'no-cache')
   res.setHeader('Expires', '0')
   next()
+})
+
+// Gmail SMTP 설정
+const createTransporter = () => {
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.GMAIL_USER, // Gmail 주소
+      pass: process.env.GMAIL_APP_PASSWORD // Gmail 앱 비밀번호
+    }
+  })
+}
+
+// 이메일 전송 API
+app.post('/api/send-email', async (req, res) => {
+  try {
+    const { to, toName, subject, html, text } = req.body
+
+    if (!to || !toName) {
+      return res.status(400).json({ success: false, error: '받는 사람 정보가 필요합니다.' })
+    }
+
+    const transporter = createTransporter()
+
+    const mailOptions = {
+      from: process.env.GMAIL_USER,
+      to: to,
+      subject: subject || '공연 예매 안내',
+      html: html,
+      text: text || html.replace(/<[^>]*>/g, '') // HTML 태그 제거한 텍스트
+    }
+
+    const info = await transporter.sendMail(mailOptions)
+    console.log('이메일 전송 성공:', info.messageId)
+    
+    res.json({ success: true, messageId: info.messageId })
+  } catch (error) {
+    console.error('이메일 전송 실패:', error)
+    res.status(500).json({ success: false, error: error.message || '이메일 전송에 실패했습니다.' })
+  }
 })
 
 const httpServer = createServer(app)

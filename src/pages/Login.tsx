@@ -654,12 +654,9 @@ const Login = () => {
               <div className="payment-item payment-item-row">
                 <span className="payment-label">입금 계좌:</span>
                 <div className="payment-value account-info-row">
-                  <span className="account-name-bank">
-                    {bookingInfo.accountName || '(미설정)'}{' '}
-                    {bookingInfo.bankName && (
-                      <span className="bank-name">{bookingInfo.bankName}</span>
-                    )}
-                  </span>
+                  {bookingInfo.bankName && (
+                    <span className="bank-name">{bookingInfo.bankName}</span>
+                  )}
                   {bookingInfo.accountNumber && (
                     <span 
                       className="account-number"
@@ -670,10 +667,13 @@ const Login = () => {
                       {bookingInfo.accountNumber}
                     </span>
                   )}
+                  {!bookingInfo.bankName && !bookingInfo.accountNumber && (
+                    <span>(미설정)</span>
+                  )}
                 </div>
               </div>
               {bookingInfo.accountNumber && (
-                <p className="copy-hint">계좌번호를 클릭하면 복사됩니다</p>
+                <p className="copy-hint">입금주: 이지우 계좌번호를 클릭하면 복사됩니다</p>
               )}
               <div className="payment-item payment-item-row">
                 <span className="payment-label">입금하실 금액:</span>
@@ -685,7 +685,7 @@ const Login = () => {
           {/* 안내 문구 */}
           <div className="instructions">
             <p>위 계좌로 10분 이내에 입금해 주세요.</p>
-            <p>시스템이 입금을 확인하면 자동으로 이메일로 티켓을 보내드립니다. 이메일이 보이지 않으면 메일함에서 4242fire@gmail.com을 검색해 주세요.</p>
+            <p>시스템이 입금을 확인하면 자동으로 이메일로 티켓을 보내드립니다. 이메일이 보이지 않으면 메일함에서 dlwldn4824@naver.com을 검색해 주세요.</p>
             <p className="important-notice">
               반드시 신청하신 "{bookingName}" 입금자명으로 입금해 주세요.
             </p>

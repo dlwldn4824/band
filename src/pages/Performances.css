@@ -27,19 +27,6 @@
   gap: 0;
   margin-bottom: 1.5rem;
   justify-content: center;
-  width: 100%;
-  max-width: 420px;
-  margin-left: auto;
-  margin-right: auto;
-  padding: 0 14px;
-  box-sizing: border-box;
-  position: relative;
-  }
-  
-  .part-selector::before {
-  content: '';
-  width: calc(54px + 27px); /* 레일(54px) + gap(27px) */
-  flex-shrink: 0;
   }
   
   .part-button {
@@ -170,45 +157,26 @@
   flex: 1;
   }
   
-  /* 팀 구분선 */
-  .team-divider-row {
-  margin: 1rem 0;
-  }
-  
-  .team-divider-item {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  }
-  
-  .team-divider {
-  position: relative;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  }
-  
-  .team-divider::before {
-  content: '';
+  /* 팀명 레이블 (첫 번째 곡 버튼 왼쪽 위) */
+  .team-name-label {
   position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  height: 1px;
-  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.3), transparent);
-  z-index: 1;
+  top: -1.75rem;
+  left: 10px;
+  color: #ffffff;
+  font-size: 1.3rem;
+  font-weight: normal;
+  font-family: 'HakgyoansimJayeonR', sans-serif;
+  z-index: 10;
   }
   
-  .team-divider-text {
-  position: relative;
-  background: #000000;
-  padding: 0 1rem;
-  color: #ffffff;
-  font-size: 0.9rem;
-  font-weight: 500;
-  z-index: 2;
-  font-family: 'Pretendard', sans-serif;
+  /* 팀명이 있는 경우 timeline-item에 아래쪽 여백 추가 */
+  .timeline-item.has-team-label {
+  padding-top: 0.25rem;
+  }
+  
+  /* 팀명이 있는 경우 timeline-row에 여백 추가 (새 팀 시작 시 위쪽 간격만 추가) */
+  .timeline-row.has-team-row {
+  margin-top: 2rem;
   }
   
   /* song card button */

@@ -420,24 +420,15 @@ const Performances = () => {
               
               return (
                 <React.Fragment key={globalIndex}>
-                  {/* 팀 구분선 */}
-                  {showTeamDivider && (
-                    <div className="timeline-row team-divider-row">
-                      <div className="timeline-rail-item">
-                        <div className="timeline-dot" style={{ visibility: 'hidden' }}>0</div>
-                      </div>
-                      <div className="timeline-item team-divider-item">
-                        <div className="team-divider">
-                          <span className="team-divider-text">{item.team}</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  <div className="timeline-row">
+                  <div className={`timeline-row ${showTeamDivider ? 'has-team-row' : ''}`}>
                     <div className="timeline-rail-item">
                       <div className="timeline-dot">{globalIndex + 1}</div>
                     </div>
-                    <div className="timeline-item">
+                    <div className={`timeline-item ${showTeamDivider ? 'has-team-label' : ''}`} style={{ position: 'relative' }}>
+                      {/* 팀명 표시 (첫 번째 곡 버튼 왼쪽 위) */}
+                      {showTeamDivider && (
+                        <span className="team-name-label">{item.team}</span>
+                      )}
                       <button
                         className={`song-item ${selectedSong === item ? 'selected' : ''}`}
                         onClick={() => {

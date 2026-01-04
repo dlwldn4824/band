@@ -944,7 +944,7 @@
   flex-direction: row;
   align-items: center;
   gap: 0.4rem;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   width: 100%;
   min-width: 0;
 }
@@ -973,7 +973,9 @@
   text-decoration: underline;
   cursor: pointer;
   font-size: 0.85rem;
-  white-space: nowrap;
+  word-break: break-all;
+  overflow-wrap: break-word;
+  min-width: 0;
 }
 
 .account-number:hover {
