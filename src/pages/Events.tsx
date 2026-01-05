@@ -485,34 +485,49 @@ const Events = () => {
                     const userId = `${user.name}_${user.phone}`
                     const orderRef = doc(db, 'drinkOrders', userId)
                     
-                    const totalAmount = (beerQuantity * 3500) + (mojitoQuantity * 3000)
+                    // 기존 주문 내역 가져오기
+                    const orderSnap = await getDoc(orderRef)
+                    let existingBeerQuantity = 0
+                    let existingMojitoQuantity = 0
                     
-                    // Firestore에 주문 정보 저장
+                    if (orderSnap.exists()) {
+                      const orderData = orderSnap.data()
+                      existingBeerQuantity = orderData.beerQuantity || 0
+                      existingMojitoQuantity = orderData.mojitoQuantity || 0
+                    }
+                    
+                    // 기존 수량에 새로 주문한 수량 추가
+                    const totalBeerQuantity = existingBeerQuantity + beerQuantity
+                    const totalMojitoQuantity = existingMojitoQuantity + mojitoQuantity
+                    const totalAmount = (totalBeerQuantity * 3500) + (totalMojitoQuantity * 3000)
+                    
+                    // Firestore에 주문 정보 저장 (기존 수량에 추가)
                     await setDoc(orderRef, {
                       userId,
                       name: user.name,
                       phone: user.phone,
-                      beerQuantity,
-                      mojitoQuantity,
+                      beerQuantity: totalBeerQuantity,
+                      mojitoQuantity: totalMojitoQuantity,
                       totalAmount,
                       confirmed: true,
-                      createdAt: Timestamp.now(),
+                      createdAt: orderSnap.exists() ? orderSnap.data().createdAt : Timestamp.now(),
                       updatedAt: Timestamp.now()
                     }, { merge: true })
 
-                    // 모달 닫기 및 상태 초기화
+                    // 구매 정보 업데이트
+                    setPurchasedBeerQuantity(totalBeerQuantity)
+                    setPurchasedMojitoQuantity(totalMojitoQuantity)
+                  } catch (error) {
+                    console.error('주문 저장 실패:', error)
+                    alert('주문 저장에 실패했습니다. 다시 시도해주세요.')
+                  } finally {
+                    // 모달 닫기 및 상태 초기화 (성공/실패 관계없이 항상 실행)
                     setShowPaymentModal(false)
+                    setShowDrinkModal(false)
                     setPaymentConfirmed(false)
                     setAdditionalOrderConfirmed(false)
                     setBeerQuantity(0)
                     setMojitoQuantity(0)
-                    
-                    // 구매 정보 업데이트
-                    setPurchasedBeerQuantity(beerQuantity)
-                    setPurchasedMojitoQuantity(mojitoQuantity)
-                  } catch (error) {
-                    console.error('주문 저장 실패:', error)
-                    alert('주문 저장에 실패했습니다. 다시 시도해주세요.')
                   }
                 }}
               >
