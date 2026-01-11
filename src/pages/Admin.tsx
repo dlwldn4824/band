@@ -1175,7 +1175,7 @@ const Admin = () => {
                   <th>이름</th>
                   <th>전화번호</th>
                   <th>캔 맥주</th>
-                  <th>모히또</th>
+                  <th>산토리 하이볼</th>
                   <th>총 금액</th>
                   <th>주문 시간</th>
                 </tr>

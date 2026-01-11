@@ -193,7 +193,7 @@ const Events = () => {
 
   return (
     <div className="events-page">
-      <div className="events-content-scrollable">
+      <div className="events-content">
         {/* 내 구매 정보 */}
         {(purchasedBeerQuantity > 0 || purchasedMojitoQuantity > 0) && (
           <div className="purchase-info">
@@ -203,7 +203,7 @@ const Events = () => {
                 <span className="purchase-name">캔 맥주 x {purchasedBeerQuantity}</span>
               )}
               {purchasedMojitoQuantity > 0 && (
-                <span className="purchase-name">모히또 x {purchasedMojitoQuantity}</span>
+                <span className="purchase-name">산토리 하이볼 x {purchasedMojitoQuantity}</span>
               )}
             </div>
           </div>
@@ -231,7 +231,7 @@ const Events = () => {
           </div>
 
           <h3>주류 사전 구매</h3>
-          <p>캔 맥주, 모히또 <br/>사전 구매하기</p>
+          <p>캔 맥주, 산토리 하이볼 <br/>사전 구매하기</p>
           <button className="play-button">구매하기</button>
         </div>
         <div
@@ -323,8 +323,8 @@ const Events = () => {
                 </div>
                 <div className="drink-item">
                   <div className="drink-info">
-                    <h3 className="drink-name">모히또</h3>
-                    <p className="drink-price">3,000원</p>
+                    <h3 className="drink-name">산토리 하이볼</h3>
+                    <p className="drink-price">3,500원</p>
                   </div>
                   <div className="drink-quantity-controls">
                     <button 
@@ -393,7 +393,7 @@ const Events = () => {
                 )}
                 {mojitoQuantity > 0 && (
                   <div className="order-item last-order-item">
-                    <span className="order-name">모히또 x {mojitoQuantity}</span>
+                    <span className="order-name">산토리 하이볼 x {mojitoQuantity}</span>
                     <span className="order-price">{mojitoQuantity * 3000}원</span>
                   </div>
                 )}

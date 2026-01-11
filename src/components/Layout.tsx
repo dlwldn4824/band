@@ -62,9 +62,9 @@ const Layout = ({ children }: LayoutProps) => {
   const isEvents = location.pathname.startsWith('/events') || location.pathname.startsWith('/admin/events')
   const isPerformances = location.pathname.startsWith('/performances') || location.pathname.startsWith('/admin/performances')
 
-  // 방명록, 채팅, 기타 페이지에서는 body 스크롤 막기
+  // 방명록, 채팅 페이지에서는 body 스크롤 막기
   useEffect(() => {
-    if (isChat || isGuestbook || isEvents) {
+    if (isChat || isGuestbook) {
       document.body.style.overflow = 'hidden'
       document.body.style.position = 'fixed'
       document.body.style.width = '100%'
@@ -80,7 +80,7 @@ const Layout = ({ children }: LayoutProps) => {
       document.body.style.position = ''
       document.body.style.width = ''
     }
-  }, [isChat, isGuestbook, isEvents])
+  }, [isChat, isGuestbook])
 
   const handleLogout = () => {
     logout()
