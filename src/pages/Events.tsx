@@ -210,7 +210,7 @@ const Events = () => {
         )}
 
         <div className="games-grid">
-        <div
+        {/* <div
           className="game-card"
           onClick={() => navigate('/products')}
         >
@@ -221,7 +221,7 @@ const Events = () => {
           <h3>상품 소개</h3>
           <p>공연 기념품을 <br/>확인하세요</p>
           <button className="play-button">확인하기</button>
-        </div>
+        </div> */}
         <div
           className="game-card"
           onClick={() => setShowDrinkModal(true)}

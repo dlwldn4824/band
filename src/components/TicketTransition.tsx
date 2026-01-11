@@ -8,6 +8,7 @@ type Props = {
     name?: string;
     date?: string;
     seat?: string;
+    entryNumber?: number;
   };
 };
 
@@ -56,13 +57,11 @@ export default function TicketTransition({
           <span className="tt_scissor" aria-hidden>✂︎</span>
         </div>
 
-        {/* 체크인 정보 오버레이 (선택) */}
-        {(info?.name || info?.date || info?.seat) && (
+        {/* 입장번호 스탬프 오버레이 (선택) */}
+        {info?.entryNumber && (
           <div className={`tt_stamp ${start ? "is-show" : ""}`}>
-            <div className="tt_stampTitle">CHECKED IN</div>
-            <div className="tt_stampRow">{info?.name}</div>
-            <div className="tt_stampRow">{info?.date}</div>
-            <div className="tt_stampRow">{info?.seat}</div>
+            <div className="tt_stampTitle">입장 번호</div>
+            <div className="tt_stampRow">{info.entryNumber}번</div>
           </div>
         )}
       </div>

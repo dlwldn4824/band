@@ -868,14 +868,34 @@ const Admin = () => {
 
   // 입장 번호 자동 부여 함수
   const assignEntryNumbers = (currentGuests: typeof guests) => {
-    // 입금 확인이 완료된 게스트들을 paymentConfirmedAt 순서로 정렬
-    const confirmedGuests = currentGuests
+    // 모든 게스트를 등록 순서로 정렬 (입금 확인 시간이 있으면 우선, 없으면 배열 순서)
+    const allGuests = currentGuests
       .map((guest, idx) => ({ guest, index: idx }))
-      .filter(({ guest }) => guest.paymentConfirmed && guest.paymentConfirmedAt)
       .sort((a, b) => {
-        const timeA = a.guest.paymentConfirmedAt || 0
-        const timeB = b.guest.paymentConfirmedAt || 0
-        return timeA - timeB
+        // 입장번호가 이미 있는 게스트는 순서 유지
+        if (a.guest.entryNumber !== undefined && a.guest.entryNumber !== null) {
+          if (b.guest.entryNumber === undefined || b.guest.entryNumber === null) {
+            return -1
+          }
+        }
+        if (b.guest.entryNumber !== undefined && b.guest.entryNumber !== null) {
+          if (a.guest.entryNumber === undefined || a.guest.entryNumber === null) {
+            return 1
+          }
+        }
+        
+        // 입금 확인 시간이 있으면 우선 정렬
+        if (a.guest.paymentConfirmedAt && b.guest.paymentConfirmedAt) {
+          return a.guest.paymentConfirmedAt - b.guest.paymentConfirmedAt
+        }
+        if (a.guest.paymentConfirmedAt) {
+          return -1
+        }
+        if (b.guest.paymentConfirmedAt) {
+          return 1
+        }
+        // 둘 다 입금 확인 시간이 없으면 배열 순서 유지
+        return a.index - b.index
       })
 
     // 입장 번호가 이미 부여된 게스트들의 번호 목록
@@ -891,7 +911,7 @@ const Admin = () => {
     const updatedGuests = [...currentGuests]
     let hasChanges = false
 
-    confirmedGuests.forEach(({ guest, index }) => {
+    allGuests.forEach(({ guest, index }) => {
       // 이미 입장 번호가 있으면 건너뛰기
       if (guest.entryNumber !== undefined && guest.entryNumber !== null) {
         return
@@ -964,8 +984,9 @@ const Admin = () => {
   // 입금 확인이 완료된 게스트에 대해 입장 번호 자동 부여
   useEffect(() => {
     // 입금 확인이 완료되었지만 입장 번호가 없는 게스트가 있는지 확인
+    // 모든 게스트 중 입장번호가 없는 게스트가 있으면 입장번호 할당
     const needsEntryNumber = guests.some(
-      guest => guest.paymentConfirmed && guest.paymentConfirmedAt && !guest.entryNumber
+      guest => !guest.entryNumber
     )
     
     if (needsEntryNumber) {
@@ -1247,7 +1268,6 @@ const Admin = () => {
                   <th>닉네임</th>
                   <th>예매 유형</th>
                   <th>입금 확인</th>
-                  <th>로그인 링크</th>
                   <th>입장 번호</th>
                   <th>관리</th>
                 </tr>
@@ -1296,52 +1316,6 @@ const Admin = () => {
                             </span>
                           )}
                         </div>
-                      </td>
-                      <td>
-                        {guest.paymentConfirmed && guestLoginLinks[guestId] ? (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', padding: '0.5rem', background: '#f0f0f0', borderRadius: '4px', fontSize: '0.75rem', width: '100%', minWidth: '200px' }}>
-                            <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', width: '100%' }}>
-                              <input
-                                type="text"
-                                value={guestLoginLinks[guestId]}
-                                readOnly
-                                style={{
-                                  flex: 1,
-                                  padding: '0.25rem 0.5rem',
-                                  border: '1px solid #ddd',
-                                  borderRadius: '4px',
-                                  fontSize: '0.7rem',
-                                  background: '#fff',
-                                  minWidth: 0
-                                }}
-                              />
-                              <button
-                                onClick={() => copyLoginLink(guestLoginLinks[guestId], `copy-${guestId}-${isWalkIn ? 'walkin' : 'prebook'}`)}
-                                style={{
-                                  padding: '0.25rem 0.5rem',
-                                  background: clickedCopyButton === `copy-${guestId}-${isWalkIn ? 'walkin' : 'prebook'}` ? '#357ABD' : '#4A90E2',
-                                  color: 'white',
-                                  border: 'none',
-                                  borderRadius: '4px',
-                                  cursor: 'pointer',
-                                  fontSize: '0.7rem',
-                                  whiteSpace: 'nowrap',
-                                  transform: clickedCopyButton === `copy-${guestId}-${isWalkIn ? 'walkin' : 'prebook'}` ? 'scale(0.95)' : 'scale(1)',
-                                  transition: 'all 0.1s ease',
-                                  boxShadow: clickedCopyButton === `copy-${guestId}-${isWalkIn ? 'walkin' : 'prebook'}` ? 'inset 0 2px 4px rgba(0,0,0,0.2)' : 'none'
-                                }}
-                              >
-                                복사
-                              </button>
-                            </div>
-                          </div>
-                        ) : guest.paymentConfirmed ? (
-                          <div style={{ fontSize: '0.7rem', color: '#999' }}>
-                            링크 생성 중...
-                          </div>
-                        ) : (
-                          <span style={{ color: '#999' }}>-</span>
-                        )}
                       </td>
                       <td>{guest.entryNumber ? `${guest.entryNumber}번` : '-'}</td>
                       <td>

@@ -18,6 +18,8 @@ const Login = () => {
   const [bookingPhone, setBookingPhone] = useState('')
   const [bookingEmail, setBookingEmail] = useState('')
   const [bookingError, setBookingError] = useState('')
+  const [bookingConfirmed, setBookingConfirmed] = useState(false)
+  const [bookingInfoConfirmed, setBookingInfoConfirmed] = useState(false)
   
   // 정보 수정 모드
   const [isEditingInfo, setIsEditingInfo] = useState(false)
@@ -188,6 +190,8 @@ const Login = () => {
             setEditedName(booking.name)
             setEditedPhone(booking.phone)
             setEditedEmail(booking.email)
+            setBookingConfirmed(false)
+            setBookingInfoConfirmed(false)
             setShowBookingConfirmation(true)
           }
         } catch (error) {
@@ -235,15 +239,8 @@ const Login = () => {
     e.preventDefault()
     setBookingError('')
 
-    if (!bookingName.trim() || !bookingPhone.trim() || !bookingEmail.trim()) {
+    if (!bookingName.trim() || !bookingPhone.trim()) {
       setBookingError('모든 항목을 입력해주세요.')
-      return
-    }
-
-    // 이메일 형식 검증
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(bookingEmail.trim())) {
-      setBookingError('올바른 이메일 형식을 입력해주세요.')
       return
     }
 
@@ -276,17 +273,11 @@ const Login = () => {
       })
 
       if (existingGuest) {
-        // 입금 확인이 완료된 게스트인 경우 바로 로그인 처리
+        // 입금 확인이 완료된 게스트인 경우 티켓 애니메이션 후 로그인 처리
         if (existingGuest.paymentConfirmed === true) {
-          const updatedGuests = [...guests]
-          const loginSuccess = login(bookingName.trim(), normalizedPhone, updatedGuests)
-          if (loginSuccess) {
-            localStorage.removeItem('pendingBooking')
-            setTimeout(() => {
-              checkNicknameAndNavigate()
-            }, 200)
-            return
-          }
+          // 티켓 애니메이션 표시 (onDone에서 로그인 처리)
+          setShowTicket(true)
+          return
         }
         
         // 이미 등록된 게스트인 경우 Firestore에서 예매 정보 가져오기
@@ -295,7 +286,7 @@ const Login = () => {
         
         try {
           const bookingSnap = await getDoc(bookingRef)
-          let savedEmail = bookingEmail.trim()
+          let savedEmail = ''
           
           if (bookingSnap.exists()) {
             const bookingData = bookingSnap.data()
@@ -333,6 +324,8 @@ const Login = () => {
           }))
           
           // 확인 화면 표시
+          setBookingConfirmed(false)
+          setBookingInfoConfirmed(false)
           setShowBookingConfirmation(true)
           return
         } catch (error) {
@@ -350,29 +343,31 @@ const Login = () => {
       await setDoc(bookingRef, {
         name: bookingName.trim(),
         phone: normalizedPhone,
-        email: bookingEmail.trim(),
+        email: '',
         approved: false, // 관리자 승인 전까지 false
         createdAt: new Date(),
         updatedAt: new Date()
       }, { merge: true })
 
       // 사전 예약 등록 (입금 확인 대기 상태이므로 isWalkIn: false)
-      const result = addWalkInGuest(bookingName.trim(), normalizedPhone, false, bookingEmail.trim())
+      const result = addWalkInGuest(bookingName.trim(), normalizedPhone, false, '')
       
       if (result.success) {
         // 정보 수정용 상태 설정
         setEditedName(bookingName.trim())
         setEditedPhone(bookingPhone.trim())
-        setEditedEmail(bookingEmail.trim())
+        setEditedEmail('')
         
         // localStorage에 예매 정보 저장 (페이지 재접근 시 확인 화면 표시용)
         localStorage.setItem('pendingBooking', JSON.stringify({
           name: bookingName.trim(),
           phone: bookingPhone.trim(),
-          email: bookingEmail.trim()
+          email: ''
         }))
         
         // 확인 화면 표시
+        setBookingConfirmed(false)
+        setBookingInfoConfirmed(false)
         setShowBookingConfirmation(true)
       } else {
         setBookingError(result.message || '등록에 실패했습니다.')
@@ -387,15 +382,8 @@ const Login = () => {
   const handleInfoUpdate = async () => {
     if (isUpdatingInfo) return // 이미 업데이트 중이면 무시
     
-    if (!editedName.trim() || !editedPhone.trim() || !editedEmail.trim()) {
+    if (!editedName.trim() || !editedPhone.trim()) {
       setBookingError('모든 항목을 입력해주세요.')
-      return
-    }
-
-    // 이메일 형식 검증
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(editedEmail.trim())) {
-      setBookingError('올바른 이메일 형식을 입력해주세요.')
       return
     }
 
@@ -412,7 +400,7 @@ const Login = () => {
     try {
       const normalizedPhone = editedPhone.trim().replace(/\D/g, '')
       const updatedName = editedName.trim()
-      const updatedEmail = editedEmail.trim()
+      const updatedEmail = ''
       
       // 원래 이름과 전화번호 (게스트 찾기용)
       const originalNormalizedPhone = bookingPhone.trim().replace(/\D/g, '').replace(/[-\s()]/g, '')
@@ -608,15 +596,6 @@ const Login = () => {
                     maxLength={13}
                   />
                 </div>
-                <div className="form-group">
-                  <label>이메일</label>
-                  <input
-                    type="email"
-                    value={editedEmail}
-                    onChange={(e) => setEditedEmail(e.target.value)}
-                    placeholder="user@example.com"
-                  />
-                </div>
                 <button 
                   className="cancel-edit-button"
                   onClick={() => setIsEditingInfo(false)}
@@ -633,10 +612,6 @@ const Login = () => {
                 <div className="info-item">
                   <span className="info-label">연락처</span>
                   <span className="info-value">{formatPhoneDisplay(bookingPhone)}</span>
-                </div>
-                <div className="info-item">
-                  <span className="info-label">이메일</span>
-                  <span className="info-value">{bookingEmail}</span>
                 </div>
               </div>
             )}
@@ -685,11 +660,74 @@ const Login = () => {
           {/* 안내 문구 */}
           <div className="instructions">
             <p>위 계좌로 10분 이내에 입금해 주세요.</p>
-            <p>시스템이 입금을 확인하면 자동으로 이메일로 티켓을 보내드립니다. 이메일이 보이지 않으면 메일함에서 dlwldn4824@naver.com을 검색해 주세요.</p>
             <p className="important-notice">
               반드시 신청하신 "{bookingName}" 입금자명으로 입금해 주세요.
             </p>
           </div>
+
+          <div className="booking-confirm-wrapper">
+            <label className="booking-confirm-checkbox-label">
+              <input
+                type="checkbox"
+                className="booking-confirm-checkbox"
+                checked={bookingConfirmed}
+                onChange={(e) => setBookingConfirmed(e.target.checked)}
+              />
+              <span>입금 완료 하셨습니까?</span>
+            </label>
+          </div>
+
+          <div className="booking-confirm-wrapper">
+            <label className="booking-confirm-checkbox-label">
+              <input
+                type="checkbox"
+                className="booking-confirm-checkbox"
+                checked={bookingInfoConfirmed}
+                onChange={(e) => setBookingInfoConfirmed(e.target.checked)}
+              />
+              <span>예매정보 확인해주세요.이후로 수정이 불가합니다.</span>
+            </label>
+          </div>
+
+          <button
+            className="booking-confirm-button"
+            disabled={!bookingConfirmed || !bookingInfoConfirmed}
+            onClick={async () => {
+              try {
+                // 로그인 처리
+                const normalizedPhone = bookingPhone.replace(/\D/g, '')
+                const updatedGuests = [...guests]
+                const loginSuccess = login(bookingName, normalizedPhone, updatedGuests)
+                
+                if (loginSuccess) {
+                  // 예매 확인 완료 처리
+                  setShowBookingConfirmation(false)
+                  setBookingName('')
+                  setBookingPhone('')
+                  setBookingEmail('')
+                  setEditedName('')
+                  setEditedPhone('')
+                  setEditedEmail('')
+                  setBookingError('')
+                  setBookingConfirmed(false)
+                  setBookingInfoConfirmed(false)
+                  localStorage.removeItem('pendingBooking')
+                  
+                  // 대시보드로 이동
+                  setTimeout(() => {
+                    checkNicknameAndNavigate()
+                  }, 200)
+                } else {
+                  setBookingError('로그인에 실패했습니다. 다시 시도해주세요.')
+                }
+              } catch (error) {
+                console.error('예매 확인 처리 실패:', error)
+                setBookingError('예매 확인 처리에 실패했습니다. 다시 시도해주세요.')
+              }
+            }}
+          >
+            확인하고 입장하기
+          </button>
 
           {bookingError && <div className="error-message">{bookingError}</div>}
         </div>
@@ -700,6 +738,15 @@ const Login = () => {
             name: bookingName || '',
             date: new Date().toLocaleDateString(),
             seat: 'STANDING',
+            entryNumber: (() => {
+              const normalizedPhone = bookingPhone.replace(/\D/g, '')
+              const existingGuest = guests.find((g) => {
+                const gName = g.name || g['이름'] || g.Name || ''
+                const gPhone = String(g.phone || g['전화번호'] || g.Phone || '').replace(/[-\s()]/g, '')
+                return gName.trim() === bookingName.trim() && gPhone === normalizedPhone
+              })
+              return existingGuest?.entryNumber
+            })(),
           }}
           onDone={async () => {
             // 포커스 해제 및 스크롤 초기화
@@ -710,9 +757,31 @@ const Login = () => {
             // 티켓 애니메이션 숨기기
             setShowTicket(false)
             
-            // Firestore에 티켓 애니메이션을 본 기록 저장
+            // 로그인 상태 확인 및 필요시 로그인 처리
             const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
-            if (currentUser) {
+            if (!currentUser && bookingName && bookingPhone) {
+              // 입금 확인 완료된 게스트인 경우 로그인 처리
+              const normalizedPhone = bookingPhone.replace(/\D/g, '')
+              const updatedGuests = [...guests]
+              const loginSuccess = login(bookingName.trim(), normalizedPhone, updatedGuests)
+              if (loginSuccess) {
+                localStorage.removeItem('pendingBooking')
+                // Firestore에 티켓 애니메이션을 본 기록 저장
+                try {
+                  const userId = `${bookingName.trim()}_${normalizedPhone}`
+                  const userProfileRef = doc(db, 'userProfiles', userId)
+                  await setDoc(userProfileRef, {
+                    name: bookingName.trim(),
+                    phone: normalizedPhone,
+                    ticketShown: true,
+                    updatedAt: new Date()
+                  }, { merge: true })
+                } catch (error) {
+                  console.warn('Firestore 티켓 기록 저장 실패:', error)
+                }
+              }
+            } else if (currentUser) {
+              // 이미 로그인된 경우 Firestore에 티켓 애니메이션을 본 기록 저장
               try {
                 const userId = `${currentUser.name}_${currentUser.phone}`
                 const userProfileRef = doc(db, 'userProfiles', userId)
@@ -736,8 +805,8 @@ const Login = () => {
       ) : (
         <div className="login-container">
           <div className="login-header">
-            <h1>공연 예매하기</h1>
-            <p>입력하신 이메일로 안내가 전송되니<br/> 정확히 작성해 주세요.</p>
+            <h1>공연 입장하기</h1>
+            <p>입력하신 정보로 안내가 전송되니<br/> 정확히 작성해 주세요.</p>
           </div>
 
           <form onSubmit={handleBookingSubmit} className="login-form">
@@ -766,22 +835,10 @@ const Login = () => {
                 />
               </div>
 
-              <div className="form-group">
-                <label htmlFor="bookingEmail">이메일</label>
-                <input
-                  type="email"
-                  id="bookingEmail"
-                  value={bookingEmail}
-                  onChange={(e) => setBookingEmail(e.target.value)}
-                  placeholder="예: user@example.com"
-                  autoComplete="email"
-                />
-              </div>
-
               {bookingError && <div className="error-message">{bookingError}</div>}
 
               <button type="submit" className="login-button">
-                예매 신청하기
+                공연 입장하기
               </button>
           </form>
 
