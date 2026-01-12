@@ -48,6 +48,16 @@ const Admin = () => {
   const [pendingBookings] = useState<Array<{ id: string; name: string; phone: string; email: string; createdAt: any }>>([])
   const [guestLoginLinks, setGuestLoginLinks] = useState<Record<string, string>>({}) // 게스트 ID (name_phone) -> 로그인 링크
   const [clickedCopyButton, setClickedCopyButton] = useState<string | null>(null) // 클릭된 복사 버튼 ID
+
+  // 개인 로그인 링크 생성 함수
+  const generatePersonalLoginLink = (name: string, phone: string): string => {
+    const normalizedPhone = phone.replace(/\D/g, '')
+    const combinedData = `${name}|${normalizedPhone}`
+    const base64Token = btoa(encodeURIComponent(combinedData))
+    const urlSafeToken = base64Token.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
+    const baseUrl = window.location.origin
+    return `${baseUrl}/t/${urlSafeToken}`
+  }
   const [drinkOrders, setDrinkOrders] = useState<Array<{ id: string; name: string; phone: string; beerQuantity: number; mojitoQuantity: number; totalAmount: number; createdAt: any }>>([])
   const { uploadGuests, setPerformanceData, guests, performanceData, clearGuests, deleteGuest, updateGuest, clearSetlist, bookingInfo, setBookingInfo, clearChatMessages, toggleGuestPayment, addWalkInGuest } = useData()
   
@@ -1319,7 +1329,30 @@ const Admin = () => {
                       </td>
                       <td>{guest.entryNumber ? `${guest.entryNumber}번` : '-'}</td>
                       <td>
-                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                          {guest.paymentConfirmed && (
+                            <button
+                              onClick={() => {
+                                const loginLink = generatePersonalLoginLink(guestName, guestPhoneRaw)
+                                window.open(loginLink, '_blank')
+                              }}
+                              className="enter-button"
+                              title="공연 입장하기"
+                              style={{
+                                background: '#FF4C4C',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '0.4rem 0.8rem',
+                                fontSize: '0.75rem',
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                                whiteSpace: 'nowrap'
+                              }}
+                            >
+                              공연 입장하기
+                            </button>
+                          )}
                           <button
                             onClick={() => {
                               requirePassword(() => {

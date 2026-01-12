@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useData } from '../contexts/DataContext'
 import { doc, setDoc, onSnapshot, getDoc } from 'firebase/firestore'
@@ -12,6 +12,8 @@ import './Login.css'
 const Login = () => {
   const [showTicket, setShowTicket] = useState(false)
   const [showBookingConfirmation, setShowBookingConfirmation] = useState(false)
+  const [personalLoginLink, setPersonalLoginLink] = useState<string>('')
+  const [linkCopied, setLinkCopied] = useState(false)
   
   // 예매 폼 상태
   const [bookingName, setBookingName] = useState('')
@@ -31,67 +33,69 @@ const Login = () => {
   const { login } = useAuth()
   const { guests, addWalkInGuest, updateGuest, bookingInfo } = useData()
   const navigate = useNavigate()
+  const { token } = useParams<{ token?: string }>()
   const location = window.location
 
-  // URL 파라미터에서 토큰 기반 자동 로그인 처리
+  // URL 경로에서 자동 로그인 처리 (암호화된 토큰 기반)
   useEffect(() => {
-    const searchParams = new URLSearchParams(location.search)
-    const token = searchParams.get('token')
+    // 경로 파라미터에서 토큰 가져오기 (/t/토큰 형식)
+    const tokenParam = token
 
-    if (token && guests.length > 0) {
-      // 토큰으로 게스트 정보 조회
-      const handleTokenLogin = async () => {
+    if (tokenParam && guests.length > 0) {
+      // base64 디코딩
+      const handleAutoLogin = async () => {
         try {
-          const tokenRef = doc(db, 'loginTokens', token)
-          const tokenSnap = await getDoc(tokenRef)
+          let decodedData: string
           
-          if (tokenSnap.exists()) {
-            const tokenData = tokenSnap.data()
-            const name = tokenData.name
-            const phone = tokenData.phone
-            const expiresAt = tokenData.expiresAt?.toDate()
-            
-            // 토큰 만료 확인
-            if (expiresAt && expiresAt < new Date()) {
-              console.warn('토큰이 만료되었습니다.')
-              const newUrl = window.location.pathname
-              window.history.replaceState({}, '', newUrl)
-              return
-            }
-            
-            // 자동 로그인 시도
-            const loginSuccess = login(name, phone, guests)
-            
-            if (loginSuccess) {
-              // 로그인 성공 시 대시보드로 이동
-              setTimeout(() => {
-                navigate('/dashboard')
-              }, 200)
-              
-              // URL에서 토큰 제거
-              const newUrl = window.location.pathname
-              window.history.replaceState({}, '', newUrl)
-            } else {
-              // 로그인 실패 시 URL 파라미터 제거
-              const newUrl = window.location.pathname
-              window.history.replaceState({}, '', newUrl)
-            }
-          } else {
-            // 토큰이 존재하지 않음
-            console.warn('유효하지 않은 토큰입니다.')
+          try {
+            // URL-safe base64 디코딩 (+ -> -, / -> _, = 제거)
+            const urlSafeToken = tokenParam.replace(/-/g, '+').replace(/_/g, '/')
+            // 패딩 추가
+            const paddedToken = urlSafeToken + '='.repeat((4 - urlSafeToken.length % 4) % 4)
+            decodedData = decodeURIComponent(atob(paddedToken))
+          } catch (e) {
+            console.warn('URL 파라미터 디코딩 실패:', e)
             const newUrl = window.location.pathname
             window.history.replaceState({}, '', newUrl)
+            return
+          }
+          
+          // 데이터 형식: "이름|전화번호"
+          const parts = decodedData.split('|')
+          if (parts.length !== 2) {
+            console.warn('잘못된 토큰 형식')
+            const newUrl = window.location.pathname
+            window.history.replaceState({}, '', newUrl)
+            return
+          }
+          
+          const decodedName = parts[0]
+          const decodedPhone = parts[1]
+          
+          // 전화번호 정규화
+          const normalizedPhone = decodedPhone.replace(/\D/g, '')
+          
+          // 자동 로그인 시도
+          const loginSuccess = login(decodedName, normalizedPhone, guests)
+          
+          if (loginSuccess) {
+            // 로그인 성공 시 대시보드로 이동
+            setTimeout(() => {
+              navigate('/dashboard', { replace: true })
+            }, 200)
+          } else {
+            // 로그인 실패 시 로그인 페이지로 리다이렉트
+            navigate('/login', { replace: true })
           }
         } catch (error) {
-          console.error('토큰 로그인 오류:', error)
-          const newUrl = window.location.pathname
-          window.history.replaceState({}, '', newUrl)
+          console.error('자동 로그인 오류:', error)
+          navigate('/login', { replace: true })
         }
       }
       
-      handleTokenLogin()
+      handleAutoLogin()
     }
-  }, [location.search, guests, login, navigate])
+  }, [token, guests, login, navigate])
 
   useEffect(() => {
     // 세로 모드에서 스크롤 방지 (입력 필드와 버튼은 제외)
@@ -301,7 +305,7 @@ const Login = () => {
               const loginSuccess = login(bookingName.trim(), normalizedPhone, updatedGuests)
               if (loginSuccess) {
                 localStorage.removeItem('pendingBooking')
-                setTimeout(() => {
+      setTimeout(() => {
                   checkNicknameAndNavigate()
                 }, 200)
                 return
@@ -450,7 +454,7 @@ const Login = () => {
             updatedAt: new Date()
           }, { merge: true })
         }
-      } else {
+    } else {
         // 이름과 전화번호가 같으면 그냥 업데이트
         await setDoc(bookingRef, {
           name: updatedName,
@@ -689,45 +693,102 @@ const Login = () => {
             </label>
           </div>
 
-          <button
-            className="booking-confirm-button"
-            disabled={!bookingConfirmed || !bookingInfoConfirmed}
-            onClick={async () => {
-              try {
-                // 로그인 처리
-                const normalizedPhone = bookingPhone.replace(/\D/g, '')
-                const updatedGuests = [...guests]
-                const loginSuccess = login(bookingName, normalizedPhone, updatedGuests)
-                
-                if (loginSuccess) {
-                  // 예매 확인 완료 처리
-                  setShowBookingConfirmation(false)
-                  setBookingName('')
-                  setBookingPhone('')
-                  setBookingEmail('')
-                  setEditedName('')
-                  setEditedPhone('')
-                  setEditedEmail('')
-                  setBookingError('')
-                  setBookingConfirmed(false)
-                  setBookingInfoConfirmed(false)
-                  localStorage.removeItem('pendingBooking')
+          {!personalLoginLink ? (
+            <button
+              className="booking-confirm-button"
+              disabled={!bookingConfirmed || !bookingInfoConfirmed}
+              onClick={async () => {
+                try {
+                  // 개인 로그인 링크 생성 (암호화된 토큰 사용)
+                  const normalizedPhone = bookingPhone.replace(/\D/g, '')
+                  // 이름과 전화번호를 하나의 문자열로 합치고 base64 인코딩
+                  const combinedData = `${bookingName}|${normalizedPhone}`
+                  const base64Token = btoa(encodeURIComponent(combinedData))
+                  // URL-safe base64로 변환 (+ -> -, / -> _, = 제거)
+                  const urlSafeToken = base64Token.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
+                  const baseUrl = window.location.origin
+                  // 짧은 경로 형식: /t/토큰
+                  const loginLink = `${baseUrl}/t/${urlSafeToken}`
                   
-                  // 대시보드로 이동
-                  setTimeout(() => {
-                    checkNicknameAndNavigate()
-                  }, 200)
-                } else {
-                  setBookingError('로그인에 실패했습니다. 다시 시도해주세요.')
+                  setPersonalLoginLink(loginLink)
+                  setLinkCopied(false)
+                  
+                  // 클립보드에 복사
+                  try {
+                    await navigator.clipboard.writeText(loginLink)
+                    setLinkCopied(true)
+                    setTimeout(() => setLinkCopied(false), 3000)
+                  } catch (err) {
+                    console.warn('클립보드 복사 실패:', err)
+                  }
+                } catch (error) {
+                  console.error('링크 생성 실패:', error)
+                  setBookingError('링크 생성에 실패했습니다. 다시 시도해주세요.')
                 }
-              } catch (error) {
-                console.error('예매 확인 처리 실패:', error)
-                setBookingError('예매 확인 처리에 실패했습니다. 다시 시도해주세요.')
-              }
-            }}
-          >
-            확인하고 입장하기
-          </button>
+              }}
+            >
+              확인하고 입장하기
+            </button>
+          ) : (
+            <>
+              <div className="personal-link-section">
+                <p className="personal-link-label">개인 입장 링크</p>
+                <div className="personal-link-container">
+                  <input
+                    type="text"
+                    value={personalLoginLink}
+                    readOnly
+                    className="personal-link-input"
+                    onClick={(e) => (e.target as HTMLInputElement).select()}
+                  />
+                  <button
+                    className="copy-link-button"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(personalLoginLink)
+                        setLinkCopied(true)
+                        setTimeout(() => setLinkCopied(false), 3000)
+                      } catch (err) {
+                        console.warn('클립보드 복사 실패:', err)
+                        // 폴백: 텍스트 영역 사용
+                        const textArea = document.createElement('textarea')
+                        textArea.value = personalLoginLink
+                        textArea.style.position = 'fixed'
+                        textArea.style.opacity = '0'
+                        document.body.appendChild(textArea)
+                        textArea.select()
+                        try {
+                          document.execCommand('copy')
+                          setLinkCopied(true)
+                          setTimeout(() => setLinkCopied(false), 3000)
+                        } catch (e) {
+                          console.error('복사 실패:', e)
+                        }
+                        document.body.removeChild(textArea)
+                      }
+                    }}
+                  >
+                    {linkCopied ? '✓ 복사됨' : '링크 복사'}
+                  </button>
+                </div>
+                <p className="personal-link-hint">
+                  이 링크를 저장해두시면 나중에 바로 입장하실 수 있습니다.
+                </p>
+              </div>
+              
+              <button
+                className="booking-confirm-button"
+                onClick={() => {
+                  // 생성된 링크로 리다이렉트
+                  if (personalLoginLink) {
+                    window.location.href = personalLoginLink
+                  }
+                }}
+              >
+                링크로 입장하기
+              </button>
+            </>
+          )}
 
           {bookingError && <div className="error-message">{bookingError}</div>}
         </div>
@@ -745,6 +806,8 @@ const Login = () => {
                 const gPhone = String(g.phone || g['전화번호'] || g.Phone || '').replace(/[-\s()]/g, '')
                 return gName.trim() === bookingName.trim() && gPhone === normalizedPhone
               })
+              console.log('[Login] TicketTransition - existingGuest:', existingGuest)
+              console.log('[Login] TicketTransition - entryNumber:', existingGuest?.entryNumber)
               return existingGuest?.entryNumber
             })(),
           }}
@@ -759,13 +822,43 @@ const Login = () => {
             
             // 로그인 상태 확인 및 필요시 로그인 처리
             const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
+            console.log('[Login] TicketTransition onDone - currentUser:', currentUser)
+            console.log('[Login] TicketTransition onDone - bookingName:', bookingName)
+            console.log('[Login] TicketTransition onDone - bookingPhone:', bookingPhone)
+            console.log('[Login] TicketTransition onDone - guests:', guests.length, '명')
+            
+            let loginSuccess = false
+            
             if (!currentUser && bookingName && bookingPhone) {
               // 입금 확인 완료된 게스트인 경우 로그인 처리
               const normalizedPhone = bookingPhone.replace(/\D/g, '')
-              const updatedGuests = [...guests]
-              const loginSuccess = login(bookingName.trim(), normalizedPhone, updatedGuests)
+              
+              // guests 배열이 비어있으면 localStorage에서 로드 시도
+              let updatedGuests = [...guests]
+              if (updatedGuests.length === 0) {
+                const savedGuests = localStorage.getItem('guests')
+                if (savedGuests) {
+                  try {
+                    updatedGuests = JSON.parse(savedGuests)
+                    console.log('[Login] TicketTransition onDone - localStorage에서 guests 로드:', updatedGuests.length, '명')
+                  } catch (e) {
+                    console.warn('[Login] TicketTransition onDone - guests 파싱 실패:', e)
+                  }
+                }
+              }
+              
+              console.log('[Login] TicketTransition onDone - 로그인 시도 전')
+              console.log('[Login] TicketTransition onDone - updatedGuests:', updatedGuests.length, '명')
+              
+              // 로그인 시도
+              loginSuccess = login(bookingName.trim(), normalizedPhone, updatedGuests)
+              console.log('[Login] TicketTransition onDone - loginSuccess:', loginSuccess)
+              
               if (loginSuccess) {
+                const loggedInUser = JSON.parse(localStorage.getItem('user') || 'null')
+                console.log('[Login] TicketTransition onDone - 로그인 후 user:', loggedInUser)
                 localStorage.removeItem('pendingBooking')
+                
                 // Firestore에 티켓 애니메이션을 본 기록 저장
                 try {
                   const userId = `${bookingName.trim()}_${normalizedPhone}`
@@ -779,9 +872,16 @@ const Login = () => {
                 } catch (error) {
                   console.warn('Firestore 티켓 기록 저장 실패:', error)
                 }
+              } else {
+                console.error('[Login] TicketTransition onDone - 로그인 실패')
+                // 로그인 실패 시 에러 메시지 표시는 하지 않고 그냥 진행
               }
             } else if (currentUser) {
-              // 이미 로그인된 경우 Firestore에 티켓 애니메이션을 본 기록 저장
+              // 이미 로그인된 경우
+              loginSuccess = true
+              console.log('[Login] TicketTransition onDone - 이미 로그인됨')
+              
+              // Firestore에 티켓 애니메이션을 본 기록 저장
               try {
                 const userId = `${currentUser.name}_${currentUser.phone}`
                 const userProfileRef = doc(db, 'userProfiles', userId)
@@ -796,10 +896,16 @@ const Login = () => {
               }
             }
             
-            // 네비게이션
-            setTimeout(() => {
-              checkNicknameAndNavigate()
-            }, 200)
+            // 로그인 성공 시에만 대시보드로 이동
+            if (loginSuccess) {
+              console.log('[Login] TicketTransition onDone - 대시보드로 이동')
+              setTimeout(() => {
+                checkNicknameAndNavigate()
+              }, 100)
+            } else {
+              console.error('[Login] TicketTransition onDone - 로그인 실패로 인해 대시보드 이동 취소')
+              // 로그인 실패 시 로그인 페이지에 머물기
+            }
           }}
         />
       ) : (
@@ -810,36 +916,36 @@ const Login = () => {
           </div>
 
           <form onSubmit={handleBookingSubmit} className="login-form">
-              <div className="form-group">
+            <div className="form-group">
                 <label htmlFor="bookingName">성함 (입금자명)</label>
-                <input
-                  type="text"
+              <input
+                type="text"
                   id="bookingName"
                   value={bookingName}
                   onChange={(e) => setBookingName(e.target.value)}
                   placeholder="예: 홍길동"
-                  autoComplete="name"
-                />
-              </div>
+                autoComplete="name"
+              />
+            </div>
 
-              <div className="form-group">
+            <div className="form-group">
                 <label htmlFor="bookingPhone">연락처</label>
-                <input
-                  type="tel"
+              <input
+                type="tel"
                   id="bookingPhone"
                   value={bookingPhone}
                   onChange={(e) => setBookingPhone(e.target.value)}
                   placeholder="예: 01012345678"
-                  autoComplete="tel"
+                autoComplete="tel"
                   maxLength={13}
-                />
-              </div>
+              />
+            </div>
 
               {bookingError && <div className="error-message">{bookingError}</div>}
 
-              <button type="submit" className="login-button">
-                공연 입장하기
-              </button>
+            <button type="submit" className="login-button">
+              공연 입장하기
+            </button>
           </form>
 
           {/* 운영자 로그인 링크 */}

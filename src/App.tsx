@@ -93,6 +93,7 @@ function AppRoutes() {
   // location.key를 사용하여 같은 경로로 이동해도 리렌더링되도록 함
   return (
     <Routes location={location} key={location.key || location.pathname}>
+          <Route path="/t/:token" element={<Login />} />
           <Route path="/login" element={<Login />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/manage" element={<Admin />} />

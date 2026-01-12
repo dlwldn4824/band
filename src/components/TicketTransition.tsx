@@ -20,12 +20,22 @@ export default function TicketTransition({
 }: Props) {
   const [start, setStart] = useState(false);
 
+  // 디버깅용 콘솔 로그
+  console.log('[TicketTransition] info:', info)
+  console.log('[TicketTransition] info?.entryNumber:', info?.entryNumber)
+  console.log('[TicketTransition] 스탬프 표시 여부:', !!info?.entryNumber)
+
   useEffect(() => {
     // 살짝 딜레이 후 시작 (화면 렌더 안정화)
     const t1 = setTimeout(() => setStart(true), 150);
 
     // 애니메이션 끝나면 콜백 (메인으로 이동)
-    const t2 = setTimeout(() => onDone?.(), 150 + 1100);
+    // 찢어지는 애니메이션: 150ms 딜레이 + 120ms 시작 딜레이 + 980ms 애니메이션 = 1250ms
+    // 여유를 두고 1500ms 후에 콜백 호출
+    const t2 = setTimeout(() => {
+      console.log('[TicketTransition] 애니메이션 완료, onDone 호출')
+      onDone?.()
+    }, 1500);
 
     return () => {
       clearTimeout(t1);
@@ -34,7 +44,16 @@ export default function TicketTransition({
   }, [onDone]);
 
   return (
-    <div className="tt_wrap" aria-label="티켓 발권 완료">
+    <div 
+      className="tt_wrap" 
+      aria-label="티켓 발권 완료"
+      onClick={() => {
+        // 클릭하면 바로 다음 단계로
+        console.log('[TicketTransition] 사용자 클릭, onDone 호출')
+        onDone?.()
+      }}
+      style={{ cursor: 'pointer' }}
+    >
       <div className={`tt_ticket ${start ? "is-tearing" : ""}`}>
         {/* 위 조각 */}
         <div
@@ -60,8 +79,9 @@ export default function TicketTransition({
         {/* 입장번호 스탬프 오버레이 (선택) */}
         {info?.entryNumber && (
           <div className={`tt_stamp ${start ? "is-show" : ""}`}>
-            <div className="tt_stampTitle">입장 번호</div>
-            <div className="tt_stampRow">{info.entryNumber}번</div>
+            <div className="tt_stampTitle">입장번호</div>
+            <div className="tt_stampRow">{info.entryNumber}</div>
+            <div className="tt_stampSubtitle">번</div>
           </div>
         )}
       </div>
@@ -84,7 +104,8 @@ const css = `
   display:flex;
   align-items:center;
   justify-content:center;
-  background: transparent;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(4px);
   padding: 24px;
   overflow:hidden;
 }
@@ -159,23 +180,55 @@ const css = `
   right: 14px;
   top: 14px;
   padding: 10px 12px;
-  border: 2px solid rgba(255, 76, 76, 0.7);
-  color: rgba(255, 76, 76, 0.9);
-  border-radius: 10px;
-  transform: rotate(-10deg) scale(0.96);
+  border: 3px solid #d32f2f;
+  color: #d32f2f;
+  border-radius: 50%;
+  width: 100px;
+  height: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(-15deg);
+  background: rgba(255, 255, 255, 1);
   opacity:0;
-  backdrop-filter: blur(2px);
+  z-index: 10;
+  box-shadow: 
+    0 4px 12px rgba(211, 47, 47, 0.3),
+    0 2px 4px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
 }
 .tt_stamp.is-show{
   animation: tt_stampIn 520ms 200ms ease-out forwards;
 }
 @keyframes tt_stampIn{
-  0% { opacity:0; transform: rotate(-10deg) scale(0.92); }
-  70% { opacity:1; transform: rotate(-10deg) scale(1.03); }
-  100% { opacity:1; transform: rotate(-10deg) scale(1); }
+  0% { opacity:0; transform: rotate(-15deg) scale(0.92); }
+  70% { opacity:1; transform: rotate(-15deg) scale(1.03); }
+  100% { opacity:1; transform: rotate(-15deg) scale(1); }
 }
-.tt_stampTitle{ font-weight: 900; letter-spacing: 0.08em; font-size: 12px; }
-.tt_stampRow{ font-weight: 700; font-size: 11px; opacity: 0.9; }
+.tt_stampTitle{ 
+  font-weight: 900; 
+  letter-spacing: 0.08em; 
+  font-size: 10px; 
+  margin-bottom: 4px;
+  text-align: center;
+  text-transform: uppercase;
+  line-height: 1.1;
+}
+.tt_stampRow{ 
+  font-weight: 900; 
+  font-size: 32px; 
+  text-align: center;
+  line-height: 1;
+  letter-spacing: 0;
+}
+.tt_stampSubtitle {
+  font-weight: 700;
+  font-size: 12px;
+  text-align: center;
+  line-height: 1;
+  margin-top: 2px;
+}
 
 /* 찢어지는 애니메이션 */
 .tt_ticket.is-tearing .tt_top{

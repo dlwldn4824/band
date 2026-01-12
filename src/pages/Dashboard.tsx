@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useData } from '../contexts/DataContext'
 import Events from '../components/Events'
+import Ticket from '../components/Ticket'
 import ticketImage from '../assets/배경/티켓_최종.png'
 import editIcon from '../assets/배경/수정_아이콘.png'
 import { formatPhoneDisplay } from '../utils/phoneFormat'
@@ -151,6 +152,13 @@ const Dashboard = () => {
                 loading="eager"
                 decoding="async"
               />
+              {user?.entryNumber && (
+                <div className="ticket-entry-stamp">
+                  <div className="ticket-entry-stamp-title">입장번호</div>
+                  <div className="ticket-entry-stamp-number">{user.entryNumber}</div>
+                  <div className="ticket-entry-stamp-subtitle">번</div>
+                </div>
+              )}
             </div>
           </section>
         )}

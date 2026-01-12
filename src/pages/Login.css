@@ -1135,6 +1135,81 @@
   background-color: #ffffff;
 }
 
+/* 개인 입장 링크 섹션 */
+.personal-link-section {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.personal-link-label {
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  text-align: center;
+  font-family: 'Pretendard', sans-serif;
+}
+
+.personal-link-container {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.personal-link-input {
+  flex: 1;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-family: 'Pretendard', monospace;
+  word-break: break-all;
+}
+
+.personal-link-input:focus {
+  outline: none;
+  border-color: rgb(255, 76, 76);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.copy-link-button {
+  padding: 0.75rem 1rem;
+  background: rgb(255, 76, 76);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s, transform 0.2s;
+  flex-shrink: 0;
+  font-family: 'Pretendard', sans-serif;
+}
+
+.copy-link-button:hover {
+  background: rgb(230, 62, 62);
+  transform: translateY(-1px);
+}
+
+.copy-link-button:active {
+  transform: translateY(0);
+}
+
+.personal-link-hint {
+  margin-top: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.75rem;
+  text-align: center;
+  line-height: 1.4;
+  font-family: 'Pretendard', sans-serif;
+}
+
 @media (max-width: 768px) {
   .booking-confirmation {
     padding: 1.5rem;
@@ -1153,5 +1228,18 @@
   .edit-info-button {
     font-size: 0.7rem;
     padding: 0.4rem 0.6rem;
+  }
+
+  .personal-link-container {
+    flex-direction: column;
+  }
+
+  .personal-link-input {
+    width: 100%;
+    font-size: 0.7rem;
+  }
+
+  .copy-link-button {
+    width: 100%;
   }
 }

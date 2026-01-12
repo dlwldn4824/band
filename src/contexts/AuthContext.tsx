@@ -139,7 +139,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const guestName = foundGuest.name || foundGuest['이름'] || name
       const guestPhone = foundGuest.phone || foundGuest['전화번호'] || phone
       
-      // 입장번호가 없으면 로그인 순서대로 할당
+      // 입장번호가 없으면 로그인 순서대로 할당 (항상 할당)
       let entryNumber = foundGuest.entryNumber
       if (!entryNumber) {
         // 이미 입장번호가 있는 게스트들의 최대값 찾기
@@ -167,6 +167,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         })
       }
       
+      // 입장번호가 항상 userData에 포함되도록 보장
+      if (!entryNumber) {
+        entryNumber = 1 // 기본값 (이론적으로는 발생하지 않아야 함)
+      }
+      
       // Firestore의 최신 체크인 상태 사용 (서버 상태 기반)
       const userData = { 
         name: guestName, 
@@ -175,8 +180,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         checkedIn: foundGuest.checkedIn !== false,
         checkedInAt: foundGuest.checkedInAt || Date.now()
       }
+      
+      // 디버깅용 콘솔 로그
+      console.log('[AuthContext] login - entryNumber:', entryNumber)
+      console.log('[AuthContext] login - userData:', userData)
+      console.log('[AuthContext] login - foundGuest:', foundGuest)
+      
       setUser(userData)
       localStorage.setItem('user', JSON.stringify(userData))
+      
+      // localStorage 저장 확인
+      const savedUser = JSON.parse(localStorage.getItem('user') || 'null')
+      console.log('[AuthContext] localStorage 저장 후 확인:', savedUser)
       
       // Firestore에서 닉네임 로드 및 자동 설정 (비동기, 실패해도 계속 진행)
       const loadNickname = async () => {
