@@ -1,7 +1,7 @@
 .events-page {
   animation: fadeIn 0.5s ease-in;
   width: 100%;
-  min-height: 100vh;
+  min-height: 90vh;
   display: block;
   background: #000000;
   position: relative;
@@ -80,6 +80,8 @@
   justify-content: center;
   z-index: 10001;
   padding: 1rem;
+  padding-top: calc(var(--header-base-height) + env(safe-area-inset-top) + 1rem);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);
   animation: fadeIn 0.3s ease;
 }
 
@@ -88,7 +90,7 @@
   border-radius: 20px;
   max-width: 500px;
   width: 100%;
-  max-height: 90vh;
+  max-height: calc(100dvh - var(--header-base-height) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 2rem);
   overflow-y: auto;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   animation: slideUp 0.3s ease;
@@ -434,8 +436,8 @@
   padding-left: 1rem;
   padding-right: 1rem;
   padding-top: 0;
-  padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px) + 100px);
-  margin-bottom: 20px;
+  padding-bottom: calc(0.35rem + env(safe-area-inset-bottom, 0px));
+  margin-bottom: 0;
   box-sizing: border-box;
   position: relative;
 }
@@ -464,6 +466,10 @@
   width: 100%;
   max-width: 300px;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  min-height: 280px;
+  justify-content: space-between;
 }
 
 .game-card:hover {
@@ -473,13 +479,10 @@
 }
 
 .game-icon {
-  margin-bottom: 0.75rem;
-}
-
-.game-icon {
   width: 64px;
   height: 64px;
   margin: 0 auto 0.75rem;
+  flex-shrink: 0;
 }
 
 .game-icon img {
@@ -494,6 +497,9 @@
   font-size: 1.25rem;
   margin-bottom: 0.4rem;
   color: #333;
+  flex-shrink: 0;
+  min-height: 1.5rem;
+  line-height: 1.5;
 }
 
 .game-card p {
@@ -501,6 +507,8 @@
   margin-bottom: 1rem;
   line-height: 1.5;
   font-size: 0.9rem;
+  flex-shrink: 0;
+  min-height: 2.7rem;
 }
 
 .play-button {
@@ -520,6 +528,8 @@
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
+  margin-top: 0.5rem;
+  flex-shrink: 0;
 }
 
 .play-button:hover {
@@ -540,6 +550,7 @@
 
   .game-card {
     padding: 0.875rem 1rem;
+    min-height: 260px;
   }
 
   .game-icon {
@@ -557,15 +568,18 @@
   }
 
   .play-button {
+    margin-top: 0.5rem;
     padding: 0.5rem 1.25rem;
     font-size: 1rem;
   }
 }
 
-/* 길찾기 아이콘만 살짝 작게 */
+/* 길찾기 아이콘만 살짝 작게 - 다른 아이콘과 동일한 공간 차지 */
 .map-icon {
-  width: 56px;
-  height: 56px;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 0.75rem;
+  flex-shrink: 0;
 }
 
 /* 주류 사전 구매 모달 */

@@ -255,6 +255,7 @@
   justify-content: center;
   z-index: 10001;
   padding: 1rem;
+  padding-top: calc(var(--header-base-height) + env(safe-area-inset-top) + 1rem);
   padding-bottom: calc(1rem + env(safe-area-inset-bottom));
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -267,10 +268,8 @@
   border-radius: 16px;
   width: 95%;
   max-width: 600px;
-    height: calc(100% - 3rem);
-    max-height: calc(100% - 3rem);
-    height: calc(100% - 3rem - env(safe-area-inset-bottom, 0px));
-    max-height: calc(100% - 3rem - env(safe-area-inset-bottom, 0px));
+  height: calc(100dvh - var(--header-base-height) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 2rem);
+  max-height: calc(100dvh - var(--header-base-height) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 2rem);
   overflow: hidden;
   position: relative;
   z-index: 10002;

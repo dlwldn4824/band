@@ -471,6 +471,8 @@
   justify-content: center;
   z-index: 10001;
   padding: 1rem;
+  padding-top: calc(var(--header-base-height) + env(safe-area-inset-top) + 1rem);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);
   animation: fadeIn 0.3s ease;
 }
 
@@ -479,6 +481,7 @@
   border-radius: 16px;
   max-width: 400px;
   width: 100%;
+  max-height: calc(100dvh - var(--header-base-height) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 2rem);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
   animation: slideUp 0.3s ease;
   overflow: hidden;

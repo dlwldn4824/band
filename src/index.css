@@ -1,3 +1,11 @@
+/* 헤더 높이 CSS 변수 */
+:root {
+  /* 헤더 기본 패딩: 0.75rem (상하) + gap: 1.75rem + 네비게이션 높이 추정 */
+  /* 실제 계산: 0.75rem + 1.75rem + 네비 높이(약 2.5rem) + 0.75rem = 약 5.75rem */
+  /* safe-area-inset-top은 동적으로 계산 */
+  --header-base-height: 5.75rem; /* 약 92px */
+}
+
 /* 폰트 정의 */
 @font-face {
   font-family: 'DNFBitBitv2';

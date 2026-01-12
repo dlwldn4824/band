@@ -457,7 +457,8 @@
   justify-content: center;
   z-index: 10001;
   padding: 1rem;
-  padding-top: calc(1rem + var(--header-height, 0));
+  padding-top: calc(var(--header-base-height) + env(safe-area-inset-top) + 1rem);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);
   backdrop-filter: blur(4px);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -470,8 +471,7 @@
   padding: 1.5rem;
   width: 100%;
   max-width: 300px;
-  max-height: calc(100vh - var(--header-height, 0) - 2rem);
-  max-height: calc(var(--app-height, 100dvh) - var(--header-height, 0) - 2rem);
+  max-height: calc(100dvh - var(--header-base-height) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 2rem);
   overflow: hidden;
   animation: fadeInUp 0.3s ease-out;
   position: relative;

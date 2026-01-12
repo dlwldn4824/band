@@ -290,6 +290,8 @@
   justify-content: center;
   z-index: 10001;
   padding: 1rem;
+  padding-top: calc(var(--header-base-height) + env(safe-area-inset-top) + 1rem);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);
 }
 
 .modal {
@@ -299,7 +301,7 @@
   border-radius: 20px;
   padding: 1.75rem 1.5rem 1.5rem;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
-  max-height: 90vh;
+  max-height: calc(100dvh - var(--header-base-height) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 2rem);
   overflow-y: auto;
 }
 
@@ -617,7 +619,7 @@
 
   .modal-view-all {
     max-width: 95%;
-    max-height: 90vh;
+    max-height: calc(100dvh - var(--header-base-height) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 2rem);
   }
 
   .all-memo-header {

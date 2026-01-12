@@ -572,7 +572,8 @@
   justify-content: center;
   z-index: 10001;
   padding: 1rem;
-  padding-top: calc(1rem + var(--header-height, 0));
+  padding-top: calc(var(--header-base-height) + env(safe-area-inset-top) + 1rem);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);
   animation: fadeIn 0.3s ease-out;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -584,8 +585,7 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   width: 100%;
   max-width: 900px;
-  max-height: calc(100vh - var(--header-height, 0) - 2rem);
-  max-height: calc(var(--app-height, 100dvh) - var(--header-height, 0) - 2rem);
+  max-height: calc(100dvh - var(--header-base-height) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 2rem);
   display: flex;
   flex-direction: column;
   animation: slideUp 0.3s ease-out;
@@ -829,10 +829,11 @@
   align-items: center;
   justify-content: center;
   z-index: 10001;
-  padding-top: calc(1rem + var(--header-height, 0));
+  padding: 1rem;
+  padding-top: calc(var(--header-base-height) + env(safe-area-inset-top) + 1rem);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 1rem;
 }
 
 .modal-content {
@@ -842,6 +843,7 @@
   padding: 1.5rem;
   width: 100%;
   max-width: 400px;
+  max-height: calc(100dvh - var(--header-base-height) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 2rem);
   overflow: hidden;
   position: relative;
   box-sizing: border-box;
