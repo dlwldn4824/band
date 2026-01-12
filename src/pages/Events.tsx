@@ -219,7 +219,7 @@ const Events = () => {
   const games = isLoading
     ? []
     : isPublicEventsPage
-      ? allGames.filter(game => game.id === 'draw' || game.id === 'ledboard') // /events 페이지는 draw와 ledboard만 (isAdmin과 무관)
+      ? allGames.filter(game => game.id === 'ledboard') // /events 페이지는 draw와 ledboard만 (isAdmin과 무관)
       : isAdmin 
         ? allGames 
         : allGames.filter(game => game.id !== 'roulette') // /admin/events에서 일반 사용자는 룰렛 제외
