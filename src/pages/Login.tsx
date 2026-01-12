@@ -18,7 +18,6 @@ const Login = () => {
   // 예매 폼 상태
   const [bookingName, setBookingName] = useState('')
   const [bookingPhone, setBookingPhone] = useState('')
-  const [bookingEmail, setBookingEmail] = useState('')
   const [bookingError, setBookingError] = useState('')
   const [bookingConfirmed, setBookingConfirmed] = useState(false)
   const [bookingInfoConfirmed, setBookingInfoConfirmed] = useState(false)
@@ -28,13 +27,11 @@ const Login = () => {
   const [isUpdatingInfo, setIsUpdatingInfo] = useState(false)
   const [editedName, setEditedName] = useState('')
   const [editedPhone, setEditedPhone] = useState('')
-  const [editedEmail, setEditedEmail] = useState('')
   
   const { login } = useAuth()
   const { guests, addWalkInGuest, updateGuest, bookingInfo } = useData()
   const navigate = useNavigate()
   const { token } = useParams<{ token?: string }>()
-  const location = window.location
 
   // URL 경로에서 자동 로그인 처리 (암호화된 토큰 기반)
   useEffect(() => {
@@ -193,7 +190,6 @@ const Login = () => {
             setBookingPhone(booking.phone)
             setEditedName(booking.name)
             setEditedPhone(booking.phone)
-            setEditedEmail(booking.email)
             setBookingConfirmed(false)
             setBookingInfoConfirmed(false)
             setShowBookingConfirmation(true)
@@ -318,7 +314,6 @@ const Login = () => {
           setBookingPhone(bookingPhone.trim())
           setEditedName(bookingName.trim())
           setEditedPhone(bookingPhone.trim())
-          setEditedEmail(savedEmail)
           
           // localStorage에 예매 정보 저장 (페이지 재접근 시 확인 화면 표시용)
           localStorage.setItem('pendingBooking', JSON.stringify({
@@ -360,7 +355,6 @@ const Login = () => {
         // 정보 수정용 상태 설정
         setEditedName(bookingName.trim())
         setEditedPhone(bookingPhone.trim())
-        setEditedEmail('')
         
         // localStorage에 예매 정보 저장 (페이지 재접근 시 확인 화면 표시용)
         localStorage.setItem('pendingBooking', JSON.stringify({
@@ -489,7 +483,6 @@ const Login = () => {
       // 상태 업데이트
       setBookingName(updatedName)
       setBookingPhone(editedPhone.trim()) // 하이픈 포함된 형태 유지
-      setBookingEmail(updatedEmail)
       
       // localStorage의 pendingBooking도 업데이트 (새로고침 시 수정된 정보 유지)
       localStorage.setItem('pendingBooking', JSON.stringify({
@@ -543,10 +536,8 @@ const Login = () => {
               setShowBookingConfirmation(false)
               setBookingName('')
               setBookingPhone('')
-              setBookingEmail('')
               setEditedName('')
               setEditedPhone('')
-              setEditedEmail('')
               setBookingError('')
               localStorage.removeItem('pendingBooking')
             }}
@@ -570,7 +561,6 @@ const Login = () => {
                     setIsEditingInfo(true)
                     setEditedName(bookingName)
                     setEditedPhone(bookingPhone)
-                    setEditedEmail(bookingEmail)
                   }
                 }}
                 disabled={isUpdatingInfo}
@@ -912,7 +902,7 @@ const Login = () => {
         <div className="login-container">
           <div className="login-header">
             <h1>공연 입장하기</h1>
-            <p>입력하신 정보로 안내가 전송되니<br/> 정확히 작성해 주세요.</p>
+            <p>최초 예매 후 해당 페이지에서<br/> 로그인 하시면 웹으로 접속됩니다.</p>
           </div>
 
           <form onSubmit={handleBookingSubmit} className="login-form">

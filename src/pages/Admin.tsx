@@ -47,7 +47,6 @@ const Admin = () => {
   const [editedEvents, setEditedEvents] = useState<Array<{ title: string; description: string; time?: string }>>([])
   const [pendingBookings] = useState<Array<{ id: string; name: string; phone: string; email: string; createdAt: any }>>([])
   const [guestLoginLinks, setGuestLoginLinks] = useState<Record<string, string>>({}) // 게스트 ID (name_phone) -> 로그인 링크
-  const [clickedCopyButton, setClickedCopyButton] = useState<string | null>(null) // 클릭된 복사 버튼 ID
 
   // 개인 로그인 링크 생성 함수
   const generatePersonalLoginLink = (name: string, phone: string): string => {
@@ -841,34 +840,6 @@ const Admin = () => {
     }
   }
 
-  // 링크 복사 함수
-  const copyLoginLink = async (link: string, buttonId: string) => {
-    // 클릭 피드백
-    setClickedCopyButton(buttonId)
-    setTimeout(() => setClickedCopyButton(null), 200)
-    
-    try {
-      await navigator.clipboard.writeText(link)
-      setUploadStatus('✅ 로그인 링크가 클립보드에 복사되었습니다.')
-      setTimeout(() => setUploadStatus(''), 3000)
-    } catch (err) {
-      const textArea = document.createElement('textarea')
-      textArea.value = link
-      textArea.style.position = 'fixed'
-      textArea.style.opacity = '0'
-      document.body.appendChild(textArea)
-      textArea.select()
-      try {
-        document.execCommand('copy')
-        setUploadStatus('✅ 로그인 링크가 클립보드에 복사되었습니다.')
-        setTimeout(() => setUploadStatus(''), 3000)
-      } catch (e) {
-        setUploadStatus('❌ 링크 복사에 실패했습니다.')
-        setTimeout(() => setUploadStatus(''), 3000)
-      }
-      document.body.removeChild(textArea)
-    }
-  }
 
   // 게스트 고유 ID 생성 함수
   const getGuestId = (name: string, phone: string): string => {
@@ -1291,8 +1262,6 @@ const Admin = () => {
                   // userId 생성 (닉네임 조회용)
                   const userId = `${guestName}_${guestPhoneRaw}`
                   const guestNickname = userNicknames[userId] || '-'
-                  // 게스트 고유 ID (링크 조회용)
-                  const guestId = getGuestId(guestName, guestPhoneRaw)
                   return (
                     <tr key={index}>
                       <td>{index + 1}</td>
