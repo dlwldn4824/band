@@ -57,7 +57,7 @@ const Admin = () => {
     const baseUrl = window.location.origin
     return `${baseUrl}/t/${urlSafeToken}`
   }
-  const [drinkOrders, setDrinkOrders] = useState<Array<{ id: string; name: string; phone: string; beerQuantity: number; mojitoQuantity: number; totalAmount: number; createdAt: any }>>([])
+  const [drinkOrders, setDrinkOrders] = useState<Array<{ id: string; name: string; phone: string; beerQuantity: number; mojitoQuantity: number; totalAmount: number; createdAt: any; paymentConfirmed?: boolean; paymentConfirmedAt?: any; provided?: boolean; providedAt?: any; orderHistory?: Array<{ beerQuantity: number; mojitoQuantity: number; createdAt: any; provided?: boolean; providedAt?: any }> }>>([])
   const { uploadGuests, setPerformanceData, guests, performanceData, clearGuests, deleteGuest, updateGuest, clearSetlist, bookingInfo, setBookingInfo, clearChatMessages, toggleGuestPayment, addWalkInGuest } = useData()
   
   // 예매 정보 폼 상태
@@ -125,7 +125,7 @@ const Admin = () => {
         const ordersRef = collection(db, 'drinkOrders')
         const snapshot = await getDocs(query(ordersRef, orderBy('createdAt', 'desc')))
         
-        const orders: Array<{ id: string; name: string; phone: string; beerQuantity: number; mojitoQuantity: number; totalAmount: number; createdAt: any }> = []
+        const orders: Array<{ id: string; name: string; phone: string; beerQuantity: number; mojitoQuantity: number; totalAmount: number; createdAt: any; paymentConfirmed?: boolean; paymentConfirmedAt?: any; provided?: boolean; providedAt?: any; orderHistory?: Array<{ beerQuantity: number; mojitoQuantity: number; createdAt: any; provided?: boolean; providedAt?: any }> }> = []
         
         snapshot.forEach((doc) => {
           const data = doc.data()
@@ -137,7 +137,12 @@ const Admin = () => {
               beerQuantity: data.beerQuantity || 0,
               mojitoQuantity: data.mojitoQuantity || 0,
               totalAmount: data.totalAmount || 0,
-              createdAt: data.createdAt
+              createdAt: data.createdAt,
+              paymentConfirmed: data.paymentConfirmed || false,
+              paymentConfirmedAt: data.paymentConfirmedAt,
+              provided: data.provided || false,
+              providedAt: data.providedAt,
+              orderHistory: data.orderHistory || []
             })
           }
         })
@@ -962,6 +967,214 @@ const Admin = () => {
     }
   }
 
+  // 주류 주문 입금 확인 핸들러
+  const handleDrinkOrderPaymentConfirm = async (orderId: string) => {
+    try {
+      const orderRef = doc(db, 'drinkOrders', orderId)
+      const orderSnap = await getDoc(orderRef)
+      
+      if (!orderSnap.exists()) {
+        setUploadStatus('❌ 주문을 찾을 수 없습니다.')
+        setTimeout(() => setUploadStatus(''), 3000)
+        return
+      }
+      
+      const currentData = orderSnap.data()
+      const willBeConfirmed = !currentData.paymentConfirmed
+      
+      await updateDoc(orderRef, {
+        paymentConfirmed: willBeConfirmed,
+        paymentConfirmedAt: willBeConfirmed ? Timestamp.now() : null
+      })
+      
+      // 로컬 상태 업데이트
+      setDrinkOrders(prev => prev.map(order => 
+        order.id === orderId 
+          ? { 
+              ...order, 
+              paymentConfirmed: willBeConfirmed,
+              paymentConfirmedAt: willBeConfirmed ? Timestamp.now() : null
+            }
+          : order
+      ))
+      
+      setUploadStatus(willBeConfirmed ? '✅ 입금 확인이 완료되었습니다.' : '✅ 입금 확인이 해제되었습니다.')
+      setTimeout(() => setUploadStatus(''), 3000)
+    } catch (error) {
+      console.error('주류 주문 입금 확인 실패:', error)
+      setUploadStatus('❌ 입금 확인 처리에 실패했습니다.')
+      setTimeout(() => setUploadStatus(''), 3000)
+    }
+  }
+
+  // 주류 주문 제공완료 핸들러 (전체 주문 또는 특정 이력 항목)
+  const handleDrinkOrderProvide = async (orderId: string, historyIndex?: number) => {
+    try {
+      const orderRef = doc(db, 'drinkOrders', orderId)
+      const orderSnap = await getDoc(orderRef)
+      
+      if (!orderSnap.exists()) {
+        setUploadStatus('❌ 주문을 찾을 수 없습니다.')
+        setTimeout(() => setUploadStatus(''), 3000)
+        return
+      }
+      
+      const currentData = orderSnap.data()
+      const hasOrderHistory = currentData.orderHistory && Array.isArray(currentData.orderHistory) && currentData.orderHistory.length > 0
+      
+      if (hasOrderHistory && historyIndex !== undefined) {
+        // 특정 이력 항목의 제공완료 상태 토글
+        const updatedHistory = [...currentData.orderHistory]
+        const historyItem = updatedHistory[historyIndex]
+        const willBeProvided = !historyItem.provided
+        
+        updatedHistory[historyIndex] = {
+          ...historyItem,
+          provided: willBeProvided,
+          providedAt: willBeProvided ? Timestamp.now() : null
+        }
+        
+        // 모든 이력이 제공완료되었는지 확인
+        const allProvided = updatedHistory.every((h: any) => h.provided === true)
+        
+        await updateDoc(orderRef, {
+          orderHistory: updatedHistory,
+          provided: allProvided,
+          providedAt: allProvided ? Timestamp.now() : null
+        })
+        
+        // 로컬 상태 업데이트
+        setDrinkOrders(prev => prev.map(order => 
+          order.id === orderId 
+            ? { 
+                ...order, 
+                orderHistory: updatedHistory,
+                provided: allProvided,
+                providedAt: allProvided ? Timestamp.now() : null
+              }
+            : order
+        ))
+      } else {
+        // 전체 주문의 제공완료 상태 토글 (기존 방식, orderHistory가 없는 경우)
+        const willBeProvided = !currentData.provided
+        
+        await updateDoc(orderRef, {
+          provided: willBeProvided,
+          providedAt: willBeProvided ? Timestamp.now() : null
+        })
+        
+        // 로컬 상태 업데이트
+        setDrinkOrders(prev => prev.map(order => 
+          order.id === orderId 
+            ? { 
+                ...order, 
+                provided: willBeProvided,
+                providedAt: willBeProvided ? Timestamp.now() : null
+              }
+            : order
+        ))
+      }
+      
+      setUploadStatus('✅ 제공완료 상태가 업데이트되었습니다.')
+      setTimeout(() => setUploadStatus(''), 3000)
+    } catch (error) {
+      console.error('주류 주문 제공완료 처리 실패:', error)
+      setUploadStatus('❌ 제공완료 처리에 실패했습니다.')
+      setTimeout(() => setUploadStatus(''), 3000)
+    }
+  }
+
+  // 주류 주문 이력 항목 삭제 핸들러
+  const handleDeleteDrinkOrderHistory = async (orderId: string, historyIndex: number) => {
+    if (!window.confirm('정말 이 주문 항목을 삭제하시겠습니까?')) {
+      return
+    }
+    
+    try {
+      const orderRef = doc(db, 'drinkOrders', orderId)
+      const orderSnap = await getDoc(orderRef)
+      
+      if (!orderSnap.exists()) {
+        setUploadStatus('❌ 주문을 찾을 수 없습니다.')
+        setTimeout(() => setUploadStatus(''), 3000)
+        return
+      }
+      
+      const currentData = orderSnap.data()
+      const orderHistory = currentData.orderHistory || []
+      
+      if (orderHistory.length <= 1) {
+        // 이력이 하나만 있으면 전체 주문 삭제
+        await deleteDoc(orderRef)
+        setDrinkOrders(prev => prev.filter(order => order.id !== orderId))
+        setUploadStatus('✅ 주문이 삭제되었습니다.')
+      } else {
+        // 해당 이력만 삭제하고 총액 재계산
+        const updatedHistory = orderHistory.filter((_: any, idx: number) => idx !== historyIndex)
+        
+        // 총액 재계산
+        let totalBeerQuantity = 0
+        let totalMojitoQuantity = 0
+        updatedHistory.forEach((h: any) => {
+          totalBeerQuantity += h.beerQuantity || 0
+          totalMojitoQuantity += h.mojitoQuantity || 0
+        })
+        const totalAmount = (totalBeerQuantity * 3500) + (totalMojitoQuantity * 3500)
+        
+        await updateDoc(orderRef, {
+          orderHistory: updatedHistory,
+          beerQuantity: totalBeerQuantity,
+          mojitoQuantity: totalMojitoQuantity,
+          totalAmount: totalAmount,
+          updatedAt: Timestamp.now()
+        })
+        
+        // 로컬 상태 업데이트
+        setDrinkOrders(prev => prev.map(order => 
+          order.id === orderId 
+            ? { 
+                ...order, 
+                orderHistory: updatedHistory,
+                beerQuantity: totalBeerQuantity,
+                mojitoQuantity: totalMojitoQuantity,
+                totalAmount: totalAmount
+              }
+            : order
+        ))
+        
+        setUploadStatus('✅ 주문 항목이 삭제되었습니다.')
+      }
+      
+      setTimeout(() => setUploadStatus(''), 3000)
+    } catch (error) {
+      console.error('주문 항목 삭제 실패:', error)
+      setUploadStatus('❌ 주문 항목 삭제에 실패했습니다.')
+      setTimeout(() => setUploadStatus(''), 3000)
+    }
+  }
+
+  // 주류 주문 삭제 핸들러 (전체 주문 삭제)
+  const handleDeleteDrinkOrder = async (orderId: string) => {
+    if (!window.confirm('정말 이 주문을 삭제하시겠습니까?')) {
+      return
+    }
+    
+    try {
+      const orderRef = doc(db, 'drinkOrders', orderId)
+      await deleteDoc(orderRef)
+      
+      // 로컬 상태 업데이트
+      setDrinkOrders(prev => prev.filter(order => order.id !== orderId))
+      
+      setUploadStatus('✅ 주문이 삭제되었습니다.')
+      setTimeout(() => setUploadStatus(''), 3000)
+    } catch (error) {
+      console.error('주류 주문 삭제 실패:', error)
+      setUploadStatus('❌ 주문 삭제에 실패했습니다.')
+      setTimeout(() => setUploadStatus(''), 3000)
+    }
+  }
+
   // 입금 확인이 완료된 게스트에 대해 입장 번호 자동 부여
   useEffect(() => {
     // 입금 확인이 완료되었지만 입장 번호가 없는 게스트가 있는지 확인
@@ -1180,29 +1393,352 @@ const Admin = () => {
                   <th>산토리 하이볼</th>
                   <th>총 금액</th>
                   <th>주문 시간</th>
+                  <th>입금 확인</th>
+                  <th>관리</th>
                 </tr>
               </thead>
               <tbody>
-                {drinkOrders.map((order, index) => (
-                  <tr key={order.id}>
-                    <td>{index + 1}</td>
-                    <td>{order.name}</td>
-                    <td>{formatPhoneDisplay(order.phone)}</td>
-                    <td>{order.beerQuantity}개</td>
-                    <td>{order.mojitoQuantity}개</td>
-                    <td>{order.totalAmount.toLocaleString()}원</td>
-                    <td>
-                      {order.createdAt?.toDate ? 
-                        new Date(order.createdAt.toDate()).toLocaleString('ko-KR', {
-                          year: 'numeric',
-                          month: '2-digit',
-                          day: '2-digit',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        }) : '-'}
-                    </td>
-                  </tr>
-                ))}
+                {(() => {
+                  // 모든 주문 항목을 수집
+                  interface OrderRow {
+                    order: any
+                    history: any | null
+                    historyIndex: number | null
+                    createdAt: any
+                  }
+                  
+                  const allOrderRows: OrderRow[] = []
+                  
+                  drinkOrders.forEach((order) => {
+                    const hasOrderHistory = order.orderHistory && Array.isArray(order.orderHistory) && order.orderHistory.length > 0
+                    
+                    if (hasOrderHistory && order.orderHistory) {
+                      // orderHistory가 있으면 각 이력을 개별 항목으로 추가
+                      order.orderHistory.forEach((history: any, historyIdx: number) => {
+                        allOrderRows.push({
+                          order,
+                          history,
+                          historyIndex: historyIdx,
+                          createdAt: history.createdAt || order.createdAt
+                        })
+                      })
+                    } else {
+                      // orderHistory가 없으면 전체 주문을 하나의 항목으로 추가
+                      allOrderRows.push({
+                        order,
+                        history: null,
+                        historyIndex: null,
+                        createdAt: order.createdAt
+                      })
+                    }
+                  })
+                  
+                  // 오래된 순으로 정렬하여 번호 부여
+                  const sortedByOldest = [...allOrderRows].sort((a, b) => {
+                    const aTime = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0
+                    const bTime = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0
+                    return aTime - bTime // 오래된 것부터
+                  })
+                  
+                  // 번호 매핑 생성 (오래된 것부터 1, 2, 3...)
+                  const numberMap = new Map<string, number>()
+                  sortedByOldest.forEach((row, index) => {
+                    const key = row.history !== null 
+                      ? `${row.order.id}-${row.historyIndex}`
+                      : row.order.id
+                    numberMap.set(key, index + 1)
+                  })
+                  
+                  // 최신 순으로 정렬하여 표시
+                  const sortedByNewest = [...allOrderRows].sort((a, b) => {
+                    const aTime = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0
+                    const bTime = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0
+                    return bTime - aTime // 최신 것부터
+                  })
+                  
+                  const rows: JSX.Element[] = []
+                  
+                  sortedByNewest.forEach((rowData) => {
+                    const { order, history, historyIndex } = rowData
+                    const rowKey = history !== null 
+                      ? `${order.id}-${historyIndex}`
+                      : order.id
+                    const rowNumber = numberMap.get(rowKey) || 0
+                    
+                    if (history !== null) {
+                      // orderHistory 항목
+                      const historyAmount = (history.beerQuantity || 0) * 3500 + (history.mojitoQuantity || 0) * 3500
+                      const isProvided = history.provided === true
+                      
+                      rows.push(
+                          <tr key={`${order.id}-${historyIndex}`} className={isProvided ? 'order-provided' : 'order-not-provided'}>
+                            <td>{rowNumber}</td>
+                            <td>{order.name}</td>
+                            <td>{formatPhoneDisplay(order.phone)}</td>
+                            <td>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span>{history.beerQuantity || 0}개</span>
+                                {order.paymentConfirmed && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleDrinkOrderProvide(order.id, historyIndex!)
+                                    }}
+                                    style={{
+                                      background: isProvided ? '#28a745' : '#ffc107',
+                                      color: 'white',
+                                      border: 'none',
+                                      borderRadius: '3px',
+                                      padding: '0.15rem 0.4rem',
+                                      fontSize: '0.65rem',
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    {isProvided ? '✓' : '○'}
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                            <td>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span>{history.mojitoQuantity || 0}개</span>
+                                {order.paymentConfirmed && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleDrinkOrderProvide(order.id, historyIndex!)
+                                    }}
+                                    style={{
+                                      background: isProvided ? '#28a745' : '#ffc107',
+                                      color: 'white',
+                                      border: 'none',
+                                      borderRadius: '3px',
+                                      padding: '0.15rem 0.4rem',
+                                      fontSize: '0.65rem',
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    {isProvided ? '✓' : '○'}
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                            <td>{historyAmount.toLocaleString()}원</td>
+                            <td>
+                              {history.createdAt?.toDate ? 
+                                new Date(history.createdAt.toDate()).toLocaleString('ko-KR', {
+                                  year: 'numeric',
+                                  month: '2-digit',
+                                  day: '2-digit',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                }) : '-'}
+                            </td>
+                            <td style={{ textAlign: 'center' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'center' }}>
+                                <button
+                                  onClick={() => handleDrinkOrderPaymentConfirm(order.id)}
+                                  className={`payment-confirm-button ${order.paymentConfirmed ? 'confirmed' : 'not-confirmed'}`}
+                                  title={order.paymentConfirmed && order.paymentConfirmedAt ? `입금 확인 완료 (${order.paymentConfirmedAt?.toDate ? new Date(order.paymentConfirmedAt.toDate()).toLocaleString('ko-KR') : '-'})` : '입금 확인 대기'}
+                                >
+                                  {order.paymentConfirmed ? '확인완료' : '대기중'}
+                                </button>
+                                {order.paymentConfirmed && order.paymentConfirmedAt && (
+                                  <span style={{ fontSize: '0.75rem', color: '#666' }}>
+                                    {order.paymentConfirmedAt?.toDate ? 
+                                      new Date(order.paymentConfirmedAt.toDate()).toLocaleString('ko-KR', {
+                                        year: 'numeric',
+                                        month: '2-digit',
+                                        day: '2-digit',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                      }) : '-'}
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-start' }}>
+                                <div style={{ display: 'flex', flexDirection: 'row', gap: '0.5rem', alignItems: 'center' }}>
+                                  <button
+                                    onClick={() => handleDrinkOrderProvide(order.id, historyIndex!)}
+                                    disabled={!order.paymentConfirmed}
+                                    style={{
+                                      background: isProvided ? '#28a745' : (order.paymentConfirmed ? '#007bff' : '#cccccc'),
+                                      color: 'white',
+                                      border: 'none',
+                                      borderRadius: '4px',
+                                      padding: '0.4rem 0.8rem',
+                                      fontSize: '0.85rem',
+                                      cursor: order.paymentConfirmed ? 'pointer' : 'not-allowed',
+                                      transition: 'background 0.2s',
+                                      opacity: order.paymentConfirmed ? 1 : 0.6
+                                    }}
+                                    onMouseOver={(e) => {
+                                      if (order.paymentConfirmed) {
+                                        e.currentTarget.style.background = isProvided ? '#218838' : '#0056b3'
+                                      }
+                                    }}
+                                    onMouseOut={(e) => {
+                                      if (order.paymentConfirmed) {
+                                        e.currentTarget.style.background = isProvided ? '#28a745' : '#007bff'
+                                      }
+                                    }}
+                                    title={order.paymentConfirmed ? (isProvided ? '제공완료됨' : '제공완료 처리') : '입금 확인 후 제공완료 처리 가능'}
+                                  >
+                                    {isProvided ? '제공완료' : '제공완료'}
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteDrinkOrderHistory(order.id, historyIndex!)}
+                                    className="delete-button"
+                                    style={{
+                                      background: '#ff4444',
+                                      color: 'white',
+                                      border: 'none',
+                                      borderRadius: '4px',
+                                      padding: '0.4rem 0.8rem',
+                                      fontSize: '0.85rem',
+                                      cursor: 'pointer',
+                                      transition: 'background 0.2s'
+                                    }}
+                                    onMouseOver={(e) => (e.currentTarget.style.background = '#cc0000')}
+                                    onMouseOut={(e) => (e.currentTarget.style.background = '#ff4444')}
+                                  >
+                                    삭제
+                                  </button>
+                                </div>
+                                {isProvided && history.providedAt && (
+                                  <span style={{ fontSize: '0.75rem', color: '#666' }}>
+                                    {history.providedAt?.toDate ? 
+                                      new Date(history.providedAt.toDate()).toLocaleString('ko-KR', {
+                                        year: 'numeric',
+                                        month: '2-digit',
+                                        day: '2-digit',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                      }) : '-'}
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                    } else {
+                      // orderHistory가 없으면 기존처럼 하나의 행으로 표시
+                      const allProvided = order.provided === true
+                      
+                      rows.push(
+                        <tr key={order.id} className={allProvided ? 'order-provided' : 'order-not-provided'}>
+                          <td>{rowNumber}</td>
+                          <td>{order.name}</td>
+                          <td>{formatPhoneDisplay(order.phone)}</td>
+                          <td>{order.beerQuantity}개</td>
+                          <td>{order.mojitoQuantity}개</td>
+                          <td>{order.totalAmount.toLocaleString()}원</td>
+                          <td>
+                            {order.createdAt?.toDate ? 
+                              new Date(order.createdAt.toDate()).toLocaleString('ko-KR', {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              }) : '-'}
+                          </td>
+                          <td style={{ textAlign: 'center' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'center' }}>
+                              <button
+                                onClick={() => handleDrinkOrderPaymentConfirm(order.id)}
+                                className={`payment-confirm-button ${order.paymentConfirmed ? 'confirmed' : 'not-confirmed'}`}
+                                title={order.paymentConfirmed && order.paymentConfirmedAt ? `입금 확인 완료 (${order.paymentConfirmedAt?.toDate ? new Date(order.paymentConfirmedAt.toDate()).toLocaleString('ko-KR') : '-'})` : '입금 확인 대기'}
+                              >
+                                {order.paymentConfirmed ? '확인완료' : '대기중'}
+                              </button>
+                              {order.paymentConfirmed && order.paymentConfirmedAt && (
+                                <span style={{ fontSize: '0.75rem', color: '#666' }}>
+                                  {order.paymentConfirmedAt?.toDate ? 
+                                    new Date(order.paymentConfirmedAt.toDate()).toLocaleString('ko-KR', {
+                                      year: 'numeric',
+                                      month: '2-digit',
+                                      day: '2-digit',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    }) : '-'}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-start' }}>
+                              <div style={{ display: 'flex', flexDirection: 'row', gap: '0.5rem', alignItems: 'center' }}>
+                                <button
+                                  onClick={() => handleDrinkOrderProvide(order.id)}
+                                  disabled={!order.paymentConfirmed}
+                                  style={{
+                                    background: order.provided ? '#28a745' : (order.paymentConfirmed ? '#007bff' : '#cccccc'),
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    padding: '0.4rem 0.8rem',
+                                    fontSize: '0.85rem',
+                                    cursor: order.paymentConfirmed ? 'pointer' : 'not-allowed',
+                                    transition: 'background 0.2s',
+                                    opacity: order.paymentConfirmed ? 1 : 0.6
+                                  }}
+                                  onMouseOver={(e) => {
+                                    if (order.paymentConfirmed) {
+                                      e.currentTarget.style.background = order.provided ? '#218838' : '#0056b3'
+                                    }
+                                  }}
+                                  onMouseOut={(e) => {
+                                    if (order.paymentConfirmed) {
+                                      e.currentTarget.style.background = order.provided ? '#28a745' : '#007bff'
+                                    }
+                                  }}
+                                  title={order.paymentConfirmed ? (order.provided ? '제공완료됨' : '제공완료 처리') : '입금 확인 후 제공완료 처리 가능'}
+                                >
+                                  {order.provided ? '제공완료' : '제공완료'}
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteDrinkOrder(order.id)}
+                                  className="delete-button"
+                                  style={{
+                                    background: '#ff4444',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    padding: '0.4rem 0.8rem',
+                                    fontSize: '0.85rem',
+                                    cursor: 'pointer',
+                                    transition: 'background 0.2s'
+                                  }}
+                                  onMouseOver={(e) => (e.currentTarget.style.background = '#cc0000')}
+                                  onMouseOut={(e) => (e.currentTarget.style.background = '#ff4444')}
+                                >
+                                  삭제
+                                </button>
+                              </div>
+                              {order.provided && order.providedAt && (
+                                <span style={{ fontSize: '0.75rem', color: '#666' }}>
+                                  {order.providedAt?.toDate ? 
+                                    new Date(order.providedAt.toDate()).toLocaleString('ko-KR', {
+                                      year: 'numeric',
+                                      month: '2-digit',
+                                      day: '2-digit',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    }) : '-'}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    }
+                  })
+                  
+                  return rows
+                })()}
               </tbody>
             </table>
           </div>
@@ -1250,6 +1786,7 @@ const Admin = () => {
                   <th>예매 유형</th>
                   <th>입금 확인</th>
                   <th>입장 번호</th>
+                  <th>접속 링크</th>
                   <th>관리</th>
                 </tr>
               </thead>
@@ -1274,8 +1811,8 @@ const Admin = () => {
                           {isWalkIn ? '현장 예매' : '사전 예매'}
                         </span>
                       </td>
-                      <td>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'flex-start' }}>
+                      <td style={{ textAlign: 'center' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'center' }}>
                           <button
                             onClick={() => handlePaymentConfirm(index)}
                             className={`payment-confirm-button ${guest.paymentConfirmed ? 'confirmed' : 'not-confirmed'}`}
@@ -1298,30 +1835,70 @@ const Admin = () => {
                       </td>
                       <td>{guest.entryNumber ? `${guest.entryNumber}번` : '-'}</td>
                       <td>
-                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-                          {guest.paymentConfirmed && (
-                            <button
-                              onClick={() => {
-                                const loginLink = generatePersonalLoginLink(guestName, guestPhoneRaw)
-                                window.open(loginLink, '_blank')
-                              }}
-                              className="enter-button"
-                              title="공연 입장하기"
+                        {guest.paymentConfirmed ? (
+                          <div style={{ display: 'flex', flexDirection: 'row', gap: '0.5rem', alignItems: 'center', justifyContent: 'center' }}>
+                            <input
+                              type="text"
+                              value={generatePersonalLoginLink(guestName, guestPhoneRaw)}
+                              readOnly
+                              onClick={(e) => (e.target as HTMLInputElement).select()}
                               style={{
-                                background: '#FF4C4C',
+                                flex: 1,
+                                minWidth: '150px',
+                                maxWidth: '200px',
+                                padding: '0.25rem 0.5rem',
+                                fontSize: '0.7rem',
+                                border: '1px solid #ddd',
+                                borderRadius: '4px',
+                                fontFamily: 'monospace',
+                                cursor: 'text'
+                              }}
+                            />
+                            <button
+                              onClick={async () => {
+                                const loginLink = generatePersonalLoginLink(guestName, guestPhoneRaw)
+                                try {
+                                  await navigator.clipboard.writeText(loginLink)
+                                  setUploadStatus(`✅ "${guestName}" 게스트의 접속 링크가 복사되었습니다.`)
+                                  setTimeout(() => setUploadStatus(''), 3000)
+                                } catch (err) {
+                                  const textArea = document.createElement('textarea')
+                                  textArea.value = loginLink
+                                  textArea.style.position = 'fixed'
+                                  textArea.style.opacity = '0'
+                                  document.body.appendChild(textArea)
+                                  textArea.select()
+                                  try {
+                                    document.execCommand('copy')
+                                    setUploadStatus(`✅ "${guestName}" 게스트의 접속 링크가 복사되었습니다.`)
+                                    setTimeout(() => setUploadStatus(''), 3000)
+                                  } catch (e) {
+                                    setUploadStatus('❌ 링크 복사에 실패했습니다.')
+                                    setTimeout(() => setUploadStatus(''), 3000)
+                                  }
+                                  document.body.removeChild(textArea)
+                                }
+                              }}
+                              style={{
+                                padding: '0.25rem 0.5rem',
+                                fontSize: '0.7rem',
+                                background: '#4CAF50',
                                 color: 'white',
                                 border: 'none',
-                                borderRadius: '6px',
-                                padding: '0.4rem 0.8rem',
-                                fontSize: '0.75rem',
-                                fontWeight: '600',
+                                borderRadius: '4px',
                                 cursor: 'pointer',
                                 whiteSpace: 'nowrap'
                               }}
                             >
-                              공연 입장하기
+                              복사
                             </button>
-                          )}
+                          </div>
+                        ) : (
+                          <span style={{ color: '#999' }}>-</span>
+                        )}
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
                           <button
                             onClick={() => {
                               requirePassword(() => {

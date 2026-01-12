@@ -32,15 +32,18 @@ const Login = () => {
   const { guests, addWalkInGuest, updateGuest, bookingInfo } = useData()
   const navigate = useNavigate()
   const { token } = useParams<{ token?: string }>()
+  const [isProcessingAutoLogin, setIsProcessingAutoLogin] = useState(false)
 
   // URL 경로에서 자동 로그인 처리 (암호화된 토큰 기반)
   useEffect(() => {
     // 경로 파라미터에서 토큰 가져오기 (/t/토큰 형식)
     const tokenParam = token
 
-    if (tokenParam && guests.length > 0) {
+    if (tokenParam && !isProcessingAutoLogin) {
       // base64 디코딩
       const handleAutoLogin = async () => {
+        setIsProcessingAutoLogin(true)
+        
         try {
           let decodedData: string
           
@@ -52,8 +55,7 @@ const Login = () => {
             decodedData = decodeURIComponent(atob(paddedToken))
           } catch (e) {
             console.warn('URL 파라미터 디코딩 실패:', e)
-            const newUrl = window.location.pathname
-            window.history.replaceState({}, '', newUrl)
+            navigate('/login', { replace: true })
             return
           }
           
@@ -61,8 +63,7 @@ const Login = () => {
           const parts = decodedData.split('|')
           if (parts.length !== 2) {
             console.warn('잘못된 토큰 형식')
-            const newUrl = window.location.pathname
-            window.history.replaceState({}, '', newUrl)
+            navigate('/login', { replace: true })
             return
           }
           
@@ -72,27 +73,79 @@ const Login = () => {
           // 전화번호 정규화
           const normalizedPhone = decodedPhone.replace(/\D/g, '')
           
+          // guests가 로드될 때까지 대기 (최대 5초)
+          let attempts = 0
+          const maxAttempts = 50 // 5초 (100ms * 50)
+          
+          const waitForGuests = () => {
+            return new Promise<any[]>((resolve) => {
+              const checkGuests = () => {
+                attempts++
+                
+                // localStorage에서 guests 로드 시도
+                const savedGuests = localStorage.getItem('guests')
+                let guestList: any[] = []
+                
+                if (savedGuests) {
+                  try {
+                    guestList = JSON.parse(savedGuests)
+                  } catch (e) {
+                    console.warn('guests 파싱 실패:', e)
+                  }
+                }
+                
+                // guests가 있거나 최대 시도 횟수에 도달하면 종료
+                if (guests.length > 0 || guestList.length > 0 || attempts >= maxAttempts) {
+                  resolve(guests.length > 0 ? guests : guestList)
+                } else {
+                  setTimeout(checkGuests, 100)
+                }
+              }
+              checkGuests()
+            })
+          }
+          
+          const availableGuests = await waitForGuests()
+          console.log('[Login] 자동 로그인 - availableGuests:', availableGuests.length, '명')
+          
+          if (availableGuests.length === 0) {
+            console.error('[Login] 자동 로그인 실패 - guests가 없습니다')
+            navigate('/login', { replace: true })
+            return
+          }
+          
           // 자동 로그인 시도
-          const loginSuccess = login(decodedName, normalizedPhone, guests)
+          const loginSuccess = login(decodedName, normalizedPhone, availableGuests)
+          console.log('[Login] 자동 로그인 결과:', loginSuccess)
           
           if (loginSuccess) {
-            // 로그인 성공 시 대시보드로 이동
+            // 로그인 성공 확인
+            const loggedInUser = JSON.parse(localStorage.getItem('user') || 'null')
+            console.log('[Login] 자동 로그인 성공 - user:', loggedInUser)
+            
+            // localStorage에서 예매 정보 삭제
+            localStorage.removeItem('pendingBooking')
+            
+            // 대시보드로 이동 (약간의 딜레이를 두어 로그인 상태가 확실히 반영되도록)
             setTimeout(() => {
+              console.log('[Login] 자동 로그인 - 대시보드로 이동')
               navigate('/dashboard', { replace: true })
-            }, 200)
+            }, 500)
           } else {
-            // 로그인 실패 시 로그인 페이지로 리다이렉트
+            console.error('[Login] 자동 로그인 실패 - 게스트를 찾을 수 없습니다')
             navigate('/login', { replace: true })
           }
         } catch (error) {
           console.error('자동 로그인 오류:', error)
           navigate('/login', { replace: true })
+        } finally {
+          setIsProcessingAutoLogin(false)
         }
       }
       
       handleAutoLogin()
     }
-  }, [token, guests, login, navigate])
+  }, [token, guests, login, navigate, isProcessingAutoLogin])
 
   useEffect(() => {
     // 세로 모드에서 스크롤 방지 (입력 필드와 버튼은 제외)
@@ -273,13 +326,24 @@ const Login = () => {
       })
 
       if (existingGuest) {
-        // 입금 확인이 완료된 게스트인 경우 티켓 애니메이션 후 로그인 처리
+        // 입금 확인이 완료된 게스트인 경우 바로 로그인 처리
         if (existingGuest.paymentConfirmed === true) {
-          // 티켓 애니메이션 표시 (onDone에서 로그인 처리)
-          setShowTicket(true)
-          return
+          // 바로 로그인 처리
+          const updatedGuests = [...guests]
+          const loginSuccess = login(bookingName.trim(), normalizedPhone, updatedGuests)
+          
+          if (loginSuccess) {
+            localStorage.removeItem('pendingBooking')
+            // 티켓 애니메이션 표시 (onDone에서 대시보드로 이동)
+            setShowTicket(true)
+            return
+          } else {
+            setBookingError('로그인에 실패했습니다. 다시 시도해주세요.')
+            return
+          }
         }
         
+        // 입금 확인이 완료되지 않은 게스트인 경우 예매 정보 확인 화면 표시
         // 이미 등록된 게스트인 경우 Firestore에서 예매 정보 가져오기
         const userId = `${bookingName.trim()}_${normalizedPhone}`
         const bookingRef = doc(db, 'bookings', userId)
@@ -301,7 +365,7 @@ const Login = () => {
               const loginSuccess = login(bookingName.trim(), normalizedPhone, updatedGuests)
               if (loginSuccess) {
                 localStorage.removeItem('pendingBooking')
-      setTimeout(() => {
+                setTimeout(() => {
                   checkNicknameAndNavigate()
                 }, 200)
                 return
@@ -810,66 +874,16 @@ const Login = () => {
             // 티켓 애니메이션 숨기기
             setShowTicket(false)
             
-            // 로그인 상태 확인 및 필요시 로그인 처리
+            // 로그인 상태 확인
             const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
             console.log('[Login] TicketTransition onDone - currentUser:', currentUser)
             console.log('[Login] TicketTransition onDone - bookingName:', bookingName)
             console.log('[Login] TicketTransition onDone - bookingPhone:', bookingPhone)
-            console.log('[Login] TicketTransition onDone - guests:', guests.length, '명')
             
-            let loginSuccess = false
-            
-            if (!currentUser && bookingName && bookingPhone) {
-              // 입금 확인 완료된 게스트인 경우 로그인 처리
-              const normalizedPhone = bookingPhone.replace(/\D/g, '')
-              
-              // guests 배열이 비어있으면 localStorage에서 로드 시도
-              let updatedGuests = [...guests]
-              if (updatedGuests.length === 0) {
-                const savedGuests = localStorage.getItem('guests')
-                if (savedGuests) {
-                  try {
-                    updatedGuests = JSON.parse(savedGuests)
-                    console.log('[Login] TicketTransition onDone - localStorage에서 guests 로드:', updatedGuests.length, '명')
-                  } catch (e) {
-                    console.warn('[Login] TicketTransition onDone - guests 파싱 실패:', e)
-                  }
-                }
-              }
-              
-              console.log('[Login] TicketTransition onDone - 로그인 시도 전')
-              console.log('[Login] TicketTransition onDone - updatedGuests:', updatedGuests.length, '명')
-              
-              // 로그인 시도
-              loginSuccess = login(bookingName.trim(), normalizedPhone, updatedGuests)
-              console.log('[Login] TicketTransition onDone - loginSuccess:', loginSuccess)
-              
-              if (loginSuccess) {
-                const loggedInUser = JSON.parse(localStorage.getItem('user') || 'null')
-                console.log('[Login] TicketTransition onDone - 로그인 후 user:', loggedInUser)
-                localStorage.removeItem('pendingBooking')
-                
-                // Firestore에 티켓 애니메이션을 본 기록 저장
-                try {
-                  const userId = `${bookingName.trim()}_${normalizedPhone}`
-                  const userProfileRef = doc(db, 'userProfiles', userId)
-                  await setDoc(userProfileRef, {
-                    name: bookingName.trim(),
-                    phone: normalizedPhone,
-                    ticketShown: true,
-                    updatedAt: new Date()
-                  }, { merge: true })
-                } catch (error) {
-                  console.warn('Firestore 티켓 기록 저장 실패:', error)
-                }
-              } else {
-                console.error('[Login] TicketTransition onDone - 로그인 실패')
-                // 로그인 실패 시 에러 메시지 표시는 하지 않고 그냥 진행
-              }
-            } else if (currentUser) {
-              // 이미 로그인된 경우
-              loginSuccess = true
-              console.log('[Login] TicketTransition onDone - 이미 로그인됨')
+            // 이미 로그인된 상태이거나 로그인 성공 시 대시보드로 이동
+            if (currentUser && currentUser.name && currentUser.phone) {
+              console.log('[Login] TicketTransition onDone - 이미 로그인됨, 대시보드로 이동')
+              localStorage.removeItem('pendingBooking')
               
               // Firestore에 티켓 애니메이션을 본 기록 저장
               try {
@@ -884,17 +898,15 @@ const Login = () => {
               } catch (error) {
                 console.warn('Firestore 티켓 기록 저장 실패:', error)
               }
-            }
-            
-            // 로그인 성공 시에만 대시보드로 이동
-            if (loginSuccess) {
-              console.log('[Login] TicketTransition onDone - 대시보드로 이동')
+              
+              // 대시보드로 이동
               setTimeout(() => {
                 checkNicknameAndNavigate()
               }, 100)
             } else {
-              console.error('[Login] TicketTransition onDone - 로그인 실패로 인해 대시보드 이동 취소')
-              // 로그인 실패 시 로그인 페이지에 머물기
+              console.error('[Login] TicketTransition onDone - 로그인되지 않음, 다시 로그인 시도')
+              // 로그인되지 않은 경우 다시 로그인 페이지로
+              navigate('/login', { replace: true })
             }
           }}
         />

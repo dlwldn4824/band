@@ -179,12 +179,12 @@ const css = `
   position:absolute;
   right: 14px;
   top: 14px;
-  padding: 10px 12px;
-  border: 3px solid #d32f2f;
+  padding: 12px;
+  border: 4px solid #d32f2f;
   color: #d32f2f;
   border-radius: 50%;
-  width: 100px;
-  height: 100px;
+  width: 110px;
+  height: 110px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -193,10 +193,37 @@ const css = `
   background: rgba(255, 255, 255, 1);
   opacity:0;
   z-index: 10;
+  box-sizing: border-box;
   box-shadow: 
     0 4px 12px rgba(211, 47, 47, 0.3),
-    0 2px 4px rgba(0, 0, 0, 0.2);
+    0 2px 4px rgba(0, 0, 0, 0.2),
+    inset 0 1px 3px rgba(255, 255, 255, 0.9);
+  font-family: 'Arial', 'Helvetica', sans-serif;
   pointer-events: none;
+}
+.tt_stamp::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(15deg);
+  width: 85%;
+  height: 85%;
+  border: 2px dashed #d32f2f;
+  border-radius: 50%;
+  opacity: 0.4;
+}
+.tt_stamp::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 70%;
+  height: 70%;
+  border: 1px solid #d32f2f;
+  border-radius: 50%;
+  opacity: 0.2;
 }
 .tt_stamp.is-show{
   animation: tt_stampIn 520ms 200ms ease-out forwards;
@@ -214,6 +241,8 @@ const css = `
   text-align: center;
   text-transform: uppercase;
   line-height: 1.1;
+  position: relative;
+  z-index: 1;
 }
 .tt_stampRow{ 
   font-weight: 900; 
@@ -221,6 +250,8 @@ const css = `
   text-align: center;
   line-height: 1;
   letter-spacing: 0;
+  position: relative;
+  z-index: 1;
 }
 .tt_stampSubtitle {
   font-weight: 700;
@@ -228,6 +259,8 @@ const css = `
   text-align: center;
   line-height: 1;
   margin-top: 2px;
+  position: relative;
+  z-index: 1;
 }
 
 /* 찢어지는 애니메이션 */

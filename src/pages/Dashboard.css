@@ -570,7 +570,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 10001;
   padding: 1rem;
   padding-top: calc(1rem + var(--header-height, 0));
   animation: fadeIn 0.3s ease-out;
@@ -828,7 +828,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 10001;
   padding-top: calc(1rem + var(--header-height, 0));
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;

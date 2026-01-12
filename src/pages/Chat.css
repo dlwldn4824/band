@@ -92,7 +92,8 @@
 .layout.layout--events .main {
   flex: 1 1 auto;
   min-height: 0;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   padding: 0;
   margin-top: var(--header-height, calc(0.75rem + env(safe-area-inset-top) + 1.75rem + 2.5rem + 0.75rem));
   height: calc(100% - var(--header-height, calc(0.75rem + env(safe-area-inset-top) + 1.75rem + 2.5rem + 0.75rem)));
@@ -101,7 +102,7 @@
 .layout.layout--events .main .container {
   height: 100%;
   min-height: 0;
-  overflow: hidden;
+  overflow: visible;
   padding: 0;
   width: 100%;
   max-width: 100%;
@@ -468,7 +469,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10000;
+  z-index: 10001;
   padding: 1rem;
   animation: fadeIn 0.3s ease;
 }

@@ -253,7 +253,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10000;
+  z-index: 10001;
   padding: 1rem;
   padding-bottom: calc(1rem + env(safe-area-inset-bottom));
   overflow-y: auto;
@@ -273,6 +273,7 @@
     max-height: calc(100% - 3rem - env(safe-area-inset-bottom, 0px));
   overflow: hidden;
   position: relative;
+  z-index: 10002;
   animation: slideUp 0.3s ease;
   box-sizing: border-box;
   display: flex;
@@ -291,6 +292,8 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  position: relative;
+  z-index: 10003;
   }
   
   .song-image {
@@ -309,6 +312,7 @@
   color: #000000;  
   background-color: #d8d8d8;
   border: none;
+  z-index: 10004;
   border-radius: 50%;
   width: 32px;
   height: 32px;
@@ -317,7 +321,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10;
   transition: all 0.2s;
   flex-shrink: 0;
   }

@@ -38,10 +38,12 @@
 .events-content {
   font-family: 'Pretendard', sans-serif;
   font-weight: 500;
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
+  width: 100%;
   padding: 1rem;
+  padding-bottom: 0.3rem;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 1;
 }
 
 .back-button {
@@ -76,7 +78,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10000;
+  z-index: 10001;
   padding: 1rem;
   animation: fadeIn 0.3s ease;
 }
@@ -91,10 +93,12 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   animation: slideUp 0.3s ease;
   position: relative;
+  z-index: 10002;
 }
 
 .directions-modal-close {
   position: absolute;
+  z-index: 10004;
   top: 1rem;
   right: 1rem;
   width: 40px;
@@ -107,7 +111,6 @@
   justify-content: center;
   border-radius: 50%;
   transition: all 0.2s;
-  z-index: 10;
   padding: 0;
 }
 
@@ -140,6 +143,8 @@
 }
 
 .directions-modal-content {
+  position: relative;
+  z-index: 10003;
   padding: 2rem 1.5rem;
   text-align: center;
 }
@@ -255,19 +260,130 @@
 .purchase-info-content {
   display: flex;
   flex-direction: row;
-  gap: 0.75rem;
-  flex-wrap: wrap;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  overflow: hidden;
 }
 
 .purchase-info-title {
-  font-size: 1rem;
+  font-size: 0.9rem;
   color: #ffffff;
   font-family: 'Pretendard', sans-serif;
   font-weight: 600;
   margin: 0;
   white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.purchase-history {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 400px;
+  overflow-y: auto;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.purchase-history-item {
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 0.75rem;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.purchase-history-item:last-child {
+  margin-bottom: 0;
+}
+
+.purchase-history-item.provided {
+  border-color: #28a745;
+  background: rgba(40, 167, 69, 0.15);
+}
+
+.purchase-history-item.not-provided {
+  border-color: #ffc107;
+  background: rgba(255, 193, 7, 0.15);
+}
+
+.purchase-history-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.purchase-history-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+.purchase-history-number {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #ffffff;
+  font-family: 'Pretendard', sans-serif;
+  white-space: nowrap;
+}
+
+.purchase-history-items {
+  display: flex;
+  flex-direction: row;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.purchase-history-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.purchase-history-time {
+  color: #999;
+  font-size: 0.8rem;
+}
+
+.purchase-history-status {
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.purchase-history-status.provided {
+  background: rgba(40, 167, 69, 0.2);
+  color: #28a745;
+}
+
+.purchase-history-status.not-provided {
+  background: rgba(255, 193, 7, 0.2);
+  color: #ffc107;
 }
 
 .purchase-item {
@@ -282,6 +398,8 @@
 .purchase-name {
   color: #ffffff;
   font-weight: 500;
+  font-size: 0.9rem;
+  white-space: nowrap;
 }
 
 .purchase-price {
@@ -451,6 +569,51 @@
 }
 
 /* 주류 사전 구매 모달 */
+.drink-discount-banner {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+  position: relative;
+  z-index: 10005;
+}
+
+.drink-discount-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.drink-discount-badge {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #ffffff;
+  font-family: 'Pretendard', sans-serif;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.drink-discount-time {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #ffffff;
+  font-family: 'Pretendard', sans-serif;
+  text-align: center;
+}
+
+.drink-discount-period {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-family: 'Pretendard', sans-serif;
+  text-align: center;
+  margin: 0;
+}
+
 .drink-notice {
   margin: 1.5rem 0;
   padding: 1rem;
@@ -488,22 +651,59 @@
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  flex: 1;
 }
 
 .drink-name {
   margin: 0;
+  padding: 0;
   font-size: 1.1rem;
   font-weight: 600;
   color: #ffffff;
   font-family: 'Pretendard', sans-serif;
+  line-height: 1.2;
+  text-align: left;
+}
+
+.drink-price-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  align-items: flex-start;
 }
 
 .drink-price {
   margin: 0;
+  padding: 0;
   font-size: 0.9rem;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.7);
   font-family: 'Pretendard', sans-serif;
+  line-height: 1.2;
+  text-align: left;
+}
+
+.drink-price-original {
+  margin: 0;
+  padding: 0;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.5);
+  font-family: 'Pretendard', sans-serif;
+  line-height: 1.2;
+  text-align: left;
+  text-decoration: line-through;
+}
+
+.drink-price-discounted {
+  margin: 0;
+  padding: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #ff6b6b;
+  font-family: 'Pretendard', sans-serif;
+  line-height: 1.2;
+  text-align: left;
 }
 
 .drink-button {
