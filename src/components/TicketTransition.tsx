@@ -179,12 +179,12 @@ const css = `
   position:absolute;
   right: 14px;
   top: 14px;
-  padding: 16px 20px;
-  border: 3px solid #EC3E33;
+  padding: 12px 16px;
+  border: 2px solid #EC3E33;
   color: #EC3E33;
   border-radius: 8px;
   width: auto;
-  min-width: 140px;
+  min-width: 110px;
   height: auto;
   display: flex;
   flex-direction: column;
@@ -220,19 +220,19 @@ const css = `
 .tt_stampType{ 
   font-weight: 900; 
   letter-spacing: 0.05em; 
-  font-size: 25px; 
+  font-size: 18px; 
   text-align: center;
   line-height: 1.2;
   position: relative;
   z-index: 1;
   color: #EC3E33;
   white-space: nowrap;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 .tt_stampTitle{ 
   font-weight: 900; 
   letter-spacing: 0.05em; 
-  font-size: 25px; 
+  font-size: 18px; 
   text-align: center;
   line-height: 1.2;
   position: relative;
