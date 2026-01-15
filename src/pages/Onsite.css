@@ -1,0 +1,72 @@
+/* Onsite 페이지는 Login.css의 스타일을 재사용 */
+/* 추가 스타일만 여기에 정의 */
+
+/* 현장예매 페이지 컨테이너 크기 확대 (Onsite 페이지에만 적용) */
+.onsite-page .onsite-container {
+  max-width: 90%;
+  width: 90%;
+  max-width: 800px;
+  padding: 2.5rem;
+}
+
+.onsite-page .onsite-container.booking-confirmation {
+  max-width: 90%;
+  width: 90%;
+  max-width: 800px;
+  padding: 2.5rem;
+}
+
+.qr-code-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  background: #ffffff;
+  border-radius: 10px;
+  margin-bottom: 2rem;
+}
+
+.qr-instruction {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1rem;
+  margin-bottom: 2rem;
+  font-family: 'Pretendard', sans-serif;
+}
+
+@media (max-width: 768px) {
+  .onsite-page .onsite-container {
+    max-width: 95%;
+    width: 95%;
+    padding: 2rem;
+  }
+
+  .onsite-page .onsite-container.booking-confirmation {
+    max-width: 95%;
+    width: 95%;
+    padding: 2rem;
+  }
+
+  .qr-code-wrapper {
+    padding: 1.5rem;
+  }
+
+  .qr-code-wrapper svg {
+    width: 100%;
+    height: auto;
+    max-width: 250px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .onsite-page .onsite-container {
+    max-width: 1000px;
+    width: 90%;
+  }
+
+  .onsite-page .onsite-container.booking-confirmation {
+    max-width: 1000px;
+    width: 90%;
+  }
+}
+

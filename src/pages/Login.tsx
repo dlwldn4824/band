@@ -590,6 +590,20 @@ const Login = () => {
     }
   }
 
+  // 자동 로그인 처리 중일 때 로딩 화면 표시
+  if (isProcessingAutoLogin) {
+    return (
+      <div className="login-page">
+        <div className="login-container">
+          <div className="auto-login-loading">
+            <div className="loading-spinner"></div>
+            <p className="loading-text">로그인 중...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="login-page">
       {showBookingConfirmation ? (
@@ -849,22 +863,23 @@ const Login = () => {
       ) : showTicket ? (
         <TicketTransition
           ticketImageUrl={ticketImage}
-          info={{
-            name: bookingName || '',
-            date: new Date().toLocaleDateString(),
-            seat: 'STANDING',
-            entryNumber: (() => {
-              const normalizedPhone = bookingPhone.replace(/\D/g, '')
-              const existingGuest = guests.find((g) => {
-                const gName = g.name || g['이름'] || g.Name || ''
-                const gPhone = String(g.phone || g['전화번호'] || g.Phone || '').replace(/[-\s()]/g, '')
-                return gName.trim() === bookingName.trim() && gPhone === normalizedPhone
-              })
-              console.log('[Login] TicketTransition - existingGuest:', existingGuest)
-              console.log('[Login] TicketTransition - entryNumber:', existingGuest?.entryNumber)
-              return existingGuest?.entryNumber
-            })(),
-          }}
+          info={(() => {
+            const normalizedPhone = bookingPhone.replace(/\D/g, '')
+            const existingGuest = guests.find((g) => {
+              const gName = g.name || g['이름'] || g.Name || ''
+              const gPhone = String(g.phone || g['전화번호'] || g.Phone || '').replace(/[-\s()]/g, '')
+              return gName.trim() === bookingName.trim() && gPhone === normalizedPhone
+            })
+            console.log('[Login] TicketTransition - existingGuest:', existingGuest)
+            console.log('[Login] TicketTransition - entryNumber:', existingGuest?.entryNumber)
+            return {
+              name: bookingName || '',
+              date: new Date().toLocaleDateString(),
+              seat: 'STANDING',
+              entryNumber: existingGuest?.entryNumber,
+              isWalkIn: existingGuest?.isWalkIn === true,
+            }
+          })()}
           onDone={async () => {
             // 포커스 해제 및 스크롤 초기화
             const el = document.activeElement as HTMLElement | null
@@ -913,7 +928,7 @@ const Login = () => {
       ) : (
         <div className="login-container">
           <div className="login-header">
-            <h1>공연 입장하기</h1>
+            <h1>공연 예매하기</h1>
             <p>최초 예매 후 해당 페이지에서<br/> 로그인 하시면 웹으로 접속됩니다.</p>
           </div>
 

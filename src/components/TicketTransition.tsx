@@ -9,6 +9,7 @@ type Props = {
     date?: string;
     seat?: string;
     entryNumber?: number;
+    isWalkIn?: boolean;
   };
 };
 
@@ -79,9 +80,8 @@ export default function TicketTransition({
         {/* 입장번호 스탬프 오버레이 (선택) */}
         {info?.entryNumber && (
           <div className={`tt_stamp ${start ? "is-show" : ""}`}>
-            <div className="tt_stampTitle">입장번호</div>
-            <div className="tt_stampRow">{info.entryNumber}</div>
-            <div className="tt_stampSubtitle">번</div>
+            <div className="tt_stampType">{info.isWalkIn ? '현장예약' : '사전예약'}</div>
+            <div className="tt_stampTitle">입장번호 {info.entryNumber}번!</div>
           </div>
         )}
       </div>
@@ -179,51 +179,35 @@ const css = `
   position:absolute;
   right: 14px;
   top: 14px;
-  padding: 12px;
-  border: 4px solid #d32f2f;
-  color: #d32f2f;
-  border-radius: 50%;
-  width: 110px;
-  height: 110px;
+  padding: 16px 20px;
+  border: 3px solid #EC3E33;
+  color: #EC3E33;
+  border-radius: 8px;
+  width: auto;
+  min-width: 140px;
+  height: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   transform: rotate(-15deg);
-  background: rgba(255, 255, 255, 1);
+  background: rgba(18, 18, 18, 0.8);
   opacity:0;
   z-index: 10;
   box-sizing: border-box;
   box-shadow: 
-    0 4px 12px rgba(211, 47, 47, 0.3),
-    0 2px 4px rgba(0, 0, 0, 0.2),
-    inset 0 1px 3px rgba(255, 255, 255, 0.9);
-  font-family: 'Arial', 'Helvetica', sans-serif;
+    0 4px 12px rgba(236, 62, 51, 0.5),
+    0 2px 4px rgba(0, 0, 0, 0.3);
+  font-family: 'Pretendard', sans-serif;
+  font-weight: 700;
   pointer-events: none;
+  gap: 4px;
 }
 .tt_stamp::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) rotate(15deg);
-  width: 85%;
-  height: 85%;
-  border: 2px dashed #d32f2f;
-  border-radius: 50%;
-  opacity: 0.4;
+  display: none;
 }
 .tt_stamp::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 70%;
-  height: 70%;
-  border: 1px solid #d32f2f;
-  border-radius: 50%;
-  opacity: 0.2;
+  display: none;
 }
 .tt_stamp.is-show{
   animation: tt_stampIn 520ms 200ms ease-out forwards;
@@ -233,28 +217,40 @@ const css = `
   70% { opacity:1; transform: rotate(-15deg) scale(1.03); }
   100% { opacity:1; transform: rotate(-15deg) scale(1); }
 }
+.tt_stampType{ 
+  font-weight: 900; 
+  letter-spacing: 0.05em; 
+  font-size: 25px; 
+  text-align: center;
+  line-height: 1.2;
+  position: relative;
+  z-index: 1;
+  color: #EC3E33;
+  white-space: nowrap;
+  margin-bottom: 4px;
+}
 .tt_stampTitle{ 
   font-weight: 900; 
-  letter-spacing: 0.08em; 
-  font-size: 10px; 
-  margin-bottom: 4px;
+  letter-spacing: 0.05em; 
+  font-size: 25px; 
   text-align: center;
-  text-transform: uppercase;
-  line-height: 1.1;
+  line-height: 1.2;
   position: relative;
   z-index: 1;
+  color: #EC3E33;
+  white-space: nowrap;
 }
 .tt_stampRow{ 
-  font-weight: 900; 
-  font-size: 32px; 
-  text-align: center;
-  line-height: 1;
-  letter-spacing: 0;
-  position: relative;
-  z-index: 1;
+  display: none;
 }
 .tt_stampSubtitle {
   font-weight: 700;
+  font-size: 12px;
+  text-align: center;
+  line-height: 1.2;
+  position: relative;
+  z-index: 1;
+  color: #ffffff;
   font-size: 12px;
   text-align: center;
   line-height: 1;

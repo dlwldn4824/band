@@ -1,4 +1,5 @@
 import { useAuth } from '../contexts/AuthContext'
+import { useData } from '../contexts/DataContext'
 import { useEffect, useRef } from 'react'
 import './Ticket.css'
 
@@ -13,6 +14,7 @@ interface TicketProps {
 
 const Ticket = ({ ticket }: TicketProps) => {
   const { user } = useAuth()
+  const { guests } = useData()
   const stampRef = useRef<HTMLDivElement>(null)
 
   // 디버깅용 콘솔 로그
@@ -61,7 +63,18 @@ const Ticket = ({ ticket }: TicketProps) => {
           if (!shouldShowStamp) {
             console.log('[Ticket] ⚠️ 스탬프 렌더링 안됨 - user?.entryNumber가 falsy:', user?.entryNumber)
           }
-          return shouldShowStamp ? (
+          if (!shouldShowStamp) return null
+          
+          const guestInfo = guests.find((g) => {
+            const guestName = g.name || g['이름'] || g.Name || ''
+            const guestPhone = String(g.phone || g['전화번호'] || g.Phone || '').replace(/[-\s()]/g, '')
+            const userName = user?.name || ''
+            const userPhone = String(user?.phone || '').replace(/[-\s()]/g, '')
+            return guestName === userName && guestPhone === userPhone
+          })
+          const isWalkIn = guestInfo?.isWalkIn === true
+          
+          return (
             <div 
               ref={stampRef}
               className="ticket-entry-stamp"
@@ -70,11 +83,10 @@ const Ticket = ({ ticket }: TicketProps) => {
                 display: 'block'
               }}
             >
-              <div className="ticket-entry-stamp-title">입장번호</div>
-              <div className="ticket-entry-stamp-number">{user.entryNumber}</div>
-              <div className="ticket-entry-stamp-subtitle">번</div>
+              <div className="ticket-entry-stamp-type">{isWalkIn ? '현장예약' : '사전예약'}</div>
+              <div className="ticket-entry-stamp-title">입장번호 {user.entryNumber}번!</div>
             </div>
-          ) : null
+          )
         })()}
         <div className="ticket-info">
           <div className="ticket-field">

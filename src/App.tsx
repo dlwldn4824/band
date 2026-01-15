@@ -14,6 +14,7 @@ import Events from './pages/Events'
 import Chat from './pages/Chat'
 import Guestbook from './pages/Guestbook'
 import Products from './pages/Products'
+import Onsite from './pages/Onsite'
 
 function useAppHeight() {
   useEffect(() => {
@@ -193,6 +194,10 @@ function AppRoutes() {
                 <Guestbook />
               </Layout>
             }
+          />
+          <Route
+            path="/onsite"
+            element={<Onsite />}
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

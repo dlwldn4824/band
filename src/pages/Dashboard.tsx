@@ -151,13 +151,22 @@ const Dashboard = () => {
                 loading="eager"
                 decoding="async"
               />
-              {user?.entryNumber && (
-                <div className="ticket-entry-stamp">
-                  <div className="ticket-entry-stamp-title">입장번호</div>
-                  <div className="ticket-entry-stamp-number">{user.entryNumber}</div>
-                  <div className="ticket-entry-stamp-subtitle">번</div>
-                </div>
-              )}
+              {user?.entryNumber && (() => {
+                const guestInfo = guests.find((g) => {
+                  const guestName = g.name || g['이름'] || g.Name || ''
+                  const guestPhone = String(g.phone || g['전화번호'] || g.Phone || '').replace(/[-\s()]/g, '')
+                  const userName = user.name || ''
+                  const userPhone = String(user.phone || '').replace(/[-\s()]/g, '')
+                  return guestName === userName && guestPhone === userPhone
+                })
+                const isWalkIn = guestInfo?.isWalkIn === true
+                return (
+                  <div className="ticket-entry-stamp">
+                    <div className="ticket-entry-stamp-type">{isWalkIn ? '현장예약' : '사전예약'}</div>
+                    <div className="ticket-entry-stamp-title">입장번호 {user.entryNumber}번!</div>
+                  </div>
+                )
+              })()}
             </div>
           </section>
         )}
