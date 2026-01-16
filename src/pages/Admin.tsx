@@ -1084,13 +1084,10 @@ const Admin = () => {
     }
   }
 
-  // 주류 주문 이력 항목 삭제 핸들러
-  const handleDeleteDrinkOrderHistory = async (orderId: string, historyIndex: number) => {
-    if (!window.confirm('정말 이 주문 항목을 삭제하시겠습니까?')) {
-      return
-    }
-    
-    try {
+  // 주류 주문 이력 항목 삭제 핸들러 (비밀번호 확인 포함)
+  const handleDeleteDrinkOrderHistory = (orderId: string, historyIndex: number) => {
+    requirePassword(async () => {
+      try {
       const orderRef = doc(db, 'drinkOrders', orderId)
       const orderSnap = await getDoc(orderRef)
       
@@ -1145,34 +1142,60 @@ const Admin = () => {
         setUploadStatus('✅ 주문 항목이 삭제되었습니다.')
       }
       
-      setTimeout(() => setUploadStatus(''), 3000)
-    } catch (error) {
-      console.error('주문 항목 삭제 실패:', error)
-      setUploadStatus('❌ 주문 항목 삭제에 실패했습니다.')
-      setTimeout(() => setUploadStatus(''), 3000)
-    }
+        setTimeout(() => setUploadStatus(''), 3000)
+      } catch (error) {
+        console.error('주문 항목 삭제 실패:', error)
+        setUploadStatus('❌ 주문 항목 삭제에 실패했습니다.')
+        setTimeout(() => setUploadStatus(''), 3000)
+      }
+    })
   }
 
-  // 주류 주문 삭제 핸들러 (전체 주문 삭제)
-  const handleDeleteDrinkOrder = async (orderId: string) => {
-    if (!window.confirm('정말 이 주문을 삭제하시겠습니까?')) {
-      return
-    }
-    
-    try {
+  // 주류 주문 삭제 핸들러 (전체 주문 삭제, 비밀번호 확인 포함)
+  const handleDeleteDrinkOrder = (orderId: string) => {
+    requirePassword(async () => {
+      try {
       const orderRef = doc(db, 'drinkOrders', orderId)
       await deleteDoc(orderRef)
       
       // 로컬 상태 업데이트
       setDrinkOrders(prev => prev.filter(order => order.id !== orderId))
       
-      setUploadStatus('✅ 주문이 삭제되었습니다.')
-      setTimeout(() => setUploadStatus(''), 3000)
-    } catch (error) {
-      console.error('주류 주문 삭제 실패:', error)
-      setUploadStatus('❌ 주문 삭제에 실패했습니다.')
-      setTimeout(() => setUploadStatus(''), 3000)
-    }
+        setUploadStatus('✅ 주문이 삭제되었습니다.')
+        setTimeout(() => setUploadStatus(''), 3000)
+      } catch (error) {
+        console.error('주류 주문 삭제 실패:', error)
+        setUploadStatus('❌ 주문 삭제에 실패했습니다.')
+        setTimeout(() => setUploadStatus(''), 3000)
+      }
+    })
+  }
+
+  // 주류 주문 전체 삭제 핸들러
+  const handleDeleteAllDrinkOrders = () => {
+    requirePassword(async () => {
+      if (!window.confirm('정말로 모든 주류 구매 내역을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+        return
+      }
+      
+      try {
+        setUploadStatus('주류 구매 내역을 삭제하는 중...')
+        
+        const ordersRef = collection(db, 'drinkOrders')
+        const snapshot = await getDocs(ordersRef)
+        
+        const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref))
+        await Promise.all(deletePromises)
+        
+        setDrinkOrders([])
+        setUploadStatus(`✅ 모든 주류 구매 내역(${snapshot.docs.length}개)이 삭제되었습니다.`)
+        setTimeout(() => setUploadStatus(''), 3000)
+      } catch (error) {
+        console.error('주류 구매 내역 전체 삭제 오류:', error)
+        setUploadStatus('❌ 주류 구매 내역 삭제 중 오류가 발생했습니다.')
+        setTimeout(() => setUploadStatus(''), 3000)
+      }
+    })
   }
 
   // 입금 확인이 완료된 게스트에 대해 입장 번호 자동 부여
@@ -1377,10 +1400,35 @@ const Admin = () => {
       
       {/* 주류 구매 내역 섹션 */}
       <div className="admin-section">
-        <h2>주류 구매 내역</h2>
-        <p className="section-description">
-          주류 사전 구매 내역을 확인할 수 있습니다.
-        </p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <div>
+            <h2>주류 구매 내역</h2>
+            <p className="section-description">
+              주류 사전 구매 내역을 확인할 수 있습니다.
+            </p>
+          </div>
+          {drinkOrders.length > 0 && (
+            <button
+              onClick={handleDeleteAllDrinkOrders}
+              style={{
+                padding: '0.75rem 1.5rem',
+                background: '#ff4444',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '0.9rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'background 0.2s',
+                whiteSpace: 'nowrap'
+              }}
+              onMouseOver={(e) => (e.currentTarget.style.background = '#cc0000')}
+              onMouseOut={(e) => (e.currentTarget.style.background = '#ff4444')}
+            >
+              🗑️ 전체 삭제
+            </button>
+          )}
+        </div>
         {drinkOrders.length > 0 ? (
           <div className="guest-list-table">
             <table>
