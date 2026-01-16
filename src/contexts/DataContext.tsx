@@ -641,13 +641,31 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   }
 
 
-  const clearGuests = () => {
+  const clearGuests = async () => {
     setGuests([])
     localStorage.removeItem('guests')
     // Firestore에서도 삭제
-    setFirestoreData('guests' as any, { guests: [] }, 'all').catch((error) => {
+    await setFirestoreData('guests' as any, { guests: [] }, 'all').catch((error) => {
       console.error('Firestore 게스트 초기화 오류:', error)
     })
+    
+    // 운영진 정보도 함께 삭제 (userProfiles 컬렉션에서 phone === 'admin'인 문서 삭제)
+    try {
+      const userProfilesRef = collection(db, 'userProfiles')
+      const snapshot = await getDocs(userProfilesRef)
+      
+      const deletePromises = snapshot.docs
+        .filter(docSnapshot => {
+          const data = docSnapshot.data()
+          return data.phone === 'admin'
+        })
+        .map(docSnapshot => deleteDoc(doc(db, 'userProfiles', docSnapshot.id)))
+      
+      await Promise.all(deletePromises)
+      console.log(`[DataContext] ${deletePromises.length}개의 운영진 userProfile 삭제 완료`)
+    } catch (error) {
+      console.error('[DataContext] 운영진 userProfile 삭제 오류:', error)
+    }
   }
 
   const deleteGuest = (index: number) => {
