@@ -312,6 +312,11 @@
   transition: color 0.2s;
 }
 
+.booking-confirm-checkbox-label span {
+  flex: 1;
+  min-width: 0;
+}
+
 .booking-confirm-checkbox {
   width: 20px;
   height: 20px;
@@ -1004,8 +1009,13 @@
   border: 2px dashed #666;
   border-radius: 12px;
   padding: 1.5rem;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
   margin-bottom: 1.5rem;
   background: #2a2a2a;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: 100% !important;
 }
 
 .payment-item {
@@ -1169,25 +1179,32 @@
 
 /* 개인 입장 링크 섹션 */
 .personal-link-section {
-  margin-top: 1.5rem;
-  padding: 1rem;
-  background: rgba(255, 255, 255, 0.05);
+  border: 2px dashed #666;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 1.5rem 0.5rem;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+  background: #2a2a2a;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: 100% !important;
 }
 
 .personal-link-label {
   color: #ffffff;
-  font-size: 0.875rem;
+  font-size: 1.125rem !important;
   font-weight: 600;
   margin-bottom: 0.75rem;
+  margin-top: 0;
   text-align: center;
   font-family: 'Pretendard', sans-serif;
 }
 
 .personal-link-container {
   display: flex;
-  gap: 0.5rem;
+  gap: 0;
   align-items: center;
 }
 
@@ -1263,15 +1280,22 @@
   }
 
   .personal-link-container {
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0;
   }
 
   .personal-link-input {
-    width: 100%;
+    flex: 1;
+    min-width: 0;
     font-size: 0.7rem;
   }
 
   .copy-link-button {
-    width: 100%;
+    flex-shrink: 0;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.7rem;
+    white-space: nowrap;
   }
 }

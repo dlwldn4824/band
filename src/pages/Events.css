@@ -584,11 +584,11 @@
 
 /* 주류 사전 구매 모달 */
 .drink-discount-banner {
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+  background: #EC3E33;
   border-radius: 12px;
   padding: 1rem;
   margin-bottom: 1rem;
-  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+  box-shadow: 0 4px 12px rgba(236, 62, 51, 0.3);
   position: relative;
   z-index: 10005;
 }

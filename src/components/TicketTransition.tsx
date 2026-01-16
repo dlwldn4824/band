@@ -179,29 +179,29 @@ const css = `
   position:absolute;
   right: 14px;
   top: 14px;
-  padding: 12px 16px;
-  border: 2px solid #EC3E33;
+  padding: 3px 6px;
+  border: 3px solid #EC3E33;
   color: #EC3E33;
-  border-radius: 8px;
+  border-radius: 6px;
   width: auto;
-  min-width: 110px;
+  min-width: 90px;
   height: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   transform: rotate(-15deg);
-  background: rgba(18, 18, 18, 0.8);
+  background: rgba(255, 255, 255, 0.6);
   opacity:0;
   z-index: 10;
   box-sizing: border-box;
   box-shadow: 
     0 4px 12px rgba(236, 62, 51, 0.5),
     0 2px 4px rgba(0, 0, 0, 0.3);
-  font-family: 'Pretendard', sans-serif;
+  font-family: 'DNFBitBitv2', sans-serif;
   font-weight: 700;
   pointer-events: none;
-  gap: 4px;
+  gap: 2px;
 }
 .tt_stamp::before {
   display: none;
@@ -227,7 +227,7 @@ const css = `
   z-index: 1;
   color: #EC3E33;
   white-space: nowrap;
-  margin-bottom: 2px;
+  margin-bottom: 0;
 }
 .tt_stampTitle{ 
   font-weight: 900; 

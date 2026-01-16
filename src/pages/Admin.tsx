@@ -39,7 +39,7 @@ const Admin = () => {
   const [editingGuestIndex, setEditingGuestIndex] = useState<number | null>(null)
   const [editingGuest, setEditingGuest] = useState<{ name: string; phone: string }>({ name: '', phone: '' })
   const [showGuestAddModal, setShowGuestAddModal] = useState(false)
-  const [newGuest, setNewGuest] = useState<{ name: string; phone: string; email: string; isWalkIn: boolean }>({ name: '', phone: '', email: '', isWalkIn: false })
+  const [newGuest, setNewGuest] = useState<{ name: string; phone: string; isWalkIn: boolean }>({ name: '', phone: '', isWalkIn: false })
   const [isEditingPerformanceInfo, setIsEditingPerformanceInfo] = useState(false)
   const [editedEventName, setEditedEventName] = useState('')
   const [editedDate, setEditedDate] = useState('')
@@ -47,6 +47,7 @@ const Admin = () => {
   const [editedEvents, setEditedEvents] = useState<Array<{ title: string; description: string; time?: string }>>([])
   const [pendingBookings] = useState<Array<{ id: string; name: string; phone: string; email: string; createdAt: any }>>([])
   const [guestLoginLinks, setGuestLoginLinks] = useState<Record<string, string>>({}) // 게스트 ID (name_phone) -> 로그인 링크
+  const [guestBookingDates, setGuestBookingDates] = useState<Record<string, any>>({}) // 게스트 ID (name_phone) -> 예매 일시
 
   // 개인 로그인 링크 생성 함수
   const generatePersonalLoginLink = (name: string, phone: string): string => {
@@ -155,6 +156,38 @@ const Admin = () => {
 
     loadDrinkOrders()
   }, [])
+
+  // 예매 일시 불러오기 (bookings 컬렉션에서)
+  useEffect(() => {
+    const loadBookingDates = async () => {
+      try {
+        const bookingsRef = collection(db, 'bookings')
+        const snapshot = await getDocs(bookingsRef)
+        
+        const bookingDatesMap: Record<string, any> = {}
+        
+        snapshot.forEach((doc) => {
+          const data = doc.data()
+          const bookingName = data.name || ''
+          const bookingPhone = String(data.phone || '').replace(/[-\s()]/g, '')
+          
+          if (bookingName && bookingPhone) {
+            const guestId = `${bookingName}_${bookingPhone}`
+            // 가장 최근 예매 일시만 저장 (여러 개가 있으면 나중 것)
+            if (data.createdAt) {
+              bookingDatesMap[guestId] = data.createdAt
+            }
+          }
+        })
+        
+        setGuestBookingDates(bookingDatesMap)
+      } catch (error) {
+        console.error('예매 일시 불러오기 실패:', error)
+      }
+    }
+
+    loadBookingDates()
+  }, [guests]) // guests가 변경될 때마다 다시 로드
 
   // 하드코딩된 공연 정보 (자동 설정) - 한 번만 실행되도록 useRef로 보호
   const hasInitializedEvents = useRef(false)
@@ -1223,7 +1256,6 @@ const Admin = () => {
           번호: index + 1,
           이름: guestName,
           전화번호: guestPhone,
-          이메일: guest.email || '',
           닉네임: '', // 닉네임은 별도로 관리되므로 빈 값
           예매유형: guest.isWalkIn ? '현장 예매' : '사전 예매',
           입금확인: guest.paymentConfirmed ? '확인완료' : '대기중',
@@ -1303,7 +1335,7 @@ const Admin = () => {
   }, [guests]) // guests 배열 변경 시 확인 (무한 루프 방지를 위해 guestLoginLinks는 의존성에서 제외)
 
   // 예매 신청 승인 핸들러
-  const handleApproveBooking = async (bookingId: string, name: string, phone: string, email: string) => {
+  const handleApproveBooking = async (bookingId: string, name: string, phone: string) => {
     requirePassword(async () => {
       try {
         // 예매 신청 승인 처리
@@ -1323,24 +1355,14 @@ const Admin = () => {
         })
 
         if (!existingGuest) {
-          // 게스트가 없으면 추가 (이메일 포함)
-          const result = addWalkInGuest(name.trim(), normalizedPhone, false, email)
+          // 게스트가 없으면 추가
+          const result = addWalkInGuest(name.trim(), normalizedPhone, false)
           if (result.success) {
             setUploadStatus(`✅ "${name}" 예매 신청이 승인되었고 게스트 목록에 추가되었습니다.`)
           } else {
             setUploadStatus(`⚠️ 예매 신청은 승인되었지만 게스트 추가에 실패했습니다: ${result.message}`)
           }
         } else {
-          // 기존 게스트가 있으면 이메일 업데이트
-          const existingIndex = guests.findIndex((guest) => {
-            const guestName = guest.name || guest['이름'] || guest.Name || ''
-            const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '').replace(/[-\s()]/g, '')
-            return guestName.trim() === name.trim() && guestPhone === normalizedPhone
-          })
-          if (existingIndex !== -1 && email) {
-            const updatedGuest = { ...guests[existingIndex], email: email }
-            updateGuest(existingIndex, updatedGuest)
-          }
           setUploadStatus(`✅ "${name}" 예매 신청이 승인되었습니다. (이미 게스트 목록에 존재)`)
         }
       } catch (error) {
@@ -1373,10 +1395,6 @@ const Admin = () => {
                     <span className="booking-label">연락처:</span>
                     <span className="booking-value">{formatPhoneDisplay(booking.phone)}</span>
                   </div>
-                  <div className="booking-info-row">
-                    <span className="booking-label">이메일:</span>
-                    <span className="booking-value">{booking.email}</span>
-                  </div>
                   {booking.createdAt && (
                     <div className="booking-info-row">
                       <span className="booking-label">신청 시간:</span>
@@ -1387,7 +1405,7 @@ const Admin = () => {
                   )}
                 </div>
                 <button
-                  onClick={() => handleApproveBooking(booking.id, booking.name, booking.phone, booking.email)}
+                  onClick={() => handleApproveBooking(booking.id, booking.name, booking.phone)}
                   className="approve-booking-button"
                 >
                   승인
@@ -1810,7 +1828,7 @@ const Admin = () => {
             onClick={() => {
               requirePassword(() => {
                 if (window.confirm('게스트를 추가하시겠습니까?')) {
-                  setNewGuest({ name: '', phone: '', email: '', isWalkIn: false })
+                  setNewGuest({ name: '', phone: '', isWalkIn: false })
                   setShowGuestAddModal(true)
                 }
               })
@@ -1829,9 +1847,9 @@ const Admin = () => {
                   <th>번호</th>
                   <th>이름</th>
                   <th>전화번호</th>
-                  <th>이메일</th>
                   <th>닉네임</th>
                   <th>예매 유형</th>
+                  <th>예매 일시</th>
                   <th>입금 확인</th>
                   <th>입장 번호</th>
                   <th>접속 링크</th>
@@ -1847,17 +1865,38 @@ const Admin = () => {
                   // userId 생성 (닉네임 조회용)
                   const userId = `${guestName}_${guestPhoneRaw}`
                   const guestNickname = userNicknames[userId] || '-'
+                  // 예매 일시 조회
+                  const bookingDate = guestBookingDates[userId]
+                  const formattedBookingDate = bookingDate 
+                    ? (bookingDate.toDate 
+                        ? bookingDate.toDate().toLocaleString('ko-KR', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })
+                        : new Date(bookingDate).toLocaleString('ko-KR', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          }))
+                    : '-'
                   return (
                     <tr key={index}>
                       <td>{index + 1}</td>
                       <td>{guestName}</td>
                       <td>{guestPhone}</td>
-                      <td>{guest.email || '-'}</td>
                       <td>{guestNickname}</td>
                       <td>
                         <span className={isWalkIn ? 'walk-in-badge' : 'pre-booking-badge'}>
                           {isWalkIn ? '현장 예매' : '사전 예매'}
                         </span>
+                      </td>
+                      <td style={{ fontSize: '0.875rem', color: '#999' }}>
+                        {formattedBookingDate}
                       </td>
                       <td style={{ textAlign: 'center' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'center' }}>
@@ -1969,7 +2008,26 @@ const Admin = () => {
                             onClick={() => {
                               requirePassword(() => {
                                 if (window.confirm(`"${guestName}" 게스트를 삭제하시겠습니까?`)) {
+                                  // 게스트 삭제
                                   deleteGuest(index)
+                                  
+                                  // 해당 게스트의 booking 정보도 삭제
+                                  const normalizedPhone = guestPhoneRaw.replace(/[-\s()]/g, '')
+                                  const bookingId = `${guestName}_${normalizedPhone}`
+                                  const bookingRef = doc(db, 'bookings', bookingId)
+                                  
+                                  deleteDoc(bookingRef).catch((error) => {
+                                    console.error('예매 정보 삭제 오류:', error)
+                                    // 예매 정보 삭제 실패해도 게스트 삭제는 계속 진행
+                                  })
+                                  
+                                  // guestBookingDates에서도 제거
+                                  setGuestBookingDates((prev) => {
+                                    const updated = { ...prev }
+                                    delete updated[bookingId]
+                                    return updated
+                                  })
+                                  
                                   setUploadStatus(`✅ "${guestName}" 게스트가 삭제되었습니다.`)
                                 }
                               })
@@ -2874,7 +2932,7 @@ const Admin = () => {
       {showGuestAddModal && (
         <div className="modal-overlay" onClick={() => {
           setShowGuestAddModal(false)
-          setNewGuest({ name: '', phone: '', email: '', isWalkIn: false })
+          setNewGuest({ name: '', phone: '', isWalkIn: false })
         }}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
@@ -2883,7 +2941,7 @@ const Admin = () => {
                 className="modal-close"
                 onClick={() => {
                   setShowGuestAddModal(false)
-                  setNewGuest({ name: '', phone: '', email: '', isWalkIn: false })
+                  setNewGuest({ name: '', phone: '', isWalkIn: false })
                 }}
               >
                 ×
@@ -2912,16 +2970,6 @@ const Admin = () => {
                     setNewGuest({ ...newGuest, phone: value })
                   }}
                   placeholder="전화번호 입력 (숫자만)"
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="add-guest-email">이메일 (선택사항)</label>
-                <input
-                  type="email"
-                  id="add-guest-email"
-                  value={newGuest.email}
-                  onChange={(e) => setNewGuest({ ...newGuest, email: e.target.value })}
-                  placeholder="이메일 입력"
                 />
               </div>
               <div className="form-group">
@@ -2979,7 +3027,6 @@ const Admin = () => {
                       '전화번호': normalizedPhone,
                       Name: normalizedName,
                       Phone: normalizedPhone,
-                      email: newGuest.email.trim() || undefined,
                       checkedIn: false,
                       isWalkIn: newGuest.isWalkIn,
                       paymentConfirmed: false
@@ -3004,7 +3051,7 @@ const Admin = () => {
                     uploadGuests(updatedGuests)
                     
                     setShowGuestAddModal(false)
-                    setNewGuest({ name: '', phone: '', email: '', isWalkIn: false })
+                    setNewGuest({ name: '', phone: '', isWalkIn: false })
                     const bookingType = newGuest.isWalkIn ? '현장 예매' : '사전 예매'
                     setUploadStatus(`✅ "${normalizedName}" 게스트가 ${bookingType}로 추가되었습니다.`)
                     
@@ -3028,7 +3075,7 @@ const Admin = () => {
                   type="button"
                   onClick={() => {
                     setShowGuestAddModal(false)
-                    setNewGuest({ name: '', phone: '', email: '', isWalkIn: false })
+                    setNewGuest({ name: '', phone: '', isWalkIn: false })
                   }}
                   className="login-button modal-cancel-button"
                 >

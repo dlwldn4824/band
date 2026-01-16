@@ -306,11 +306,12 @@
 .message {
   display: flex;
   flex-direction: column;
-  width: fit-content;
-  max-width: 70%;
+  width: 100%;
+  max-width: 100%;
   animation: slideIn 0.3s ease-out;
   align-self: flex-start;
   margin-bottom: 0.25rem;
+  box-sizing: border-box;
 }
 
 .message.own-message {
@@ -333,6 +334,10 @@
   margin-bottom: 0.25rem;
   font-size: 0.75rem;
   padding: 0 0.25rem;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .message.own-message .message-header {
@@ -343,6 +348,110 @@
 .message-user {
   font-weight: 600;
   color: #ffffff;
+}
+
+/* 개인 입장 링크 섹션 (Login.css와 동일) */
+.personal-link-section {
+  border: 2px dashed #666;
+  border-radius: 12px;
+  padding: 1.5rem 0.5rem;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  background: #2a2a2a;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.personal-link-label {
+  color: #ffffff;
+  font-size: 1.125rem !important;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  margin-top: 0;
+  text-align: center;
+  font-family: 'Pretendard', sans-serif;
+}
+
+.personal-link-container {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.personal-link-input {
+  flex: 1;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-family: 'Pretendard', monospace;
+  word-break: break-all;
+}
+
+.personal-link-input:focus {
+  outline: none;
+  border-color: rgb(255, 76, 76);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.copy-link-button {
+  padding: 0.75rem 1rem;
+  background: rgb(255, 76, 76);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s, transform 0.2s;
+  flex-shrink: 0;
+  font-family: 'Pretendard', sans-serif;
+}
+
+.copy-link-button:hover {
+  background: rgb(230, 62, 62);
+  transform: translateY(-1px);
+}
+
+.copy-link-button:active {
+  transform: translateY(0);
+}
+
+.personal-link-hint {
+  margin-top: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.75rem;
+  text-align: center;
+  line-height: 1.4;
+  font-family: 'Pretendard', sans-serif;
+}
+
+@media (max-width: 768px) {
+  .personal-link-container {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .personal-link-input {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.7rem;
+  }
+
+  .copy-link-button {
+    flex-shrink: 0;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.7rem;
+    white-space: nowrap;
+  }
 }
 
 .message.own-message .message-user {

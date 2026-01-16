@@ -5,7 +5,7 @@ import { useData } from '../contexts/DataContext'
 import { doc, setDoc, onSnapshot, getDoc } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import TicketTransition from '../components/TicketTransition'
-import ticketImage from '../assets/배경/티켓_최종.png'
+import ticketImage from '../assets/배경/렉사_연합공연_티켓.png'
 import { validatePhoneNumber, formatPhoneDisplay } from '../utils/phoneFormat'
 import './Login.css'
 
@@ -757,7 +757,7 @@ const Login = () => {
                 checked={bookingInfoConfirmed}
                 onChange={(e) => setBookingInfoConfirmed(e.target.checked)}
               />
-              <span>예매정보 확인해주세요.이후로 수정이 불가합니다.</span>
+              <span>예매정보 확인해주세요.<br/>이후로 수정이 불가합니다.</span>
             </label>
           </div>
 
@@ -840,7 +840,7 @@ const Login = () => {
                   </button>
                 </div>
                 <p className="personal-link-hint">
-                  이 링크를 저장해두시면 나중에 바로 입장하실 수 있습니다.
+                  링크를 복사해두시면 바로 로그인 하실 수 있습니다.
                 </p>
               </div>
               
