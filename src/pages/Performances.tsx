@@ -21,25 +21,22 @@ import drumIcon from '../assets/배경/드럼.png'
 import './Performances.css'
 
 // ===== 곡 소개 이미지 =====
-import img1 from '../assets/곡소개/1_비틀비틀짝짜꿍.jpg'
-import img2 from '../assets/곡소개/2_대화가필요해.jpeg'
-import img3 from '../assets/곡소개/3_눈이오잖아.jpeg'
-import img4 from '../assets/곡소개/4_밤이깊었네.jpeg'
-import img5 from '../assets/곡소개/5_무희.jpg'
-import img6 from '../assets/곡소개/6_각자의밤.jpeg'
-import img7 from '../assets/곡소개/7_지금부터.jpeg'
-import img8 from '../assets/곡소개/8_드라우닝.png'
-import img9 from '../assets/곡소개/9_하이라이트.jpeg'
-import img10 from '../assets/곡소개/10_안티프리즈.png'
-import img11 from '../assets/곡소개/11_검을현.jpeg'
-import img12 from '../assets/곡소개/12_Oddities.jpeg'
-import img13 from '../assets/곡소개/13_용의자.png'
-import img14 from '../assets/곡소개/14_ditto.jpeg'
-import img15 from '../assets/곡소개/15. 만찬가.png'
-import img16 from '../assets/곡소개/16_itsmylife.jpeg'
-import img17 from '../assets/곡소개/17_bad.jpeg'
-import img18 from '../assets/곡소개/18_stargazing.jpeg'
-import img19 from '../assets/곡소개/19_아지랑이.jpeg'
+import img1 from '../assets/렉사X멜로딕 곡소개/1.행운을빌어요.jpeg'
+import img2 from '../assets/렉사X멜로딕 곡소개/2.0+0.jpg'
+import img3 from '../assets/렉사X멜로딕 곡소개/3.talk.jpeg'
+import img4 from '../assets/렉사X멜로딕 곡소개/4.good bye bye.jpeg'
+import img5 from '../assets/렉사X멜로딕 곡소개/5.Pretender.png'
+import img6 from '../assets/렉사X멜로딕 곡소개/6.항해.jpg'
+import img7 from '../assets/렉사X멜로딕 곡소개/7.어지러워.png'
+import img8 from '../assets/렉사X멜로딕 곡소개/8.강가에서.png'
+import img9 from '../assets/렉사X멜로딕 곡소개/9.축배.png'
+import img10 from '../assets/렉사X멜로딕 곡소개/10.ㅈㅣㅂ.jpg'
+import img11 from '../assets/렉사X멜로딕 곡소개/11.눈.jpg'
+import img12 from '../assets/렉사X멜로딕 곡소개/12.사랑의 미학.jpg'
+import img13 from '../assets/렉사X멜로딕 곡소개/13.Ling Ling.jpg'
+import img14 from '../assets/렉사X멜로딕 곡소개/14.Letter.jpg'
+import img15 from '../assets/렉사X멜로딕 곡소개/15.찬란.jpg'
+import img16 from '../assets/렉사X멜로딕 곡소개/16.Antifreeze.jpg'
 
 interface SongComment {
   id: string
@@ -229,37 +226,69 @@ const Performances = () => {
 
   // 이미지 매핑 (import된 이미지 사용)
   const imageMap: { [key:string]:string } = {
+    '행운을빌어요': img1,
+    '행운을 빌어요': img1,
     '비틀비틀짝짝꿍': img1,
-    '비틀비틀짝짜꿍': img1, // 혹시 데이터에 오타로 들어온 경우 대비
+    '비틀비틀짝짜꿍': img1,
 
+    '0+0': img2,
     '대화가필요해': img2,
+
+    'talk': img3,
+    'Talk': img3,
     '눈이오잖아': img3,
+
+    'good bye bye': img4,
+    'Good Bye Bye': img4,
+    '굿바이바이': img4,
+    '굿바이 바이': img4,
     '밤이깊었네': img4,
+
+    'Pretender': img5,
+    'pretender': img5,
     '무희': img5,
+
+    '항해': img6,
     '각자의밤': img6,
+
+    '어지러워': img7,
     '지금부터': img7,
+
+    '강가에서': img8,
     '드라우닝': img8,
-    'drowning' : img8,
+    'drowning': img8,
+
+    '축배': img9,
     '하이라이트': img9,
-    'highlight' : img9,
-    '안티프리즈': img10,
-    'antifreeze' : img10,
+    'highlight': img9,
+
+    'ㅈㅣㅂ': img10,
+    '지브': img10,
+
+    '눈': img11,
     '검을현': img11,
 
+    '사랑의 미학': img12,
+    '사랑의미학': img12,
     'Oddities': img12,
     'oddities': img12,
 
+    'Ling Ling': img13,
+    'ling ling': img13,
     '용의자': img13,
 
+    'Letter': img14,
+    'letter': img14,
     'ditto': img14,
     'Ditto': img14,
 
+    '찬란': img15,
     '만찬가': img15,
+
+    'Antifreeze': img16,
+    'antifreeze': img16,
     'itsmylife': img16,
     'its my life': img16,
-    'bad': img17,
-    'stargazing': img18,
-    '아지랑이': img19,
   }
 
   // 곡 이름에 맞는 이미지 반환 (import 기반)

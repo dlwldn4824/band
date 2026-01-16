@@ -8,6 +8,7 @@ import editIcon from '../assets/배경/수정_아이콘.png'
 import { formatPhoneDisplay } from '../utils/phoneFormat'
 import { collection, getDocs } from 'firebase/firestore'
 import { db } from '../config/firebase'
+import posterImage from '../assets/배경/렉사연합_포스터 copy.png'
 import './Dashboard.css'
 
 const Dashboard = () => {
@@ -339,7 +340,7 @@ const Dashboard = () => {
         <section className="dashboard-section">
           <div className="poster-section">
             <img 
-              src="/assets/배경/최종_포스터.PNG" 
+              src={posterImage} 
               alt="공연 포스터" 
               className="poster-image"
               loading="lazy"
