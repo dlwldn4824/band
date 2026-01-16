@@ -118,20 +118,28 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           }
         }
         
-        if (firestoreGuests.length > 0) {
-          setGuests(firestoreGuests)
-        } else {
-          // Firestore에 없으면 localStorage에서 로드
+        // Firestore 데이터를 우선 적용 (빈 배열도 포함)
+        setGuests(firestoreGuests)
+        localStorage.setItem('guests', JSON.stringify(firestoreGuests))
+        
+        // Firestore에 데이터가 없고 localStorage에만 있으면 동기화 (초기 마이그레이션용)
+        // 단, Firestore에 빈 배열이 명시적으로 저장되어 있으면 동기화하지 않음
+        if (firestoreGuests.length === 0) {
           const savedGuests = localStorage.getItem('guests')
           if (savedGuests) {
             try {
               const parsedGuests = JSON.parse(savedGuests)
-              setGuests(parsedGuests)
-              // Firestore에 동기화 (실패해도 계속 진행)
+              // localStorage에 데이터가 있고 Firestore가 비어있으면 동기화
+              // 하지만 실시간 리스너가 곧 서버 상태로 덮어쓸 수 있음
               if (parsedGuests.length > 0) {
-                await setFirestoreData('guests' as any, parsedGuests).catch(err => {
-                  console.warn('[DataContext] 게스트 데이터 Firestore 동기화 실패:', err)
-                })
+                // Firestore에 문서가 없거나 빈 배열이 아닌 경우에만 동기화
+                const firestoreData = await getFirestoreData('guests' as any, 'all')
+                if (!firestoreData || (firestoreData as any).guests?.length === 0) {
+                  // Firestore에 명시적으로 빈 배열이 저장되어 있지 않으면 동기화
+                  await setFirestoreData('guests' as any, { guests: parsedGuests }, 'all').catch(err => {
+                    console.warn('[DataContext] 게스트 데이터 Firestore 동기화 실패:', err)
+                  })
+                }
               }
             } catch (parseError) {
               console.error('[DataContext] localStorage 게스트 데이터 파싱 오류:', parseError)
@@ -390,7 +398,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
     loadFirestoreData()
 
-    // Firestore 실시간 리스너 설정 (guests 자동 업데이트)
+    // Firestore 실시간 리스너 설정 (guests 자동 업데이트) - 서버 상태 우선
     const guestsDocRef = doc(db, 'guests', 'all')
     const unsubscribeGuests = onSnapshot(
       guestsDocRef,
@@ -409,11 +417,14 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             }
           }
           
-          if (firestoreGuests.length > 0 || guests.length > 0) {
-            // Firestore 데이터가 있으면 업데이트
-            setGuests(firestoreGuests)
-            localStorage.setItem('guests', JSON.stringify(firestoreGuests))
-          }
+          // Firestore 데이터를 항상 우선 적용 (빈 배열도 포함)
+          // 서버 상태가 최신이므로 무조건 동기화
+          setGuests(firestoreGuests)
+          localStorage.setItem('guests', JSON.stringify(firestoreGuests))
+        } else {
+          // 문서가 없으면 빈 배열로 설정
+          setGuests([])
+          localStorage.removeItem('guests')
         }
       },
       (error) => {
