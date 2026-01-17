@@ -5,7 +5,7 @@ import { formatPhoneDisplay } from '../utils/phoneFormat'
 import { collection, getDocs, deleteDoc, doc, query, orderBy, getDoc, updateDoc, setDoc, Timestamp } from 'firebase/firestore'
 import { db, storage } from '../config/firebase'
 import { setFirestoreData } from '../services/firestoreService'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { ref, uploadBytes, getDownloadURL, getBytes } from 'firebase/storage'
 import './Admin.css'
 
 const Admin = () => {
@@ -2312,34 +2312,67 @@ const Admin = () => {
 
         <div className="sample-buttons">
           <button
-            onClick={async () => {
+            onClick={() => {
               try {
-                const fileName = '게스트_목록.xlsx'
-                const storageRef = ref(storage, `guests/${fileName}`)
-                const downloadURL = await getDownloadURL(storageRef)
+                if (guests.length === 0) {
+                  setUploadStatus('❌ 다운로드할 게스트가 없습니다.')
+                  setTimeout(() => setUploadStatus(''), 3000)
+                  return
+                }
+
+                // 현재 메모리의 게스트 데이터를 엑셀 형식으로 변환 (CORS 문제 없음)
+                const excelData = guests.map((guest, index) => {
+                  const guestName = guest.name || guest['이름'] || guest.Name || ''
+                  const guestPhone = guest.phone || guest['전화번호'] || guest.Phone || ''
+                  const normalizedPhone = String(guestPhone).replace(/[-\s()]/g, '')
+                  const userId = `${guestName}_${normalizedPhone}`
+                  const guestNickname = userNicknames[userId] || ''
+                  
+                  // 예매 일시 조회
+                  const bookingDate = guestBookingDates[userId]
+                  const formattedBookingDate = bookingDate 
+                    ? (bookingDate.toDate 
+                        ? bookingDate.toDate().toLocaleString('ko-KR')
+                        : new Date(bookingDate).toLocaleString('ko-KR'))
+                    : ''
+                  
+                  return {
+                    번호: index + 1,
+                    이름: guestName,
+                    전화번호: guestPhone,
+                    닉네임: guestNickname,
+                    예매유형: guest.isWalkIn ? '현장 예매' : '사전 예매',
+                    예매일시: formattedBookingDate,
+                    입금확인: guest.paymentConfirmed ? '확인완료' : '대기중',
+                    입금확인시간: guest.paymentConfirmedAt 
+                      ? new Date(guest.paymentConfirmedAt).toLocaleString('ko-KR')
+                      : '',
+                    입장번호: guest.entryNumber || '',
+                    체크인: guest.checkedIn ? '완료' : '미완료',
+                    체크인시간: guest.checkedInAt 
+                      ? (guest.checkedInAt.toDate 
+                          ? guest.checkedInAt.toDate().toLocaleString('ko-KR')
+                          : new Date(guest.checkedInAt).toLocaleString('ko-KR'))
+                      : ''
+                  }
+                })
+
+                // 엑셀 파일 생성
+                const worksheet = XLSX.utils.json_to_sheet(excelData)
+                const workbook = XLSX.utils.book_new()
+                XLSX.utils.book_append_sheet(workbook, worksheet, '게스트 목록')
                 
-                // fetch를 사용하여 파일을 가져온 후 Blob으로 다운로드
-                const response = await fetch(downloadURL)
-                const blob = await response.blob()
+                // 엑셀 파일 다운로드 (CORS 문제 없음)
+                const fileName = `게스트_목록_${new Date().toISOString().split('T')[0]}.xlsx`
+                XLSX.writeFile(workbook, fileName)
                 
-                // Blob URL 생성 및 다운로드
-                const blobURL = window.URL.createObjectURL(blob)
-                const link = document.createElement('a')
-                link.href = blobURL
-                link.download = fileName
-                document.body.appendChild(link)
-                link.click()
-                document.body.removeChild(link)
-                
-                // Blob URL 정리
-                window.URL.revokeObjectURL(blobURL)
-                
-                setUploadStatus('✅ 엑셀 파일 다운로드가 시작되었습니다.')
+                setUploadStatus(`✅ 엑셀 파일 다운로드가 완료되었습니다. (${guests.length}명)`)
                 setTimeout(() => setUploadStatus(''), 3000)
-              } catch (error) {
+              } catch (error: any) {
                 console.error('엑셀 파일 다운로드 오류:', error)
-                setUploadStatus('❌ 엑셀 파일을 찾을 수 없습니다. 게스트 리스트를 먼저 업데이트해주세요.')
-                setTimeout(() => setUploadStatus(''), 3000)
+                const errorMessage = error?.message || '알 수 없는 오류'
+                setUploadStatus(`❌ 엑셀 파일 다운로드 실패: ${errorMessage}`)
+                setTimeout(() => setUploadStatus(''), 5000)
               }
             }}
             className="sample-button"
