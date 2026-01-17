@@ -8,7 +8,7 @@ import editIcon from '../assets/배경/수정_아이콘.png'
 import { formatPhoneDisplay } from '../utils/phoneFormat'
 import { collection, getDocs } from 'firebase/firestore'
 import { db } from '../config/firebase'
-import posterImage from '../assets/배경/렉사연합_포스터 copy.png'
+import posterImage from '../assets/배경/연합공연_최종포스터.jpeg'
 import './Dashboard.css'
 
 const Dashboard = () => {

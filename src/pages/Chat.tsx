@@ -21,7 +21,7 @@ import { db } from '../config/firebase'
 import './Chat.css'
 
 // Google Drive 공유 폴더 링크 (환경변수 또는 설정에서 관리)
-const GOOGLE_DRIVE_LINK = import.meta.env.VITE_GOOGLE_DRIVE_LINK || 'https://drive.google.com/drive/folders/19YpzIkvVTx_wUzEdY5vVWzbe5_o99W3g?usp=drive_link'
+const GOOGLE_DRIVE_LINK = import.meta.env.VITE_GOOGLE_DRIVE_LINK || 'https://drive.google.com/drive/folders/1TqD4mnVM0mzmtfUcDeNleEZWQizY2pjV?usp=drive_link'
 
 interface Message {
   id: string

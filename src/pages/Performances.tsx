@@ -37,6 +37,7 @@ import img13 from '../assets/렉사X멜로딕 곡소개/13.Ling Ling.jpg'
 import img14 from '../assets/렉사X멜로딕 곡소개/14.Letter.jpg'
 import img15 from '../assets/렉사X멜로딕 곡소개/15.찬란.jpg'
 import img16 from '../assets/렉사X멜로딕 곡소개/16.Antifreeze.jpg'
+import img17 from '../assets/렉사X멜로딕 곡소개/17.연합곡.png'
 
 interface SongComment {
   id: string
@@ -228,89 +229,78 @@ const Performances = () => {
   const imageMap: { [key:string]:string } = {
     '행운을빌어요': img1,
     '행운을 빌어요': img1,
-    '비틀비틀짝짝꿍': img1,
-    '비틀비틀짝짜꿍': img1,
-
+    
     '0+0': img2,
-    '대화가필요해': img2,
 
     'talk': img3,
     'Talk': img3,
-    '눈이오잖아': img3,
 
     'good bye bye': img4,
     'Good Bye Bye': img4,
     '굿바이바이': img4,
     '굿바이 바이': img4,
-    '밤이깊었네': img4,
 
     'Pretender': img5,
     'pretender': img5,
-    '무희': img5,
 
     '항해': img6,
-    '각자의밤': img6,
 
     '어지러워': img7,
-    '지금부터': img7,
 
     '강가에서': img8,
-    '드라우닝': img8,
-    'drowning': img8,
 
     '축배': img9,
-    '하이라이트': img9,
-    'highlight': img9,
 
     'ㅈㅣㅂ': img10,
-    '지브': img10,
 
     '눈': img11,
-    '검을현': img11,
 
     '사랑의 미학': img12,
     '사랑의미학': img12,
-    'Oddities': img12,
-    'oddities': img12,
+    
 
     'Ling Ling': img13,
     'ling ling': img13,
-    '용의자': img13,
 
     'Letter': img14,
     'letter': img14,
-    'ditto': img14,
-    'Ditto': img14,
+    
 
     '찬란': img15,
-    '만찬가': img15,
 
     'Antifreeze': img16,
     'antifreeze': img16,
-    'itsmylife': img16,
-    'its my life': img16,
+    
+    '???': img17,
+    '연합 곡': img17,
   }
 
   // 곡 이름에 맞는 이미지 반환 (import 기반)
   const getSongImage = (songName: string): string | undefined => {
     if (!songName) return undefined
 
+    // 1) 먼저 원본 곡 이름으로 정확 매칭 (특수문자 포함)
+    if (imageMap[songName]) {
+      return imageMap[songName]
+    }
+
     const normalize = (str: string) =>
       str.replace(/\s+/g, '').replace(/[^\w가-힣]/g, '').toLowerCase()
 
     const normalizedSongName = normalize(songName)
 
-    // 1) 정규화된 곡 이름으로 정확 매칭
+    // 2) 정규화된 곡 이름으로 정확 매칭
     for (const [key, path] of Object.entries(imageMap)) {
-      if (normalize(key) === normalizedSongName) {
+      const nk = normalize(key)
+      if (nk && nk === normalizedSongName) {
         return path
       }
     }
 
-    // 2) 정확 매칭이 안 되면 부분 매칭
+    // 3) 정확 매칭이 안 되면 부분 매칭 (빈 문자열 제외)
     for (const [key, path] of Object.entries(imageMap)) {
       const nk = normalize(key)
-      if (normalizedSongName.includes(nk) || nk.includes(normalizedSongName)) {
+      if (nk && normalizedSongName && (normalizedSongName.includes(nk) || nk.includes(normalizedSongName))) {
         return path
       }
     }
