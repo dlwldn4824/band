@@ -126,20 +126,22 @@ const Login = () => {
             // localStorage에서 예매 정보 삭제
             localStorage.removeItem('pendingBooking')
             
-            // 대시보드로 이동 (약간의 딜레이를 두어 로그인 상태가 확실히 반영되도록)
-            setTimeout(() => {
-              console.log('[Login] 자동 로그인 - 대시보드로 이동')
-              navigate('/dashboard', { replace: true })
-            }, 500)
+            // 로딩 상태 해제 후 티켓 애니메이션 표시
+            setIsProcessingAutoLogin(false)
+            setBookingName(decodedName)
+            // 전화번호 포맷팅
+            const formattedPhone = formatPhoneDisplay(decodedPhone)
+            setBookingPhone(formattedPhone)
+            setShowTicket(true)
           } else {
             console.error('[Login] 자동 로그인 실패 - 게스트를 찾을 수 없습니다')
+            setIsProcessingAutoLogin(false)
             navigate('/login', { replace: true })
           }
         } catch (error) {
           console.error('자동 로그인 오류:', error)
-          navigate('/login', { replace: true })
-        } finally {
           setIsProcessingAutoLogin(false)
+          navigate('/login', { replace: true })
         }
       }
       
@@ -227,9 +229,12 @@ const Login = () => {
                   const loginSuccess = login(booking.name, normalizedPhone, updatedGuests)
                   if (loginSuccess) {
                     localStorage.removeItem('pendingBooking')
-                    setTimeout(() => {
-                      checkNicknameAndNavigate()
-                    }, 200)
+                    // 티켓 애니메이션 표시
+                    setBookingName(booking.name)
+                    // 전화번호 포맷팅
+                    const formattedPhone = formatPhoneDisplay(booking.phone)
+                    setBookingPhone(formattedPhone)
+                    setShowTicket(true)
                     return
                   }
                 }
@@ -276,9 +281,8 @@ const Login = () => {
             // localStorage에서 예매 정보 삭제
             localStorage.removeItem('pendingBooking')
             setShowBookingConfirmation(false)
-            setTimeout(() => {
-              checkNicknameAndNavigate()
-            }, 200)
+            // 티켓 애니메이션 표시
+            setShowTicket(true)
           }
         }
       }
@@ -365,9 +369,8 @@ const Login = () => {
               const loginSuccess = login(bookingName.trim(), normalizedPhone, updatedGuests)
               if (loginSuccess) {
                 localStorage.removeItem('pendingBooking')
-                setTimeout(() => {
-                  checkNicknameAndNavigate()
-                }, 200)
+                // 티켓 애니메이션 표시
+                setShowTicket(true)
                 return
               }
             }
@@ -590,8 +593,8 @@ const Login = () => {
     }
   }
 
-  // 자동 로그인 처리 중일 때 로딩 화면 표시
-  if (isProcessingAutoLogin) {
+  // 자동 로그인 처리 중일 때 로딩 화면 표시 (티켓 애니메이션이 표시되지 않을 때만)
+  if (isProcessingAutoLogin && !showTicket) {
     return (
       <div className="login-page">
         <div className="login-container">
