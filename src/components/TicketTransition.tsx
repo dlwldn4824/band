@@ -20,6 +20,7 @@ export default function TicketTransition({
   info,
 }: Props) {
   const [start, setStart] = useState(false);
+  const [finished, setFinished] = useState(false);
 
   // 디버깅용 콘솔 로그
   console.log('[TicketTransition] info:', info)
@@ -27,6 +28,9 @@ export default function TicketTransition({
   console.log('[TicketTransition] 스탬프 표시 여부:', !!info?.entryNumber)
 
   useEffect(() => {
+    // 이미 애니메이션이 끝났으면 다시 실행하지 않음
+    if (finished) return;
+
     // 살짝 딜레이 후 시작 (화면 렌더 안정화)
     const t1 = setTimeout(() => setStart(true), 150);
 
@@ -35,6 +39,7 @@ export default function TicketTransition({
     // 여유를 두고 1500ms 후에 콜백 호출
     const t2 = setTimeout(() => {
       console.log('[TicketTransition] 애니메이션 완료, onDone 호출')
+      setFinished(true)
       onDone?.()
     }, 1500);
 
@@ -42,7 +47,7 @@ export default function TicketTransition({
       clearTimeout(t1);
       clearTimeout(t2);
     };
-  }, [onDone]);
+  }, []); // 빈 배열로 변경하여 한 번만 실행
 
   return (
     <div 
@@ -262,12 +267,18 @@ const css = `
 /* 찢어지는 애니메이션 */
 .tt_ticket.is-tearing .tt_top{
   animation: tt_tearTop 980ms 120ms cubic-bezier(.2,.8,.2,1) forwards;
+  animation-fill-mode: forwards;
+  animation-iteration-count: 1;
 }
 .tt_ticket.is-tearing .tt_bottom{
   animation: tt_tearBottom 980ms 120ms cubic-bezier(.2,.8,.2,1) forwards;
+  animation-fill-mode: forwards;
+  animation-iteration-count: 1;
 }
 .tt_ticket.is-tearing .tt_perforation{
   animation: tt_tearLine 980ms 120ms ease-out forwards;
+  animation-fill-mode: forwards;
+  animation-iteration-count: 1;
 }
 
 @keyframes tt_tearTop{
