@@ -7,7 +7,7 @@ import { db } from '../config/firebase'
 import RouletteMirror from '../components/games/RouletteMirror'
 import EntryNumberDrawMirror from '../components/games/EntryNumberDrawMirror'
 import LEDBoard from '../components/games/LEDBoard'
-import directionsImage from '../assets/배경/라디오가가_지도.png'
+import directionsImage from '../assets/배경/얼라이브홀_지도.png'
 import './Events.css'
 
 import shopIcon from '../assets/icons/shop.png'
