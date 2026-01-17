@@ -58,7 +58,7 @@ const Admin = () => {
     const baseUrl = window.location.origin
     return `${baseUrl}/t/${urlSafeToken}`
   }
-  const [drinkOrders, setDrinkOrders] = useState<Array<{ id: string; name: string; phone: string; beerQuantity: number; mojitoQuantity: number; totalAmount: number; createdAt: any; paymentConfirmed?: boolean; paymentConfirmedAt?: any; provided?: boolean; providedAt?: any; orderHistory?: Array<{ beerQuantity: number; mojitoQuantity: number; createdAt: any; provided?: boolean; providedAt?: any }> }>>([])
+  const [drinkOrders, setDrinkOrders] = useState<Array<{ id: string; name: string; phone: string; beerQuantity: number; mojitoQuantity: number; totalAmount: number; createdAt: any; paymentConfirmed?: boolean; paymentConfirmedAt?: any; provided?: boolean; providedAt?: any; orderHistory?: Array<{ beerQuantity: number; mojitoQuantity: number; unitPrice?: number; createdAt: any; provided?: boolean; providedAt?: any }> }>>([])
   const { uploadGuests, setPerformanceData, guests, performanceData, clearGuests, deleteGuest, updateGuest, clearSetlist, bookingInfo, setBookingInfo, clearChatMessages, toggleGuestPayment, addWalkInGuest } = useData()
   
   // 예매 정보 폼 상태
@@ -126,7 +126,7 @@ const Admin = () => {
         const ordersRef = collection(db, 'drinkOrders')
         const snapshot = await getDocs(query(ordersRef, orderBy('createdAt', 'desc')))
         
-        const orders: Array<{ id: string; name: string; phone: string; beerQuantity: number; mojitoQuantity: number; totalAmount: number; createdAt: any; paymentConfirmed?: boolean; paymentConfirmedAt?: any; provided?: boolean; providedAt?: any; orderHistory?: Array<{ beerQuantity: number; mojitoQuantity: number; createdAt: any; provided?: boolean; providedAt?: any }> }> = []
+        const orders: Array<{ id: string; name: string; phone: string; beerQuantity: number; mojitoQuantity: number; totalAmount: number; createdAt: any; paymentConfirmed?: boolean; paymentConfirmedAt?: any; provided?: boolean; providedAt?: any; orderHistory?: Array<{ beerQuantity: number; mojitoQuantity: number; unitPrice?: number; createdAt: any; provided?: boolean; providedAt?: any }> }> = []
         
         snapshot.forEach((doc) => {
           const data = doc.data()
@@ -1630,8 +1630,8 @@ const Admin = () => {
                                     onClick={() => handleDrinkOrderProvide(order.id, historyIndex!)}
                                     disabled={!order.paymentConfirmed}
                                     style={{
-                                      background: isProvided ? '#28a745' : (order.paymentConfirmed ? '#007bff' : '#cccccc'),
-                                      color: 'white',
+                                      background: isProvided ? '#28a745' : (order.paymentConfirmed ? '#ffc107' : '#cccccc'),
+                                      color: isProvided ? 'white' : (order.paymentConfirmed ? '#000' : 'white'),
                                       border: 'none',
                                       borderRadius: '4px',
                                       padding: '0.4rem 0.8rem',
@@ -1642,17 +1642,17 @@ const Admin = () => {
                                     }}
                                     onMouseOver={(e) => {
                                       if (order.paymentConfirmed) {
-                                        e.currentTarget.style.background = isProvided ? '#218838' : '#0056b3'
+                                        e.currentTarget.style.background = isProvided ? '#218838' : '#ffb300'
                                       }
                                     }}
                                     onMouseOut={(e) => {
                                       if (order.paymentConfirmed) {
-                                        e.currentTarget.style.background = isProvided ? '#28a745' : '#007bff'
+                                        e.currentTarget.style.background = isProvided ? '#28a745' : '#ffc107'
                                       }
                                     }}
                                     title={order.paymentConfirmed ? (isProvided ? '제공완료됨' : '제공완료 처리') : '입금 확인 후 제공완료 처리 가능'}
                                   >
-                                    {isProvided ? '제공완료' : '제공완료'}
+                                    {isProvided ? '제공완료' : '제공 대기'}
                                   </button>
                                   <button
                                     onClick={() => handleDeleteDrinkOrderHistory(order.id, historyIndex!)}
@@ -1741,8 +1741,8 @@ const Admin = () => {
                                   onClick={() => handleDrinkOrderProvide(order.id)}
                                   disabled={!order.paymentConfirmed}
                                   style={{
-                                    background: order.provided ? '#28a745' : (order.paymentConfirmed ? '#007bff' : '#cccccc'),
-                                    color: 'white',
+                                    background: order.provided ? '#28a745' : (order.paymentConfirmed ? '#ffc107' : '#cccccc'),
+                                    color: order.provided ? 'white' : (order.paymentConfirmed ? '#000' : 'white'),
                                     border: 'none',
                                     borderRadius: '4px',
                                     padding: '0.4rem 0.8rem',
@@ -1753,17 +1753,17 @@ const Admin = () => {
                                   }}
                                   onMouseOver={(e) => {
                                     if (order.paymentConfirmed) {
-                                      e.currentTarget.style.background = order.provided ? '#218838' : '#0056b3'
+                                      e.currentTarget.style.background = order.provided ? '#218838' : '#ffb300'
                                     }
                                   }}
                                   onMouseOut={(e) => {
                                     if (order.paymentConfirmed) {
-                                      e.currentTarget.style.background = order.provided ? '#28a745' : '#007bff'
+                                      e.currentTarget.style.background = order.provided ? '#28a745' : '#ffc107'
                                     }
                                   }}
                                   title={order.paymentConfirmed ? (order.provided ? '제공완료됨' : '제공완료 처리') : '입금 확인 후 제공완료 처리 가능'}
                                 >
-                                  {order.provided ? '제공완료' : '제공완료'}
+                                  {order.provided ? '제공완료' : '제공 대기'}
                                 </button>
                                 <button
                                   onClick={() => handleDeleteDrinkOrder(order.id)}

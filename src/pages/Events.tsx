@@ -33,6 +33,7 @@ const Events = () => {
   const [purchaseHistory, setPurchaseHistory] = useState<Array<{
     beerQuantity: number
     mojitoQuantity: number
+    unitPrice?: number
     createdAt: any
     provided?: boolean
     providedAt?: any
@@ -682,21 +683,11 @@ const Events = () => {
                     let existingBeerQuantity = 0
                     let existingMojitoQuantity = 0
                     
-                    if (orderSnap.exists()) {
-                      const orderData = orderSnap.data()
-                      existingBeerQuantity = orderData.beerQuantity || 0
-                      existingMojitoQuantity = orderData.mojitoQuantity || 0
-                    }
-                    
-                    // 기존 수량에 새로 주문한 수량 추가
-                    const totalBeerQuantity = existingBeerQuantity + beerQuantity
-                    const totalMojitoQuantity = existingMojitoQuantity + mojitoQuantity
-                    const totalAmount = (totalBeerQuantity * currentPrice) + (totalMojitoQuantity * currentPrice)
-                    
                     // 기존 구매 이력 가져오기
                     let existingHistory: Array<{
                       beerQuantity: number
                       mojitoQuantity: number
+                      unitPrice?: number
                       createdAt: any
                       provided?: boolean
                       providedAt?: any
@@ -704,21 +695,48 @@ const Events = () => {
                     
                     if (orderSnap.exists()) {
                       const orderData = orderSnap.data()
+                      existingBeerQuantity = orderData.beerQuantity || 0
+                      existingMojitoQuantity = orderData.mojitoQuantity || 0
+                      
                       if (orderData.orderHistory && Array.isArray(orderData.orderHistory)) {
                         existingHistory = orderData.orderHistory
                       }
                     }
                     
-                    // 새 구매 이력 추가
+                    // 기존 수량에 새로 주문한 수량 추가
+                    const totalBeerQuantity = existingBeerQuantity + beerQuantity
+                    const totalMojitoQuantity = existingMojitoQuantity + mojitoQuantity
+                    
+                    // 새 구매 이력 추가 (가격 정보 포함)
                     const newHistoryItem = {
                       beerQuantity: beerQuantity,
                       mojitoQuantity: mojitoQuantity,
+                      unitPrice: currentPrice, // 주문 시점의 단가 저장
                       createdAt: Timestamp.now(),
                       provided: false,
                       providedAt: null
                     }
                     
                     const updatedHistory = [...existingHistory, newHistoryItem]
+                    
+                    // orderHistory를 기반으로 totalAmount 재계산 (각 주문의 실제 가격 반영)
+                    let totalAmount = 0
+                    updatedHistory.forEach((historyItem) => {
+                      const itemPrice = historyItem.unitPrice || ORIGINAL_PRICE // unitPrice가 없으면 기본 가격 사용
+                      const itemTotal = (historyItem.beerQuantity * itemPrice) + (historyItem.mojitoQuantity * itemPrice)
+                      totalAmount += itemTotal
+                    })
+                    
+                    // 디버깅: 현재 가격과 총액 확인
+                    console.log('[Events] 주문 저장:', {
+                      isAdmin,
+                      currentPrice,
+                      beerQuantity,
+                      mojitoQuantity,
+                      newOrderAmount: (beerQuantity * currentPrice) + (mojitoQuantity * currentPrice),
+                      totalAmount,
+                      historyCount: updatedHistory.length
+                    })
                     
                     // Firestore에 주문 정보 저장 (기존 수량에 추가)
                     await setDoc(orderRef, {
