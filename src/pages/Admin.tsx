@@ -5,7 +5,7 @@ import { formatPhoneDisplay } from '../utils/phoneFormat'
 import { collection, getDocs, deleteDoc, doc, query, orderBy, getDoc, updateDoc, setDoc, Timestamp } from 'firebase/firestore'
 import { db, storage } from '../config/firebase'
 import { setFirestoreData } from '../services/firestoreService'
-import { ref, uploadBytes, getDownloadURL, getBytes } from 'firebase/storage'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import './Admin.css'
 
 const Admin = () => {
@@ -2350,9 +2350,9 @@ const Admin = () => {
                     입장번호: guest.entryNumber || '',
                     체크인: guest.checkedIn ? '완료' : '미완료',
                     체크인시간: guest.checkedInAt 
-                      ? (guest.checkedInAt.toDate 
-                          ? guest.checkedInAt.toDate().toLocaleString('ko-KR')
-                          : new Date(guest.checkedInAt).toLocaleString('ko-KR'))
+                      ? (typeof guest.checkedInAt === 'object' && 'toDate' in guest.checkedInAt
+                          ? (guest.checkedInAt as any).toDate().toLocaleString('ko-KR')
+                          : new Date(guest.checkedInAt as number).toLocaleString('ko-KR'))
                       : ''
                   }
                 })
