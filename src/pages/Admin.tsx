@@ -1710,7 +1710,6 @@ const Admin = () => {
                               if (order.orderHistory && order.orderHistory.length > 0) {
                                 const ADMIN_PRICE = 2000
                                 const ORIGINAL_PRICE = 3500
-                                const DISCOUNTED_PRICE = 3000
                                 
                                 let calculatedTotal = 0
                                 order.orderHistory.forEach((historyItem: any) => {
