@@ -43,6 +43,7 @@ const Admin = () => {
   const [isEditingPerformanceInfo, setIsEditingPerformanceInfo] = useState(false)
   const [editedEventName, setEditedEventName] = useState('')
   const [editedDate, setEditedDate] = useState('')
+  const [guestSortBy, setGuestSortBy] = useState<'entryNumber' | 'payment' | null>(null)
   const [editedVenue, setEditedVenue] = useState('')
   const [editedEvents, setEditedEvents] = useState<Array<{ title: string; description: string; time?: string }>>([])
   const [pendingBookings] = useState<Array<{ id: string; name: string; phone: string; email: string; createdAt: any }>>([])
@@ -1855,6 +1856,38 @@ const Admin = () => {
               등록된 게스트 목록을 확인할 수 있습니다.
             </p>
           </div>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <button
+              onClick={() => setGuestSortBy(guestSortBy === 'entryNumber' ? null : 'entryNumber')}
+              style={{
+                padding: '0.375rem 0.75rem',
+                background: guestSortBy === 'entryNumber' ? '#4C4CFF' : '#f5f5f5',
+                color: guestSortBy === 'entryNumber' ? '#ffffff' : '#333',
+                border: '1px solid #ddd',
+                borderRadius: '6px',
+                fontSize: '0.75rem',
+                cursor: 'pointer',
+                fontWeight: guestSortBy === 'entryNumber' ? '600' : '400'
+              }}
+            >
+              입장번호 순
+            </button>
+            <button
+              onClick={() => setGuestSortBy(guestSortBy === 'payment' ? null : 'payment')}
+              style={{
+                padding: '0.375rem 0.75rem',
+                background: guestSortBy === 'payment' ? '#4C4CFF' : '#f5f5f5',
+                color: guestSortBy === 'payment' ? '#ffffff' : '#333',
+                border: '1px solid #ddd',
+                borderRadius: '6px',
+                fontSize: '0.75rem',
+                cursor: 'pointer',
+                fontWeight: guestSortBy === 'payment' ? '600' : '400'
+              }}
+            >
+              입금 확인 순
+            </button>
+          </div>
           <button
             onClick={() => {
               requirePassword(() => {
@@ -1888,7 +1921,50 @@ const Admin = () => {
                 </tr>
               </thead>
               <tbody>
-                {guests.map((guest, index) => {
+                {(() => {
+                  // 정렬된 게스트 리스트 생성
+                  let sortedGuests = [...guests]
+                  
+                  if (guestSortBy === 'entryNumber') {
+                    // 입장번호 순 정렬 (입장번호가 있는 게스트가 먼저, 그 다음 입장번호 오름차순)
+                    sortedGuests.sort((a, b) => {
+                      const aEntry = a.entryNumber
+                      const bEntry = b.entryNumber
+                      
+                      // 입장번호가 없는 게스트는 뒤로
+                      if (aEntry === undefined || aEntry === null) {
+                        if (bEntry !== undefined && bEntry !== null) return 1
+                        return 0
+                      }
+                      if (bEntry === undefined || bEntry === null) {
+                        return -1
+                      }
+                      
+                      // 입장번호 오름차순
+                      return aEntry - bEntry
+                    })
+                  } else if (guestSortBy === 'payment') {
+                    // 입금 확인 순 정렬 (입금 확인 안된 사람이 위로)
+                    sortedGuests.sort((a, b) => {
+                      const aConfirmed = a.paymentConfirmed === true
+                      const bConfirmed = b.paymentConfirmed === true
+                      
+                      // 입금 확인 안된 사람이 위로
+                      if (!aConfirmed && bConfirmed) return -1
+                      if (aConfirmed && !bConfirmed) return 1
+                      
+                      // 둘 다 확인되었거나 둘 다 안되었으면 입금 확인 시간 순 (빠른 순)
+                      if (aConfirmed && bConfirmed) {
+                        const aTime = a.paymentConfirmedAt ? new Date(a.paymentConfirmedAt).getTime() : 0
+                        const bTime = b.paymentConfirmedAt ? new Date(b.paymentConfirmedAt).getTime() : 0
+                        return aTime - bTime
+                      }
+                      
+                      return 0
+                    })
+                  }
+                  
+                  return sortedGuests.map((guest, sortedIndex) => {
                   const guestName = guest.name || guest['이름'] || guest.Name || ''
                   const guestPhoneRaw = guest.phone || guest['전화번호'] || guest.Phone || ''
                   const guestPhone = formatPhoneDisplay(guestPhoneRaw)
@@ -1915,9 +1991,18 @@ const Admin = () => {
                             minute: '2-digit'
                           }))
                     : '-'
+                  
+                  // 원본 guests 배열에서의 인덱스 찾기
+                  const originalIndex = guests.findIndex((g) => {
+                    const gName = g.name || g['이름'] || g.Name || ''
+                    const gPhone = String(g.phone || g['전화번호'] || g.Phone || '').replace(/[-\s()]/g, '')
+                    const guestPhoneNormalized = guestPhoneRaw.replace(/[-\s()]/g, '')
+                    return gName.trim() === guestName.trim() && gPhone === guestPhoneNormalized
+                  })
+                  
                   return (
-                    <tr key={index}>
-                      <td>{index + 1}</td>
+                    <tr key={originalIndex >= 0 ? originalIndex : sortedIndex}>
+                      <td>{sortedIndex + 1}</td>
                       <td>{guestName}</td>
                       <td>{guestPhone}</td>
                       <td>{guestNickname}</td>
@@ -1932,7 +2017,7 @@ const Admin = () => {
                       <td style={{ textAlign: 'center' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'center' }}>
                           <button
-                            onClick={() => handlePaymentConfirm(index)}
+                            onClick={() => handlePaymentConfirm(originalIndex >= 0 ? originalIndex : sortedIndex)}
                             className={`payment-confirm-button ${guest.paymentConfirmed ? 'confirmed' : 'not-confirmed'}`}
                             title={guest.paymentConfirmed && guest.paymentConfirmedAt ? `입금 확인 완료 (${new Date(guest.paymentConfirmedAt).toLocaleString('ko-KR')})` : '입금 확인 대기'}
                           >
@@ -2021,7 +2106,7 @@ const Admin = () => {
                             onClick={() => {
                               requirePassword(() => {
                                 if (window.confirm(`"${guestName}" 게스트를 수정하시겠습니까?`)) {
-                                  setEditingGuestIndex(index)
+                                  setEditingGuestIndex(originalIndex >= 0 ? originalIndex : sortedIndex)
                                   setEditingGuest({
                                     name: guestName,
                                     phone: guestPhoneRaw
@@ -2040,7 +2125,7 @@ const Admin = () => {
                               requirePassword(() => {
                                 if (window.confirm(`"${guestName}" 게스트를 삭제하시겠습니까?`)) {
                                   // 게스트 삭제
-                                  deleteGuest(index)
+                                  deleteGuest(originalIndex >= 0 ? originalIndex : sortedIndex)
                                   
                                   // 해당 게스트의 booking 정보도 삭제
                                   const normalizedPhone = guestPhoneRaw.replace(/[-\s()]/g, '')
@@ -2072,7 +2157,8 @@ const Admin = () => {
                       </td>
                     </tr>
                   )
-                })}
+                  })
+                })()}
               </tbody>
             </table>
           </div>
@@ -2232,14 +2318,21 @@ const Admin = () => {
                 const storageRef = ref(storage, `guests/${fileName}`)
                 const downloadURL = await getDownloadURL(storageRef)
                 
-                // 새 창에서 다운로드
+                // fetch를 사용하여 파일을 가져온 후 Blob으로 다운로드
+                const response = await fetch(downloadURL)
+                const blob = await response.blob()
+                
+                // Blob URL 생성 및 다운로드
+                const blobURL = window.URL.createObjectURL(blob)
                 const link = document.createElement('a')
-                link.href = downloadURL
+                link.href = blobURL
                 link.download = fileName
-                link.target = '_blank'
                 document.body.appendChild(link)
                 link.click()
                 document.body.removeChild(link)
+                
+                // Blob URL 정리
+                window.URL.revokeObjectURL(blobURL)
                 
                 setUploadStatus('✅ 엑셀 파일 다운로드가 시작되었습니다.')
                 setTimeout(() => setUploadStatus(''), 3000)
