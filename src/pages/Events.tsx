@@ -45,6 +45,7 @@ const Events = () => {
   const DISCOUNT_AMOUNT = 500
   const ORIGINAL_PRICE = 3500
   const DISCOUNTED_PRICE = ORIGINAL_PRICE - DISCOUNT_AMOUNT
+  const ADMIN_PRICE = 2000 // 운영진 가격
   const { isAdmin, user, isLoading } = useAuth()
   const { eventsEnabled, setEventsEnabled, bookingInfo } = useData()
   const navigate = useNavigate()
@@ -174,7 +175,8 @@ const Events = () => {
   
   // 할인 적용 여부 확인
   const isDiscountActive = timeRemaining !== null
-  const currentPrice = isDiscountActive ? DISCOUNTED_PRICE : ORIGINAL_PRICE
+  // 운영진일 때는 2000원, 일반 사용자는 할인 적용 여부에 따라 결정
+  const currentPrice = isAdmin ? ADMIN_PRICE : (isDiscountActive ? DISCOUNTED_PRICE : ORIGINAL_PRICE)
 
   // ✅ Hook 호출 완료 후 조건부 return
   // 인증 로딩 중일 때는 로딩 UI 표시
@@ -433,16 +435,24 @@ const Events = () => {
             <div className="directions-modal-content">
               <h2 className="directions-modal-title">주류 사전 구매</h2>
               
-              {isDiscountActive && timeRemaining && (
+              {isAdmin ? (
                 <div className="drink-discount-banner">
                   <div className="drink-discount-info">
-                    <span className="drink-discount-badge">사전구매 500원 할인</span>
-                    <span className="drink-discount-time">
-                      남은 시간: {timeRemaining.days}일 {timeRemaining.hours}시간 {timeRemaining.minutes}분
-                    </span>
+                    <span className="drink-discount-badge">운영진 구매 1500원 할인</span>
                   </div>
-                  <p className="drink-discount-period">할인 기간: ~2026년 1월 26일 자정까지</p>
                 </div>
+              ) : (
+                isDiscountActive && timeRemaining && (
+                  <div className="drink-discount-banner">
+                    <div className="drink-discount-info">
+                      <span className="drink-discount-badge">사전구매 500원 할인</span>
+                      <span className="drink-discount-time">
+                        남은 시간: {timeRemaining.days}일 {timeRemaining.hours}시간 {timeRemaining.minutes}분
+                      </span>
+                    </div>
+                    <p className="drink-discount-period">할인 기간: ~2026년 1월 26일 자정까지</p>
+                  </div>
+                )
               )}
               
               <div className="drink-notice">
@@ -456,7 +466,12 @@ const Events = () => {
                   <div className="drink-info">
                     <h3 className="drink-name">캔 맥주</h3>
                     <div className="drink-price-container">
-                      {isDiscountActive ? (
+                      {isAdmin ? (
+                        <>
+                          <span className="drink-price-original">3,500원</span>
+                          <span className="drink-price-discounted">{currentPrice.toLocaleString()}원</span>
+                        </>
+                      ) : isDiscountActive ? (
                         <>
                           <span className="drink-price-original">3,500원</span>
                           <span className="drink-price-discounted">{currentPrice.toLocaleString()}원</span>
@@ -488,7 +503,12 @@ const Events = () => {
                   <div className="drink-info">
                     <h3 className="drink-name">산토리 하이볼</h3>
                     <div className="drink-price-container">
-                      {isDiscountActive ? (
+                      {isAdmin ? (
+                        <>
+                          <span className="drink-price-original">3,500원</span>
+                          <span className="drink-price-discounted">{currentPrice.toLocaleString()}원</span>
+                        </>
+                      ) : isDiscountActive ? (
                         <>
                           <span className="drink-price-original">3,500원</span>
                           <span className="drink-price-discounted">{currentPrice.toLocaleString()}원</span>
