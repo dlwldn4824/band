@@ -1533,7 +1533,11 @@ const Admin = () => {
                     
                     if (history !== null) {
                       // orderHistory 항목
-                      const historyAmount = (history.beerQuantity || 0) * 3500 + (history.mojitoQuantity || 0) * 3500
+                      // unitPrice가 없으면 전화번호를 확인하여 가격 결정
+                      const ADMIN_PRICE = 2000
+                      const ORIGINAL_PRICE = 3500
+                      const itemPrice = history.unitPrice || (order.phone === 'admin' ? ADMIN_PRICE : ORIGINAL_PRICE)
+                      const historyAmount = (history.beerQuantity || 0) * itemPrice + (history.mojitoQuantity || 0) * itemPrice
                       const isProvided = history.provided === true
                       
                       rows.push(
@@ -1700,7 +1704,35 @@ const Admin = () => {
                           <td>{formatPhoneDisplay(order.phone)}</td>
                           <td>{order.beerQuantity}개</td>
                           <td>{order.mojitoQuantity}개</td>
-                          <td>{order.totalAmount.toLocaleString()}원</td>
+                          <td>
+                            {(() => {
+                              // orderHistory를 기반으로 totalAmount 재계산 (기존 totalAmount가 잘못된 경우 대비)
+                              if (order.orderHistory && order.orderHistory.length > 0) {
+                                const ADMIN_PRICE = 2000
+                                const ORIGINAL_PRICE = 3500
+                                const DISCOUNTED_PRICE = 3000
+                                
+                                let calculatedTotal = 0
+                                order.orderHistory.forEach((historyItem: any) => {
+                                  // unitPrice가 없으면 전화번호를 확인하여 가격 결정
+                                  let itemPrice = historyItem.unitPrice
+                                  if (!itemPrice) {
+                                    // 전화번호가 'admin'이면 운영진 가격, 아니면 기본 가격
+                                    itemPrice = (order.phone === 'admin') ? ADMIN_PRICE : ORIGINAL_PRICE
+                                  }
+                                  const itemTotal = (historyItem.beerQuantity * itemPrice) + (historyItem.mojitoQuantity * itemPrice)
+                                  calculatedTotal += itemTotal
+                                })
+                                return calculatedTotal.toLocaleString() + '원'
+                              }
+                              // orderHistory가 없으면 전화번호를 확인하여 가격 재계산
+                              const ADMIN_PRICE = 2000
+                              const ORIGINAL_PRICE = 3500
+                              const itemPrice = order.phone === 'admin' ? ADMIN_PRICE : ORIGINAL_PRICE
+                              const calculatedTotal = (order.beerQuantity * itemPrice) + (order.mojitoQuantity * itemPrice)
+                              return calculatedTotal.toLocaleString() + '원'
+                            })()}
+                          </td>
                           <td>
                             {order.createdAt?.toDate ? 
                               new Date(order.createdAt.toDate()).toLocaleString('ko-KR', {

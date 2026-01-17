@@ -722,7 +722,12 @@ const Events = () => {
                     // orderHistory를 기반으로 totalAmount 재계산 (각 주문의 실제 가격 반영)
                     let totalAmount = 0
                     updatedHistory.forEach((historyItem) => {
-                      const itemPrice = historyItem.unitPrice || ORIGINAL_PRICE // unitPrice가 없으면 기본 가격 사용
+                      // unitPrice가 없으면 전화번호를 확인하여 가격 결정
+                      let itemPrice = historyItem.unitPrice
+                      if (!itemPrice) {
+                        // 전화번호가 'admin'이면 운영진 가격, 아니면 기본 가격
+                        itemPrice = (user.phone === 'admin') ? ADMIN_PRICE : ORIGINAL_PRICE
+                      }
                       const itemTotal = (historyItem.beerQuantity * itemPrice) + (historyItem.mojitoQuantity * itemPrice)
                       totalAmount += itemTotal
                     })
