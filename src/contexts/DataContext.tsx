@@ -118,33 +118,36 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           }
         }
         
-        // Firestore 데이터를 우선 적용 (빈 배열도 포함)
-        setGuests(firestoreGuests)
-        localStorage.setItem('guests', JSON.stringify(firestoreGuests))
-        
-        // Firestore에 데이터가 없고 localStorage에만 있으면 동기화 (초기 마이그레이션용)
-        // 단, Firestore에 빈 배열이 명시적으로 저장되어 있으면 동기화하지 않음
-        if (firestoreGuests.length === 0) {
-          const savedGuests = localStorage.getItem('guests')
-          if (savedGuests) {
-            try {
-              const parsedGuests = JSON.parse(savedGuests)
-              // localStorage에 데이터가 있고 Firestore가 비어있으면 동기화
-              // 하지만 실시간 리스너가 곧 서버 상태로 덮어쓸 수 있음
-              if (parsedGuests.length > 0) {
-                // Firestore에 문서가 없거나 빈 배열이 아닌 경우에만 동기화
-                const firestoreData = await getFirestoreData('guests' as any, 'all')
-                if (!firestoreData || (firestoreData as any).guests?.length === 0) {
-                  // Firestore에 명시적으로 빈 배열이 저장되어 있지 않으면 동기화
-                  await setFirestoreData('guests' as any, { guests: parsedGuests }, 'all').catch(err => {
-                    console.warn('[DataContext] 게스트 데이터 Firestore 동기화 실패:', err)
-                  })
-                }
-              }
-            } catch (parseError) {
-              console.error('[DataContext] localStorage 게스트 데이터 파싱 오류:', parseError)
+        // 로컬 데이터 확인 (백업용)
+        const savedGuests = localStorage.getItem('guests')
+        let localGuests: Guest[] = []
+        if (savedGuests) {
+          try {
+            const parsed = JSON.parse(savedGuests)
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              localGuests = parsed
             }
+          } catch (e) {
+            // 파싱 오류 무시
           }
+        }
+        
+        // Firestore 데이터가 빈 배열이고 로컬에 데이터가 있으면 로컬 데이터 유지
+        if (firestoreGuests.length === 0 && localGuests.length > 0) {
+          console.warn('[DataContext] Firestore가 빈 배열이지만 로컬에 데이터가 있어 로컬 데이터를 유지합니다.')
+          setGuests(localGuests)
+          // Firestore에 로컬 데이터 동기화 시도 (의도적인 초기화가 아닐 수 있음)
+          await setFirestoreData('guests' as any, { guests: localGuests }, 'all').catch(err => {
+            console.warn('[DataContext] 게스트 데이터 Firestore 동기화 실패:', err)
+          })
+        } else if (firestoreGuests.length > 0) {
+          // Firestore에 데이터가 있으면 우선 적용
+          setGuests(firestoreGuests)
+          localStorage.setItem('guests', JSON.stringify(firestoreGuests))
+        } else {
+          // 둘 다 비어있으면 빈 배열
+          setGuests([])
+          localStorage.setItem('guests', JSON.stringify([]))
         }
 
         // 공연 데이터 로드
@@ -417,12 +420,51 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             }
           }
           
-          // Firestore 데이터를 항상 우선 적용 (빈 배열도 포함)
-          // 서버 상태가 최신이므로 무조건 동기화
+          // 빈 배열이 오는 경우, 로컬에 데이터가 있으면 로컬 데이터 유지 및 Firestore 복구 시도
+          if (firestoreGuests.length === 0) {
+            const localGuests = localStorage.getItem('guests')
+            if (localGuests) {
+              try {
+                const parsedLocalGuests = JSON.parse(localGuests)
+                if (Array.isArray(parsedLocalGuests) && parsedLocalGuests.length > 0) {
+                  // 로컬에 데이터가 있으면 로컬 데이터 유지
+                  console.warn('[DataContext] Firestore에서 빈 배열이 수신되었지만, 로컬에 데이터가 있어 로컬 데이터를 유지하고 Firestore를 복구합니다.')
+                  setGuests(parsedLocalGuests)
+                  // Firestore에 로컬 데이터 복구 시도 (의도적인 초기화가 아닐 수 있음)
+                  setFirestoreData('guests' as any, { guests: parsedLocalGuests }, 'all').catch(err => {
+                    console.error('[DataContext] Firestore 복구 실패:', err)
+                  })
+                  return
+                }
+              } catch (e) {
+                // 파싱 오류 시 Firestore 데이터 적용
+              }
+            }
+          }
+          
+          // Firestore 데이터를 우선 적용 (빈 배열이 아니거나, 로컬에도 데이터가 없는 경우)
           setGuests(firestoreGuests)
           localStorage.setItem('guests', JSON.stringify(firestoreGuests))
         } else {
-          // 문서가 없으면 빈 배열로 설정
+          // 문서가 없으면 로컬 데이터 확인 후 처리
+          const localGuests = localStorage.getItem('guests')
+          if (localGuests) {
+            try {
+              const parsedLocalGuests = JSON.parse(localGuests)
+              if (Array.isArray(parsedLocalGuests) && parsedLocalGuests.length > 0) {
+                // 로컬에 데이터가 있으면 유지하고 Firestore에 복구
+                console.warn('[DataContext] Firestore 문서가 없지만, 로컬에 데이터가 있어 유지하고 Firestore를 복구합니다.')
+                setGuests(parsedLocalGuests)
+                setFirestoreData('guests' as any, { guests: parsedLocalGuests }, 'all').catch(err => {
+                  console.error('[DataContext] Firestore 복구 실패:', err)
+                })
+                return
+              }
+            } catch (e) {
+              // 파싱 오류 시 빈 배열로 설정
+            }
+          }
+          // 로컬에도 데이터가 없으면 빈 배열로 설정
           setGuests([])
           localStorage.removeItem('guests')
         }
