@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useData } from '../contexts/DataContext'
 import Events from '../components/Events'
@@ -16,7 +16,11 @@ const Dashboard = () => {
   // ✅ 모든 Hook은 최상단에서 조건 없이 호출
   const { user, setNickname, isAdmin, adminName, isLoading } = useAuth()
   const { performanceData, guests } = useData()
-  const { token } = useParams<{ token?: string }>()
+  const { token: tokenFromParams } = useParams<{ token?: string }>()
+  const [searchParams] = useSearchParams()
+  const tokenFromQuery = searchParams.get('token')
+  // URL 파라미터의 토큰이 우선, 없으면 쿼리 스트링의 토큰 사용
+  const token = tokenFromParams || tokenFromQuery || undefined
   const [showNicknameModal, setShowNicknameModal] = useState(false)
   const [nickname, setNicknameInput] = useState('')
   const [nicknameError, setNicknameError] = useState('')
@@ -45,8 +49,25 @@ const Dashboard = () => {
 
   // 개인 링크 토큰이 있고 아직 로그인되지 않았으면 Login 컴포넌트 렌더링
   if (token && !user) {
+    console.log('[Dashboard] Rendering Login component - token:', token, 'user:', user, 'pathname:', location.pathname)
     return <Login />
   }
+  
+  // 로그인 후 개인 링크 경로 확인
+  useEffect(() => {
+    if (token && user) {
+      // 쿼리 스트링에서 토큰을 읽은 경우 `/t/:token` 경로로 리다이렉트
+      if (tokenFromQuery && location.pathname !== `/t/${token}`) {
+        console.log('[Dashboard] Redirecting from query string to personal link path:', `/t/${token}`)
+        navigate(`/t/${token}`, { replace: true })
+      }
+      // URL 파라미터의 토큰이 있고 경로가 맞지 않으면 수정
+      else if (tokenFromParams && location.pathname !== `/t/${token}`) {
+        console.log('[Dashboard] User logged in but pathname is not personal link, current:', location.pathname, 'expected:', `/t/${token}`)
+        navigate(`/t/${token}`, { replace: true })
+      }
+    }
+  }, [token, tokenFromQuery, tokenFromParams, user, location.pathname, navigate])
 
   // 대시보드 페이지에서는 body 스크롤 허용
   useEffect(() => {

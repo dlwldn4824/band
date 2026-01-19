@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, Link, useParams } from 'react-router-dom'
+import { useNavigate, Link, useParams, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useData } from '../contexts/DataContext'
 import { doc, setDoc, onSnapshot, getDoc } from 'firebase/firestore'
@@ -31,6 +31,7 @@ const Login = () => {
   const { login } = useAuth()
   const { guests, addWalkInGuest, updateGuest, bookingInfo } = useData()
   const navigate = useNavigate()
+  const location = useLocation()
   const { token } = useParams<{ token?: string }>()
   const [isProcessingAutoLogin, setIsProcessingAutoLogin] = useState(false)
 
@@ -200,13 +201,46 @@ const Login = () => {
     }
   }, [])
 
+  // 개인 로그인 링크 생성 함수
+  const generatePersonalLoginLink = (name: string, phone: string): string => {
+    const normalizedPhone = phone.replace(/\D/g, '')
+    const combinedData = `${name}|${normalizedPhone}`
+    const base64Token = btoa(encodeURIComponent(combinedData))
+    const urlSafeToken = base64Token.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
+    return urlSafeToken
+  }
+
   // 네비게이션 로직 (닉네임 확인 없이 바로 대시보드로)
   const checkNicknameAndNavigate = async () => {
-    // 개인 링크 토큰이 있으면 개인 링크 URL 유지, 없으면 일반 대시보드로
+    console.log('[Login] checkNicknameAndNavigate - token:', token, 'location.pathname:', location.pathname)
+    // 개인 링크 토큰이 있으면 개인 링크 URL 유지
     if (token) {
-      navigate(`/t/${token}`, { replace: true })
+      // 이미 개인 링크 경로에 있으면 navigate 호출하지 않음 (URL 유지)
+      const targetPath = `/t/${token}`
+      console.log('[Login] checkNicknameAndNavigate - targetPath:', targetPath, 'current:', location.pathname)
+      if (location.pathname !== targetPath) {
+        console.log('[Login] checkNicknameAndNavigate - navigating to:', targetPath)
+        navigate(targetPath, { replace: true })
+      } else {
+        console.log('[Login] checkNicknameAndNavigate - already on target path, skipping navigate')
+      }
     } else {
-      navigate('/dashboard')
+      // 일반 로그인: 개인 링크 토큰을 생성하여 쿼리 스트링으로 추가
+      const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
+      if (currentUser && currentUser.name && currentUser.phone && currentUser.phone !== 'admin') {
+        const personalToken = generatePersonalLoginLink(currentUser.name, currentUser.phone)
+        const url = `/dashboard?token=${encodeURIComponent(personalToken)}`
+        console.log('[Login] checkNicknameAndNavigate - navigating to:', url)
+        navigate(url, { replace: true })
+      } else {
+        // 토큰이 없고 현재 경로가 /dashboard가 아니면 이동
+        if (location.pathname !== '/dashboard') {
+          console.log('[Login] checkNicknameAndNavigate - navigating to /dashboard')
+          navigate('/dashboard')
+        } else {
+          console.log('[Login] checkNicknameAndNavigate - already on /dashboard, skipping navigate')
+        }
+      }
     }
   }
 

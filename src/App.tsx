@@ -96,9 +96,7 @@ function AppRoutes() {
         <Routes location={location} key={location.key || location.pathname}>
           <Route path="/t/:token" element={
             <Layout>
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
+              <Dashboard />
             </Layout>
           } />
           <Route path="/login" element={<Login />} />
