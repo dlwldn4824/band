@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { useData } from '../contexts/DataContext'
 import onlineIcon from '../assets/배경/온라인.png'
 import sendIconActive from '../assets/배경/전송_활성화.png'
 import sendIconInactive from '../assets/배경/전송_비활성화.png'
@@ -44,11 +43,9 @@ interface OnlineUser {
 
 const Chat = () => {
   const { user } = useAuth()
-  const { guests } = useData()
   const location = useLocation()
   const [messages, setMessages] = useState<Message[]>([])
   const [inputMessage, setInputMessage] = useState('')
-  const [linkCopied, setLinkCopied] = useState<Record<string, boolean>>({})
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([])
   const [showOnlineList, setShowOnlineList] = useState(false)
   const [showPhotoModal, setShowPhotoModal] = useState(false)
@@ -422,39 +419,6 @@ const Chat = () => {
               }
               
               // 일반 메시지
-              // 개인 접속 링크 생성 함수
-              const generatePersonalLoginLink = (name: string, phone: string): string => {
-                const normalizedPhone = phone.replace(/\D/g, '')
-                const combinedData = `${name}|${normalizedPhone}`
-                const base64Token = btoa(encodeURIComponent(combinedData))
-                const urlSafeToken = base64Token.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
-                const baseUrl = window.location.origin
-                return `${baseUrl}/t/${urlSafeToken}`
-              }
-
-              // 메시지 작성자의 개인 접속 링크 찾기
-              const findUserLink = () => {
-                if (!guests || guests.length === 0) return null
-                
-                // 메시지의 user가 닉네임인지 이름인지 확인
-                const guest = guests.find((g) => {
-                  const guestName = g.name || g['이름'] || g.Name || ''
-                  const guestNickname = g.nickname || ''
-                  return guestName === msg.user || guestNickname === msg.user
-                })
-                
-                if (guest) {
-                  const guestName = guest.name || guest['이름'] || guest.Name || ''
-                  const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '').replace(/[-\s()]/g, '')
-                  if (guestName && guestPhone) {
-                    return generatePersonalLoginLink(guestName, guestPhone)
-                  }
-                }
-                return null
-              }
-
-              const personalLink = findUserLink()
-              
               return (
               <div
                 key={msg.id}
@@ -463,56 +427,6 @@ const Chat = () => {
                 <div className="message-header">
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', width: '100%' }}>
                     <span className="message-user">{msg.user}</span>
-                    {personalLink && (
-                      <div className="personal-link-section">
-                        <p className="personal-link-label">개인 입장 링크</p>
-                        <div className="personal-link-container">
-                          <input
-                            type="text"
-                            value={personalLink}
-                            readOnly
-                            className="personal-link-input"
-                            onClick={(e) => (e.target as HTMLInputElement).select()}
-                          />
-                          <button
-                            className="copy-link-button"
-                            onClick={async (e) => {
-                              e.stopPropagation()
-                              try {
-                                await navigator.clipboard.writeText(personalLink)
-                                setLinkCopied(prev => ({ ...prev, [msg.id]: true }))
-                                setTimeout(() => {
-                                  setLinkCopied(prev => ({ ...prev, [msg.id]: false }))
-                                }, 3000)
-                              } catch (err) {
-                                console.warn('클립보드 복사 실패:', err)
-                                const textArea = document.createElement('textarea')
-                                textArea.value = personalLink
-                                textArea.style.position = 'fixed'
-                                textArea.style.opacity = '0'
-                                document.body.appendChild(textArea)
-                                textArea.select()
-                                try {
-                                  document.execCommand('copy')
-                                  setLinkCopied(prev => ({ ...prev, [msg.id]: true }))
-                                  setTimeout(() => {
-                                    setLinkCopied(prev => ({ ...prev, [msg.id]: false }))
-                                  }, 3000)
-                                } catch (e) {
-                                  console.error('복사 실패:', e)
-                                }
-                                document.body.removeChild(textArea)
-                              }
-                            }}
-                          >
-                            {linkCopied[msg.id] ? '✓ 복사됨' : '링크 복사'}
-                          </button>
-                        </div>
-                        <p className="personal-link-hint">
-                          링크를 복사해두시면 바로 로그인 하실 수 있습니다.
-                        </p>
-                      </div>
-                    )}
                   </div>
                   <span className="message-time">{formatTime(msg.timestamp)}</span>
                 </div>

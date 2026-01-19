@@ -274,6 +274,8 @@ const Dashboard = () => {
                           const guestName = guest.name || guest['이름'] || guest.Name || ''
                           const guestPhoneRaw = guest.phone || guest['전화번호'] || guest.Phone || ''
                           const guestPhone = formatPhoneDisplay(guestPhoneRaw)
+                          // 전화번호 뒷자리 마스킹 처리 (admin에서만) - 010-1234-5678 -> 010-1234-****
+                          const maskedPhone = guestPhone.replace(/-(\d{4})$/, '-****')
                           const isWalkIn = guest.isWalkIn === true
                           // userId 생성 (닉네임 조회용)
                           const userId = `${guestName}_${guestPhoneRaw}`
@@ -283,20 +285,16 @@ const Dashboard = () => {
                               <td>{index + 1}</td>
                               <td>{guestName}</td>
                               <td>{guestNickname}</td>
-                              <td>{guestPhone}</td>
+                              <td>{maskedPhone}</td>
                               <td>
                                 <span className={isWalkIn ? 'walk-in-badge' : 'pre-booking-badge'}>
                                   {isWalkIn ? '현장 예매' : '사전 예매'}
                                 </span>
                               </td>
                               <td>
-                                {isWalkIn ? (
-                                  <span className={guest.paymentConfirmed ? 'payment-confirmed' : 'payment-pending'}>
-                                    {guest.paymentConfirmed ? '확인완료' : '대기중'}
-                                  </span>
-                                ) : (
-                                  <span className="not-applicable">-</span>
-                                )}
+                                <span className={guest.paymentConfirmed ? 'payment-confirmed' : 'payment-pending'}>
+                                  {guest.paymentConfirmed ? '확인완료' : '대기중'}
+                                </span>
                               </td>
                             </tr>
                             )
