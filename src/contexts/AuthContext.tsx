@@ -10,6 +10,7 @@ export interface User {
   entryNumber?: number // 입장 번호
   checkedIn?: boolean // 체크인 여부
   checkedInAt?: number // 체크인 시간 (timestamp)
+  paymentConfirmed?: boolean // 입금 확인 여부
 }
 
 interface AuthContextType {
@@ -178,7 +179,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         phone: guestPhone,
         entryNumber: entryNumber,
         checkedIn: foundGuest.checkedIn !== false,
-        checkedInAt: foundGuest.checkedInAt || Date.now()
+        checkedInAt: foundGuest.checkedInAt || Date.now(),
+        paymentConfirmed: foundGuest.paymentConfirmed === true
       }
       
       // 디버깅용 콘솔 로그
@@ -276,12 +278,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // 서버 상태와 다르면 업데이트
       if (
         user.checkedIn !== foundGuest.checkedIn ||
-        user.checkedInAt !== foundGuest.checkedInAt
+        user.checkedInAt !== foundGuest.checkedInAt ||
+        user.paymentConfirmed !== (foundGuest.paymentConfirmed === true)
       ) {
         updateUser({
           ...user,
           checkedIn: foundGuest.checkedIn || false,
-          checkedInAt: foundGuest.checkedInAt
+          checkedInAt: foundGuest.checkedInAt,
+          paymentConfirmed: foundGuest.paymentConfirmed === true
         })
       }
     }

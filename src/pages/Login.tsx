@@ -330,73 +330,17 @@ const Login = () => {
       })
 
       if (existingGuest) {
-        // 입금 확인이 완료된 게스트인 경우 바로 로그인 처리
-        if (existingGuest.paymentConfirmed === true) {
-          // 바로 로그인 처리
-          const updatedGuests = [...guests]
-          const loginSuccess = login(bookingName.trim(), normalizedPhone, updatedGuests)
-          
-          if (loginSuccess) {
-            localStorage.removeItem('pendingBooking')
-            // 티켓 애니메이션 표시 (onDone에서 대시보드로 이동)
-            setShowTicket(true)
-            return
-          } else {
-            setBookingError('로그인에 실패했습니다. 다시 시도해주세요.')
-            return
-          }
-        }
+        // 입금 확인 상태와 관계없이 로그인 가능 (입금 확인 대기중이어도 로그인 가능)
+        const updatedGuests = [...guests]
+        const loginSuccess = login(bookingName.trim(), normalizedPhone, updatedGuests)
         
-        // 입금 확인이 완료되지 않은 게스트인 경우 예매 정보 확인 화면 표시
-        // 이미 등록된 게스트인 경우 Firestore에서 예매 정보 가져오기
-        const userId = `${bookingName.trim()}_${normalizedPhone}`
-        const bookingRef = doc(db, 'bookings', userId)
-        
-        try {
-          const bookingSnap = await getDoc(bookingRef)
-          let savedEmail = ''
-          
-          if (bookingSnap.exists()) {
-            const bookingData = bookingSnap.data()
-            // Firestore에 저장된 이메일이 있으면 사용
-            if (bookingData.email) {
-              savedEmail = bookingData.email
-            }
-            
-            // 이미 승인되었다면 로그인 처리
-            if (bookingData.approved === true) {
-              const updatedGuests = [...guests]
-              const loginSuccess = login(bookingName.trim(), normalizedPhone, updatedGuests)
-              if (loginSuccess) {
-                localStorage.removeItem('pendingBooking')
-                // 티켓 애니메이션 표시
-                setShowTicket(true)
-                return
-              }
-            }
-          }
-          
-          // 승인되지 않았거나 예매 정보가 없는 경우 확인 화면 표시
-          setBookingName(bookingName.trim())
-          setBookingPhone(bookingPhone.trim())
-          setEditedName(bookingName.trim())
-          setEditedPhone(bookingPhone.trim())
-          
-          // localStorage에 예매 정보 저장 (페이지 재접근 시 확인 화면 표시용)
-          localStorage.setItem('pendingBooking', JSON.stringify({
-            name: bookingName.trim(),
-            phone: bookingPhone.trim(),
-            email: savedEmail
-          }))
-          
-          // 확인 화면 표시
-          setBookingConfirmed(false)
-          setBookingInfoConfirmed(false)
-          setShowBookingConfirmation(true)
+        if (loginSuccess) {
+          localStorage.removeItem('pendingBooking')
+          // 티켓 애니메이션 표시 (onDone에서 대시보드로 이동)
+          setShowTicket(true)
           return
-        } catch (error) {
-          console.error('Firestore 예매 정보 확인 실패:', error)
-          setBookingError('예매 정보를 확인하는 중 오류가 발생했습니다. 다시 시도해주세요.')
+        } else {
+          setBookingError('로그인에 실패했습니다. 다시 시도해주세요.')
           return
         }
       }
@@ -881,6 +825,7 @@ const Login = () => {
               seat: 'STANDING',
               entryNumber: existingGuest?.entryNumber,
               isWalkIn: existingGuest?.isWalkIn === true,
+              paymentConfirmed: existingGuest?.paymentConfirmed === true,
             }
           })()}
           onDone={async () => {

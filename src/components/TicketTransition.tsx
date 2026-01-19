@@ -10,6 +10,7 @@ type Props = {
     seat?: string;
     entryNumber?: number;
     isWalkIn?: boolean;
+    paymentConfirmed?: boolean;
   };
 };
 
@@ -83,12 +84,41 @@ export default function TicketTransition({
         </div>
 
         {/* 입장번호 스탬프 오버레이 (선택) */}
-        {info?.entryNumber && (
-          <div className={`tt_stamp ${start ? "is-show" : ""}`}>
-            <div className="tt_stampType">{info.isWalkIn ? '현장예약' : '사전예약'}</div>
-            <div className="tt_stampTitle">입장번호 {info.entryNumber}번!</div>
-          </div>
-        )}
+        {info?.entryNumber && (() => {
+          const isWalkIn = info.isWalkIn === true
+          const paymentConfirmed = info.paymentConfirmed === true
+          
+          // 현장 예매는 항상 표시
+          if (isWalkIn) {
+            return (
+              <div className={`tt_stamp ${start ? "is-show" : ""}`}>
+                <div className="tt_stampType">현장예약</div>
+                <div className="tt_stampTitle">입장번호 {info.entryNumber}번!</div>
+              </div>
+            )
+          } else if (!isWalkIn) {
+            // 사전 예매인 경우
+            if (paymentConfirmed) {
+              // 입금 확인 완료
+              return (
+                <div className={`tt_stamp ${start ? "is-show" : ""}`}>
+                  <div className="tt_stampType">사전예약</div>
+                  <div className="tt_stampTitle">입장번호 {info.entryNumber}번!</div>
+                </div>
+              )
+            } else {
+              // 입금 확인 미완료
+              return (
+                <div className={`tt_stamp ${start ? "is-show" : ""}`} style={{ borderColor: '#ff4444' }}>
+                  <div className="tt_stampType" style={{ color: '#ff4444' }}>
+                    입금 미확인<br/>확인중.. 
+                  </div>
+                </div>
+              )
+            }
+          }
+          return null
+        })()}
       </div>
 
       <div className={`tt_hint ${start ? "is-hide" : ""}`}>

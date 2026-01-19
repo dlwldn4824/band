@@ -161,12 +161,38 @@ const Dashboard = () => {
                   return guestName === userName && guestPhone === userPhone
                 })
                 const isWalkIn = guestInfo?.isWalkIn === true
-                return (
-                  <div className="ticket-entry-stamp">
-                    <div className="ticket-entry-stamp-type">{isWalkIn ? '현장예약' : '사전예약'}</div>
-                    <div className="ticket-entry-stamp-title">입장번호 {user.entryNumber}번!</div>
-                  </div>
-                )
+                const paymentConfirmed = guestInfo?.paymentConfirmed === true || user.paymentConfirmed === true
+                
+                // 현장 예매는 항상 표시, 사전 예매는 입금 확인 여부에 따라 표시
+                if (isWalkIn) {
+                  return (
+                    <div className="ticket-entry-stamp">
+                      <div className="ticket-entry-stamp-type">현장예약</div>
+                      <div className="ticket-entry-stamp-title">입장번호 {user.entryNumber}번!</div>
+                    </div>
+                  )
+                } else if (!isWalkIn) {
+                  // 사전 예매인 경우
+                  if (paymentConfirmed) {
+                    // 입금 확인 완료
+                    return (
+                      <div className="ticket-entry-stamp">
+                        <div className="ticket-entry-stamp-type">사전예약</div>
+                        <div className="ticket-entry-stamp-title">입장번호 {user.entryNumber}번!</div>
+                      </div>
+                    )
+                  } else {
+                    // 입금 확인 미완료
+                    return (
+                      <div className="ticket-entry-stamp">
+                        <div className="ticket-entry-stamp-type" style={{ color: '#ff4444' }}>
+                          입금 미확인<br/>확인 대기 중..
+                        </div>
+                      </div>
+                    )
+                  }
+                }
+                return null
               })()}
             </div>
           </section>

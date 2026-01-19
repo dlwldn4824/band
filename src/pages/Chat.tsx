@@ -42,7 +42,7 @@ interface OnlineUser {
 }
 
 const Chat = () => {
-  const { user } = useAuth()
+  const { user, isAdmin } = useAuth()
   const location = useLocation()
   const [messages, setMessages] = useState<Message[]>([])
   const [inputMessage, setInputMessage] = useState('')
@@ -97,6 +97,9 @@ const Chat = () => {
 
   useEffect(() => {
     if (!user || isTestMode) return
+
+    // 운영진이 아니고 입금 확인이 완료되지 않은 경우 온라인 사용자로 등록하지 않음
+    if (!isAdmin && user.paymentConfirmed !== true) return
 
     // 온라인 사용자로 등록 (테스트 모드가 아닐 때만)
     const registerOnlineUser = async () => {
@@ -341,6 +344,12 @@ const Chat = () => {
     e.preventDefault()
     if (!inputMessage.trim() || !user) return
 
+    // 운영진이 아니고 입금 확인이 완료되지 않은 경우 채팅 사용 불가
+    if (!isAdmin && user.paymentConfirmed !== true) {
+      alert('입금 확인이 완료된 후 채팅을 사용하실 수 있습니다.')
+      return
+    }
+
     try {
       await addDoc(collection(db, 'chat'), {
         user: user.nickname || user.name,
@@ -398,7 +407,17 @@ const Chat = () => {
         </div>
 
         <div className="messages-container" ref={messagesContainerRef}>
-          {messages.length === 0 ? (
+          {user && !isAdmin && user.paymentConfirmed !== true ? (
+            <div className="empty-chat">
+              <p style={{ color: '#ff4444', fontWeight: '600' }}>
+                입금 확인이 완료된 후 채팅을 사용하실 수 있습니다.
+                <br />
+                <span style={{ fontSize: '0.9rem', color: '#666', fontWeight: '400' }}>
+                  입금 확인이 완료되면 채팅 기능이 활성화됩니다.
+                </span>
+              </p>
+            </div>
+          ) : messages.length === 0 ? (
             <div className="empty-chat">
               <p>아직 메시지가 없습니다. 첫 메시지를 남겨보세요! 👋</p>
             </div>
@@ -484,17 +503,17 @@ const Chat = () => {
             type="text"
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
-            placeholder="메시지를 입력하세요..."
+            placeholder={user && !isAdmin && user.paymentConfirmed !== true ? "입금 확인 후 채팅을 사용하실 수 있습니다." : "메시지를 입력하세요..."}
             className="chat-input"
-              disabled={!user}
+              disabled={!user || (!isAdmin && user.paymentConfirmed !== true)}
           />
           <button
             type="submit"
             className="send-button"
-            disabled={!inputMessage.trim() || !user}
+            disabled={!inputMessage.trim() || !user || (!isAdmin && user.paymentConfirmed !== true)}
           >
             <img 
-              src={!inputMessage.trim() || !user ? sendIconInactive : sendIconActive} 
+              src={!inputMessage.trim() || !user || (!isAdmin && user.paymentConfirmed !== true) ? sendIconInactive : sendIconActive} 
               alt="전송" 
               className="send-button-icon"
             />
