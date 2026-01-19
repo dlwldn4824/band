@@ -461,6 +461,7 @@
 .message-time {
   color: #999;
   font-size: 0.8rem;
+  white-space: nowrap;
 }
 
 .message-content {

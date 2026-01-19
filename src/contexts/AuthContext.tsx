@@ -63,7 +63,57 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const savedUser = localStorage.getItem('user')
         if (savedUser) {
           const userData = JSON.parse(savedUser)
+          
+          // guests 데이터에서 paymentConfirmed 상태 확인 및 업데이트
+          if (userData.phone && userData.phone !== 'admin') {
+            try {
+              // localStorage에서 guests 로드
+              const savedGuests = localStorage.getItem('guests')
+              if (savedGuests) {
+                const guests = JSON.parse(savedGuests)
+                if (Array.isArray(guests) && guests.length > 0) {
+                  const normalizedInputPhone = userData.phone.replace(/[-\s()]/g, '')
+                  const normalizedInputName = userData.name.trim()
+                  
+                  const foundGuest = guests.find((guest: any) => {
+                    const guestName = guest.name || guest['이름'] || guest.Name || ''
+                    const nameMatch = guestName.trim() === normalizedInputName
+                    
+                    const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '')
+                    const normalizedGuestPhone = guestPhone.replace(/[-\s()]/g, '')
+                    const phoneMatch = normalizedGuestPhone === normalizedInputPhone
+                    
+                    return nameMatch && phoneMatch
+                  })
+                  
+                  if (foundGuest) {
+                    // paymentConfirmed 상태가 다르면 업데이트
+                    const paymentConfirmed = foundGuest.paymentConfirmed === true
+                    if (userData.paymentConfirmed !== paymentConfirmed) {
+                      userData.paymentConfirmed = paymentConfirmed
+                      console.log('[AuthContext] loadUser - paymentConfirmed 상태 업데이트:', paymentConfirmed)
+                    }
+                    
+                    // checkedIn 상태도 업데이트
+                    if (userData.checkedIn !== foundGuest.checkedIn) {
+                      userData.checkedIn = foundGuest.checkedIn || false
+                    }
+                    if (userData.checkedInAt !== foundGuest.checkedInAt) {
+                      userData.checkedInAt = foundGuest.checkedInAt
+                    }
+                    if (userData.entryNumber !== foundGuest.entryNumber) {
+                      userData.entryNumber = foundGuest.entryNumber
+                    }
+                  }
+                }
+              }
+            } catch (error) {
+              console.warn('guests 데이터 확인 실패:', error)
+            }
+          }
+          
           setUser(userData)
+          localStorage.setItem('user', JSON.stringify(userData))
           
           // Firestore에서 nickname 로드 시도 (실패해도 로컬 데이터로 계속 진행)
           if (userData.phone && userData.phone !== 'admin') {
@@ -103,6 +153,76 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     loadUser()
   }, [])
+
+  // guests 데이터 변경 시 사용자 상태 자동 갱신
+  useEffect(() => {
+    if (!user || user.phone === 'admin') return
+
+    const checkGuestsUpdate = () => {
+      try {
+        const savedGuests = localStorage.getItem('guests')
+        if (!savedGuests) return
+
+        const guests = JSON.parse(savedGuests)
+        if (!Array.isArray(guests) || guests.length === 0) return
+
+        const normalizedInputPhone = user.phone.replace(/[-\s()]/g, '')
+        const normalizedInputName = user.name.trim()
+        
+        const foundGuest = guests.find((guest: any) => {
+          const guestName = guest.name || guest['이름'] || guest.Name || ''
+          const nameMatch = guestName.trim() === normalizedInputName
+          
+          const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '')
+          const normalizedGuestPhone = guestPhone.replace(/[-\s()]/g, '')
+          const phoneMatch = normalizedGuestPhone === normalizedInputPhone
+          
+          return nameMatch && phoneMatch
+        })
+        
+        if (foundGuest) {
+          // paymentConfirmed 상태가 다르면 업데이트
+          const paymentConfirmed = foundGuest.paymentConfirmed === true
+          if (user.paymentConfirmed !== paymentConfirmed) {
+            const updatedUser = {
+              ...user,
+              paymentConfirmed: paymentConfirmed,
+              checkedIn: foundGuest.checkedIn || false,
+              checkedInAt: foundGuest.checkedInAt,
+              entryNumber: foundGuest.entryNumber
+            }
+            setUser(updatedUser)
+            localStorage.setItem('user', JSON.stringify(updatedUser))
+            console.log('[AuthContext] guests 변경 감지 - paymentConfirmed 상태 업데이트:', paymentConfirmed)
+          } else if (
+            user.checkedIn !== foundGuest.checkedIn ||
+            user.checkedInAt !== foundGuest.checkedInAt ||
+            user.entryNumber !== foundGuest.entryNumber
+          ) {
+            // 다른 상태도 업데이트
+            const updatedUser = {
+              ...user,
+              checkedIn: foundGuest.checkedIn || false,
+              checkedInAt: foundGuest.checkedInAt,
+              entryNumber: foundGuest.entryNumber
+            }
+            setUser(updatedUser)
+            localStorage.setItem('user', JSON.stringify(updatedUser))
+          }
+        }
+      } catch (error) {
+        console.warn('guests 변경 확인 실패:', error)
+      }
+    }
+
+    // 초기 확인
+    checkGuestsUpdate()
+
+    // localStorage 변경 감지 (storage 이벤트는 다른 탭에서만 발생하므로 polling 사용)
+    const interval = setInterval(checkGuestsUpdate, 2000) // 2초마다 확인
+
+    return () => clearInterval(interval)
+  }, [user])
 
   const login = (name: string, phone: string, guests?: any[]): boolean => {
     // guests가 제공되지 않으면 localStorage에서 로드 (하위 호환성)
