@@ -133,7 +133,7 @@
 .memo-note {
   position: absolute;
   width: min(320px, 25vw);
-  max-width: calc(100vw - 24px); /* 좌우 여백 확보 */
+  max-width: calc(100% - 24px); /* iOS Safari 뷰포트 문제 해결: 100vw 대신 100% 사용 */
   padding: 1rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   cursor: pointer;

@@ -741,7 +741,8 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   width: 100%;
   max-width: 900px;
-  max-height: calc(100dvh - var(--header-base-height) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 2rem);
+  max-height: calc(95dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)); /* iOS Safari 뷰포트 문제 해결 */
+  max-height: calc(calc(var(--vh, 1vh) * 95) - env(safe-area-inset-top) - env(safe-area-inset-bottom)); /* --vh 변수 우선 사용 */
   display: flex;
   flex-direction: column;
   animation: slideUp 0.3s ease-out;
@@ -936,8 +937,8 @@
 @media (max-width: 768px) {
   .guest-list-modal {
     max-width: 95%;
-    max-height: calc(100vh - var(--header-height, 0) - 2rem);
-    max-height: calc(var(--app-height, 100dvh) - var(--header-height, 0) - 2rem);
+    max-height: calc(95dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)); /* iOS Safari 뷰포트 문제 해결 */
+    max-height: calc(calc(var(--vh, 1vh) * 95) - env(safe-area-inset-top) - env(safe-area-inset-bottom)); /* --vh 변수 우선 사용 */
   }
   
   .guest-list-modal-header {

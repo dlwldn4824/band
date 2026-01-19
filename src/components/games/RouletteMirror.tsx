@@ -14,7 +14,11 @@ interface RouletteState {
   startTime?: any
 }
 
-const RouletteMirror = () => {
+interface RouletteMirrorProps {
+  onBack?: () => void
+}
+
+const RouletteMirror = ({ onBack }: RouletteMirrorProps = {}) => {
   const { isAdmin } = useAuth()
   const [isSpinning, setIsSpinning] = useState(false)
   const [result, setResult] = useState<string>('')
@@ -154,7 +158,13 @@ const RouletteMirror = () => {
       <div
         className="page-back-button"
         style={{left:'30px'}}
-        onClick={() => navigate('/admin/events?tab=기타',{replace:true})}
+        onClick={() => {
+          if (onBack) {
+            onBack()
+          } else {
+            navigate('/admin/events?tab=기타', { replace: true })
+          }
+        }}
       >
         ←
       </div>

@@ -105,7 +105,9 @@ html, body {
   margin: 0;
   padding: 0;
   background-color: #000000;
-  min-height: 100vh;
+  min-height: 100dvh; /* iOS Safari 뷰포트 문제 해결 */
+  min-height: calc(var(--vh, 1vh) * 100); /* --vh 변수 우선 사용 */
+  width: 100%; /* 100vw 대신 100% 사용 */
 }
 
 body {

@@ -3,7 +3,11 @@ import './LEDBoard.css'
 import { useNavigate } from 'react-router-dom'
 
 
-const LEDBoard = () => {
+interface LEDBoardProps {
+  onBack?: () => void
+}
+
+const LEDBoard = ({ onBack }: LEDBoardProps = {}) => {
   const navigate = useNavigate()
   const [text, setText] = useState('응원 메시지를 입력하세요!')
   const backgroundColor = '#000000'
@@ -320,7 +324,13 @@ const LEDBoard = () => {
     <div className="led-board-container">
       <button
         className="led-board-close-button"
-        onClick={() => navigate('/admin/events?tab=기타', { replace: true })}
+        onClick={() => {
+          if (onBack) {
+            onBack()
+          } else {
+            navigate('/admin/events?tab=기타', { replace: true })
+          }
+        }}
       >
       </button>
       <div className="led-board-preview" ref={previewContainerRef}>

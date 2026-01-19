@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useData } from '../contexts/DataContext'
 import { doc, setDoc, getDoc, Timestamp } from 'firebase/firestore'
@@ -51,9 +51,18 @@ const Events = () => {
   const { eventsEnabled, setEventsEnabled, bookingInfo } = useData()
   const navigate = useNavigate()
   const location = useLocation()
+  const [searchParams, setSearchParams] = useSearchParams()
   
   // 현재 경로가 /events인지 확인 (admin이 아닌 일반 사용자 페이지)
   const isPublicEventsPage = location.pathname === '/events'
+  
+  // URL 쿼리 파라미터에서 게임 타입 읽기
+  useEffect(() => {
+    const gameParam = searchParams.get('game') as GameType | null
+    if (gameParam && ['roulette', 'draw', 'ledboard'].includes(gameParam)) {
+      setCurrentGame(gameParam)
+    }
+  }, [searchParams])
 
   // 디버깅: Events 페이지 렌더링 상태 로그
   useEffect(() => {
@@ -67,14 +76,20 @@ const Events = () => {
 
   // 운영진이 아니고 이벤트가 활성화되지 않았으면 접근 차단
   useEffect(() => {
-    console.log('[Events] 접근 권한 체크:', { isAdmin, eventsEnabled })
+    // 로딩 중이면 리다이렉트하지 않음 (새로고침 시 이벤트 페이지 유지)
+    if (isLoading) {
+      console.log('[Events] 로딩 중, 리다이렉트 대기')
+      return
+    }
+    
+    console.log('[Events] 접근 권한 체크:', { isAdmin, eventsEnabled, isLoading })
     if (!isAdmin && !eventsEnabled) {
       console.log('[Events] 접근 차단 → /dashboard로 리다이렉트')
       navigate('/dashboard')
     } else {
       console.log('[Events] 접근 허용')
     }
-  }, [isAdmin, eventsEnabled, navigate])
+  }, [isAdmin, eventsEnabled, isLoading, navigate])
 
   // Dashboard에서 주류 구매 모달을 열도록 요청한 경우
   useEffect(() => {
@@ -205,6 +220,14 @@ const Events = () => {
       setEventsEnabled(true)
     }
     setCurrentGame(gameId)
+    // URL 쿼리 파라미터 업데이트
+    setSearchParams({ game: gameId })
+  }
+  
+  // 게임 종료 시 URL에서 게임 파라미터 제거
+  const handleGameBack = () => {
+    setCurrentGame('menu')
+    setSearchParams({})
   }
 
   // 예약한 사람인지 확인 (entryNumber가 있거나 checkedIn이 true)
@@ -249,9 +272,9 @@ const Events = () => {
     return (
       <div className="events-page">
         <div className="events-content">
-          {currentGame === 'roulette' && <RouletteMirror />}
-          {currentGame === 'draw' && <EntryNumberDrawMirror />}
-          {currentGame === 'ledboard' && <LEDBoard />}
+          {currentGame === 'roulette' && <RouletteMirror onBack={handleGameBack} />}
+          {currentGame === 'draw' && <EntryNumberDrawMirror onBack={handleGameBack} />}
+          {currentGame === 'ledboard' && <LEDBoard onBack={handleGameBack} />}
         </div>
       </div>
     )

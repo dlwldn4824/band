@@ -284,7 +284,7 @@ const Dashboard = () => {
                   <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
                     <p style={{ margin: '0.25rem 0', fontSize: '0.9rem', color: '#fff' }}>총 게스트: {guests.length}명</p>
                     <p style={{ margin: '0.25rem 0', fontSize: '0.9rem', color: '#fff' }}>
-                      실 관객: {guests.filter(g => g.paymentConfirmed === true).length}명
+                      입금 확인 게스트: {guests.filter(g => g.paymentConfirmed === true).length}명
                     </p>
                   </div>
                 </div>

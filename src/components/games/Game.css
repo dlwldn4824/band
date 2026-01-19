@@ -8,6 +8,8 @@
   animation: fadeIn 0.5s ease-in;
   height: 100%;
   min-height: 0;
+  max-height: calc(100dvh - var(--header-base-height, 5.75rem) - env(safe-area-inset-top) - env(safe-area-inset-bottom)); /* iOS Safari 뷰포트 문제 해결 */
+  max-height: calc(calc(var(--vh, 1vh) * 100) - var(--header-base-height, 5.75rem) - env(safe-area-inset-top) - env(safe-area-inset-bottom)); /* --vh 변수 우선 사용 */
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -812,9 +814,51 @@
   width: 140px;
   height: 140px;
   border-radius: 50%;
-  border: 6px solid #FF4C4C;
-  background: transparent;
+  border: 6px dashed #FF4C4C;
+  background: transparent !important;
+  background-color: transparent !important;
   font-family: 'Pretendard', sans-serif;
+  box-shadow: none !important;
+  position: relative;
+  overflow: visible;
+  -webkit-text-fill-color: #FF4C4C;
+  -webkit-text-stroke: 0;
+  text-shadow: none;
+  outline: none;
+  border-image: none;
+  z-index: 1;
+}
+
+.draw-number::before,
+.draw-number::after {
+  display: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  content: none !important;
+}
+
+.draw-number *,
+.draw-number *::before,
+.draw-number *::after {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  color: inherit !important;
+  -webkit-text-fill-color: inherit !important;
+}
+
+/* 숫자 텍스트 자체의 배경 완전 제거 */
+.draw-number {
+  -webkit-background-clip: unset !important;
+  background-clip: unset !important;
+}
+
+.draw-number > * {
+  background: none !important;
+  background-color: transparent !important;
+  -webkit-background-clip: unset !important;
+  background-clip: unset !important;
 }
 
 .draw-number.placeholder {

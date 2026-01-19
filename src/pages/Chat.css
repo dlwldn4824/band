@@ -81,8 +81,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  height: 100vh;
-  height: var(--app-height, 100dvh);
+  height: 100dvh; /* iOS Safari 뷰포트 문제 해결 */
+  height: calc(var(--vh, 1vh) * 100); /* --vh 변수 우선 사용 */
   min-height: 0;
   overflow: hidden;
   display: flex;

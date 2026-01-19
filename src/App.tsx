@@ -28,6 +28,8 @@ function useAppHeight() {
       }
       
       document.documentElement.style.setProperty("--app-height", `${height}px`)
+      // iOS Safari 뷰포트 문제 해결을 위한 --vh 변수 추가
+      document.documentElement.style.setProperty("--vh", `${height * 0.01}px`)
     }
     
     // 초기 설정

@@ -14,7 +14,11 @@ interface DrawState {
   eligibleGuests: Array<{ name: string; entryNumber: number }>
 }
 
-const EntryNumberDrawMirror = () => {
+interface EntryNumberDrawMirrorProps {
+  onBack?: () => void
+}
+
+const EntryNumberDrawMirror = ({ onBack }: EntryNumberDrawMirrorProps = {}) => {
   const navigate = useNavigate()
   const { isAdmin } = useAuth()
   const { guests } = useData()
@@ -143,7 +147,13 @@ const EntryNumberDrawMirror = () => {
       <div className="roulette-header">
         <button
           className="entry-draw-close-button"
-          onClick={() => navigate('/admin/events?tab=기타', { replace: true })}
+          onClick={() => {
+            if (onBack) {
+              onBack()
+            } else {
+              navigate('/admin/events?tab=기타', { replace: true })
+            }
+          }}
         >
         </button>
         <div className="draw-header-title">
