@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useData } from '../contexts/DataContext'
 import Events from '../components/Events'
@@ -9,12 +9,14 @@ import { formatPhoneDisplay } from '../utils/phoneFormat'
 import { collection, getDocs } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import posterImage from '../assets/배경/연합공연_최종포스터.jpeg'
+import Login from './Login'
 import './Dashboard.css'
 
 const Dashboard = () => {
   // ✅ 모든 Hook은 최상단에서 조건 없이 호출
   const { user, setNickname, isAdmin, adminName, isLoading } = useAuth()
   const { performanceData, guests } = useData()
+  const { token } = useParams<{ token?: string }>()
   const [showNicknameModal, setShowNicknameModal] = useState(false)
   const [nickname, setNicknameInput] = useState('')
   const [nicknameError, setNicknameError] = useState('')
@@ -24,6 +26,7 @@ const Dashboard = () => {
   const [adminList, setAdminList] = useState<Array<{ name: string; nickname: string }>>([])
   const [sortBy, setSortBy] = useState<'name' | null>(null)
   const location = useLocation()
+  const navigate = useNavigate()
   
   // location이 변경될 때마다 리렌더링 트리거
   useEffect(() => {
@@ -40,6 +43,10 @@ const Dashboard = () => {
     )
   }
 
+  // 개인 링크 토큰이 있고 아직 로그인되지 않았으면 Login 컴포넌트 렌더링
+  if (token && !user) {
+    return <Login />
+  }
 
   // 대시보드 페이지에서는 body 스크롤 허용
   useEffect(() => {
@@ -95,7 +102,6 @@ const Dashboard = () => {
     loadNicknames()
   }, [isAdmin])
 
-
   // 렌더링 조건 디버깅
 
   return (
@@ -138,6 +144,52 @@ const Dashboard = () => {
               </>
             )}
           </div>
+          
+          {/* 주류 홍보 문구 및 개인 접속 링크 */}
+          {user && (
+            <div style={{ marginTop: '1.5rem', width: '90%', maxWidth: '90%', marginLeft: 'auto', marginRight: 'auto' }}>
+              {/* 주류 홍보 문구 */}
+              <div 
+                style={{
+                  padding: '1rem',
+                  background: 'linear-gradient(135deg, #FF4C4C 0%, #E63E3E 100%)',
+                  borderRadius: '12px',
+                  marginBottom: '1rem',
+                  cursor: 'pointer',
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  boxShadow: '0 4px 12px rgba(255, 76, 76, 0.3)',
+                  width: '100%'
+                }}
+                onClick={() => navigate('/events', { state: { openDrinkModal: true } })}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)'
+                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(255, 76, 76, 0.4)'
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)'
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(255, 76, 76, 0.3)'
+                }}
+              >
+                <h3 style={{ 
+                  margin: '0 0 0.5rem 0', 
+                  color: '#ffffff', 
+                  fontSize: '1.125rem',
+                  fontWeight: '700'
+                }}>
+                  주류 사전 구매 바로가기
+                </h3>
+                
+                <p style={{ 
+                  margin: '0.5rem 0 0 0', 
+                  color: '#ffffff', 
+                  fontSize: '0.8rem',
+                  opacity: 0.9
+                }}>
+                  {isAdmin ? '운영진 구매 1500원 할인!' : '사전 구매 시 500원 할인!'}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -208,7 +260,12 @@ const Dashboard = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
                 <div style={{ padding: '0.75rem', background: '#111', borderRadius: '8px', border: '1px solid #333', color: '#fff' }}>
                   <p style={{ margin: '0 0 0.5rem 0', fontWeight: '600', color: '#fff' }}>현재 통계</p>
-                  <p style={{ margin: '0.25rem 0', fontSize: '0.9rem', color: '#fff' }}>총 게스트: {guests.length}명</p>
+                  <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                    <p style={{ margin: '0.25rem 0', fontSize: '0.9rem', color: '#fff' }}>총 게스트: {guests.length}명</p>
+                    <p style={{ margin: '0.25rem 0', fontSize: '0.9rem', color: '#fff' }}>
+                      실 관객: {guests.filter(g => g.paymentConfirmed === true).length}명
+                    </p>
+                  </div>
                 </div>
                 <button
                   onClick={() => setShowGuestList(true)}

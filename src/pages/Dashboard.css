@@ -94,28 +94,51 @@
 }
 
 .personal-link-section {
-  width: 70%;
-  margin: 1rem auto 0;
-}
-
-.personal-link-container {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  background: #2A2A2A;
+  border: 2px dashed #666;
   border-radius: 12px;
-  overflow: hidden;
+  padding: 0.5rem 0.5rem;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  margin-top: 0;
+  margin-bottom: 0;
+  background: #2a2a2a;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: 100% !important;
 }
 
 .personal-link-label {
   color: #ffffff;
+  font-size: 1.125rem !important;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  margin-top: 0;
+  text-align: center;
   font-family: 'Pretendard', sans-serif;
-  font-size: 0.875rem;
-  font-weight: 500;
-  white-space: nowrap;
-  flex-shrink: 0;
+}
+
+.personal-link-container {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.personal-link-input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-family: 'Pretendard', monospace;
+  word-break: break-all;
+}
+
+.personal-link-input:focus {
+  outline: none;
+  border-color: rgb(255, 76, 76);
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .personal-link-text {
@@ -137,26 +160,45 @@
 }
 
 .copy-link-button {
-  padding: 0.375rem 0.25rem;
-  background: transparent;
+  padding: 0.5rem 0.875rem;
+  background: rgb(255, 76, 76);
   color: white;
-  border: 1px solid white;
-  border-radius: 20px;
-  font-size: 0.7rem;
-  font-weight: 500;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
   font-family: 'Pretendard', sans-serif;
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.125rem;
   min-width: fit-content;
 }
 
+.copy-link-button-small {
+  padding: 0.375rem 0.75rem;
+  background: rgb(255, 76, 76);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  font-family: 'Pretendard', sans-serif;
+  flex-shrink: 0;
+  min-width: fit-content;
+}
+
+.copy-link-button-small:hover {
+  background-color: #E63E3E;
+  transform: translateY(-1px);
+}
+
 .copy-link-button:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: #E63E3E;
+  transform: translateY(-1px);
 }
 
 @media (max-width: 768px) {

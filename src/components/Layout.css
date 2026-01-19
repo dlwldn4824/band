@@ -137,6 +137,26 @@
   border: 1px solid white !important;
   }
   
+  .copy-link-button-nav {
+  padding: 0.5rem 0.75rem;
+  background: rgb(255, 76, 76);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-family: 'Pretendard', sans-serif;
+  }
+  
+  .copy-link-button-nav:hover {
+  background-color: #E63E3E;
+  transform: translateY(-1px);
+  }
+  
   .logout-nav-button {
   background-color: transparent;
   border: none;

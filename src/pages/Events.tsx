@@ -76,6 +76,16 @@ const Events = () => {
     }
   }, [isAdmin, eventsEnabled, navigate])
 
+  // Dashboard에서 주류 구매 모달을 열도록 요청한 경우
+  useEffect(() => {
+    const state = location.state as { openDrinkModal?: boolean } | null
+    if (state?.openDrinkModal) {
+      setShowDrinkModal(true)
+      // state를 초기화하여 다시 방문 시 모달이 자동으로 열리지 않도록
+      window.history.replaceState({}, document.title)
+    }
+  }, [location.state])
+
   // 구매 모달의 수량은 항상 0부터 시작
   // 내 구매 정보 섹션은 Firestore의 주문 정보를 기반으로 별도로 표시
   useEffect(() => {

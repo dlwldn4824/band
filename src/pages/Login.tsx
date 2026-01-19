@@ -202,7 +202,12 @@ const Login = () => {
 
   // 네비게이션 로직 (닉네임 확인 없이 바로 대시보드로)
   const checkNicknameAndNavigate = async () => {
-    navigate('/dashboard')
+    // 개인 링크 토큰이 있으면 개인 링크 URL 유지, 없으면 일반 대시보드로
+    if (token) {
+      navigate(`/t/${token}`, { replace: true })
+    } else {
+      navigate('/dashboard')
+    }
   }
 
   // 페이지 로드 시 이미 등록된 게스트인지 확인

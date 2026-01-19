@@ -871,7 +871,7 @@
 }
 
 .result-name-container {
-  background: #121212;
+  background: transparent;
   border-radius: 30px;
   padding: 0.75rem 1.5rem;
   margin-bottom: 0.5rem;
