@@ -306,8 +306,7 @@
 .message {
   display: flex;
   flex-direction: column;
-  width: 100%;
-  max-width: 100%;
+  max-width: 75%;
   animation: slideIn 0.3s ease-out;
   align-self: flex-start;
   margin-bottom: 0.25rem;
@@ -335,7 +334,6 @@
   font-size: 0.75rem;
   padding: 0 0.25rem;
   align-items: flex-start;
-  width: 100%;
   max-width: 100%;
   box-sizing: border-box;
 }
@@ -473,6 +471,8 @@
   line-height: 1.4;
   display: inline-block;
   max-width: 100%;
+  width: fit-content;
+  min-width: fit-content;
 }
 
 .message-text {
