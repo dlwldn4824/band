@@ -2975,7 +2975,7 @@ const Admin = () => {
                 id="walkInPrice"
                 value={bookingForm.walkInPrice}
                 onChange={(e) => setBookingForm({ ...bookingForm, walkInPrice: e.target.value })}
-                placeholder="예: 7천원"
+                placeholder="예: 6천원"
               />
             </div>
             <div className="form-group">

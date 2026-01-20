@@ -28,6 +28,10 @@ const Login = () => {
   const [editedName, setEditedName] = useState('')
   const [editedPhone, setEditedPhone] = useState('')
   
+  // 전화번호 중복 확인 모달
+  const [showPhoneDuplicateModal, setShowPhoneDuplicateModal] = useState(false)
+  const [duplicateGuestName, setDuplicateGuestName] = useState('')
+  
   const { login } = useAuth()
   const { guests, addWalkInGuest, updateGuest, bookingInfo } = useData()
   const navigate = useNavigate()
@@ -355,75 +359,71 @@ const Login = () => {
     blurActiveElement()
     window.scrollTo(0, 0)
 
-    // 전화번호에서 하이픈 제거하여 저장
-    const normalizedPhone = bookingPhone.trim().replace(/\D/g, '')
-    
     try {
-      // 이미 등록된 게스트인지 확인
-      const normalizedName = bookingName.trim()
+      // 전화번호 정규화
+      const normalizedPhone = bookingPhone.trim().replace(/\D/g, '')
       const normalizedPhoneForCompare = normalizedPhone.replace(/[-\s()]/g, '')
-      const existingGuest = guests.find((guest) => {
+      const normalizedName = bookingName.trim()
+      
+      // 같은 전화번호로 다른 이름이 이미 등록되어 있는지 확인
+      const duplicateGuest = guests.find((guest) => {
         const guestName = guest.name || guest['이름'] || guest.Name || ''
         const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '').replace(/[-\s()]/g, '')
-        return guestName.trim() === normalizedName && guestPhone === normalizedPhoneForCompare
+        // 전화번호는 같지만 이름이 다른 경우
+        return guestPhone === normalizedPhoneForCompare && guestName.trim() !== normalizedName
       })
-
-      if (existingGuest) {
-        // 입금 확인 상태와 관계없이 로그인 가능 (입금 확인 대기중이어도 로그인 가능)
-        const updatedGuests = [...guests]
-        const loginSuccess = login(bookingName.trim(), normalizedPhone, updatedGuests)
-        
-        if (loginSuccess) {
-          localStorage.removeItem('pendingBooking')
-          // 티켓 애니메이션 표시 (onDone에서 대시보드로 이동)
-          setShowTicket(true)
-          return
-        } else {
-          setBookingError('로그인에 실패했습니다. 다시 시도해주세요.')
-          return
-        }
-      }
-
-      // 새로운 게스트인 경우 예매 신청 처리
-      // Firestore에 예매 신청 정보 저장
-      const userId = `${bookingName.trim()}_${normalizedPhone}`
-      const bookingRef = doc(db, 'bookings', userId)
       
-      await setDoc(bookingRef, {
+      if (duplicateGuest) {
+        // 중복된 전화번호 발견 - 확인 모달 표시
+        const existingName = duplicateGuest.name || duplicateGuest['이름'] || duplicateGuest.Name || ''
+        setDuplicateGuestName(existingName)
+        setShowPhoneDuplicateModal(true)
+        return
+      }
+      
+      // 기존 게스트든 새로운 게스트든 확인 화면만 표시
+      // 명단 추가는 "확인하고 입장하기" 버튼을 눌렀을 때만 수행
+      
+      // 정보 수정용 상태 설정
+      setEditedName(bookingName.trim())
+      setEditedPhone(bookingPhone.trim())
+      
+      // localStorage에 예매 정보 저장 (페이지 재접근 시 확인 화면 표시용)
+      localStorage.setItem('pendingBooking', JSON.stringify({
         name: bookingName.trim(),
-        phone: normalizedPhone,
-        email: '',
-        approved: false, // 관리자 승인 전까지 false
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }, { merge: true })
-
-      // 사전 예약 등록 (입금 확인 대기 상태이므로 isWalkIn: false)
-      const result = addWalkInGuest(bookingName.trim(), normalizedPhone, false, '')
+        phone: bookingPhone.trim(),
+        email: ''
+      }))
       
-      if (result.success) {
-        // 정보 수정용 상태 설정
-        setEditedName(bookingName.trim())
-        setEditedPhone(bookingPhone.trim())
-        
-        // localStorage에 예매 정보 저장 (페이지 재접근 시 확인 화면 표시용)
-        localStorage.setItem('pendingBooking', JSON.stringify({
-          name: bookingName.trim(),
-          phone: bookingPhone.trim(),
-          email: ''
-        }))
-        
-        // 확인 화면 표시
-        setBookingConfirmed(false)
-        setBookingInfoConfirmed(false)
-        setShowBookingConfirmation(true)
-      } else {
-        setBookingError(result.message || '등록에 실패했습니다.')
-      }
+      // 확인 화면 표시
+      setBookingConfirmed(false)
+      setBookingInfoConfirmed(false)
+      setShowBookingConfirmation(true)
     } catch (error) {
       console.error('예매 신청 처리 오류:', error)
       setBookingError('예매 신청 처리 중 오류가 발생했습니다. 다시 시도해주세요.')
     }
+  }
+  
+  // 전화번호 중복 확인 후 계속하기
+  const handleContinueWithDuplicatePhone = () => {
+    setShowPhoneDuplicateModal(false)
+    
+    // 정보 수정용 상태 설정
+    setEditedName(bookingName.trim())
+    setEditedPhone(bookingPhone.trim())
+    
+    // localStorage에 예매 정보 저장 (페이지 재접근 시 확인 화면 표시용)
+    localStorage.setItem('pendingBooking', JSON.stringify({
+      name: bookingName.trim(),
+      phone: bookingPhone.trim(),
+      email: ''
+    }))
+    
+    // 확인 화면 표시
+    setBookingConfirmed(false)
+    setBookingInfoConfirmed(false)
+    setShowBookingConfirmation(true)
   }
 
   // 정보 수정 핸들러
@@ -592,7 +592,40 @@ const Login = () => {
 
   return (
     <div className="login-page">
-      {showBookingConfirmation ? (
+      {showPhoneDuplicateModal ? (
+        <div className="login-container booking-confirmation">
+          <div className="confirmation-header">
+            <h1>전화번호 중복 확인</h1>
+          </div>
+          <div className="info-box" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100px' }}>
+            <p style={{ textAlign: 'center', color: '#fff', margin: 0 }}>
+              같은 전화번호 <strong>{duplicateGuestName}</strong> 님이 이미 등록되어 있습니다.<br/>
+              계속 예매하시겠습니까?
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap', width: '100%' }}>
+            <button
+              className="booking-confirm-button"
+              onClick={() => {
+                setShowPhoneDuplicateModal(false)
+                setBookingName('')
+                setBookingPhone('')
+                setBookingError('')
+              }}
+              style={{ width: 'auto', flex: '0 1 auto', minWidth: '150px', maxWidth: '200px', marginTop: '1rem', background: '#666666' }}
+            >
+              돌아가기
+            </button>
+            <button
+              className="booking-confirm-button"
+              onClick={handleContinueWithDuplicatePhone}
+              style={{ width: 'auto', flex: '0 1 auto', minWidth: '150px', maxWidth: '200px', marginTop: '1rem' }}
+            >
+              계속하기
+            </button>
+          </div>
+        </div>
+      ) : showBookingConfirmation ? (
         <div className="login-container booking-confirmation">
           <button 
             className="booking-close-button"
@@ -753,10 +786,44 @@ const Login = () => {
               disabled={!bookingConfirmed || !bookingInfoConfirmed}
               onClick={async () => {
                 try {
-                  // 개인 로그인 링크 생성 (암호화된 토큰 사용)
                   const normalizedPhone = bookingPhone.replace(/\D/g, '')
+                  const normalizedName = bookingName.trim()
+                  
+                  // 기존 게스트인지 확인
+                  const normalizedPhoneForCompare = normalizedPhone.replace(/[-\s()]/g, '')
+                  const existingGuest = guests.find((guest) => {
+                    const guestName = guest.name || guest['이름'] || guest.Name || ''
+                    const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '').replace(/[-\s()]/g, '')
+                    return guestName.trim() === normalizedName && guestPhone === normalizedPhoneForCompare
+                  })
+
+                  // 기존 게스트가 아닌 경우에만 명단에 추가
+                  if (!existingGuest) {
+                    // Firestore에 예매 신청 정보 저장
+                    const userId = `${normalizedName}_${normalizedPhone}`
+                    const bookingRef = doc(db, 'bookings', userId)
+                    
+                    await setDoc(bookingRef, {
+                      name: normalizedName,
+                      phone: normalizedPhone,
+                      email: '',
+                      approved: false, // 관리자 승인 전까지 false
+                      createdAt: new Date(),
+                      updatedAt: new Date()
+                    }, { merge: true })
+
+                    // 사전 예약 등록 (입금 확인 대기 상태이므로 isWalkIn: false)
+                    const result = addWalkInGuest(normalizedName, normalizedPhone, false, '')
+                    
+                    if (!result.success) {
+                      setBookingError(result.message || '등록에 실패했습니다.')
+                      return
+                    }
+                  }
+
+                  // 개인 로그인 링크 생성 (암호화된 토큰 사용)
                   // 이름과 전화번호를 하나의 문자열로 합치고 base64 인코딩
-                  const combinedData = `${bookingName}|${normalizedPhone}`
+                  const combinedData = `${normalizedName}|${normalizedPhone}`
                   const base64Token = btoa(encodeURIComponent(combinedData))
                   // URL-safe base64로 변환 (+ -> -, / -> _, = 제거)
                   const urlSafeToken = base64Token.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')

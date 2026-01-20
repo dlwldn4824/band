@@ -305,12 +305,24 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         if (firestoreBookingInfo && !Array.isArray(firestoreBookingInfo)) {
           const bookingData = firestoreBookingInfo as any
           if (bookingData.accountName && bookingData.bankName && bookingData.accountNumber) {
+            // 기존 데이터가 '7천원' 또는 '5천원'이면 '6천원'으로 업데이트
+            if (bookingData.walkInPrice === '7천원' || bookingData.walkInPrice === '5천원') {
+              bookingData.walkInPrice = '6천원'
+              await setFirestoreData('bookingInfo' as any, bookingData, 'main')
+              localStorage.setItem('bookingInfo', JSON.stringify(bookingData))
+            }
             setBookingInfoState(bookingData as BookingInfo)
           } else {
             // Firestore 데이터가 불완전한 경우 localStorage 확인
             const savedBookingInfo = localStorage.getItem('bookingInfo')
             if (savedBookingInfo) {
               const parsedInfo = JSON.parse(savedBookingInfo)
+              // 기존 데이터가 '7천원' 또는 '5천원'이면 '6천원'으로 업데이트
+              if (parsedInfo.walkInPrice === '7천원' || parsedInfo.walkInPrice === '5천원') {
+                parsedInfo.walkInPrice = '6천원'
+                localStorage.setItem('bookingInfo', JSON.stringify(parsedInfo))
+                await setFirestoreData('bookingInfo' as any, parsedInfo, 'main')
+              }
               setBookingInfoState(parsedInfo)
               await setFirestoreData('bookingInfo' as any, parsedInfo, 'main')
             } else {
@@ -319,7 +331,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
                 accountName: '이지우',
                 bankName: '카카오뱅크',
                 accountNumber: '3333254015574',
-                walkInPrice: '7천원',
+                walkInPrice: '6천원',
                 refundPolicy: '환불 불가',
                 contactPhone: '01048246873'
               }
@@ -332,6 +344,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           const savedBookingInfo = localStorage.getItem('bookingInfo')
           if (savedBookingInfo) {
             const parsedInfo = JSON.parse(savedBookingInfo)
+            // 기존 데이터가 '7천원'이면 '6천원'으로 업데이트
+            if (parsedInfo.walkInPrice === '7천원') {
+              parsedInfo.walkInPrice = '6천원'
+              localStorage.setItem('bookingInfo', JSON.stringify(parsedInfo))
+              await setFirestoreData('bookingInfo' as any, parsedInfo, 'main')
+            }
             setBookingInfoState(parsedInfo)
             await setFirestoreData('bookingInfo' as any, parsedInfo, 'main')
           } else {
@@ -340,7 +358,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
               accountName: '이지우',
               bankName: '카카오뱅크',
               accountNumber: '3333254015574',
-              walkInPrice: '7천원',
+              walkInPrice: '6천원',
               refundPolicy: '환불 불가',
               contactPhone: '01048246873'
             }
@@ -367,29 +385,20 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       setGuestbookMessages(JSON.parse(savedGuestbookMessages))
     }
     if (savedBookingInfo) {
-          setBookingInfoState(JSON.parse(savedBookingInfo))
-        } else {
-          // 기본값 설정
-          const defaultBookingInfo: BookingInfo = {
-            accountName: '이지우',
-            bankName: '카카오뱅크',
-            accountNumber: '3333254015574',
-            walkInPrice: '7천원',
-            refundPolicy: '환불 불가',
-            contactPhone: '01048246873'
+          const parsedInfo = JSON.parse(savedBookingInfo)
+          // 기존 데이터가 '7천원' 또는 '5천원'이면 '6천원'으로 업데이트
+          if (parsedInfo.walkInPrice === '7천원' || parsedInfo.walkInPrice === '5천원') {
+            parsedInfo.walkInPrice = '6천원'
+            localStorage.setItem('bookingInfo', JSON.stringify(parsedInfo))
           }
-          setBookingInfoState(defaultBookingInfo)
-          localStorage.setItem('bookingInfo', JSON.stringify(defaultBookingInfo))
-        }
-        if (savedBookingInfo) {
-          setBookingInfoState(JSON.parse(savedBookingInfo))
+          setBookingInfoState(parsedInfo)
         } else {
           // 기본값 설정
           const defaultBookingInfo: BookingInfo = {
             accountName: '이지우',
             bankName: '카카오뱅크',
             accountNumber: '3333254015574',
-            walkInPrice: '7천원',
+            walkInPrice: '6천원',
             refundPolicy: '환불 불가',
             contactPhone: '01048246873'
           }

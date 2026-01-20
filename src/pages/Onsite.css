@@ -70,3 +70,51 @@
   }
 }
 
+/* 현장 예매 페이지 결제 정보 가운데 정렬 */
+.onsite-payment-box {
+  text-align: center;
+}
+
+.onsite-payment-item {
+  flex-direction: column !important;
+  align-items: center !important;
+  text-align: center;
+}
+
+.onsite-payment-item .payment-label {
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.onsite-payment-item .payment-value,
+.onsite-payment-item .payment-amount {
+  text-align: center;
+  justify-content: center;
+}
+
+/* 입금 계좌와 입금하실 금액을 같은 행으로 표시 */
+.onsite-payment-single-row {
+  flex-direction: row !important;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+}
+
+.onsite-payment-single-row .payment-item-group {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+.onsite-payment-single-row .payment-label {
+  margin-bottom: 0;
+  white-space: nowrap;
+}
+
+.onsite-payment-single-row .payment-value {
+  margin-right: 0;
+}
+

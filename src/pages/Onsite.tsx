@@ -14,12 +14,42 @@ const Onsite = () => {
   const [showQR, setShowQR] = useState(false)
   const [personalLoginLink, setPersonalLoginLink] = useState<string>('')
   const [isProcessing, setIsProcessing] = useState(false)
+  const [showPhoneDuplicateModal, setShowPhoneDuplicateModal] = useState(false)
+  const [duplicateGuestName, setDuplicateGuestName] = useState('')
 
   const handleCheck = () => {
     if (!name.trim() || !phone.trim()) {
       alert('이름과 전화번호를 입력해주세요.')
       return
     }
+    
+    // 전화번호 정규화
+    const normalizedPhone = phone.trim().replace(/\D/g, '')
+    const normalizedPhoneForCompare = normalizedPhone.replace(/[-\s()]/g, '')
+    const normalizedName = name.trim()
+    
+    // 같은 전화번호로 다른 이름이 이미 등록되어 있는지 확인
+    const duplicateGuest = guests.find((guest) => {
+      const guestName = guest.name || guest['이름'] || guest.Name || ''
+      const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '').replace(/[-\s()]/g, '')
+      // 전화번호는 같지만 이름이 다른 경우
+      return guestPhone === normalizedPhoneForCompare && guestName.trim() !== normalizedName
+    })
+    
+    if (duplicateGuest) {
+      // 중복된 전화번호 발견 - 확인 모달 표시
+      const existingName = duplicateGuest.name || duplicateGuest['이름'] || duplicateGuest.Name || ''
+      setDuplicateGuestName(existingName)
+      setShowPhoneDuplicateModal(true)
+      return
+    }
+    
+    setShowAccount(true)
+  }
+  
+  // 전화번호 중복 확인 후 계속하기
+  const handleContinueWithDuplicatePhone = () => {
+    setShowPhoneDuplicateModal(false)
     setShowAccount(true)
   }
 
@@ -124,28 +154,43 @@ const Onsite = () => {
     setPersonalLoginLink('')
   }
 
-  const copyAccountNumber = async () => {
-    if (!bookingInfo?.accountNumber) return
-    
-    try {
-      await navigator.clipboard.writeText(bookingInfo.accountNumber)
-      alert('계좌번호가 복사되었습니다!')
-    } catch (err) {
-      // 클립보드 API가 실패한 경우 대체 방법
-      const textArea = document.createElement('textarea')
-      textArea.value = bookingInfo.accountNumber
-      textArea.style.position = 'fixed'
-      textArea.style.opacity = '0'
-      document.body.appendChild(textArea)
-      textArea.select()
-      try {
-        document.execCommand('copy')
-        alert('계좌번호가 복사되었습니다!')
-      } catch (e) {
-        alert('계좌번호 복사에 실패했습니다.')
-      }
-      document.body.removeChild(textArea)
-    }
+
+  if (showPhoneDuplicateModal) {
+    return (
+      <div className="login-page onsite-page">
+        <div className="login-container booking-confirmation onsite-container">
+          <div className="confirmation-header">
+            <h1>전화번호 중복 확인</h1>
+          </div>
+          <div className="info-box" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100px' }}>
+            <p style={{ textAlign: 'center', color: '#fff', margin: 0 }}>
+              같은 전화번호 <strong>{duplicateGuestName}</strong> 님이 이미 등록되어 있습니다.<br/>
+              계속 예매하시겠습니까?
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap', width: '100%' }}>
+            <button
+              className="booking-confirm-button"
+              onClick={() => {
+                setShowPhoneDuplicateModal(false)
+                setName('')
+                setPhone('')
+              }}
+              style={{ width: 'auto', flex: '0 1 auto', minWidth: '150px', maxWidth: '200px', marginTop: '1rem', background: '#666666' }}
+            >
+              돌아가기
+            </button>
+            <button
+              className="booking-confirm-button"
+              onClick={handleContinueWithDuplicatePhone}
+              style={{ width: 'auto', flex: '0 1 auto', minWidth: '150px', maxWidth: '200px', marginTop: '1rem' }}
+            >
+              계속하기
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (showQR) {
@@ -164,12 +209,22 @@ const Onsite = () => {
             />
           </div>
           <p className="qr-instruction">QR 코드를 스캔하여 접속하세요</p>
-          <button
-            className="booking-confirm-button"
-            onClick={handleBackToHome}
-          >
-            현장 결제 홈으로 가기
-          </button>
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap', width: '100%' }}>
+            <button
+              className="booking-confirm-button"
+              onClick={handleBackToHome}
+              style={{ width: 'auto', flex: '0 1 auto', minWidth: '150px', maxWidth: '200px', marginTop: '1rem', background: '#666666' }}
+            >
+              돌아가기
+            </button>
+            <button
+              className="booking-confirm-button"
+              onClick={handleBackToHome}
+              style={{ width: 'auto', flex: '0 1 auto', minWidth: '150px', maxWidth: '200px', marginTop: '1rem' }}
+            >
+              확인
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -202,51 +257,46 @@ const Onsite = () => {
 
           {/* 결제 정보 박스 */}
           {bookingInfo && (
-            <div className="payment-box">
-              <div className="payment-item payment-item-row">
-                <span className="payment-label">입금 계좌:</span>
-                <div className="payment-value account-info-row">
-                  {bookingInfo.bankName && (
-                    <span className="bank-name">{bookingInfo.bankName}</span>
+            <div className="payment-box onsite-payment-box">
+              <div className="payment-item onsite-payment-item onsite-payment-single-row">
+                <div className="payment-item-group">
+                  <span className="payment-label">입금 계좌:</span>
+                  <div className="payment-value account-info-row">
+                  {bookingInfo.bankName && bookingInfo.accountName && (
+                    <span className="bank-name">{bookingInfo.bankName} 입금주 {bookingInfo.accountName || '이지우'}</span>
                   )}
-                  {bookingInfo.accountNumber && (
-                    <span 
-                      className="account-number"
-                      onClick={copyAccountNumber}
-                      title="클릭하여 복사"
-                      style={{ cursor: 'pointer' }}
-                    >
-                      {bookingInfo.accountNumber}
-                    </span>
-                  )}
-                  {!bookingInfo.bankName && !bookingInfo.accountNumber && (
-                    <span>(미설정)</span>
-                  )}
+                    {!bookingInfo.bankName && !bookingInfo.accountName && (
+                      <span>(미설정)</span>
+                    )}
+                  </div>
                 </div>
               </div>
-              {bookingInfo.accountNumber && (
-                <p className="copy-hint">입금주: {bookingInfo.accountName || '이지우'} 계좌번호를 클릭하면 복사됩니다</p>
-              )}
-              <div className="payment-item payment-item-row">
-                <span className="payment-label">입금하실 금액:</span>
-                <span className="payment-amount">{bookingInfo.walkInPrice || '(미설정)'}</span>
+              <div className="payment-item onsite-payment-item">
+                <div className="payment-item-group">
+                  <span className="payment-label">입금하실 금액:</span>
+                  <span className="payment-amount">{bookingInfo.walkInPrice || '(미설정)'}</span>
+                </div>
               </div>
             </div>
           )}
 
-          <button
-            className="booking-confirm-button"
-            onClick={handlePaymentComplete}
-            disabled={isProcessing}
-          >
-            {isProcessing ? '처리 중...' : '결제완료'}
-          </button>
-          <button
-            className="back-button"
-            onClick={() => setShowAccount(false)}
-          >
-            뒤로가기
-          </button>
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap', width: '100%' }}>
+            <button
+              className="booking-confirm-button"
+              onClick={() => setShowAccount(false)}
+              style={{ width: 'auto', flex: '0 1 auto', minWidth: '150px', maxWidth: '200px', marginTop: '1rem', background: '#666666' }}
+            >
+              돌아가기
+            </button>
+            <button
+              className="booking-confirm-button"
+              onClick={handlePaymentComplete}
+              disabled={isProcessing}
+              style={{ width: 'auto', flex: '0 1 auto', minWidth: '150px', maxWidth: '200px', marginTop: '1rem' }}
+            >
+              {isProcessing ? '처리 중...' : '결제완료'}
+            </button>
+          </div>
         </div>
       </div>
     )
