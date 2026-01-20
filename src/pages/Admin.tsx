@@ -2246,8 +2246,18 @@ const Admin = () => {
                     return gName.trim() === guestName.trim() && gPhone === guestPhoneNormalized
                   })
                   
+                  const isDeleted = guest.isDeleted === true
+                  
                   return (
-                    <tr key={originalIndex >= 0 ? originalIndex : sortedIndex}>
+                    <tr 
+                      key={originalIndex >= 0 ? originalIndex : sortedIndex}
+                      style={{
+                        textDecoration: isDeleted ? 'line-through' : 'none',
+                        color: isDeleted ? '#999' : 'inherit',
+                        backgroundColor: isDeleted ? '#f5f5f5' : 'transparent',
+                        opacity: isDeleted ? 0.7 : 1
+                      }}
+                    >
                       <td>{sortedIndex + 1}</td>
                       <td>{guestName}</td>
                       <td>{guestPhone}</td>
@@ -2390,7 +2400,7 @@ const Admin = () => {
                                     return updated
                                   })
                                   
-                                  setUploadStatus(`✅ "${guestName}" 게스트가 삭제되었습니다.`)
+                                  setUploadStatus(`✅ "${guestName}" 게스트가 취소 처리되었습니다. (취소선 표시)`)
                                 }
                               })
                             }}
@@ -2772,6 +2782,10 @@ const Admin = () => {
                     이름: guestName,
                     전화번호: guestPhone,
                     닉네임: guestNickname,
+                    삭제여부: guest.isDeleted ? '삭제됨' : '',
+                    삭제시간: guest.deletedAt 
+                      ? new Date(guest.deletedAt).toLocaleString('ko-KR')
+                      : '',
                     예매유형: guest.isWalkIn ? '현장 예매' : '사전 예매',
                     예매일시: formattedBookingDate,
                     입금확인: guest.paymentConfirmed ? '확인완료' : '대기중',

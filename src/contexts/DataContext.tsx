@@ -17,6 +17,8 @@ export interface Guest {
   isWalkIn?: boolean // 현장 예매 여부
   paymentConfirmed?: boolean // 입금 확인 완료 여부
   paymentConfirmedAt?: number // 입금 확인 시간 (timestamp)
+  isDeleted?: boolean // 삭제 여부 (취소선 표시용)
+  deletedAt?: number // 삭제 시간 (timestamp)
   [key: string]: any
 }
 
@@ -809,14 +811,24 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const deleteGuest = (index: number) => {
-    const updatedGuests = guests.filter((_, i) => i !== index)
+    // 실제로 삭제하지 않고 isDeleted 플래그만 설정 (취소선 표시용)
+    const updatedGuests = guests.map((guest, i) => {
+      if (i === index) {
+        return {
+          ...guest,
+          isDeleted: true,
+          deletedAt: Date.now()
+        }
+      }
+      return guest
+    })
     setGuests(updatedGuests)
     localStorage.setItem('guests', JSON.stringify(updatedGuests))
     // Firestore에 저장
     setFirestoreData('guests' as any, { guests: updatedGuests }, 'all').catch((error) => {
       console.error('Firestore 게스트 삭제 오류:', error)
     })
-    // Google Sheets 자동 동기화
+    // Google Sheets 자동 동기화 (취소선 표시 포함)
     syncToGoogleSheetsDebounced(updatedGuests)
   }
 

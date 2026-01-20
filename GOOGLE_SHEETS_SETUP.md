@@ -115,8 +115,13 @@
       if (sheet.getLastRow() === 0) {
         sheet.appendRow([
           '번호', '이름', '전화번호', '닉네임', '예매유형', '예매일시', 
-          '입금확인', '입금확인시간', '입장번호', '체크인', '체크인시간'
+          '입금확인', '입금확인시간', '입장번호', '체크인', '체크인시간', '삭제여부', '삭제시간'
         ]);
+        // 헤더 스타일 설정
+        var headerRange = sheet.getRange(1, 1, 1, 13);
+        headerRange.setFontWeight('bold');
+        headerRange.setBackground('#4285f4');
+        headerRange.setFontColor('#ffffff');
       }
       
       // 기존 데이터 모두 삭제 (헤더 제외)
@@ -126,9 +131,8 @@
         sheet.deleteRows(2, lastRow - 1);
       }
       
-      // 새 데이터 추가 (배치 처리로 성능 개선)
-      var batchSize = 100; // 한 번에 100개씩 처리
-      var allData = [];
+      // 모든 게스트 추가 (삭제된 게스트 포함)
+      var rowIndex = 2; // 헤더 다음 행부터 시작
       
       guests.forEach(function(guest, index) {
          var guestName = guest.name || guest['이름'] || guest.Name || '';
@@ -145,7 +149,12 @@
          var checkedInAt = guest.checkedInAt 
            ? new Date(guest.checkedInAt).toLocaleString('ko-KR')
            : '';
+         var isDeleted = guest.isDeleted ? '삭제됨' : '';
+         var deletedAt = guest.deletedAt 
+           ? new Date(guest.deletedAt).toLocaleString('ko-KR')
+           : '';
          
+         // 행 추가
          sheet.appendRow([
            index + 1,
            guestName,
@@ -157,13 +166,25 @@
            paymentConfirmedAt,
            entryNumber,
            checkedIn,
-           checkedInAt
+           checkedInAt,
+           isDeleted,
+           deletedAt
          ]);
+         
+         // 삭제된 게스트인 경우 취소선 표시
+         if (guest.isDeleted) {
+           var rowRange = sheet.getRange(rowIndex, 1, 1, 13);
+           rowRange.setFontLine('line-through');
+           rowRange.setFontColor('#999999'); // 회색으로 표시
+           rowRange.setBackground('#f5f5f5'); // 연한 회색 배경
+         }
+         
+         rowIndex++;
        });
        
       return createCorsResponse({
         success: true,
-        message: guests.length + '명의 게스트가 동기화되었습니다'
+        message: guests.length + '명의 게스트가 동기화되었습니다 (삭제된 게스트 포함)'
       });
     } catch (error) {
       Logger.log('syncAllGuests 오류: ' + error.toString());
