@@ -141,9 +141,26 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             console.warn('[DataContext] 게스트 데이터 Firestore 동기화 실패:', err)
           })
         } else if (firestoreGuests.length > 0) {
-          // Firestore에 데이터가 있으면 우선 적용
-          setGuests(firestoreGuests)
-          localStorage.setItem('guests', JSON.stringify(firestoreGuests))
+          // Firestore 데이터가 로컬 데이터보다 현저히 적으면 (10개 이상 차이) 로컬 데이터 우선
+          if (localGuests.length > 0) {
+            const difference = localGuests.length - firestoreGuests.length
+            if (difference >= 10) {
+              console.warn(`[DataContext] 초기 로드: Firestore 데이터(${firestoreGuests.length}개)가 로컬 데이터(${localGuests.length}개)보다 ${difference}개 적습니다. 로컬 데이터를 우선 적용하고 Firestore를 복구합니다.`)
+              setGuests(localGuests)
+              // Firestore에 로컬 데이터 복구 시도
+              await setFirestoreData('guests' as any, { guests: localGuests }, 'all').catch(err => {
+                console.warn('[DataContext] 게스트 데이터 Firestore 복구 실패:', err)
+              })
+            } else {
+              // Firestore에 데이터가 있고 차이가 크지 않으면 우선 적용
+              setGuests(firestoreGuests)
+              localStorage.setItem('guests', JSON.stringify(firestoreGuests))
+            }
+          } else {
+            // 로컬에 데이터가 없으면 Firestore 데이터 적용
+            setGuests(firestoreGuests)
+            localStorage.setItem('guests', JSON.stringify(firestoreGuests))
+          }
         } else {
           // 둘 다 비어있으면 빈 배열
           setGuests([])
@@ -429,25 +446,42 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             }
           }
           
-          // 빈 배열이 오는 경우, 로컬에 데이터가 있으면 로컬 데이터 유지 및 Firestore 복구 시도
-          if (firestoreGuests.length === 0) {
-            const localGuests = localStorage.getItem('guests')
-            if (localGuests) {
-              try {
-                const parsedLocalGuests = JSON.parse(localGuests)
-                if (Array.isArray(parsedLocalGuests) && parsedLocalGuests.length > 0) {
-                  // 로컬에 데이터가 있으면 로컬 데이터 유지
-                  console.warn('[DataContext] Firestore에서 빈 배열이 수신되었지만, 로컬에 데이터가 있어 로컬 데이터를 유지하고 Firestore를 복구합니다.')
-                  setGuests(parsedLocalGuests)
-                  // Firestore에 로컬 데이터 복구 시도 (의도적인 초기화가 아닐 수 있음)
-                  setFirestoreData('guests' as any, { guests: parsedLocalGuests }, 'all').catch(err => {
-                    console.error('[DataContext] Firestore 복구 실패:', err)
-                  })
-                  return
-                }
-              } catch (e) {
-                // 파싱 오류 시 Firestore 데이터 적용
+          // 로컬 데이터 확인
+          const localGuests = localStorage.getItem('guests')
+          let parsedLocalGuests: Guest[] = []
+          if (localGuests) {
+            try {
+              const parsed = JSON.parse(localGuests)
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                parsedLocalGuests = parsed
               }
+            } catch (e) {
+              // 파싱 오류 무시
+            }
+          }
+          
+          // 빈 배열이 오는 경우, 로컬에 데이터가 있으면 로컬 데이터 유지 및 Firestore 복구 시도
+          if (firestoreGuests.length === 0 && parsedLocalGuests.length > 0) {
+            console.warn('[DataContext] Firestore에서 빈 배열이 수신되었지만, 로컬에 데이터가 있어 로컬 데이터를 유지하고 Firestore를 복구합니다.')
+            setGuests(parsedLocalGuests)
+            // Firestore에 로컬 데이터 복구 시도 (의도적인 초기화가 아닐 수 있음)
+            setFirestoreData('guests' as any, { guests: parsedLocalGuests }, 'all').catch(err => {
+              console.error('[DataContext] Firestore 복구 실패:', err)
+            })
+            return
+          }
+          
+          // Firestore 데이터가 로컬 데이터보다 현저히 적으면 (10개 이상 차이) 로컬 데이터 우선
+          if (parsedLocalGuests.length > 0 && firestoreGuests.length > 0) {
+            const difference = parsedLocalGuests.length - firestoreGuests.length
+            if (difference >= 10) {
+              console.warn(`[DataContext] Firestore 데이터(${firestoreGuests.length}개)가 로컬 데이터(${parsedLocalGuests.length}개)보다 ${difference}개 적습니다. 로컬 데이터를 우선 적용하고 Firestore를 복구합니다.`)
+              setGuests(parsedLocalGuests)
+              // Firestore에 로컬 데이터 복구 시도
+              setFirestoreData('guests' as any, { guests: parsedLocalGuests }, 'all').catch(err => {
+                console.error('[DataContext] Firestore 복구 실패:', err)
+              })
+              return
             }
           }
           

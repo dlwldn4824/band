@@ -6,6 +6,7 @@ import { collection, getDocs, deleteDoc, doc, query, orderBy, getDoc, updateDoc,
 import { db, storage } from '../config/firebase'
 import { setFirestoreData } from '../services/firestoreService'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+// Google Sheets 연동은 직접 fetch로 구현 (서비스 함수는 나중에 사용 가능)
 import './Admin.css'
 
 const Admin = () => {
@@ -48,7 +49,11 @@ const Admin = () => {
   const [editedEvents, setEditedEvents] = useState<Array<{ title: string; description: string; time?: string }>>([])
   const [pendingBookings] = useState<Array<{ id: string; name: string; phone: string; email: string; createdAt: any }>>([])
   const [guestLoginLinks, setGuestLoginLinks] = useState<Record<string, string>>({}) // 게스트 ID (name_phone) -> 로그인 링크
+  const [showRestoreModal, setShowRestoreModal] = useState(false)
+  const [restoreJson, setRestoreJson] = useState('')
   const [guestBookingDates, setGuestBookingDates] = useState<Record<string, any>>({}) // 게스트 ID (name_phone) -> 예매 일시
+  const [googleSheetsUrl, setGoogleSheetsUrl] = useState<string>('')
+  const [googleSheetsSyncStatus, setGoogleSheetsSyncStatus] = useState<string>('')
 
   // 개인 로그인 링크 생성 함수
   const generatePersonalLoginLink = (name: string, phone: string): string => {
@@ -118,6 +123,50 @@ const Admin = () => {
     }
     
     loadNicknames()
+  }, [])
+  
+  // URL 정리 함수
+  const cleanUrl = (url: string): string => {
+    if (!url) return ''
+    
+    // 앞뒤 공백 제거
+    url = url.trim()
+    
+    // "hhttps://" 같은 잘못된 스킴 수정
+    if (url.startsWith('hhttps://')) {
+      url = url.replace('hhttps://', 'https://')
+    } else if (url.startsWith('http://')) {
+      // http를 https로 변경 (Google Apps Script는 https만 지원)
+      url = url.replace('http://', 'https://')
+    } else if (!url.startsWith('https://') && !url.startsWith('http://')) {
+      // 스킴이 없으면 https:// 추가
+      url = 'https://' + url
+    }
+    
+    return url
+  }
+
+  // Google Sheets URL 로드 (환경 변수 우선, 없으면 localStorage)
+  useEffect(() => {
+    const envUrl = import.meta.env.VITE_GOOGLE_SHEETS_WEB_APP_URL
+    if (envUrl) {
+      const cleanedUrl = cleanUrl(envUrl)
+      setGoogleSheetsUrl(cleanedUrl)
+      // 정리된 URL을 localStorage에도 저장 (다음번에 사용)
+      if (cleanedUrl !== envUrl) {
+        localStorage.setItem('googleSheetsWebAppUrl', cleanedUrl)
+      }
+    } else {
+      const savedUrl = localStorage.getItem('googleSheetsWebAppUrl')
+      if (savedUrl) {
+        const cleanedUrl = cleanUrl(savedUrl)
+        setGoogleSheetsUrl(cleanedUrl)
+        // 정리된 URL을 localStorage에 다시 저장
+        if (cleanedUrl !== savedUrl) {
+          localStorage.setItem('googleSheetsWebAppUrl', cleanedUrl)
+        }
+      }
+    }
   }, [])
 
   // 주류 구매 내역 불러오기
@@ -2273,6 +2322,303 @@ const Admin = () => {
         )}
       </div>
 
+      {/* Google Sheets 연동 섹션 */}
+      <div className="admin-section">
+        <h2>Google Sheets 연동</h2>
+        <p className="section-description">
+          Google Sheets와 실시간으로 동기화할 수 있습니다. 
+          <a href="/GOOGLE_SHEETS_SETUP.md" target="_blank" rel="noopener noreferrer" style={{ color: '#4C4CFF', marginLeft: '0.5rem' }}>
+            설정 가이드 보기
+          </a>
+        </p>
+        
+        <div style={{ marginBottom: '1rem' }}>
+          <label style={{ display: 'block', marginBottom: '0.5rem', color: '#fff' }}>
+            Google Sheets 웹 앱 URL:
+            {import.meta.env.VITE_GOOGLE_SHEETS_WEB_APP_URL && (
+              <span style={{ fontSize: '0.75rem', color: '#4C4CFF', marginLeft: '0.5rem' }}>
+                (환경 변수로 설정됨)
+              </span>
+            )}
+          </label>
+          <input
+            type="text"
+            value={googleSheetsUrl}
+            onChange={(e) => {
+              setGoogleSheetsUrl(e.target.value)
+              localStorage.setItem('googleSheetsWebAppUrl', e.target.value)
+            }}
+            placeholder={import.meta.env.VITE_GOOGLE_SHEETS_WEB_APP_URL || "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec"}
+            disabled={!!import.meta.env.VITE_GOOGLE_SHEETS_WEB_APP_URL}
+            style={{
+              width: '100%',
+              padding: '0.75rem',
+              borderRadius: '8px',
+              border: '1px solid #666',
+              background: import.meta.env.VITE_GOOGLE_SHEETS_WEB_APP_URL ? '#1a1a1a' : '#2a2a2a',
+              color: '#fff',
+              fontSize: '0.875rem',
+              boxSizing: 'border-box',
+              opacity: import.meta.env.VITE_GOOGLE_SHEETS_WEB_APP_URL ? 0.6 : 1
+            }}
+          />
+          <p style={{ fontSize: '0.75rem', color: '#999', marginTop: '0.25rem' }}>
+            {import.meta.env.VITE_GOOGLE_SHEETS_WEB_APP_URL 
+              ? '환경 변수로 설정된 URL이 사용됩니다. 변경하려면 .env 파일을 수정하세요.'
+              : 'Google Apps Script에서 웹 앱으로 배포한 후 URL을 입력하세요. 또는 .env 파일에 VITE_GOOGLE_SHEETS_WEB_APP_URL로 설정할 수 있습니다.'}
+          </p>
+        </div>
+        
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <button
+            onClick={async () => {
+              const url = googleSheetsUrl || localStorage.getItem('googleSheetsWebAppUrl') || ''
+              if (!url) {
+                setGoogleSheetsSyncStatus('❌ Google Sheets 웹 앱 URL을 먼저 입력해주세요.')
+                setTimeout(() => setGoogleSheetsSyncStatus(''), 3000)
+                return
+              }
+              
+              setGoogleSheetsSyncStatus('동기화 중...')
+              
+              // 닉네임 정보 포함하여 게스트 데이터 준비
+              const guestsWithNicknames = guests.map((guest) => {
+                const guestName = guest.name || guest['이름'] || guest.Name || ''
+                const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '').replace(/[-\s()]/g, '')
+                const userId = `${guestName}_${guestPhone}`
+                const nickname = userNicknames[userId] || ''
+                const bookingDate = guestBookingDates[userId]
+                const formattedBookingDate = bookingDate 
+                  ? (bookingDate.toDate 
+                      ? bookingDate.toDate().toLocaleString('ko-KR')
+                      : new Date(bookingDate).toLocaleString('ko-KR'))
+                  : ''
+                
+                return {
+                  ...guest,
+                  nickname: nickname,
+                  bookingDate: formattedBookingDate
+                }
+              })
+              
+              // 환경 변수에 URL 설정 (임시)
+              const originalUrl = import.meta.env.VITE_GOOGLE_SHEETS_WEB_APP_URL
+              if (url && !originalUrl) {
+                // 동적으로 URL 설정 (실제로는 환경 변수를 사용하거나 localStorage에서 읽어야 함)
+                // 여기서는 직접 fetch에 URL을 전달
+              }
+              
+              try {
+                console.log('Google Sheets 동기화 시작:', url)
+                console.log('전송할 게스트 수:', guestsWithNicknames.length)
+                console.log('전송할 데이터 샘플:', guestsWithNicknames.slice(0, 2))
+                
+                // 먼저 GET 요청으로 웹 앱이 정상 작동하는지 확인
+                try {
+                  console.log('웹 앱 연결 테스트 시작 (GET 요청)...')
+                  const testUrl = `${url}?action=ping&t=${Date.now()}`
+                  const testResponse = await fetch(testUrl, {
+                    method: 'GET',
+                    mode: 'cors',
+                    redirect: 'follow'
+                  })
+                  const testText = await testResponse.text()
+                  console.log('GET 요청 응답:', testResponse.status, testText)
+                  
+                  if (!testResponse.ok) {
+                    throw new Error(`웹 앱 연결 실패 (${testResponse.status}): ${testText}`)
+                  }
+                  
+                  // JSON 파싱 시도
+                  try {
+                    const testJson = JSON.parse(testText)
+                    if (testJson.ok === true) {
+                      console.log('✅ 웹 앱이 정상 작동 중입니다')
+                      if (testJson.query) {
+                        console.log('✅ 파라미터 수신 확인:', testJson.query)
+                      }
+                    } else {
+                      console.warn('⚠️ 웹 앱 응답:', testJson)
+                    }
+                  } catch (e) {
+                    console.warn('⚠️ GET 응답이 JSON이 아닙니다:', testText)
+                  }
+                } catch (testError: any) {
+                  console.error('❌ 웹 앱 연결 테스트 실패:', testError)
+                  throw new Error(`웹 앱에 연결할 수 없습니다. 
+                  
+가능한 원인:
+1. doGet 함수가 없거나 배포가 되지 않았습니다
+   → Google Apps Script에 doGet 함수를 추가하고 새 배포를 하세요
+   → 브라우저에서 ${url}?action=ping 을 직접 열어서 {"ok":true} 응답이 나오는지 확인하세요
+
+2. URL이 잘못되었습니다
+   → URL이 /exec로 끝나는지 확인하세요 (/dev가 아님)
+   → 배포 후 나온 새 URL을 사용하세요
+
+3. CORS 오류입니다
+   → 웹 앱 배포 시 "액세스 권한"을 "모든 사용자"로 설정하세요
+
+오류: ${testError.message}`)
+                }
+                
+                // form-urlencoded 방식으로 POST 요청 (CORS preflight 회피)
+                const payload = JSON.stringify({
+                  action: 'syncAll',
+                  guests: guestsWithNicknames
+                })
+                
+                console.log('요청 페이로드 크기:', payload.length, 'bytes')
+                console.log('form-urlencoded 방식으로 POST 요청 전송...')
+                
+                // URLSearchParams로 form-urlencoded 형식 생성
+                const formData = new URLSearchParams({
+                  action: 'syncAll',
+                  payload: payload
+                })
+                
+                // 타임아웃 설정 (60초)
+                const controller = new AbortController()
+                const timeoutId = setTimeout(() => {
+                  controller.abort()
+                  console.error('요청 타임아웃 (60초 초과)')
+                }, 60000)
+                
+                let response
+                try {
+                  response = await fetch(url, {
+                    method: 'POST',
+                    mode: 'cors',
+                    redirect: 'follow',
+                    signal: controller.signal,
+                    headers: {
+                      'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                    },
+                    body: formData.toString()
+                  })
+                  clearTimeout(timeoutId)
+                  console.log('POST 요청 완료, 응답 상태:', response.status)
+                } catch (fetchError: any) {
+                  clearTimeout(timeoutId)
+                  
+                  if (fetchError.name === 'AbortError') {
+                    throw new Error('요청 시간이 초과되었습니다 (60초). 게스트 수가 많아서 처리 시간이 오래 걸릴 수 있습니다. Google Apps Script 실행 기록을 확인하세요.')
+                  }
+                  
+                  console.error('POST 요청 실패:', fetchError)
+                  throw fetchError
+                }
+                
+                console.log('응답 상태:', response.status, response.statusText)
+                
+                if (!response.ok) {
+                  const text = await response.text()
+                  console.error('응답 오류:', text)
+                  setGoogleSheetsSyncStatus(`❌ 서버 오류 (${response.status}): ${text || response.statusText}`)
+                  setTimeout(() => setGoogleSheetsSyncStatus(''), 5000)
+                  return
+                }
+                
+                const contentType = response.headers.get('content-type')
+                let result
+                
+                if (contentType && contentType.includes('application/json')) {
+                  result = await response.json()
+                } else {
+                  const text = await response.text()
+                  console.log('응답 텍스트:', text)
+                  // JSON이 아닌 경우 텍스트를 파싱 시도
+                  try {
+                    result = JSON.parse(text)
+                  } catch (e) {
+                    // JSON이 아니면 성공으로 간주 (Google Apps Script가 텍스트 반환할 수 있음)
+                    if (text.toLowerCase().includes('success') || text.toLowerCase().includes('완료')) {
+                      result = { success: true, message: text }
+                    } else {
+                      result = { success: false, error: text || '알 수 없는 응답 형식' }
+                    }
+                  }
+                }
+                
+                if (result.success) {
+                  setGoogleSheetsSyncStatus(`✅ ${result.message || '동기화 완료'}`)
+                } else {
+                  setGoogleSheetsSyncStatus(`❌ ${result.error || '동기화 실패'}`)
+                }
+                setTimeout(() => setGoogleSheetsSyncStatus(''), 5000)
+              } catch (error: any) {
+                console.error('Google Sheets 동기화 오류:', error)
+                console.error('오류 상세:', {
+                  name: error?.name,
+                  message: error?.message,
+                  stack: error?.stack,
+                  cause: error?.cause
+                })
+                
+                let errorMessage = '알 수 없는 오류'
+                
+                if (error?.message) {
+                  if (error.message.includes('Failed to fetch')) {
+                    if (error.message.includes('URL scheme')) {
+                      errorMessage = 'URL 형식이 잘못되었습니다. 환경 변수나 localStorage의 URL을 확인해주세요. (hhttps:// 같은 오타가 있을 수 있습니다)'
+                      // localStorage의 잘못된 URL 삭제 시도
+                      const badUrl = localStorage.getItem('googleSheetsWebAppUrl')
+                      if (badUrl && (badUrl.includes('hhttps') || badUrl.includes('hhttp'))) {
+                        localStorage.removeItem('googleSheetsWebAppUrl')
+                        errorMessage += ' 잘못된 URL이 localStorage에서 삭제되었습니다. 다시 입력해주세요.'
+                      }
+                    } else {
+                      errorMessage = `네트워크 오류가 발생했습니다. 
+
+가능한 원인:
+1. Google Apps Script 웹 앱이 올바르게 배포되지 않았습니다
+   → Apps Script 편집기에서 "배포" → "새 배포" → "웹 앱"으로 재배포하세요
+   → "액세스 권한"을 "모든 사용자"로 설정하세요
+
+2. CORS 오류입니다
+   → GOOGLE_SHEETS_SETUP.md의 업데이트된 스크립트 코드를 사용하세요
+   → doOptions() 함수가 추가되었습니다
+
+3. 웹 앱 URL이 잘못되었습니다
+   → URL이 https://script.google.com/macros/s/.../exec 형식인지 확인하세요
+
+4. 인터넷 연결 문제입니다
+   → 네트워크 연결을 확인하세요
+
+브라우저 콘솔(F12)에서 더 자세한 로그를 확인하세요.`
+                    }
+                  } else if (error.message.includes('URL scheme')) {
+                    errorMessage = 'URL 형식이 잘못되었습니다. https://로 시작하는 올바른 URL을 입력해주세요.'
+                  } else {
+                    errorMessage = error.message
+                  }
+                }
+                
+                setGoogleSheetsSyncStatus(`❌ 동기화 중 오류: ${errorMessage}`)
+                setTimeout(() => setGoogleSheetsSyncStatus(''), 15000)
+              }
+            }}
+            className="sample-button"
+            style={{ background: '#28a745', color: 'white' }}
+          >
+            📊 Google Sheets에 동기화
+          </button>
+        </div>
+        
+        {googleSheetsSyncStatus && (
+          <div style={{ 
+            marginTop: '1rem', 
+            padding: '0.75rem', 
+            borderRadius: '8px',
+            background: googleSheetsSyncStatus.includes('✅') ? '#1a3a1a' : '#3a1a1a',
+            color: '#fff',
+            fontSize: '0.875rem'
+          }}>
+            {googleSheetsSyncStatus}
+          </div>
+        )}
+      </div>
+
       <div className="admin-section">
         <h2>게스트 정보 업로드</h2>
         <p className="section-description">
@@ -2383,6 +2729,13 @@ const Admin = () => {
           <button onClick={handleGenerateSampleExcel} className="sample-button">
             📥 엑셀 템플릿 다운로드
           </button>
+          <button 
+            onClick={() => setShowRestoreModal(true)} 
+            className="sample-button"
+            style={{ background: '#FF6B6B', color: 'white' }}
+          >
+            🔄 게스트 리스트 복원
+          </button>
           {guests.length > 0 && (
             <button 
               onClick={async () => {
@@ -2438,6 +2791,128 @@ const Admin = () => {
           </div>
         )}
       </div>
+
+      {/* 게스트 리스트 복원 모달 */}
+      {showRestoreModal && (
+        <div className="modal-overlay" onClick={() => setShowRestoreModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+            <div className="modal-header">
+              <h2>게스트 리스트 복원</h2>
+              <button className="modal-close" onClick={() => setShowRestoreModal(false)} aria-label="닫기"></button>
+            </div>
+            <div style={{ padding: '1.5rem' }}>
+              <p style={{ marginBottom: '1rem', color: '#fff' }}>
+                복원 방법을 선택하세요:
+              </p>
+              
+              {/* 방법 1: localStorage 백업 복원 */}
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h3 style={{ color: '#fff', marginBottom: '0.5rem', fontSize: '1rem' }}>방법 1: localStorage 백업 복원</h3>
+                <p style={{ fontSize: '0.875rem', color: '#ccc', marginBottom: '0.75rem' }}>
+                  브라우저 개발자 도구(F12) → Application → Local Storage → 해당 사이트 → 'guests' 키의 값을 복사하여 아래에 붙여넣으세요.
+                </p>
+                <textarea
+                  value={restoreJson}
+                  onChange={(e) => setRestoreJson(e.target.value)}
+                  placeholder='[{"name":"홍길동","phone":"01012345678",...}] 형식의 JSON 데이터를 붙여넣으세요'
+                  style={{
+                    width: '100%',
+                    minHeight: '150px',
+                    padding: '0.75rem',
+                    borderRadius: '8px',
+                    border: '1px solid #666',
+                    background: '#2a2a2a',
+                    color: '#fff',
+                    fontFamily: 'monospace',
+                    fontSize: '0.875rem',
+                    marginBottom: '0.75rem',
+                    boxSizing: 'border-box'
+                  }}
+                />
+                <button
+                  onClick={async () => {
+                    if (!restoreJson.trim()) {
+                      alert('복원할 JSON 데이터를 입력해주세요.')
+                      return
+                    }
+                    
+                    try {
+                      const parsed = JSON.parse(restoreJson)
+                      if (!Array.isArray(parsed)) {
+                        alert('올바른 배열 형식의 JSON이 아닙니다.')
+                        return
+                      }
+                      
+                      if (parsed.length === 0) {
+                        alert('복원할 게스트 데이터가 없습니다.')
+                        return
+                      }
+                      
+                      if (window.confirm(`정말로 ${parsed.length}명의 게스트 데이터를 복원하시겠습니까? 기존 데이터는 덮어씌워집니다.`)) {
+                        // localStorage에 저장
+                        localStorage.setItem('guests', JSON.stringify(parsed))
+                        
+                        // Firestore에 저장
+                        await setFirestoreData('guests' as any, { guests: parsed }, 'all')
+                        
+                        // 페이지 새로고침하여 데이터 반영
+                        window.location.reload()
+                      }
+                    } catch (error) {
+                      console.error('복원 오류:', error)
+                      alert('JSON 파싱 오류가 발생했습니다. 올바른 형식인지 확인해주세요.')
+                    }
+                  }}
+                  className="upload-button"
+                  style={{ width: '100%', marginBottom: '1rem' }}
+                >
+                  JSON 데이터로 복원
+                </button>
+              </div>
+              
+              {/* 방법 2: 현재 localStorage 백업 확인 */}
+              <div style={{ marginBottom: '1.5rem', padding: '1rem', background: '#1a1a1a', borderRadius: '8px' }}>
+                <h3 style={{ color: '#fff', marginBottom: '0.5rem', fontSize: '1rem' }}>방법 2: 현재 localStorage 백업 확인</h3>
+                <p style={{ fontSize: '0.875rem', color: '#ccc', marginBottom: '0.75rem' }}>
+                  현재 브라우저의 localStorage에 저장된 게스트 데이터를 확인하고 복원할 수 있습니다.
+                </p>
+                <button
+                  onClick={() => {
+                    const savedGuests = localStorage.getItem('guests')
+                    if (savedGuests) {
+                      try {
+                        const parsed = JSON.parse(savedGuests)
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                          setRestoreJson(savedGuests)
+                          alert(`현재 localStorage에 ${parsed.length}명의 게스트 데이터가 있습니다. 위 텍스트 영역에 표시되었습니다.`)
+                        } else {
+                          alert('localStorage에 유효한 게스트 데이터가 없습니다.')
+                        }
+                      } catch (e) {
+                        alert('localStorage 데이터 파싱 오류가 발생했습니다.')
+                      }
+                    } else {
+                      alert('localStorage에 게스트 데이터가 없습니다.')
+                    }
+                  }}
+                  className="sample-button"
+                  style={{ width: '100%' }}
+                >
+                  현재 localStorage 데이터 확인
+                </button>
+              </div>
+              
+              {/* 방법 3: Excel 파일로 복원 */}
+              <div>
+                <h3 style={{ color: '#fff', marginBottom: '0.5rem', fontSize: '1rem' }}>방법 3: Excel 파일로 복원</h3>
+                <p style={{ fontSize: '0.875rem', color: '#ccc', marginBottom: '0.75rem' }}>
+                  이전에 다운로드한 Excel 파일이 있다면 위의 "게스트 정보 업로드" 섹션에서 업로드하세요.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 공연진 리스트 섹션 */}
       <div className="admin-section">
