@@ -602,6 +602,55 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
+  // Google Sheets 자동 동기화 함수 (debounce 적용)
+  const syncToGoogleSheetsDebounced = (() => {
+    let timeoutId: NodeJS.Timeout | null = null
+    return (guestsToSync: Guest[]) => {
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
+      timeoutId = setTimeout(async () => {
+        try {
+          const url = import.meta.env.VITE_GOOGLE_SHEETS_WEB_APP_URL || localStorage.getItem('googleSheetsWebAppUrl') || ''
+          if (!url) {
+            // URL이 설정되지 않았으면 동기화하지 않음
+            return
+          }
+          
+          // 닉네임 정보는 별도로 관리되므로 여기서는 기본 데이터만 전송
+          // 실제 동기화 시에는 Admin 페이지에서 닉네임을 포함하여 전송
+          const payload = JSON.stringify({
+            action: 'syncAll',
+            guests: guestsToSync
+          })
+          
+          const formData = new URLSearchParams({
+            action: 'syncAll',
+            payload: payload
+          })
+          
+          const response = await fetch(url, {
+            method: 'POST',
+            mode: 'cors',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+            },
+            body: formData.toString()
+          })
+          
+          if (response.ok) {
+            console.log('[DataContext] Google Sheets 자동 동기화 성공')
+          } else {
+            console.warn('[DataContext] Google Sheets 자동 동기화 실패:', response.status)
+          }
+        } catch (error) {
+          // 자동 동기화 실패는 조용히 처리 (사용자에게 오류 표시하지 않음)
+          console.warn('[DataContext] Google Sheets 자동 동기화 오류:', error)
+        }
+      }, 2000) // 2초 debounce
+    }
+  })()
+
   const uploadGuests = (newGuests: Guest[]) => {
     // 엑셀에서 업로드된 게스트는 사전 예매로 설정 (isWalkIn이 명시되지 않은 경우)
     const processedGuests = newGuests.map(guest => ({
@@ -616,6 +665,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     setFirestoreData('guests' as any, { guests: processedGuests }, 'all').catch((error) => {
       console.error('Firestore 게스트 저장 오류:', error)
     })
+    // Google Sheets 자동 동기화
+    syncToGoogleSheetsDebounced(processedGuests)
   }
 
   const addWalkInGuest = (name: string, phone: string, isWalkIn: boolean = true, email?: string): { success: boolean; message?: string } => {
@@ -658,6 +709,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     setFirestoreData('guests' as any, { guests: updatedGuests }, 'all').catch((error) => {
       console.error('Firestore 현장 구매자 저장 오류:', error)
     })
+    // Google Sheets 자동 동기화
+    syncToGoogleSheetsDebounced(updatedGuests)
 
     return { success: true, message: '현장 구매 등록이 완료되었습니다.' }
   }
@@ -682,6 +735,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     setFirestoreData('guests' as any, { guests: updatedGuests }, 'all').catch((error) => {
       console.error('Firestore 게스트 입금 확인 업데이트 오류:', error)
     })
+    // Google Sheets 자동 동기화
+    syncToGoogleSheetsDebounced(updatedGuests)
   }
 
   const setPerformanceData = (data: PerformanceData) => {
@@ -761,6 +816,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     setFirestoreData('guests' as any, { guests: updatedGuests }, 'all').catch((error) => {
       console.error('Firestore 게스트 삭제 오류:', error)
     })
+    // Google Sheets 자동 동기화
+    syncToGoogleSheetsDebounced(updatedGuests)
   }
 
   const updateGuest = (index: number, updatedGuest: Guest) => {
@@ -771,6 +828,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     setFirestoreData('guests' as any, { guests: updatedGuests }, 'all').catch((error) => {
       console.error('Firestore 게스트 수정 오류:', error)
     })
+    // Google Sheets 자동 동기화
+    syncToGoogleSheetsDebounced(updatedGuests)
   }
 
   const clearSetlist = () => {
