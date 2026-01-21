@@ -103,10 +103,12 @@ export const setFirestoreData = async (
     if (docId) {
       // 특정 문서 업데이트/생성
       const docRef = doc(db, path, docId)
+      // guests 컬렉션의 경우 완전 교체 (merge: false)로 저장하여 isDeleted 플래그가 확실히 반영되도록 함
+      const mergeOption = path === 'guests' ? false : true
       await setDoc(docRef, {
         ...cleanedData,
         updatedAt: Timestamp.now()
-      }, { merge: true })
+      }, { merge: mergeOption })
       return true
     } else {
       // 새 문서 생성 (자동 ID)

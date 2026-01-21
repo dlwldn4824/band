@@ -315,17 +315,17 @@ const Admin = () => {
                                 String(paymentStatus).trim().toLowerCase() === 'yes'
         
         return {
-          name: row['이름'] || row['name'] || row['Name'] || '',
-          phone: String(row['전화번호'] || row['phone'] || row['Phone'] || ''),
+        name: row['이름'] || row['name'] || row['Name'] || '',
+        phone: String(row['전화번호'] || row['phone'] || row['Phone'] || ''),
           paymentConfirmed: paymentConfirmed,
           paymentConfirmedAt: paymentConfirmed ? Date.now() : undefined,
-          ...row
+        ...row
         }
       })
 
       // 기존 게스트 리스트 가져오기
       const existingGuests = [...guests]
-
+      
       // 중복되지 않은 게스트와 중복된 게스트 분리
       const guestsToAdd: any[] = []
       const guestsToUpdate: Array<{ index: number; guest: any }> = []
@@ -409,7 +409,7 @@ const Admin = () => {
         if (guestsToUpdate.length > 0) {
           setUploadStatus(`✅ ${guestsToAdd.length}명의 게스트가 추가되었고, ${guestsToUpdate.length}명의 기존 게스트 입금확인 정보가 업데이트되었습니다. (기존 로그인 정보 삭제됨)`)
         } else {
-          setUploadStatus(`✅ ${guestsToAdd.length}명의 게스트가 추가되었습니다. (${duplicateCount}명은 중복으로 제외됨, 기존 로그인 정보 삭제됨)`)
+        setUploadStatus(`✅ ${guestsToAdd.length}명의 게스트가 추가되었습니다. (${duplicateCount}명은 중복으로 제외됨, 기존 로그인 정보 삭제됨)`)
         }
       } else {
         setUploadStatus(`✅ ${guestsToAdd.length}명의 게스트가 추가되었습니다. (기존 로그인 정보 삭제됨)`)
@@ -1587,29 +1587,53 @@ const Admin = () => {
     }
   }
 
-  // 입금 확인이 완료된 게스트에 대해 링크 자동 생성
-  useEffect(() => {
+  // 입금 확인이 완료된 게스트에 대해 링크 생성 함수 (수동 실행)
     const generateLinksForConfirmedGuests = async () => {
       const links: Record<string, string> = {}
       let hasNewLinks = false
-      
-      for (let i = 0; i < guests.length; i++) {
-        const guest = guests[i]
-        if (guest.paymentConfirmed && guest.paymentConfirmedAt) {
+    let processedCount = 0
+    let skippedCount = 0
+    let errorCount = 0
+    
+    const confirmedGuests = guests.filter(g => g.paymentConfirmed && g.paymentConfirmedAt)
+    
+    if (confirmedGuests.length === 0) {
+      setUploadStatus('입금 확인이 완료된 게스트가 없습니다.')
+      setTimeout(() => setUploadStatus(''), 3000)
+      return
+    }
+    
+    setUploadStatus(`링크 생성 중... (0/${confirmedGuests.length})`)
+    
+    for (let i = 0; i < confirmedGuests.length; i++) {
+      const guest = confirmedGuests[i]
           const guestId = getGuestId(guest.name, guest.phone)
           
           // 이미 링크가 있으면 스킵
           if (guestLoginLinks[guestId]) {
+        skippedCount++
             continue
           }
           
-          // 링크 생성
+      // 링크 생성 (배치 처리: 100ms 딜레이)
           try {
+        await new Promise(resolve => setTimeout(resolve, 100)) // Firestore 할당량 방지
             const loginLink = await generateLoginLink(guest.name, guest.phone)
             links[guestId] = loginLink
             hasNewLinks = true
+        processedCount++
+        
+        // 진행 상황 업데이트
+        setUploadStatus(`링크 생성 중... (${i + 1}/${confirmedGuests.length})`)
           } catch (error) {
             console.error(`게스트 ${guest.name} 링크 생성 실패:`, error)
+        errorCount++
+        // 할당량 초과 오류인 경우 중단
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        if (errorMessage.includes('quota') || errorMessage.includes('Quota') || errorMessage.includes('resource-exhausted')) {
+          setUploadStatus(`❌ Firestore 할당량 초과로 중단되었습니다. (${processedCount}개 생성 완료)`)
+          setTimeout(() => setUploadStatus(''), 5000)
+          break
           }
         }
       }
@@ -1618,15 +1642,21 @@ const Admin = () => {
       if (hasNewLinks) {
         setGuestLoginLinks(prev => ({ ...prev, ...links }))
       }
-    }
     
+    // 완료 메시지
+    if (processedCount > 0 || skippedCount > 0) {
+      setUploadStatus(`✅ 링크 생성 완료: 새로 생성 ${processedCount}개, 기존 링크 ${skippedCount}개${errorCount > 0 ? `, 오류 ${errorCount}개` : ''}`)
+      setTimeout(() => setUploadStatus(''), 5000)
+    }
+  }
+  
+  // 게스트 리스트가 변경될 때마다 엑셀 파일 업데이트만 수행 (링크 자동 생성 제거)
+  useEffect(() => {
     if (guests.length > 0) {
-      generateLinksForConfirmedGuests()
-      // 게스트 리스트가 변경될 때마다 엑셀 파일 업데이트
       updateExcelFileInStorage(guests)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [guests]) // guests 배열 변경 시 확인 (무한 루프 방지를 위해 guestLoginLinks는 의존성에서 제외)
+  }, [guests])
 
   // 예매 신청 승인 핸들러
   const handleApproveBooking = async (bookingId: string, name: string, phone: string) => {
@@ -1650,11 +1680,11 @@ const Admin = () => {
 
         if (!existingGuest) {
           // 게스트가 없으면 추가
-          const result = addWalkInGuest(name.trim(), normalizedPhone, false)
+          const result = await addWalkInGuest(name.trim(), normalizedPhone, false)
           if (result.success) {
             setUploadStatus(`✅ "${name}" 예매 신청이 승인되었고 게스트 목록에 추가되었습니다.`)
           } else {
-            setUploadStatus(`⚠️ 예매 신청은 승인되었지만 게스트 추가에 실패했습니다: ${result.message}`)
+            setUploadStatus(`⚠️ 예매 신청은 승인되었지만 게스트 추가에 실패했습니다: ${result.message || '알 수 없는 오류'}`)
           }
         } else {
           setUploadStatus(`✅ "${name}" 예매 신청이 승인되었습니다. (이미 게스트 목록에 존재)`)
@@ -1714,10 +1744,10 @@ const Admin = () => {
       <div className="admin-section">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <div>
-            <h2>주류 구매 내역</h2>
-            <p className="section-description">
-              주류 사전 구매 내역을 확인할 수 있습니다.
-            </p>
+        <h2>주류 구매 내역</h2>
+        <p className="section-description">
+          주류 사전 구매 내역을 확인할 수 있습니다.
+        </p>
           </div>
           {drinkOrders.length > 0 && (
             <button
@@ -1994,10 +2024,10 @@ const Admin = () => {
                       rows.push(
                         <tr key={order.id} className={allProvided ? 'order-provided' : 'order-not-provided'}>
                           <td>{rowNumber}</td>
-                          <td>{order.name}</td>
-                          <td>{formatPhoneDisplay(order.phone)}</td>
-                          <td>{order.beerQuantity}개</td>
-                          <td>{order.mojitoQuantity}개</td>
+                    <td>{order.name}</td>
+                    <td>{formatPhoneDisplay(order.phone)}</td>
+                    <td>{order.beerQuantity}개</td>
+                    <td>{order.mojitoQuantity}개</td>
                           <td>
                             {(() => {
                               // orderHistory를 기반으로 totalAmount 재계산 (기존 totalAmount가 잘못된 경우 대비)
@@ -2026,16 +2056,16 @@ const Admin = () => {
                               return calculatedTotal.toLocaleString() + '원'
                             })()}
                           </td>
-                          <td>
-                            {order.createdAt?.toDate ? 
-                              new Date(order.createdAt.toDate()).toLocaleString('ko-KR', {
-                                year: 'numeric',
-                                month: '2-digit',
-                                day: '2-digit',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              }) : '-'}
-                          </td>
+                    <td>
+                      {order.createdAt?.toDate ? 
+                        new Date(order.createdAt.toDate()).toLocaleString('ko-KR', {
+                          year: 'numeric',
+                          month: '2-digit',
+                          day: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        }) : '-'}
+                    </td>
                           <td style={{ textAlign: 'center' }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'center' }}>
                               <button
@@ -2122,8 +2152,8 @@ const Admin = () => {
                                 </span>
                               )}
                             </div>
-                          </td>
-                        </tr>
+                    </td>
+                  </tr>
                       )
                     }
                   })
@@ -2881,6 +2911,17 @@ const Admin = () => {
             style={{ background: '#FF6B6B', color: 'white' }}
           >
             🔄 게스트 리스트 복원
+          </button>
+          <button 
+            onClick={() => {
+              requirePassword(async () => {
+                await generateLinksForConfirmedGuests()
+              })
+            }}
+            className="sample-button"
+            style={{ background: '#4CAF50', color: 'white' }}
+          >
+            🔗 입금 확인 게스트 링크 생성
           </button>
           {guests.length > 0 && (
             <button 
