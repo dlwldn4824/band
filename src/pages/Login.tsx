@@ -970,16 +970,17 @@ const Login = () => {
                 if (currentToken) {
                   // 개인 링크가 있으면 해당 경로로 이동
                   const targetPath = `/t/${currentToken}`
-                  const currentPath = window.location.pathname
+                  const currentPath = location.pathname
                   
                   if (currentPath !== targetPath) {
                     console.log('[Login] TicketTransition onDone - navigating to:', targetPath)
-                    // window.location.href를 사용하여 강제로 페이지 이동 (상태 동기화)
-                    window.location.href = targetPath
+                    // React Router의 navigate 사용 (페이지 리로드 없이)
+                    navigate(targetPath, { replace: true })
                   } else {
-                    // 이미 올바른 경로에 있으면 페이지 리로드하여 Dashboard가 렌더링되도록
-                    console.log('[Login] TicketTransition onDone - reloading page to show Dashboard')
-                    window.location.reload()
+                    // 이미 올바른 경로에 있으면 상태만 업데이트하여 Dashboard가 렌더링되도록
+                    console.log('[Login] TicketTransition onDone - already on target path, forcing re-render')
+                    // showTicket을 false로 설정하고 약간의 지연 후 navigate로 상태 업데이트
+                    navigate(targetPath, { replace: true, state: { refresh: Date.now() } })
                   }
                 } else {
                   // 일반 로그인: Dashboard로 이동

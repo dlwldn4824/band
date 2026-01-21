@@ -38,23 +38,38 @@ const Dashboard = () => {
   }, [location.pathname, location.state])
 
   // ✅ Hook 호출 완료 후 조건부 return
+  // localStorage에서 user를 확인하여 로그인 상태 체크 (상태 업데이트 지연 대응)
+  const savedUser = localStorage.getItem('user')
+  let hasUser = false
+  try {
+    hasUser = user !== null || (savedUser !== null && savedUser !== '' && JSON.parse(savedUser) !== null)
+  } catch (e) {
+    console.warn('[Dashboard] Error parsing savedUser:', e)
+    hasUser = user !== null
+  }
+  
   // 인증 로딩 중일 때는 로딩 UI 표시
   if (isLoading) {
     return (
       <div className="dashboard">
-        <div style={{ padding: '2rem', textAlign: 'center' }}>로딩 중...</div>
+        <div style={{ padding: '2rem', textAlign: 'center', color: '#fff' }}>로딩 중...</div>
       </div>
     )
   }
-
-  // 개인 링크 토큰이 있고 아직 로그인되지 않았으면 Login 컴포넌트 렌더링
-  // localStorage에서 user를 확인하여 로그인 상태 체크 (상태 업데이트 지연 대응)
-  const savedUser = localStorage.getItem('user')
-  const hasUser = user || (savedUser && JSON.parse(savedUser))
   
+  // 개인 링크 토큰이 있고 아직 로그인되지 않았으면 Login 컴포넌트 렌더링
   if (token && !hasUser) {
-    console.log('[Dashboard] Rendering Login component - token:', token, 'user:', user, 'savedUser:', savedUser, 'pathname:', location.pathname)
+    console.log('[Dashboard] Rendering Login component - token:', token, 'user:', user, 'savedUser:', savedUser, 'hasUser:', hasUser, 'pathname:', location.pathname)
     return <Login />
+  }
+  
+  // 사용자가 없고 토큰도 없으면 로딩 표시 (검은 화면 방지)
+  if (!hasUser && !token) {
+    return (
+      <div className="dashboard">
+        <div style={{ padding: '2rem', textAlign: 'center', color: '#fff' }}>로딩 중...</div>
+      </div>
+    )
   }
   
   // 로그인 후 개인 링크 경로 확인
