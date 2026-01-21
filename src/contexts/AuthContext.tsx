@@ -76,6 +76,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   const normalizedInputName = userData.name.trim()
                   
                   const foundGuest = guests.find((guest: any) => {
+                    // 삭제된 게스트는 제외
+                    if (guest.isDeleted === true) {
+                      return false
+                    }
+                    
                     const guestName = guest.name || guest['이름'] || guest.Name || ''
                     const nameMatch = guestName.trim() === normalizedInputName
                     
@@ -170,6 +175,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const normalizedInputName = user.name.trim()
         
         const foundGuest = guests.find((guest: any) => {
+          // 삭제된 게스트는 제외
+          if (guest.isDeleted === true) {
+            return false
+          }
+          
           const guestName = guest.name || guest['이름'] || guest.Name || ''
           const nameMatch = guestName.trim() === normalizedInputName
           
@@ -236,6 +246,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const normalizedInputName = name.trim()
     
     const foundGuestIndex = guestList.findIndex((guest: any) => {
+      // 삭제된 게스트는 제외
+      if (guest.isDeleted === true) {
+        return false
+      }
+      
       // 이름 매칭 (한글 키 또는 영문 키 지원)
       const guestName = guest.name || guest['이름'] || guest.Name || ''
       const nameMatch = guestName.trim() === normalizedInputName

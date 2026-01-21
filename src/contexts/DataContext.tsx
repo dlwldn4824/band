@@ -65,6 +65,7 @@ export interface BookingInfo {
   bankName: string // 은행명
   accountNumber: string // 계좌번호
   walkInPrice: string // 현장 예매 가격
+  preBookingPrice?: string // 사전 예매 가격
   refundPolicy: string // 환불 정책
   contactPhone: string // 안내 전화번호
 }
@@ -351,6 +352,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
                 bankName: '카카오뱅크',
                 accountNumber: '3333254015574',
                 walkInPrice: '6천원',
+                preBookingPrice: '5천원',
                 refundPolicy: '환불 불가',
                 contactPhone: '01048246873'
               }
