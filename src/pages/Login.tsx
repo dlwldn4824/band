@@ -606,11 +606,7 @@ const Login = () => {
   }
 
   // 자동 로그인 처리 중일 때 로딩 화면 표시 (티켓 애니메이션이 표시되지 않을 때만)
-  // 단, localStorage에 user가 있으면 이미 로그인된 것으로 간주하여 Dashboard로 이동
-  const savedUser = localStorage.getItem('user')
-  const isLoggedIn = savedUser && savedUser !== 'null' && savedUser !== ''
-  
-  if (isProcessingAutoLogin && !showTicket && !isLoggedIn) {
+  if (isProcessingAutoLogin && !showTicket) {
     return (
       <div className="login-page">
         <div className="login-container">
@@ -623,18 +619,24 @@ const Login = () => {
     )
   }
   
-  // 이미 로그인된 상태면 로딩 화면 표시 (Dashboard가 렌더링되도록 대기)
-  if (isLoggedIn && !showTicket && !showBookingConfirmation) {
-    return (
-      <div className="login-page">
-        <div className="login-container">
-          <div className="auto-login-loading">
-            <div className="loading-spinner"></div>
-            <p className="loading-text">대시보드로 이동 중...</p>
+  // 개인 링크 토큰이 있고 이미 로그인된 상태면 로딩 화면 표시 (Dashboard가 렌더링되도록 대기)
+  // 일반 로그인 페이지(/login)에서는 토큰이 없으므로 로그인 폼을 보여줌
+  if (token) {
+    const savedUser = localStorage.getItem('user')
+    const isLoggedIn = savedUser && savedUser !== 'null' && savedUser !== ''
+    
+    if (isLoggedIn && !showTicket && !showBookingConfirmation) {
+      return (
+        <div className="login-page">
+          <div className="login-container">
+            <div className="auto-login-loading">
+              <div className="loading-spinner"></div>
+              <p className="loading-text">대시보드로 이동 중...</p>
+            </div>
           </div>
         </div>
-      </div>
-    )
+      )
+    }
   }
 
   return (
