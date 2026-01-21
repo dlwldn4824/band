@@ -67,14 +67,18 @@ const Dashboard = () => {
     return <Login />
   }
   
-  // 사용자가 없고 토큰도 없으면 로딩 표시 (검은 화면 방지)
+  // 사용자가 없고 토큰도 없으면 로그인 페이지로 리다이렉트
   if (!hasUser && !token) {
     return (
       <div className="dashboard">
-        <div style={{ padding: '2rem', textAlign: 'center', color: '#fff' }}>로딩 중...</div>
+        <div style={{ padding: '2rem', textAlign: 'center', color: '#fff' }}>
+          로그인이 필요합니다. 잠시 후 로그인 페이지로 이동합니다...
+        </div>
       </div>
     )
   }
+  
+  // hasUser가 true이면 Dashboard 렌더링 계속
   
   // 로그인 후 개인 링크 경로 확인
   useEffect(() => {

@@ -623,9 +623,18 @@ const Login = () => {
     )
   }
   
-  // 이미 로그인된 상태면 Login 컴포넌트를 렌더링하지 않음 (Dashboard가 렌더링되도록)
+  // 이미 로그인된 상태면 로딩 화면 표시 (Dashboard가 렌더링되도록 대기)
   if (isLoggedIn && !showTicket && !showBookingConfirmation) {
-    return null // Dashboard가 렌더링되도록 null 반환
+    return (
+      <div className="login-page">
+        <div className="login-container">
+          <div className="auto-login-loading">
+            <div className="loading-spinner"></div>
+            <p className="loading-text">대시보드로 이동 중...</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
