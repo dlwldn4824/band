@@ -171,8 +171,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const guests = JSON.parse(savedGuests)
         if (!Array.isArray(guests) || guests.length === 0) return
 
-        const normalizedInputPhone = user.phone.replace(/[-\s()]/g, '')
-        const normalizedInputName = user.name.trim()
+        // 현재 user 상태를 클로저로 캡처하여 사용
+        const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
+        if (!currentUser || !currentUser.name || !currentUser.phone) return
+
+        const normalizedInputPhone = currentUser.phone.replace(/[-\s()]/g, '')
+        const normalizedInputName = currentUser.name.trim()
         
         const foundGuest = guests.find((guest: any) => {
           // 삭제된 게스트는 제외
@@ -193,31 +197,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (foundGuest) {
           // paymentConfirmed 상태가 다르면 업데이트
           const paymentConfirmed = foundGuest.paymentConfirmed === true
-          if (user.paymentConfirmed !== paymentConfirmed) {
+          const checkedIn = foundGuest.checkedIn || false
+          const checkedInAt = foundGuest.checkedInAt
+          const entryNumber = foundGuest.entryNumber
+          
+          // 실제로 변경된 것이 있는지 확인
+          const hasChanges = 
+            currentUser.paymentConfirmed !== paymentConfirmed ||
+            currentUser.checkedIn !== checkedIn ||
+            currentUser.checkedInAt !== checkedInAt ||
+            currentUser.entryNumber !== entryNumber
+          
+          if (hasChanges) {
             const updatedUser = {
-              ...user,
+              ...currentUser,
               paymentConfirmed: paymentConfirmed,
-              checkedIn: foundGuest.checkedIn || false,
-              checkedInAt: foundGuest.checkedInAt,
-              entryNumber: foundGuest.entryNumber
+              checkedIn: checkedIn,
+              checkedInAt: checkedInAt,
+              entryNumber: entryNumber
             }
             setUser(updatedUser)
             localStorage.setItem('user', JSON.stringify(updatedUser))
-            console.log('[AuthContext] guests 변경 감지 - paymentConfirmed 상태 업데이트:', paymentConfirmed)
-          } else if (
-            user.checkedIn !== foundGuest.checkedIn ||
-            user.checkedInAt !== foundGuest.checkedInAt ||
-            user.entryNumber !== foundGuest.entryNumber
-          ) {
-            // 다른 상태도 업데이트
-            const updatedUser = {
-              ...user,
-              checkedIn: foundGuest.checkedIn || false,
-              checkedInAt: foundGuest.checkedInAt,
-              entryNumber: foundGuest.entryNumber
-            }
-            setUser(updatedUser)
-            localStorage.setItem('user', JSON.stringify(updatedUser))
+            console.log('[AuthContext] guests 변경 감지 - 상태 업데이트:', {
+              paymentConfirmed,
+              checkedIn,
+              entryNumber
+            })
           }
         }
       } catch (error) {
@@ -232,7 +237,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const interval = setInterval(checkGuestsUpdate, 2000) // 2초마다 확인
 
     return () => clearInterval(interval)
-  }, [user])
+  }, [user?.name, user?.phone]) // user 객체 전체가 아닌 name과 phone만 의존성으로 사용
 
   const login = (name: string, phone: string, guests?: any[]): boolean => {
     // guests가 제공되지 않으면 localStorage에서 로드 (하위 호환성)
