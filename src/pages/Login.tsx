@@ -12,8 +12,6 @@ import './Login.css'
 const Login = () => {
   const [showTicket, setShowTicket] = useState(false)
   const [showBookingConfirmation, setShowBookingConfirmation] = useState(false)
-  const [personalLoginLink, setPersonalLoginLink] = useState<string>('')
-  const [linkCopied, setLinkCopied] = useState(false)
   
   // 예매 폼 상태
   const [bookingName, setBookingName] = useState('')
@@ -381,7 +379,33 @@ const Login = () => {
         return
       }
       
-      // 기존 게스트든 새로운 게스트든 확인 화면만 표시
+      // 이미 등록된 게스트(삭제되지 않은)인지 확인
+      const existingGuest = guests.find((guest) => {
+        // 삭제된 게스트는 제외
+        if (guest.isDeleted === true) {
+          return false
+        }
+        const guestName = guest.name || guest['이름'] || guest.Name || ''
+        const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '').replace(/[-\s()]/g, '')
+        return guestName.trim() === normalizedName && guestPhone === normalizedPhoneForCompare
+      })
+      
+      // 이미 등록된 게스트면 바로 로그인하고 홈으로 이동 (티켓 애니메이션 없이)
+      if (existingGuest) {
+        const loginSuccess = login(normalizedName, normalizedPhone, guests)
+        if (loginSuccess) {
+          // localStorage에서 pendingBooking 제거
+          localStorage.removeItem('pendingBooking')
+          
+          // 로그인 성공 시 홈으로 이동 (약간의 지연을 두어 상태 업데이트 완료 대기)
+          setTimeout(() => {
+            checkNicknameAndNavigate()
+          }, 100)
+          return
+        }
+      }
+      
+      // 새로운 게스트만 확인 화면 표시
       // 명단 추가는 "확인하고 입장하기" 버튼을 눌렀을 때만 수행
       
       // 정보 수정용 상태 설정
@@ -797,18 +821,21 @@ const Login = () => {
             </label>
           </div>
 
-          {!personalLoginLink ? (
-            <button
-              className="booking-confirm-button"
-              disabled={!bookingConfirmed || !bookingInfoConfirmed}
-              onClick={async () => {
+          <button
+            className="booking-confirm-button"
+            disabled={!bookingConfirmed || !bookingInfoConfirmed}
+            onClick={async () => {
                 try {
                   const normalizedPhone = bookingPhone.replace(/\D/g, '')
                   const normalizedName = bookingName.trim()
                   
-                  // 기존 게스트인지 확인
+                  // 기존 게스트인지 확인 (삭제되지 않은 게스트만)
                   const normalizedPhoneForCompare = normalizedPhone.replace(/[-\s()]/g, '')
                   const existingGuest = guests.find((guest) => {
+                    // 삭제된 게스트는 제외
+                    if (guest.isDeleted === true) {
+                      return false
+                    }
                     const guestName = guest.name || guest['이름'] || guest.Name || ''
                     const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '').replace(/[-\s()]/g, '')
                     return guestName.trim() === normalizedName && guestPhone === normalizedPhoneForCompare
@@ -838,26 +865,28 @@ const Login = () => {
                     }
                   }
 
-                  // 개인 로그인 링크 생성 (암호화된 토큰 사용)
-                  // 이름과 전화번호를 하나의 문자열로 합치고 base64 인코딩
-                  const combinedData = `${normalizedName}|${normalizedPhone}`
-                  const base64Token = btoa(encodeURIComponent(combinedData))
-                  // URL-safe base64로 변환 (+ -> -, / -> _, = 제거)
-                  const urlSafeToken = base64Token.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
-                  const baseUrl = window.location.origin
-                  // 짧은 경로 형식: /t/토큰
-                  const loginLink = `${baseUrl}/t/${urlSafeToken}`
+                  // 로그인 시도
+                  const updatedGuests = [...guests]
+                  const loginSuccess = login(normalizedName, normalizedPhone, updatedGuests)
                   
-                  setPersonalLoginLink(loginLink)
-                  setLinkCopied(false)
+                  if (!loginSuccess) {
+                    setBookingError('로그인에 실패했습니다. 이름과 전화번호를 확인해주세요.')
+                    return
+                  }
+
+                  // localStorage에서 pendingBooking 제거
+                  localStorage.removeItem('pendingBooking')
                   
-                  // 클립보드에 복사
-                  try {
-                    await navigator.clipboard.writeText(loginLink)
-                    setLinkCopied(true)
-                    setTimeout(() => setLinkCopied(false), 3000)
-                  } catch (err) {
-                    console.warn('클립보드 복사 실패:', err)
+                  // 이미 등록된 게스트면 티켓 애니메이션 없이 바로 홈으로 이동
+                  if (existingGuest) {
+                    setShowBookingConfirmation(false)
+                    setTimeout(() => {
+                      checkNicknameAndNavigate()
+                    }, 100)
+                  } else {
+                    // 새로운 게스트는 티켓 애니메이션 표시
+                    setShowBookingConfirmation(false)
+                    setShowTicket(true)
                   }
                 } catch (error) {
                   console.error('링크 생성 실패:', error)
@@ -867,66 +896,6 @@ const Login = () => {
             >
               확인하고 입장하기
             </button>
-          ) : (
-            <>
-              <div className="personal-link-section">
-                <p className="personal-link-label">개인 입장 링크</p>
-                <div className="personal-link-container">
-                  <input
-                    type="text"
-                    value={personalLoginLink}
-                    readOnly
-                    className="personal-link-input"
-                    onClick={(e) => (e.target as HTMLInputElement).select()}
-                  />
-                  <button
-                    className="copy-link-button"
-                    onClick={async () => {
-                      try {
-                        await navigator.clipboard.writeText(personalLoginLink)
-                        setLinkCopied(true)
-                        setTimeout(() => setLinkCopied(false), 3000)
-                      } catch (err) {
-                        console.warn('클립보드 복사 실패:', err)
-                        // 폴백: 텍스트 영역 사용
-                        const textArea = document.createElement('textarea')
-                        textArea.value = personalLoginLink
-                        textArea.style.position = 'fixed'
-                        textArea.style.opacity = '0'
-                        document.body.appendChild(textArea)
-                        textArea.select()
-                        try {
-                          document.execCommand('copy')
-                          setLinkCopied(true)
-                          setTimeout(() => setLinkCopied(false), 3000)
-                        } catch (e) {
-                          console.error('복사 실패:', e)
-                        }
-                        document.body.removeChild(textArea)
-                      }
-                    }}
-                  >
-                    {linkCopied ? '✓ 복사됨' : '링크 복사'}
-                  </button>
-                </div>
-                <p className="personal-link-hint">
-                  링크를 복사해두시면 바로 로그인 하실 수 있습니다.
-                </p>
-              </div>
-              
-              <button
-                className="booking-confirm-button"
-                onClick={() => {
-                  // 생성된 링크로 리다이렉트
-                  if (personalLoginLink) {
-                    window.location.href = personalLoginLink
-                  }
-                }}
-              >
-                링크로 입장하기
-              </button>
-            </>
-          )}
 
           {bookingError && <div className="error-message">{bookingError}</div>}
         </div>
