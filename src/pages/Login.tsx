@@ -802,11 +802,12 @@ const Login = () => {
                       return guestName.trim() === bookingName.trim() && guestPhone === normalizedPhone
                     })
                     
-                    // 사전예약인 경우 preBookingPrice, 현장예매인 경우 walkInPrice 표시
+                    // 사전예약인 경우 5천원, 현장예매인 경우 walkInPrice(6천원) 표시
                     if (existingGuest && existingGuest.isWalkIn === true) {
-                      return bookingInfo.walkInPrice || '(미설정)'
+                      return bookingInfo.walkInPrice || '6천원'
                     } else {
-                      return bookingInfo.preBookingPrice || bookingInfo.walkInPrice || '(미설정)'
+                      // 사전 예약은 항상 5천원
+                      return bookingInfo.preBookingPrice || '5천원'
                     }
                   })()}
                 </span>
