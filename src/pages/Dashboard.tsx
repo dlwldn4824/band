@@ -309,9 +309,11 @@ const Dashboard = () => {
                 <div style={{ padding: '0.75rem', background: '#111', borderRadius: '8px', border: '1px solid #333', color: '#fff' }}>
                   <p style={{ margin: '0 0 0.5rem 0', fontWeight: '600', color: '#fff' }}>현재 통계</p>
                   <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-                    <p style={{ margin: '0.25rem 0', fontSize: '0.9rem', color: '#fff' }}>총 게스트: {guests.length}명</p>
                     <p style={{ margin: '0.25rem 0', fontSize: '0.9rem', color: '#fff' }}>
-                      입금 확인 게스트: {guests.filter(g => g.paymentConfirmed === true).length}명
+                      총 게스트: {guests.filter(g => !g.isDeleted).length}명
+                    </p>
+                    <p style={{ margin: '0.25rem 0', fontSize: '0.9rem', color: '#fff' }}>
+                      실 관객: {guests.filter(g => g.paymentConfirmed === true && !g.isDeleted).length}명
                     </p>
                   </div>
                 </div>
@@ -358,7 +360,7 @@ const Dashboard = () => {
                 </button>
               </div>
               <div className="guest-list-modal-content">
-                {guests.length > 0 ? (
+                {guests.filter(g => !g.isDeleted).length > 0 ? (
                   <>
                     <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', justifyContent: 'flex-end' }}>
                       <button
@@ -391,7 +393,8 @@ const Dashboard = () => {
                         </thead>
                         <tbody>
                           {(() => {
-                            let sortedGuests = [...guests]
+                            // 삭제된 게스트는 필터링 (admin에서는 보이지 않음)
+                            let sortedGuests = guests.filter(g => !g.isDeleted)
                             
                             if (sortBy === 'name') {
                               sortedGuests.sort((a, b) => {
