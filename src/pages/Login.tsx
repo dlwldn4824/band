@@ -606,7 +606,11 @@ const Login = () => {
   }
 
   // 자동 로그인 처리 중일 때 로딩 화면 표시 (티켓 애니메이션이 표시되지 않을 때만)
-  if (isProcessingAutoLogin && !showTicket) {
+  // 단, localStorage에 user가 있으면 이미 로그인된 것으로 간주하여 Dashboard로 이동
+  const savedUser = localStorage.getItem('user')
+  const isLoggedIn = savedUser && savedUser !== 'null' && savedUser !== ''
+  
+  if (isProcessingAutoLogin && !showTicket && !isLoggedIn) {
     return (
       <div className="login-page">
         <div className="login-container">
@@ -617,6 +621,11 @@ const Login = () => {
         </div>
       </div>
     )
+  }
+  
+  // 이미 로그인된 상태면 Login 컴포넌트를 렌더링하지 않음 (Dashboard가 렌더링되도록)
+  if (isLoggedIn && !showTicket && !showBookingConfirmation) {
+    return null // Dashboard가 렌더링되도록 null 반환
   }
 
   return (

@@ -40,13 +40,16 @@ const Dashboard = () => {
   // ✅ Hook 호출 완료 후 조건부 return
   // localStorage에서 user를 확인하여 로그인 상태 체크 (상태 업데이트 지연 대응)
   const savedUser = localStorage.getItem('user')
-  let hasUser = false
+  let parsedUser = null
   try {
-    hasUser = user !== null || (savedUser !== null && savedUser !== '' && JSON.parse(savedUser) !== null)
+    if (savedUser && savedUser !== 'null' && savedUser !== '') {
+      parsedUser = JSON.parse(savedUser)
+    }
   } catch (e) {
     console.warn('[Dashboard] Error parsing savedUser:', e)
-    hasUser = user !== null
   }
+  
+  const hasUser = user !== null || (parsedUser !== null && parsedUser.name && parsedUser.phone)
   
   // 인증 로딩 중일 때는 로딩 UI 표시
   if (isLoading) {
@@ -58,8 +61,9 @@ const Dashboard = () => {
   }
   
   // 개인 링크 토큰이 있고 아직 로그인되지 않았으면 Login 컴포넌트 렌더링
+  // 단, localStorage에 user가 있으면 로그인된 것으로 간주하여 Dashboard 표시
   if (token && !hasUser) {
-    console.log('[Dashboard] Rendering Login component - token:', token, 'user:', user, 'savedUser:', savedUser, 'hasUser:', hasUser, 'pathname:', location.pathname)
+    console.log('[Dashboard] Rendering Login component - token:', token, 'user:', user, 'savedUser:', savedUser, 'parsedUser:', parsedUser, 'hasUser:', hasUser, 'pathname:', location.pathname)
     return <Login />
   }
   
