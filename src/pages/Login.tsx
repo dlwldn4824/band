@@ -397,9 +397,11 @@ const Login = () => {
           // localStorage에서 pendingBooking 제거
           localStorage.removeItem('pendingBooking')
           
-          // 티켓 애니메이션 표시를 위한 상태 설정
-          setBookingName(bookingName.trim())
-          const formattedPhone = formatPhoneDisplay(bookingPhone.trim())
+          // 티켓 애니메이션 표시를 위한 상태 설정 (폼에서 입력된 값 사용)
+          const nameToUse = bookingName.trim() || normalizedName
+          const phoneToUse = bookingPhone.trim() || normalizedPhone
+          setBookingName(nameToUse)
+          const formattedPhone = formatPhoneDisplay(phoneToUse)
           setBookingPhone(formattedPhone)
           
           // 티켓 애니메이션 표시 (확인 화면은 건너뜀)
@@ -898,16 +900,27 @@ const Login = () => {
         <TicketTransition
           ticketImageUrl={ticketImage}
           info={(() => {
-            const normalizedPhone = bookingPhone.replace(/\D/g, '')
+            // bookingName이나 bookingPhone이 비어있으면 localStorage에서 user 정보 사용
+            const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
+            const nameToUse = bookingName || currentUser?.name || ''
+            const phoneToUse = bookingPhone.replace(/\D/g, '') || currentUser?.phone?.replace(/\D/g, '') || ''
+            
+            const normalizedPhone = phoneToUse.replace(/\D/g, '')
             const existingGuest = guests.find((g) => {
+              // 삭제된 게스트는 제외
+              if (g.isDeleted === true) {
+                return false
+              }
               const gName = g.name || g['이름'] || g.Name || ''
               const gPhone = String(g.phone || g['전화번호'] || g.Phone || '').replace(/[-\s()]/g, '')
-              return gName.trim() === bookingName.trim() && gPhone === normalizedPhone
+              return gName.trim() === nameToUse.trim() && gPhone === normalizedPhone
             })
+            console.log('[Login] TicketTransition - nameToUse:', nameToUse)
+            console.log('[Login] TicketTransition - phoneToUse:', phoneToUse)
             console.log('[Login] TicketTransition - existingGuest:', existingGuest)
             console.log('[Login] TicketTransition - entryNumber:', existingGuest?.entryNumber)
             return {
-              name: bookingName || '',
+              name: nameToUse || '',
               date: new Date().toLocaleDateString(),
               seat: 'STANDING',
               entryNumber: existingGuest?.entryNumber,
