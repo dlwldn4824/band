@@ -962,10 +962,31 @@ const Login = () => {
                 console.warn('Firestore 티켓 기록 저장 실패:', error)
               }
               
-              // 대시보드로 이동
+              // 대시보드로 이동 (상태 업데이트를 위해 약간의 지연)
               setTimeout(() => {
-                checkNicknameAndNavigate()
-              }, 100)
+                // 현재 토큰 확인
+                const currentToken = token || new URLSearchParams(window.location.search).get('token')
+                
+                if (currentToken) {
+                  // 개인 링크가 있으면 해당 경로로 이동
+                  const targetPath = `/t/${currentToken}`
+                  const currentPath = window.location.pathname
+                  
+                  if (currentPath !== targetPath) {
+                    console.log('[Login] TicketTransition onDone - navigating to:', targetPath)
+                    // window.location.href를 사용하여 강제로 페이지 이동 (상태 동기화)
+                    window.location.href = targetPath
+                  } else {
+                    // 이미 올바른 경로에 있으면 페이지 리로드하여 Dashboard가 렌더링되도록
+                    console.log('[Login] TicketTransition onDone - reloading page to show Dashboard')
+                    window.location.reload()
+                  }
+                } else {
+                  // 일반 로그인: Dashboard로 이동
+                  console.log('[Login] TicketTransition onDone - navigating to dashboard')
+                  checkNicknameAndNavigate()
+                }
+              }, 300)
             } else {
               console.error('[Login] TicketTransition onDone - 로그인되지 않음, 다시 로그인 시도')
               // 로그인되지 않은 경우 다시 로그인 페이지로

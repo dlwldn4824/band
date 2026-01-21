@@ -48,8 +48,12 @@ const Dashboard = () => {
   }
 
   // 개인 링크 토큰이 있고 아직 로그인되지 않았으면 Login 컴포넌트 렌더링
-  if (token && !user) {
-    console.log('[Dashboard] Rendering Login component - token:', token, 'user:', user, 'pathname:', location.pathname)
+  // localStorage에서 user를 확인하여 로그인 상태 체크 (상태 업데이트 지연 대응)
+  const savedUser = localStorage.getItem('user')
+  const hasUser = user || (savedUser && JSON.parse(savedUser))
+  
+  if (token && !hasUser) {
+    console.log('[Dashboard] Rendering Login component - token:', token, 'user:', user, 'savedUser:', savedUser, 'pathname:', location.pathname)
     return <Login />
   }
   
