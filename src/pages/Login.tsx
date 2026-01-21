@@ -390,17 +390,20 @@ const Login = () => {
         return guestName.trim() === normalizedName && guestPhone === normalizedPhoneForCompare
       })
       
-      // 이미 등록된 게스트면 바로 로그인하고 홈으로 이동 (티켓 애니메이션 없이)
+      // 이미 등록된 게스트면 확인 화면 건너뛰고 바로 로그인 후 티켓 애니메이션 표시
       if (existingGuest) {
         const loginSuccess = login(normalizedName, normalizedPhone, guests)
         if (loginSuccess) {
           // localStorage에서 pendingBooking 제거
           localStorage.removeItem('pendingBooking')
           
-          // 로그인 성공 시 홈으로 이동 (약간의 지연을 두어 상태 업데이트 완료 대기)
-          setTimeout(() => {
-            checkNicknameAndNavigate()
-          }, 100)
+          // 티켓 애니메이션 표시를 위한 상태 설정
+          setBookingName(bookingName.trim())
+          const formattedPhone = formatPhoneDisplay(bookingPhone.trim())
+          setBookingPhone(formattedPhone)
+          
+          // 티켓 애니메이션 표시 (확인 화면은 건너뜀)
+          setShowTicket(true)
           return
         }
       }
@@ -877,17 +880,9 @@ const Login = () => {
                   // localStorage에서 pendingBooking 제거
                   localStorage.removeItem('pendingBooking')
                   
-                  // 이미 등록된 게스트면 티켓 애니메이션 없이 바로 홈으로 이동
-                  if (existingGuest) {
-                    setShowBookingConfirmation(false)
-                    setTimeout(() => {
-                      checkNicknameAndNavigate()
-                    }, 100)
-                  } else {
-                    // 새로운 게스트는 티켓 애니메이션 표시
-                    setShowBookingConfirmation(false)
-                    setShowTicket(true)
-                  }
+                  // 모든 게스트에게 티켓 애니메이션 표시
+                  setShowBookingConfirmation(false)
+                  setShowTicket(true)
                 } catch (error) {
                   console.error('링크 생성 실패:', error)
                   setBookingError('링크 생성에 실패했습니다. 다시 시도해주세요.')
