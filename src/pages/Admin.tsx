@@ -295,42 +295,85 @@ const Admin = () => {
       }
 
       // 엑셀 데이터를 Guest 형식으로 변환
-      const newGuestsFromFile = jsonData.map((row: any) => ({
-        name: row['이름'] || row['name'] || row['Name'] || '',
-        phone: String(row['전화번호'] || row['phone'] || row['Phone'] || ''),
-        ...row
-      }))
+      const newGuestsFromFile = jsonData.map((row: any) => {
+        // 입금확인 컬럼 읽기 (다양한 컬럼명 지원)
+        const paymentStatus = row['입금확인'] || row['입금 확인'] || row['입금확인 '] || 
+                             row['paymentConfirmed'] || row['PaymentConfirmed'] ||
+                             row['확인완료'] || row['확인 완료'] || row['확인완료 '] ||
+                             row['입금'] || row['입금 '] || ''
+        
+        // 입금확인 상태 파싱 (확인완료, 확인 완료, 완료, true, 1, 예, Y 등)
+        const paymentConfirmed = paymentStatus === true || 
+                                paymentStatus === 'true' || 
+                                paymentStatus === 1 || 
+                                paymentStatus === '1' ||
+                                String(paymentStatus).trim().toLowerCase() === '확인완료' ||
+                                String(paymentStatus).trim().toLowerCase() === '확인 완료' ||
+                                String(paymentStatus).trim().toLowerCase() === '완료' ||
+                                String(paymentStatus).trim().toLowerCase() === '예' ||
+                                String(paymentStatus).trim().toLowerCase() === 'y' ||
+                                String(paymentStatus).trim().toLowerCase() === 'yes'
+        
+        return {
+          name: row['이름'] || row['name'] || row['Name'] || '',
+          phone: String(row['전화번호'] || row['phone'] || row['Phone'] || ''),
+          paymentConfirmed: paymentConfirmed,
+          paymentConfirmedAt: paymentConfirmed ? Date.now() : undefined,
+          ...row
+        }
+      })
 
       // 기존 게스트 리스트 가져오기
       const existingGuests = [...guests]
-      
-      // 중복 체크를 위한 함수 (이름과 전화번호로 비교)
-      const isDuplicate = (guest: any, existingList: any[]) => {
-        const normalizedName = guest.name.trim()
-        const normalizedPhone = String(guest.phone || '').replace(/[-\s()]/g, '')
-        
-        return existingList.some((existing) => {
-          const existingName = (existing.name || existing['이름'] || existing.Name || '').trim()
-          const existingPhone = String(existing.phone || existing['전화번호'] || existing.Phone || '').replace(/[-\s()]/g, '')
-          return existingName === normalizedName && existingPhone === normalizedPhone
-        })
-      }
 
-      // 중복되지 않은 게스트만 필터링
-      const guestsToAdd = newGuestsFromFile.filter((guest: any) => {
+      // 중복되지 않은 게스트와 중복된 게스트 분리
+      const guestsToAdd: any[] = []
+      const guestsToUpdate: Array<{ index: number; guest: any }> = []
+      
+      newGuestsFromFile.forEach((guest: any) => {
         const guestName = guest.name || guest['이름'] || guest.Name || ''
         const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '')
         
         // 이름과 전화번호가 모두 있어야 함
         if (!guestName.trim() || !guestPhone.trim()) {
-          return false
+          return
         }
         
         // 중복 체크
-        return !isDuplicate(guest, existingGuests)
+        const duplicateIndex = existingGuests.findIndex((existing) => {
+          const existingName = (existing.name || existing['이름'] || existing.Name || '').trim()
+          const existingPhone = String(existing.phone || existing['전화번호'] || existing.Phone || '').replace(/[-\s()]/g, '')
+          const normalizedName = guestName.trim()
+          const normalizedPhone = guestPhone.replace(/[-\s()]/g, '')
+          return existingName === normalizedName && existingPhone === normalizedPhone
+        })
+        
+        if (duplicateIndex === -1) {
+          // 중복되지 않은 게스트는 추가
+          guestsToAdd.push(guest)
+        } else {
+          // 중복된 게스트는 입금확인 정보 업데이트
+          guestsToUpdate.push({ index: duplicateIndex, guest })
+        }
       })
 
-      if (guestsToAdd.length === 0) {
+      // 중복된 게스트의 입금확인 상태 업데이트
+      if (guestsToUpdate.length > 0) {
+        guestsToUpdate.forEach(({ index, guest }) => {
+          const existingGuest = existingGuests[index]
+          if (existingGuest && guest.paymentConfirmed !== undefined) {
+            // 엑셀에 입금확인 정보가 있으면 업데이트
+            existingGuest.paymentConfirmed = guest.paymentConfirmed
+            if (guest.paymentConfirmed) {
+              existingGuest.paymentConfirmedAt = guest.paymentConfirmedAt || Date.now()
+            } else {
+              existingGuest.paymentConfirmedAt = undefined
+            }
+          }
+        })
+      }
+
+      if (guestsToAdd.length === 0 && guestsToUpdate.length === 0) {
         setUploadStatus('❌ 추가할 새로운 게스트가 없습니다. (모두 중복되거나 이름/전화번호가 비어있습니다)')
         setFile(null)
         return
@@ -357,13 +400,17 @@ const Admin = () => {
         // 오류가 발생해도 게스트 업로드는 계속 진행
       }
 
-      // 기존 게스트와 새 게스트 병합
+      // 기존 게스트와 새 게스트 병합 (입금확인 정보가 업데이트된 기존 게스트 포함)
       const mergedGuests = [...existingGuests, ...guestsToAdd]
       
       uploadGuests(mergedGuests)
       const duplicateCount = newGuestsFromFile.length - guestsToAdd.length
       if (duplicateCount > 0) {
-        setUploadStatus(`✅ ${guestsToAdd.length}명의 게스트가 추가되었습니다. (${duplicateCount}명은 중복으로 제외됨, 기존 로그인 정보 삭제됨)`)
+        if (guestsToUpdate.length > 0) {
+          setUploadStatus(`✅ ${guestsToAdd.length}명의 게스트가 추가되었고, ${guestsToUpdate.length}명의 기존 게스트 입금확인 정보가 업데이트되었습니다. (기존 로그인 정보 삭제됨)`)
+        } else {
+          setUploadStatus(`✅ ${guestsToAdd.length}명의 게스트가 추가되었습니다. (${duplicateCount}명은 중복으로 제외됨, 기존 로그인 정보 삭제됨)`)
+        }
       } else {
         setUploadStatus(`✅ ${guestsToAdd.length}명의 게스트가 추가되었습니다. (기존 로그인 정보 삭제됨)`)
       }

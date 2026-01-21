@@ -135,8 +135,25 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           }
         }
         
-        // Firestore 데이터가 빈 배열이고 로컬에 데이터가 있으면 로컬 데이터 유지
-        if (firestoreGuests.length === 0 && localGuests.length > 0) {
+        // 초기화 상태 확인 (게스트 배열이 비어있을 때만 의미 있음)
+        const clearingFlag = localStorage.getItem('guests_clearing')
+        const isClearing = clearingFlag !== null
+        const firestoreCleared = (firestoreGuestsData as any)?._cleared
+        const isFirestoreCleared = firestoreGuests.length === 0 && firestoreCleared !== undefined && firestoreCleared !== null
+        
+        // 의도적인 초기화인 경우 빈 배열 적용 (게스트가 비어있고 플래그 또는 Firestore 마커 확인)
+        if (firestoreGuests.length === 0 && (isClearing || isFirestoreCleared)) {
+          console.log('[DataContext] 초기 로드: 의도적인 게스트 초기화가 감지되었습니다. 빈 배열을 적용합니다.')
+          setGuests([])
+          localStorage.removeItem('guests')
+          // Firestore 마커 제거
+          if (isFirestoreCleared) {
+            await setFirestoreData('guests' as any, { guests: [], _cleared: null }, 'all').catch(err => {
+              console.warn('[DataContext] Firestore 마커 제거 실패:', err)
+            })
+          }
+        } else if (firestoreGuests.length === 0 && localGuests.length > 0) {
+          // Firestore 데이터가 빈 배열이고 로컬에 데이터가 있으면 로컬 데이터 유지 (초기화가 아닌 경우만)
           console.warn('[DataContext] Firestore가 빈 배열이지만 로컬에 데이터가 있어 로컬 데이터를 유지합니다.')
           setGuests(localGuests)
           // Firestore에 로컬 데이터 동기화 시도 (의도적인 초기화가 아닐 수 있음)
@@ -464,14 +481,43 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             }
           }
           
-          // 빈 배열이 오는 경우, 로컬에 데이터가 있으면 로컬 데이터 유지 및 Firestore 복구 시도
-          if (firestoreGuests.length === 0 && parsedLocalGuests.length > 0) {
+          // 빈 배열이 오는 경우, 의도적인 초기화인지 확인
+          const clearingFlag = localStorage.getItem('guests_clearing')
+          const isClearing = clearingFlag !== null
+          
+          // Firestore 데이터에서 초기화 마커 확인 (게스트 배열이 비어있을 때만 의미 있음)
+          const firestoreCleared = (data as any)?._cleared
+          const isFirestoreCleared = firestoreGuests.length === 0 && firestoreCleared !== undefined && firestoreCleared !== null
+          
+          // 의도적인 초기화인 경우 빈 배열 적용 (게스트가 비어있고 플래그 또는 Firestore 마커 확인)
+          if (firestoreGuests.length === 0 && (isClearing || isFirestoreCleared)) {
+            console.log('[DataContext] 의도적인 게스트 초기화가 감지되었습니다. 빈 배열을 적용합니다.')
+            setGuests([])
+            localStorage.removeItem('guests')
+            // Firestore 마커 제거 (다음 업데이트 시)
+            if (isFirestoreCleared) {
+              setFirestoreData('guests' as any, { guests: [], _cleared: null }, 'all').catch(err => {
+                console.error('[DataContext] Firestore 마커 제거 실패:', err)
+              })
+            }
+            return
+          }
+          
+          // 빈 배열이지만 초기화가 아닌 경우 (로컬 데이터 복구)
+          if (firestoreGuests.length === 0 && parsedLocalGuests.length > 0 && !isClearing && !isFirestoreCleared) {
             console.warn('[DataContext] Firestore에서 빈 배열이 수신되었지만, 로컬에 데이터가 있어 로컬 데이터를 유지하고 Firestore를 복구합니다.')
             setGuests(parsedLocalGuests)
             // Firestore에 로컬 데이터 복구 시도 (의도적인 초기화가 아닐 수 있음)
-            setFirestoreData('guests' as any, { guests: parsedLocalGuests }, 'all').catch(err => {
+            setFirestoreData('guests' as any, { guests: parsedLocalGuests, _cleared: null }, 'all').catch(err => {
               console.error('[DataContext] Firestore 복구 실패:', err)
             })
+            return
+          }
+          
+          // 게스트 배열이 비어있지 않으면 정상 데이터로 처리 (초기화 마커 무시)
+          if (firestoreGuests.length > 0) {
+            setGuests(firestoreGuests)
+            localStorage.setItem('guests', JSON.stringify(firestoreGuests))
             return
           }
           
@@ -666,7 +712,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     setGuests(processedGuests)
     localStorage.setItem('guests', JSON.stringify(processedGuests))
     // Firestore에 저장 (비동기로 처리) - 'all' 문서 ID로 배열 저장
-    setFirestoreData('guests' as any, { guests: processedGuests }, 'all').catch((error) => {
+    // 초기화 마커 제거 (새로운 게스트 업로드 시)
+    setFirestoreData('guests' as any, { guests: processedGuests, _cleared: null }, 'all').catch((error) => {
       console.error('Firestore 게스트 저장 오류:', error)
     })
     // Google Sheets 자동 동기화
@@ -786,12 +833,23 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
 
   const clearGuests = async () => {
+    // 초기화 플래그 설정 (의도적인 초기화임을 표시) - 타임스탬프와 함께 저장
+    const clearTimestamp = Date.now()
+    localStorage.setItem('guests_clearing', String(clearTimestamp))
+    
+    // 로컬 상태와 스토리지 즉시 제거
     setGuests([])
     localStorage.removeItem('guests')
-    // Firestore에서도 삭제
-    await setFirestoreData('guests' as any, { guests: [] }, 'all').catch((error) => {
+    
+    // Firestore에서도 삭제 (특별한 마커와 함께)
+    await setFirestoreData('guests' as any, { guests: [], _cleared: clearTimestamp }, 'all').catch((error) => {
       console.error('Firestore 게스트 초기화 오류:', error)
     })
+    
+    // 초기화 플래그 제거 (5초 후 - Firestore 동기화 시간 여유)
+    setTimeout(() => {
+      localStorage.removeItem('guests_clearing')
+    }, 5000)
     
     // 운영진 정보도 함께 삭제 (userProfiles 컬렉션에서 phone === 'admin'인 문서 삭제)
     try {
