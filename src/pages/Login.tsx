@@ -868,6 +868,7 @@ const Login = () => {
                   })
 
                   // 기존 게스트가 아닌 경우에만 명단에 추가
+                  let updatedGuests = [...guests]
                   if (!existingGuest) {
                     // Firestore에 예매 신청 정보 저장
                     const userId = `${normalizedName}_${normalizedPhone}`
@@ -889,14 +890,35 @@ const Login = () => {
                       setBookingError(result.message || '등록에 실패했습니다.')
                       return
                     }
+                    
+                    // 새로 추가된 게스트를 updatedGuests에 직접 추가 (상태 업데이트 전에 로그인하기 위해)
+                    const newGuest = {
+                      name: normalizedName,
+                      phone: normalizedPhone,
+                      checkedIn: false,
+                      isWalkIn: false,
+                      paymentConfirmed: false, // 입금 확인 대기 상태
+                      paymentConfirmedAt: undefined
+                    }
+                    updatedGuests = [...updatedGuests, newGuest]
                   }
 
-                  // 로그인 시도
-                  const updatedGuests = [...guests]
+                  // 로그인 시도 (입금 확인 전에도 로그인 가능하도록)
                   const loginSuccess = login(normalizedName, normalizedPhone, updatedGuests)
                   
                   if (!loginSuccess) {
-                    setBookingError('로그인에 실패했습니다. 이름과 전화번호를 확인해주세요.')
+                    // 로그인 실패 시 약간의 지연 후 재시도 (상태 업데이트 대기)
+                    setTimeout(() => {
+                      const retryGuests = JSON.parse(localStorage.getItem('guests') || '[]')
+                      const retrySuccess = login(normalizedName, normalizedPhone, retryGuests)
+                      if (retrySuccess) {
+                        localStorage.removeItem('pendingBooking')
+                        setShowBookingConfirmation(false)
+                        setShowTicket(true)
+                      } else {
+                        setBookingError('로그인에 실패했습니다. 잠시 후 다시 시도해주세요.')
+                      }
+                    }, 500)
                     return
                   }
 
