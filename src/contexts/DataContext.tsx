@@ -953,25 +953,50 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
     // 이미 등록된 게스트인지 확인 (전화번호 비교 시 하이픈 제거 후 비교)
     // ✅ 삭제된 게스트는 제외하고 활성 게스트만 체크
-    // ✅ 최신 게스트 리스트 확인 (localStorage와 state 모두 확인하여 중복 방지)
-    const latestGuestsFromStorage = JSON.parse(localStorage.getItem(getGuestsStorageKey()) || '[]')
-    const latestGuests = latestGuestsFromStorage.length > 0 ? latestGuestsFromStorage : guests
-    
+    // ✅ Firestore에서 최신 데이터를 직접 확인하여 엑셀 업로드 게스트도 인식
     const normalizedPhoneForCompare = normalizedPhone.replace(/[-\s()]/g, '')
-    const existingGuest = latestGuests.find((guest: Guest) => {
-      // 삭제된 게스트는 제외
-      if (guest.isDeleted === true) {
-        return false
+    
+    // 1. 먼저 Firestore에서 최신 데이터 확인 (엑셀 업로드 게스트 포함)
+    let existingGuest: Guest | undefined = undefined
+    try {
+      const currentData = await getFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, FIRESTORE_PATHS.GUESTS_DOC_ID)
+      const firestoreGuests = (currentData as any)?.guests || []
+      if (Array.isArray(firestoreGuests) && firestoreGuests.length > 0) {
+        existingGuest = firestoreGuests.find((guest: Guest) => {
+          // 삭제된 게스트는 제외
+          if (guest.isDeleted === true) {
+            return false
+          }
+          const guestName = guest.name || guest['이름'] || guest.Name || ''
+          const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '').replace(/[-\s()]/g, '')
+          return guestName.trim() === normalizedName && guestPhone === normalizedPhoneForCompare
+        })
       }
-      const guestName = guest.name || guest['이름'] || guest.Name || ''
-      const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '').replace(/[-\s()]/g, '')
-      return guestName.trim() === normalizedName && guestPhone === normalizedPhoneForCompare
-    })
+    } catch (error) {
+      // Firestore 확인 실패 시 로컬 데이터 확인
+    }
+    
+    // 2. Firestore에서 찾지 못했으면 로컬 데이터 확인 (state + localStorage)
+    if (!existingGuest) {
+      const latestGuestsFromStorage = JSON.parse(localStorage.getItem(getGuestsStorageKey()) || '[]')
+      const latestGuests = latestGuestsFromStorage.length > 0 ? latestGuestsFromStorage : guests
+      
+      existingGuest = latestGuests.find((guest: Guest) => {
+        // 삭제된 게스트는 제외
+        if (guest.isDeleted === true) {
+          return false
+        }
+        const guestName = guest.name || guest['이름'] || guest.Name || ''
+        const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '').replace(/[-\s()]/g, '')
+        return guestName.trim() === normalizedName && guestPhone === normalizedPhoneForCompare
+      })
+    }
 
     if (existingGuest) {
       console.log('[addWalkInGuest] 중복 게스트 발견:', {
         name: normalizedName,
         phone: normalizedPhoneForCompare,
+        source: 'Firestore 또는 로컬',
         existingGuest: {
           name: existingGuest.name || existingGuest['이름'] || existingGuest.Name,
           phone: existingGuest.phone || existingGuest['전화번호'] || existingGuest.Phone,
@@ -992,6 +1017,24 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       paymentConfirmedAt: undefined // 입금 확인 시간은 관리자가 확인할 때 설정
     }
 
+    // ✅ Firestore에서 최신 게스트 리스트 가져오기 (엑셀 업로드 게스트 포함)
+    let latestGuests: Guest[] = []
+    try {
+      const currentData = await getFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, FIRESTORE_PATHS.GUESTS_DOC_ID)
+      const firestoreGuests = (currentData as any)?.guests || []
+      if (Array.isArray(firestoreGuests) && firestoreGuests.length > 0) {
+        latestGuests = firestoreGuests
+      } else {
+        // Firestore에 데이터가 없으면 로컬 데이터 사용
+        const latestGuestsFromStorage = JSON.parse(localStorage.getItem(getGuestsStorageKey()) || '[]')
+        latestGuests = latestGuestsFromStorage.length > 0 ? latestGuestsFromStorage : guests
+      }
+    } catch (error) {
+      // Firestore 확인 실패 시 로컬 데이터 사용
+      const latestGuestsFromStorage = JSON.parse(localStorage.getItem(getGuestsStorageKey()) || '[]')
+      latestGuests = latestGuestsFromStorage.length > 0 ? latestGuestsFromStorage : guests
+    }
+    
     // ✅ Map을 사용하여 중복 제거 (name + phone 기준)
     const guestMap = new Map<string, Guest>()
     
