@@ -804,18 +804,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     
     // Firestore에 저장 (성공 확인 후 state 업데이트)
     try {
-      // 현재 Firestore 데이터 확인
-      const currentData = await getFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, FIRESTORE_PATHS.GUESTS_DOC_ID)
-      const currentCleared = (currentData as any)?._cleared
-      const hasClearedMarker = currentCleared !== undefined && currentCleared !== null
-      
-      // 초기화 마커가 있으면 게스트 업로드 불가 (초기화 상태 유지)
-      if (hasClearedMarker) {
-        throw new Error('게스트 리스트가 초기화된 상태입니다. 먼저 게스트를 업로드하려면 초기화를 해제해주세요.')
-      }
-      
       // ✅ coalesce 패턴으로 write (연타/중복 방지)
-      // 초기화 해제: _cleared를 null로 명시
+      // 엑셀 업로드 시 초기화 마커 자동 해제: _cleared를 null로 명시
       await saveGuestsAllCoalesced({ guests: processedGuests, _cleared: null }, 3, 'uploadGuests')
       
       // Firestore 저장 성공 후에만 state 업데이트 (교체 패턴 - 누적 금지)
@@ -824,6 +814,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       lastGuestsHashRef.current = JSON.stringify(processedGuests)
     } catch (error) {
       // Firestore 저장 실패 시 state 업데이트하지 않음
+      throw error
     }
   }
 

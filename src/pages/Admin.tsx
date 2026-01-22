@@ -50,8 +50,6 @@ const Admin = () => {
   const [editedEvents, setEditedEvents] = useState<Array<{ title: string; description: string; time?: string }>>([])
   const [pendingBookings] = useState<Array<{ id: string; name: string; phone: string; email: string; createdAt: any }>>([])
   const [guestLoginLinks, setGuestLoginLinks] = useState<Record<string, string>>({}) // 게스트 ID (name_phone) -> 로그인 링크
-  const [showRestoreModal, setShowRestoreModal] = useState(false)
-  const [restoreJson, setRestoreJson] = useState('')
   const [guestBookingDates, setGuestBookingDates] = useState<Record<string, any>>({}) // 게스트 ID (name_phone) -> 예매 일시
   const [googleSheetsSyncStatus, setGoogleSheetsSyncStatus] = useState<string>('')
   const [showPasswordModal, setShowPasswordModal] = useState(false)
@@ -374,18 +372,24 @@ const Admin = () => {
       // 기존 게스트와 새 게스트 병합 (입금확인 정보가 업데이트된 기존 게스트 포함)
       const mergedGuests = [...existingGuests, ...guestsToAdd]
       
-      uploadGuests(mergedGuests)
-      const duplicateCount = newGuestsFromFile.length - guestsToAdd.length
-      if (duplicateCount > 0) {
-        if (guestsToUpdate.length > 0) {
-          setUploadStatus(`✅ ${guestsToAdd.length}명의 게스트가 추가되었고, ${guestsToUpdate.length}명의 기존 게스트 입금확인 정보가 업데이트되었습니다. (기존 로그인 정보 삭제됨)`)
+      try {
+        await uploadGuests(mergedGuests)
+        const duplicateCount = newGuestsFromFile.length - guestsToAdd.length
+        if (duplicateCount > 0) {
+          if (guestsToUpdate.length > 0) {
+            setUploadStatus(`✅ ${guestsToAdd.length}명의 게스트가 추가되었고, ${guestsToUpdate.length}명의 기존 게스트 입금확인 정보가 업데이트되었습니다. (기존 로그인 정보 삭제됨)`)
+          } else {
+            setUploadStatus(`✅ ${guestsToAdd.length}명의 게스트가 추가되었습니다. (${duplicateCount}명은 중복으로 제외됨, 기존 로그인 정보 삭제됨)`)
+          }
         } else {
-        setUploadStatus(`✅ ${guestsToAdd.length}명의 게스트가 추가되었습니다. (${duplicateCount}명은 중복으로 제외됨, 기존 로그인 정보 삭제됨)`)
+          setUploadStatus(`✅ ${guestsToAdd.length}명의 게스트가 추가되었습니다. (기존 로그인 정보 삭제됨)`)
         }
-      } else {
-        setUploadStatus(`✅ ${guestsToAdd.length}명의 게스트가 추가되었습니다. (기존 로그인 정보 삭제됨)`)
+        setFile(null)
+      } catch (uploadError: any) {
+        const errorMessage = uploadError?.message || '알 수 없는 오류'
+        setUploadStatus(`❌ 게스트 업로드 실패: ${errorMessage}`)
+        setTimeout(() => setUploadStatus(''), 5000)
       }
-      setFile(null)
       
       // 닉네임 리스트 다시 로드
       const userProfilesRef = collection(db, 'userProfiles')
@@ -644,18 +648,12 @@ const Admin = () => {
         ticket: performanceData?.ticket || defaultTicket, // 기존 ticket이 있으면 유지, 없으면 기본값
       }
 
-      console.log('업데이트된 공연 데이터:', updatedPerformanceData)
-      console.log('저장될 공연진:', updatedPerformanceData.performers)
-      console.log('저장될 셋리스트:', updatedPerformanceData.setlist?.length, '곡')
-
       setPerformanceData(updatedPerformanceData)
       
       // 업로드한 셋리스트를 Firestore에 즉시 저장하여 고정
       try {
         await setFirestoreData('performanceData' as any, updatedPerformanceData, 'main')
-        console.log('[Admin] 셋리스트 Firestore 저장 완료')
       } catch (err) {
-        console.warn('[Admin] 셋리스트 Firestore 저장 실패:', err)
         // 저장 실패해도 계속 진행
       }
       
@@ -682,19 +680,15 @@ const Admin = () => {
                 updatedAt: Timestamp.now()
               })
               resetPromises.push(resetPromise)
-              console.log(`[Admin] 운영진 "${adminName}" 닉네임 리셋: "${data.nickname || '(없음)'}" → "${adminName}"`)
             } else {
               // 현재 공연진 목록에 없는 이전 운영진: userProfile 삭제
               const deletePromise = deleteDoc(doc(db, 'userProfiles', docSnapshot.id))
               deletePromises.push(deletePromise)
-              console.log(`[Admin] 이전 운영진 "${adminName}" userProfile 삭제 (더 이상 공연진 목록에 없음)`)
             }
           }
         })
         
         await Promise.all([...resetPromises, ...deletePromises])
-        console.log(`[Admin] ${resetPromises.length}명의 운영진 닉네임이 리셋되었습니다.`)
-        console.log(`[Admin] ${deletePromises.length}명의 이전 운영진 userProfile이 삭제되었습니다.`)
         
         // 닉네임 리스트 다시 로드 (삭제 후 최신 데이터)
         const updatedSnapshot = await getDocs(userProfilesRef)
@@ -716,7 +710,6 @@ const Admin = () => {
         setUserNicknames(nicknameMap)
         setAdminList(admins)
       } catch (err) {
-        console.warn('[Admin] 운영진 닉네임 리셋/삭제 실패:', err)
         // 실패해도 계속 진행
       }
       
@@ -800,13 +793,8 @@ const Admin = () => {
     })
     
     try {
-      console.log('Google Sheets 동기화 시작:', url)
-      console.log('전송할 게스트 수:', guestsWithNicknames.length)
-      console.log('전송할 데이터 샘플:', guestsWithNicknames.slice(0, 2))
-      
       // 먼저 GET 요청으로 웹 앱이 정상 작동하는지 확인
       try {
-        console.log('웹 앱 연결 테스트 시작 (GET 요청)...')
         const testUrl = `${url}?action=ping&t=${Date.now()}`
         const testResponse = await fetch(testUrl, {
           method: 'GET',
@@ -814,7 +802,6 @@ const Admin = () => {
           redirect: 'follow'
         })
         const testText = await testResponse.text()
-        console.log('GET 요청 응답:', testResponse.status, testText)
         
         if (!testResponse.ok) {
           throw new Error(`웹 앱 연결 실패 (${testResponse.status}): ${testText}`)
@@ -823,19 +810,13 @@ const Admin = () => {
         // JSON 파싱 시도
         try {
           const testJson = JSON.parse(testText)
-          if (testJson.ok === true) {
-            console.log('✅ 웹 앱이 정상 작동 중입니다')
-            if (testJson.query) {
-              console.log('✅ 파라미터 수신 확인:', testJson.query)
-            }
-          } else {
-            console.warn('⚠️ 웹 앱 응답:', testJson)
+          if (testJson.ok !== true) {
+            // 웹 앱이 정상 작동하지 않음
           }
         } catch (e) {
-          console.warn('⚠️ GET 응답이 JSON이 아닙니다:', testText)
+          // JSON이 아니어도 계속 진행
         }
       } catch (testError: any) {
-        console.error('❌ 웹 앱 연결 테스트 실패:', testError)
         throw new Error(`웹 앱에 연결할 수 없습니다. 
         
 가능한 원인:
@@ -859,9 +840,6 @@ const Admin = () => {
         guests: guestsWithNicknames
       })
       
-      console.log('요청 페이로드 크기:', payload.length, 'bytes')
-      console.log('form-urlencoded 방식으로 POST 요청 전송...')
-      
       // URLSearchParams로 form-urlencoded 형식 생성
       const formData = new URLSearchParams({
         action: 'syncAll',
@@ -872,7 +850,6 @@ const Admin = () => {
       const controller = new AbortController()
       const timeoutId = setTimeout(() => {
         controller.abort()
-        console.error('요청 타임아웃 (60초 초과)')
       }, 60000)
       
       let response
@@ -888,7 +865,6 @@ const Admin = () => {
           body: formData.toString()
         })
         clearTimeout(timeoutId)
-        console.log('POST 요청 완료, 응답 상태:', response.status)
       } catch (fetchError: any) {
         clearTimeout(timeoutId)
         
@@ -896,15 +872,11 @@ const Admin = () => {
           throw new Error('요청 시간이 초과되었습니다 (60초). 게스트 수가 많아서 처리 시간이 오래 걸릴 수 있습니다. Google Apps Script 실행 기록을 확인하세요.')
         }
         
-        console.error('POST 요청 실패:', fetchError)
         throw fetchError
       }
       
-      console.log('응답 상태:', response.status, response.statusText)
-      
       if (!response.ok) {
         const text = await response.text()
-        console.error('응답 오류:', text)
         setGoogleSheetsSyncStatus(`❌ 서버 오류 (${response.status}): ${text || response.statusText}`)
         setTimeout(() => setGoogleSheetsSyncStatus(''), 5000)
         return
@@ -917,7 +889,6 @@ const Admin = () => {
         result = await response.json()
       } else {
         const text = await response.text()
-        console.log('응답 텍스트:', text)
         // JSON이 아닌 경우 텍스트를 파싱 시도
         try {
           result = JSON.parse(text)
@@ -938,13 +909,6 @@ const Admin = () => {
       }
       setTimeout(() => setGoogleSheetsSyncStatus(''), 5000)
     } catch (error: any) {
-      console.error('Google Sheets 동기화 오류:', error)
-      console.error('오류 상세:', {
-        name: error?.name,
-        message: error?.message,
-        stack: error?.stack,
-        cause: error?.cause
-      })
       
       let errorMessage = '알 수 없는 오류'
       
@@ -974,9 +938,7 @@ const Admin = () => {
    → URL이 https://script.google.com/macros/s/.../exec 형식인지 확인하세요
 
 4. 인터넷 연결 문제입니다
-   → 네트워크 연결을 확인하세요
-
-브라우저 콘솔(F12)에서 더 자세한 로그를 확인하세요.`
+   → 네트워크 연결을 확인하세요`
           }
         } else if (error.message.includes('URL scheme')) {
           errorMessage = 'URL 형식이 잘못되었습니다. https://로 시작하는 올바른 URL을 입력해주세요.'
@@ -1100,10 +1062,8 @@ const Admin = () => {
       const smsLink = `sms:${phone}?body=${smsBody}`
       
       // 실제 SMS 전송을 원하면 Twilio API 등을 사용해야 합니다
-      console.log('SMS 링크 생성:', smsLink)
       return false // 현재는 SMS 자동 전송 미구현
     } catch (error) {
-      console.error('SMS 전송 실패:', error)
       return false
     }
   }
@@ -1199,19 +1159,15 @@ const Admin = () => {
     // 입금 확인 시 링크 생성
     if (willBeConfirmed) {
       try {
-        console.log('링크 생성 시작:', guest.name, guest.phone)
         const loginLink = await generateLoginLink(guest.name, guest.phone)
-        console.log('링크 생성 완료:', loginLink, 'guestId:', guestId)
         setGuestLoginLinks(prev => {
           const updated = { ...prev, [guestId]: loginLink }
-          console.log('링크 상태 업데이트:', updated)
           return updated
         })
         
         setUploadStatus('✅ 로그인 링크가 생성되었습니다.')
         setTimeout(() => setUploadStatus(''), 3000)
       } catch (error) {
-        console.error('로그인 링크 생성 실패:', error)
         setUploadStatus('❌ 로그인 링크 생성에 실패했습니다.')
         setTimeout(() => setUploadStatus(''), 3000)
       }
@@ -1509,77 +1465,12 @@ const Admin = () => {
       const storageRef = ref(storage, `guests/${fileName}`)
       
       await uploadBytes(storageRef, blob)
-      const downloadURL = await getDownloadURL(storageRef)
-      
-      console.log(`게스트 리스트 엑셀 파일이 업데이트되었습니다: ${downloadURL}`)
+      await getDownloadURL(storageRef)
     } catch (error) {
-      console.error('엑셀 파일 업데이트 오류:', error)
       // 오류가 발생해도 게스트 리스트 저장은 계속 진행
     }
   }
 
-  // 입금 확인이 완료된 게스트에 대해 링크 생성 함수 (수동 실행)
-    const generateLinksForConfirmedGuests = async () => {
-      const links: Record<string, string> = {}
-      let hasNewLinks = false
-    let processedCount = 0
-    let skippedCount = 0
-    let errorCount = 0
-    
-    const confirmedGuests = guests.filter(g => g.paymentConfirmed && g.paymentConfirmedAt)
-    
-    if (confirmedGuests.length === 0) {
-      setUploadStatus('입금 확인이 완료된 게스트가 없습니다.')
-      setTimeout(() => setUploadStatus(''), 3000)
-      return
-    }
-    
-    setUploadStatus(`링크 생성 중... (0/${confirmedGuests.length})`)
-    
-    for (let i = 0; i < confirmedGuests.length; i++) {
-      const guest = confirmedGuests[i]
-          const guestId = makeGuestKey(guest.name, guest.phone)
-          
-          // 이미 링크가 있으면 스킵
-          if (guestLoginLinks[guestId]) {
-        skippedCount++
-            continue
-          }
-          
-      // 링크 생성 (배치 처리: 100ms 딜레이)
-          try {
-        await new Promise(resolve => setTimeout(resolve, 100)) // Firestore 할당량 방지
-            const loginLink = await generateLoginLink(guest.name, guest.phone)
-            links[guestId] = loginLink
-            hasNewLinks = true
-        processedCount++
-        
-        // 진행 상황 업데이트
-        setUploadStatus(`링크 생성 중... (${i + 1}/${confirmedGuests.length})`)
-          } catch (error) {
-            console.error(`게스트 ${guest.name} 링크 생성 실패:`, error)
-        errorCount++
-        // 할당량 초과 오류인 경우 중단
-        const errorMessage = error instanceof Error ? error.message : String(error)
-        if (errorMessage.includes('quota') || errorMessage.includes('Quota') || errorMessage.includes('resource-exhausted')) {
-          setUploadStatus(`❌ Firestore 할당량 초과로 중단되었습니다. (${processedCount}개 생성 완료)`)
-          setTimeout(() => setUploadStatus(''), 5000)
-          break
-          }
-        }
-      }
-      
-      // 생성된 링크들을 상태에 업데이트
-      if (hasNewLinks) {
-        setGuestLoginLinks(prev => ({ ...prev, ...links }))
-      }
-    
-    // 완료 메시지
-    if (processedCount > 0 || skippedCount > 0) {
-      setUploadStatus(`✅ 링크 생성 완료: 새로 생성 ${processedCount}개, 기존 링크 ${skippedCount}개${errorCount > 0 ? `, 오류 ${errorCount}개` : ''}`)
-      setTimeout(() => setUploadStatus(''), 5000)
-    }
-  }
   
   // 게스트 리스트가 변경될 때마다 엑셀 파일 업데이트만 수행 (디바운스 적용)
   useEffect(() => {
@@ -2096,7 +1987,7 @@ const Admin = () => {
       <div className="admin-section">
         <h2>Google Sheets 연동</h2>
         <p className="section-description">
-          Google Sheets와 실시간으로 동기화할 수 있습니다.
+          버튼을 클릭하면 현재 게스트 리스트를 Google Sheets에 수동으로 업로드합니다.
         </p>
         
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
@@ -2109,7 +2000,7 @@ const Admin = () => {
             className="sample-button"
             style={{ background: '#28a745', color: 'white' }}
           >
-            📊 Google Sheets에 동기화
+            📊 Google Sheets에 수동 업로드
           </button>
         </div>
         
@@ -2241,24 +2132,6 @@ const Admin = () => {
             📥 엑셀 템플릿 다운로드
           </button>
           <button 
-            onClick={() => setShowRestoreModal(true)} 
-            className="sample-button"
-            style={{ background: '#FF6B6B', color: 'white' }}
-          >
-            🔄 게스트 리스트 복원
-          </button>
-          <button 
-            onClick={() => {
-              requirePassword(async () => {
-                await generateLinksForConfirmedGuests()
-              })
-            }}
-            className="sample-button"
-            style={{ background: '#4CAF50', color: 'white' }}
-          >
-            🔗 입금 확인 게스트 링크 생성
-          </button>
-          <button 
             onClick={async () => {
                 requirePassword(async () => {
                   if (window.confirm('정말로 모든 게스트 정보와 로그인 기록(닉네임 포함)을 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
@@ -2285,81 +2158,13 @@ const Admin = () => {
                         .map(docSnapshot => deleteDoc(doc(db, 'userProfiles', docSnapshot.id)))
                       
                       await Promise.all(deletePromises)
-                      console.log(`${deletePromises.length}개의 userProfile 삭제 완료`)
                     } catch (error) {
                       console.error('userProfile 삭제 오류:', error)
                       // 오류가 발생해도 게스트 초기화는 계속 진행
                     }
                     
                     try {
-                      // 🔍 Firebase 연결 상태 확인
-                      console.log('🔍 [Admin] Firebase 연결 상태 확인 시작 ==========================================')
-                      console.log('🔍 [Admin] Firebase db 객체:', db)
-                      console.log('🔍 [Admin] Firebase app 이름:', db.app.name)
-                      console.log('🔍 [Admin] Firebase projectId:', db.app.options.projectId)
-                      
-                      // ✅ 문서 경로 확인 (중요!)
-                      const adminGuestsDocRef = doc(db, FIRESTORE_PATHS.GUESTS_COLLECTION, FIRESTORE_PATHS.GUESTS_DOC_ID)
-                      console.log('🔍 [Admin] 초기화 시 사용할 doc path =', adminGuestsDocRef.path)
-                      console.log('🔍 [Admin] 초기화 시 사용할 projectId =', db.app.options.projectId)
-                      
-                      // 🔍 현재 DB에 저장된 게스트 리스트 확인
-                      try {
-                        // ✅ 읽기 전 경로 확인
-                        const readDocRef = doc(db, FIRESTORE_PATHS.GUESTS_COLLECTION, FIRESTORE_PATHS.GUESTS_DOC_ID)
-                        console.log('🔍 [Admin] 읽기 시 사용할 doc path =', readDocRef.path)
-                        console.log('🔍 [Admin] 읽기 시 사용할 projectId =', db.app.options.projectId)
-                        
-                        const { getFirestoreData } = await import('../services/firestoreService')
-                        const currentDbData = await getFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, FIRESTORE_PATHS.GUESTS_DOC_ID)
-                        console.log('🔍 [Admin] 현재 DB에 저장된 게스트 데이터 (전체):', currentDbData)
-                        console.log('🔍 [Admin] 현재 DB에 저장된 게스트 데이터 타입:', typeof currentDbData)
-                        console.log('🔍 [Admin] 현재 DB에 저장된 게스트 데이터 키:', currentDbData ? Object.keys(currentDbData) : 'null')
-                        
-                        if (currentDbData) {
-                          const dbGuests = (currentDbData as any).guests || []
-                          const dbCleared = (currentDbData as any)._cleared
-                          console.log('🔍 [Admin] DB 게스트 배열 길이:', Array.isArray(dbGuests) ? dbGuests.length : '배열 아님')
-                          console.log('🔍 [Admin] DB 초기화 마커 (_cleared):', dbCleared)
-                          console.log('🔍 [Admin] DB 게스트 샘플 (처음 3개):', Array.isArray(dbGuests) ? dbGuests.slice(0, 3) : '배열 아님')
-                          console.log('🔍 [Admin] DB updatedAt:', (currentDbData as any).updatedAt)
-                        } else {
-                          console.log('🔍 [Admin] ⚠️ DB에서 게스트 데이터를 찾을 수 없음 (null)')
-                        }
-                      } catch (dbCheckError) {
-                        console.error('🔍 [Admin] ❌ DB 데이터 확인 중 오류:', dbCheckError)
-                      }
-                      
-                      // 🔍 현재 state와 localStorage 비교
-                      console.log('🔍 [Admin] 현재 state 게스트 수:', guests.length)
-                      const localGuests = JSON.parse(localStorage.getItem(getGuestsStorageKey()) || '[]')
-                      console.log('🔍 [Admin] 현재 localStorage 게스트 수:', localGuests.length)
-                      console.log('🔍 [Admin] ==========================================')
-                      
-                      // ✅ clearGuests는 async이므로 await 필요
                       await clearGuests()
-                      
-                      // 🔍 초기화 후 DB 상태 확인
-                      console.log('🔍 [Admin] 초기화 후 DB 상태 확인 ==========================================')
-                      try {
-                        // ✅ 읽기 전 경로 확인
-                        const afterReadDocRef = doc(db, FIRESTORE_PATHS.GUESTS_COLLECTION, FIRESTORE_PATHS.GUESTS_DOC_ID)
-                        console.log('🔍 [Admin] 초기화 후 읽기 시 사용할 doc path =', afterReadDocRef.path)
-                        console.log('🔍 [Admin] 초기화 후 읽기 시 사용할 projectId =', db.app.options.projectId)
-                        
-                        const { getFirestoreData } = await import('../services/firestoreService')
-                        const afterClearData = await getFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, FIRESTORE_PATHS.GUESTS_DOC_ID)
-                        console.log('🔍 [Admin] 초기화 후 DB 데이터:', afterClearData)
-                        if (afterClearData) {
-                          const afterGuests = (afterClearData as any).guests || []
-                          const afterCleared = (afterClearData as any)._cleared
-                          console.log('🔍 [Admin] 초기화 후 DB 게스트 배열 길이:', Array.isArray(afterGuests) ? afterGuests.length : '배열 아님')
-                          console.log('🔍 [Admin] 초기화 후 DB 초기화 마커 (_cleared):', afterCleared)
-                        }
-                        console.log('🔍 [Admin] ==========================================')
-                      } catch (afterCheckError) {
-                        console.error('🔍 [Admin] ❌ 초기화 후 DB 확인 중 오류:', afterCheckError)
-                      }
                       
                       setUploadStatus('✅ 게스트 정보와 로그인 기록이 초기화되었습니다.')
                       
@@ -2404,133 +2209,6 @@ const Admin = () => {
         )}
       </div>
 
-      {/* 게스트 리스트 복원 모달 */}
-      {showRestoreModal && (
-        <div className="modal-overlay" onClick={() => setShowRestoreModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
-            <div className="modal-header">
-              <h2>게스트 리스트 복원</h2>
-              <button className="modal-close" onClick={() => setShowRestoreModal(false)} aria-label="닫기"></button>
-            </div>
-            <div style={{ padding: '1.5rem' }}>
-              <p style={{ marginBottom: '1rem', color: '#fff' }}>
-                복원 방법을 선택하세요:
-              </p>
-              
-              {/* 방법 1: localStorage 백업 복원 */}
-              <div style={{ marginBottom: '1.5rem' }}>
-                <h3 style={{ color: '#fff', marginBottom: '0.5rem', fontSize: '1rem' }}>방법 1: localStorage 백업 복원</h3>
-                <p style={{ fontSize: '0.875rem', color: '#ccc', marginBottom: '0.75rem' }}>
-                  브라우저 개발자 도구(F12) → Application → Local Storage → 해당 사이트 → '{getGuestsStorageKey()}' 키의 값을 복사하여 아래에 붙여넣으세요.
-                </p>
-                <textarea
-                  value={restoreJson}
-                  onChange={(e) => setRestoreJson(e.target.value)}
-                  placeholder='[{"name":"홍길동","phone":"01012345678",...}] 형식의 JSON 데이터를 붙여넣으세요'
-                  style={{
-                    width: '100%',
-                    minHeight: '150px',
-                    padding: '0.75rem',
-                    borderRadius: '8px',
-                    border: '1px solid #666',
-                    background: '#2a2a2a',
-                    color: '#fff',
-                    fontFamily: 'monospace',
-                    fontSize: '0.875rem',
-                    marginBottom: '0.75rem',
-                    boxSizing: 'border-box'
-                  }}
-                />
-                <button
-                  onClick={async () => {
-                    if (!restoreJson.trim()) {
-                      alert('복원할 JSON 데이터를 입력해주세요.')
-                      return
-                    }
-                    
-                    try {
-                      const parsed = JSON.parse(restoreJson)
-                      if (!Array.isArray(parsed)) {
-                        alert('올바른 배열 형식의 JSON이 아닙니다.')
-                        return
-                      }
-                      
-                      if (parsed.length === 0) {
-                        alert('복원할 게스트 데이터가 없습니다.')
-                        return
-                      }
-                      
-                      if (window.confirm(`정말로 ${parsed.length}명의 게스트 데이터를 복원하시겠습니까? 기존 데이터는 덮어씌워집니다.`)) {
-                        // localStorage에 저장
-                        localStorage.setItem(getGuestsStorageKey(), JSON.stringify(parsed))
-                        
-                        // ✅ Firestore에 저장 (초기화 해제: _cleared를 null로 명시)
-                        // 복원 작업이므로 _cleared를 null로 명시하여 초기화 해제
-                        await setFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, { 
-                          guests: parsed, 
-                          _cleared: null,
-                          lastAction: 'RESTORE',
-                          writeSource: 'Admin.restoreFromJson'
-                        }, FIRESTORE_PATHS.GUESTS_DOC_ID)
-                        
-                        // 페이지 새로고침하여 데이터 반영
-                        window.location.reload()
-                      }
-                    } catch (error) {
-                      console.error('복원 오류:', error)
-                      alert('JSON 파싱 오류가 발생했습니다. 올바른 형식인지 확인해주세요.')
-                    }
-                  }}
-                  className="upload-button"
-                  style={{ width: '100%', marginBottom: '1rem' }}
-                >
-                  JSON 데이터로 복원
-                </button>
-              </div>
-              
-              {/* 방법 2: 현재 localStorage 백업 확인 */}
-              <div style={{ marginBottom: '1.5rem', padding: '1rem', background: '#1a1a1a', borderRadius: '8px' }}>
-                <h3 style={{ color: '#fff', marginBottom: '0.5rem', fontSize: '1rem' }}>방법 2: 현재 localStorage 백업 확인</h3>
-                <p style={{ fontSize: '0.875rem', color: '#ccc', marginBottom: '0.75rem' }}>
-                  현재 브라우저의 localStorage에 저장된 게스트 데이터를 확인하고 복원할 수 있습니다.
-                </p>
-                <button
-                  onClick={() => {
-                    const savedGuests = localStorage.getItem(getGuestsStorageKey())
-                    if (savedGuests) {
-                      try {
-                        const parsed = JSON.parse(savedGuests)
-                        if (Array.isArray(parsed) && parsed.length > 0) {
-                          setRestoreJson(savedGuests)
-                          alert(`현재 localStorage에 ${parsed.length}명의 게스트 데이터가 있습니다. 위 텍스트 영역에 표시되었습니다.`)
-                        } else {
-                          alert('localStorage에 유효한 게스트 데이터가 없습니다.')
-                        }
-                      } catch (e) {
-                        alert('localStorage 데이터 파싱 오류가 발생했습니다.')
-                      }
-                    } else {
-                      alert('localStorage에 게스트 데이터가 없습니다.')
-                    }
-                  }}
-                  className="sample-button"
-                  style={{ width: '100%' }}
-                >
-                  현재 localStorage 데이터 확인
-                </button>
-              </div>
-              
-              {/* 방법 3: Excel 파일로 복원 */}
-              <div>
-                <h3 style={{ color: '#fff', marginBottom: '0.5rem', fontSize: '1rem' }}>방법 3: Excel 파일로 복원</h3>
-                <p style={{ fontSize: '0.875rem', color: '#ccc', marginBottom: '0.75rem' }}>
-                  이전에 다운로드한 Excel 파일이 있다면 위의 "게스트 정보 업로드" 섹션에서 업로드하세요.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* 공연진 리스트 섹션 */}
       <div className="admin-section">
@@ -2799,9 +2477,6 @@ const Admin = () => {
                       e.preventDefault()
                       e.stopPropagation()
                       
-                      console.log('저장 버튼 클릭됨')
-                      console.log('입력값:', { editedEventName, editedDate, editedVenue })
-                      
                       if (!editedEventName.trim() || !editedDate.trim() || !editedVenue.trim()) {
                         setUploadStatus('모든 필드를 입력해주세요.')
                         setTimeout(() => setUploadStatus(''), 3000)
@@ -2829,8 +2504,6 @@ const Admin = () => {
                           time: event.time?.trim() || ''
                         })) : performanceData.events
                       }
-
-                      console.log('저장할 데이터:', updatedPerformanceData)
                       
                       // 먼저 로컬 상태 업데이트
                       setPerformanceData(updatedPerformanceData)
@@ -2843,16 +2516,12 @@ const Admin = () => {
                           updatedAt: Timestamp.now()
                         }, { merge: true })
                         
-                        console.log('Firestore 저장 완료')
                         setUploadStatus('✅ 공연 정보가 저장되었습니다.')
                         setTimeout(() => setUploadStatus(''), 3000)
                         setIsEditingPerformanceInfo(false)
                       } catch (error: any) {
-                        console.error('공연 정보 저장 오류:', error)
                         const errorCode = error?.code || 'unknown'
                         const errorMessage = error?.message || '알 수 없는 오류가 발생했습니다.'
-                        console.error('에러 코드:', errorCode)
-                        console.error('에러 메시지:', errorMessage)
                         
                         if (errorCode === 'permission-denied') {
                           setUploadStatus('❌ 공연 정보 저장에 실패했습니다. Firestore 권한을 확인해주세요.')
