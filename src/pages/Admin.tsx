@@ -1766,15 +1766,18 @@ const Admin = () => {
                           }))
                     : '-'
                   
-                  // 원본 guests 배열에서의 인덱스 찾기
+                  // 원본 guests 배열에서의 인덱스 찾기 (삭제된 게스트 제외)
                   const originalIndex = guests.findIndex((g) => {
+                    // 삭제된 게스트는 제외
+                    if (g.isDeleted === true) return false
                     const gName = g.name || g['이름'] || g.Name || ''
                     const gPhone = String(g.phone || g['전화번호'] || g.Phone || '').replace(/[-\s()]/g, '')
                     const guestPhoneNormalized = guestPhoneRaw.replace(/[-\s()]/g, '')
                     return gName.trim() === guestName.trim() && gPhone === guestPhoneNormalized
                   })
                   
-                  const isDeleted = guest.isDeleted === true
+                  // 이미 필터링된 sortedGuests에는 삭제된 게스트가 없으므로 항상 false
+                  const isDeleted = false
                   
                   return (
                     <tr 

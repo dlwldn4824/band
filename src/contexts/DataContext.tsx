@@ -384,15 +384,19 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         const hasGuests = Array.isArray(firestoreGuests) && firestoreGuests.length > 0
         
         if (hasGuests) {
-          // guests가 있으면 무조건 guests 적용 (초기화 마커와 관계없이)
+          // ✅ 삭제된 게스트 필터링 (화면에 표시되지 않도록)
+          const activeGuests = firestoreGuests.filter(guest => guest.isDeleted !== true)
+          
           console.log('[INIT LOAD] guests 있음 → 게스트 데이터 적용:', {
-            guestsCount: firestoreGuests.length,
+            totalGuestsCount: firestoreGuests.length,
+            activeGuestsCount: activeGuests.length,
+            deletedCount: firestoreGuests.length - activeGuests.length,
             _cleared: firestoreCleared,
-            note: 'guests 우선 적용 (초기화 마커 무시)'
+            note: 'guests 우선 적용 (초기화 마커 무시, 삭제된 게스트 제외)'
           })
-          setGuests(firestoreGuests)
-          localStorage.setItem(getGuestsStorageKey(), JSON.stringify(firestoreGuests))
-          lastGuestsHashRef.current = JSON.stringify(firestoreGuests)
+          setGuests(activeGuests)
+          localStorage.setItem(getGuestsStorageKey(), JSON.stringify(activeGuests))
+          lastGuestsHashRef.current = JSON.stringify(activeGuests)
         } else if (isFirestoreCleared) {
           // guests가 없고 초기화 마커가 있으면 → 빈 배열 적용
           console.log('[INIT LOAD] guests 없음 + 초기화 마커 감지 → 빈 배열 적용')
@@ -695,8 +699,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             lastKnownUpdatedAtRef.current = updatedAt
           }
           
-          // 현재 게스트 리스트 해시 생성 (중복 업데이트 방지)
-          const currentHash = JSON.stringify(firestoreGuests)
+          // ✅ 삭제된 게스트를 제외한 활성 게스트만으로 해시 생성 (중복 업데이트 방지)
+          const activeGuestsForHash = firestoreGuests.filter(guest => guest.isDeleted !== true)
+          const currentHash = JSON.stringify(activeGuestsForHash)
           
           if (currentHash === lastGuestsHashRef.current) {
             console.log('[LISTENER] 해시 동일 → 스킵')
@@ -722,15 +727,19 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           const hasGuests = Array.isArray(firestoreGuests) && firestoreGuests.length > 0
           
           if (hasGuests) {
-            // guests가 있으면 무조건 guests 적용 (초기화 마커와 관계없이)
+            // ✅ 삭제된 게스트 필터링 (화면에 표시되지 않도록)
+            const activeGuests = firestoreGuests.filter(guest => guest.isDeleted !== true)
+            
             console.log('[LISTENER] guests 있음 → 게스트 데이터 적용:', {
-              guestsCount: firestoreGuests.length,
+              totalGuestsCount: firestoreGuests.length,
+              activeGuestsCount: activeGuests.length,
+              deletedCount: firestoreGuests.length - activeGuests.length,
               _cleared: firestoreCleared,
-              note: 'guests 우선 적용 (초기화 마커 무시)'
+              note: 'guests 우선 적용 (초기화 마커 무시, 삭제된 게스트 제외)'
             })
-            setGuests(firestoreGuests) // ✅ 교체 패턴 (누적 금지)
-            localStorage.setItem(getGuestsStorageKey(), JSON.stringify(firestoreGuests))
-            lastGuestsHashRef.current = JSON.stringify(firestoreGuests)
+            setGuests(activeGuests) // ✅ 교체 패턴 (누적 금지) - 삭제된 게스트 제외
+            localStorage.setItem(getGuestsStorageKey(), JSON.stringify(activeGuests))
+            lastGuestsHashRef.current = JSON.stringify(activeGuests)
           } else if (isFirestoreCleared) {
             // guests가 없고 초기화 마커가 있으면 → 빈 배열 적용
             console.log('[LISTENER] guests 없음 + 초기화 마커 감지 → 빈 배열 적용')
