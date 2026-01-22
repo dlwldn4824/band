@@ -292,13 +292,26 @@ const Admin = () => {
         }
       })
 
-      // 기존 게스트 리스트 가져오기 (삭제된 게스트 제외 - 삭제된 게스트는 다시 추가하지 않음)
-      const existingGuests = guests.filter(guest => guest.isDeleted !== true)
+      // ✅ Firestore에서 최신 게스트 리스트 가져오기 (엑셀 업로드 게스트 포함)
+      let existingGuests: any[] = []
+      try {
+        const { getFirestoreData } = await import('../services/firestoreService')
+        const { FIRESTORE_PATHS } = await import('../config/firestorePaths')
+        const currentData = await getFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, FIRESTORE_PATHS.GUESTS_DOC_ID)
+        const firestoreGuests = (currentData as any)?.guests || []
+        if (Array.isArray(firestoreGuests) && firestoreGuests.length > 0) {
+          existingGuests = firestoreGuests.filter((guest: any) => guest.isDeleted !== true)
+        } else {
+          // Firestore에 데이터가 없으면 로컬 state 사용
+          existingGuests = guests.filter(guest => guest.isDeleted !== true)
+        }
+      } catch (error) {
+        // Firestore 확인 실패 시 로컬 state 사용
+        existingGuests = guests.filter(guest => guest.isDeleted !== true)
+      }
       
-      // 중복되지 않은 게스트와 중복된 게스트 분리
-      const guestsToAdd: any[] = []
-      const guestsToUpdate: Array<{ guest: any; existingGuest: any }> = []
-      
+      // ✅ 엑셀 파일 내부 중복 제거 (같은 이름/전화번호가 엑셀에 여러 번 있으면 하나만 사용)
+      const excelGuestMap = new Map<string, any>()
       newGuestsFromFile.forEach((guest: any) => {
         const guestName = guest.name || guest['이름'] || guest.Name || ''
         const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '')
@@ -308,15 +321,35 @@ const Admin = () => {
           return
         }
         
-        // 중복 체크 (삭제된 게스트는 이미 필터링됨)
+        const key = `${guestName.trim()}_${guestPhone.replace(/[-\s()]/g, '')}`
+        if (key && key !== '_') {
+          // 엑셀 내부 중복: 같은 키가 있으면 나중 것을 사용 (또는 먼저 것을 유지)
+          if (!excelGuestMap.has(key)) {
+            excelGuestMap.set(key, guest)
+          }
+        }
+      })
+      
+      // 엑셀 내부 중복 제거된 게스트 리스트
+      const uniqueGuestsFromFile = Array.from(excelGuestMap.values())
+      
+      // 중복되지 않은 게스트와 중복된 게스트 분리
+      const guestsToAdd: any[] = []
+      const guestsToUpdate: Array<{ guest: any; existingGuest: any }> = []
+      
+      uniqueGuestsFromFile.forEach((guest: any) => {
+        const guestName = guest.name || guest['이름'] || guest.Name || ''
+        const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '')
+        const normalizedName = guestName.trim()
+        const normalizedPhone = guestPhone.replace(/[-\s()]/g, '')
+        
+        // 기존 게스트와 중복 체크
         const duplicateGuest = existingGuests.find((existing) => {
           // 삭제된 게스트는 제외 (이중 체크)
           if (existing.isDeleted === true) return false
           const existingName = (existing.name || existing['이름'] || existing.Name || '').trim()
           const existingPhone = String(existing.phone || existing['전화번호'] || existing.Phone || '').replace(/[-\s()]/g, '')
-          const normalizedName = guestName.trim()
-          const normalizedPhone = guestPhone.replace(/[-\s()]/g, '')
-          return existingName === normalizedName && normalizedPhone === existingPhone
+          return existingName === normalizedName && existingPhone === normalizedPhone
         })
         
         if (!duplicateGuest) {
@@ -417,6 +450,8 @@ const Admin = () => {
       
       console.log('[UPLOAD] 엑셀 파싱 완료:', {
         newGuestsFromFile: newGuestsFromFile.length,
+        uniqueGuestsFromFile: uniqueGuestsFromFile.length,
+        excelDuplicatesRemoved: newGuestsFromFile.length - uniqueGuestsFromFile.length,
         guestsToAdd: guestsToAdd.length,
         guestsToUpdate: guestsToUpdate.length,
         existingGuests: existingGuests.length,
