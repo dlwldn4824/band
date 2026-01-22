@@ -10,9 +10,10 @@ import {
   Timestamp
 } from 'firebase/firestore'
 import { db } from '../config/firebase'
+import { FIRESTORE_PATHS } from '../config/firestorePaths'
 
-// Firestore 경로 타입
-type FirestorePath = 'current' | 'guests' | 'performanceData' | 'messages'
+// Firestore 경로 타입 (V2 마이그레이션: guests → guests_v2)
+type FirestorePath = 'current' | 'guests_v2' | 'guests' | 'performanceData' | 'messages'
 
 /**
  * Firestore에서 데이터 읽기
@@ -27,7 +28,6 @@ export const getFirestoreData = async (path: FirestorePath, docId?: string) => {
       if (docSnap.exists()) {
         return { id: docSnap.id, ...docSnap.data() }
       } else {
-        console.log(`[Firestore] 문서를 찾을 수 없습니다: ${path}/${docId}`)
         return null
       }
     } else {
@@ -43,22 +43,17 @@ export const getFirestoreData = async (path: FirestorePath, docId?: string) => {
       return data
     }
   } catch (error: any) {
-    console.error(`[Firestore 읽기 오류] ${path}${docId ? `/${docId}` : ''}:`, error)
-    
     // 권한 오류인 경우 null 반환 (500 에러 방지)
     if (error?.code === 'permission-denied' || error?.code === 7) {
-      console.warn('[Firestore] 권한이 없습니다. localStorage에서 로드합니다.')
       return null
     }
     
     // 네트워크 오류인 경우 null 반환
     if (error?.code === 'unavailable' || error?.code === 14) {
-      console.warn('[Firestore] 네트워크 오류. localStorage에서 로드합니다.')
       return null
     }
     
     // 기타 오류는 null 반환하여 앱이 계속 작동하도록 함
-    console.warn('[Firestore] 오류 발생, null 반환:', error?.message || error)
     return null
   }
 }
@@ -103,24 +98,82 @@ export const setFirestoreData = async (
     if (docId) {
       // 특정 문서 업데이트/생성
       const docRef = doc(db, path, docId)
-      // guests 컬렉션의 경우 완전 교체 (merge: false)로 저장하여 isDeleted 플래그가 확실히 반영되도록 함
-      const mergeOption = path === 'guests' ? false : true
+      // guests_v2 컬렉션의 경우 완전 교체 (merge: false)로 저장하여 isDeleted 플래그가 확실히 반영되도록 함
+      const mergeOption = (path === FIRESTORE_PATHS.GUESTS_COLLECTION || path === 'guests') ? false : true
       
-      // ✅ guests 컬렉션의 경우 _cleared 필드 보존
-      let finalData = { ...cleanedData, updatedAt: Timestamp.now() }
-      if (path === 'guests' && !('_cleared' in cleanedData)) {
-        // _cleared 필드가 없으면 현재 Firestore의 _cleared 값을 읽어서 보존
-        try {
-          const currentDoc = await getDoc(docRef)
-          if (currentDoc.exists()) {
-            const currentData = currentDoc.data()
-            if (currentData && currentData._cleared !== undefined) {
-              finalData._cleared = currentData._cleared
-              console.log('🔵 [setFirestoreData] ✅ _cleared 필드 보존:', currentData._cleared)
+      // ✅ guests_v2 컬렉션의 경우 _cleared 필드 보존 및 추적 정보 추가
+      let finalData: any = { ...cleanedData, updatedAt: Timestamp.now() }
+      
+      if (path === FIRESTORE_PATHS.GUESTS_COLLECTION || path === 'guests') {
+        // ✅ 클라이언트 ID 생성 (누가 썼는지 추적용)
+        const getClientId = (): string => {
+          if (typeof window !== 'undefined') {
+            let clientId = localStorage.getItem('clientId')
+            if (!clientId) {
+              clientId = `client_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+              localStorage.setItem('clientId', clientId)
             }
+            return clientId
           }
-        } catch (preserveError) {
-          console.warn('🔵 [setFirestoreData] _cleared 보존 중 오류 (계속 진행):', preserveError)
+          return 'server'
+        }
+        
+        // ✅ 추적 정보 추가 (없는 경우만)
+        if (!finalData.updatedBy) {
+          finalData.updatedBy = getClientId()
+        }
+        if (!finalData.lastAction) {
+          finalData.lastAction = 'DIRECT_WRITE' // setFirestoreData 직접 호출
+        }
+        if (!finalData.writeSource) {
+          finalData.writeSource = 'setFirestoreData'
+        }
+        
+        // ✅ _cleared 필드 처리: 초기화 마커가 있으면 null로 덮어쓰지 않음
+        const hasClearedInPayload = '_cleared' in cleanedData
+        const clearedValue = cleanedData._cleared
+        
+        if (hasClearedInPayload) {
+          // _cleared가 명시적으로 설정된 경우
+          // null로 명시적으로 설정된 경우, 현재 Firestore에 초기화 마커가 있는지 확인
+          if (clearedValue === null) {
+            try {
+              const currentDoc = await getDoc(docRef)
+              if (currentDoc.exists()) {
+                const currentData = currentDoc.data()
+                const currentCleared = currentData?._cleared
+                
+                // 현재 Firestore에 초기화 마커(숫자)가 있으면 null로 덮어쓰지 않음
+                if (currentCleared !== undefined && currentCleared !== null && typeof currentCleared === 'number') {
+                  finalData._cleared = currentCleared // 보존
+                } else {
+                  // 초기화 마커가 없으면 null로 설정 허용 (초기화 해제)
+                  finalData._cleared = null
+                }
+              }
+            } catch (preserveError) {
+              finalData._cleared = null
+            }
+          } else if (typeof clearedValue === 'number') {
+            // 숫자(타임스탬프)로 설정된 경우 → 초기화 작업 → 허용
+            finalData._cleared = clearedValue
+          } else {
+            // 기타 값은 그대로 사용
+            finalData._cleared = clearedValue
+          }
+        } else {
+          // _cleared 필드가 없으면 현재 Firestore의 _cleared 값을 읽어서 보존
+          try {
+            const currentDoc = await getDoc(docRef)
+            if (currentDoc.exists()) {
+              const currentData = currentDoc.data()
+              if (currentData && currentData._cleared !== undefined) {
+                finalData._cleared = currentData._cleared
+              }
+            }
+          } catch (preserveError) {
+            // 보존 실패 시 계속 진행
+          }
         }
       }
       
@@ -138,23 +191,18 @@ export const setFirestoreData = async (
       return docRef.id
     }
   } catch (error: any) {
-    console.error(`[Firestore 쓰기 오류] ${path}${docId ? `/${docId}` : ''}:`, error)
-    
     // Quota exceeded 오류 명시적 처리
     if (error?.code === 'resource-exhausted' || error?.message?.includes('quota') || error?.message?.includes('Quota')) {
-      console.error('[Firestore] ❌ Quota exceeded - Firestore 할당량 초과')
       throw new Error('QUOTA_EXCEEDED: Firestore 할당량이 초과되었습니다. 잠시 후 다시 시도해주세요.')
     }
     
     // 권한 오류인 경우 false 반환
     if (error?.code === 'permission-denied' || error?.code === 7) {
-      console.warn('[Firestore] 쓰기 권한이 없습니다.')
       return false
     }
     
     // 네트워크 오류인 경우 false 반환
     if (error?.code === 'unavailable' || error?.code === 14) {
-      console.warn('[Firestore] 네트워크 오류로 쓰기 실패.')
       return false
     }
     
@@ -178,7 +226,6 @@ export const updateFirestoreData = async (
       updatedAt: Timestamp.now()
     })
   } catch (error) {
-    console.error('Firestore 업데이트 오류:', error)
     throw error
   }
 }
@@ -194,7 +241,6 @@ export const deleteFirestoreData = async (
     const docRef = doc(db, path, docId)
     await deleteDoc(docRef)
   } catch (error) {
-    console.error('Firestore 삭제 오류:', error)
     throw error
   }
 }
@@ -221,7 +267,6 @@ export const subscribeToFirestore = (
           }
         },
         (error) => {
-          console.error(`[Firestore 구독 오류] ${path}/${docId}:`, error)
           // ✅ 에러 시 callback을 호출하지 않음 - 기존 state 유지 (UI 깜빡임/리셋 방지)
           // callback(null) 금지: 에러는 UI를 "리셋"시키면 안 됨
         }
@@ -246,7 +291,6 @@ export const subscribeToFirestore = (
       )
     }
   } catch (error) {
-    console.error('Firestore 구독 설정 오류:', error)
     // ✅ 초기 설정 오류 시에도 callback을 호출하지 않음 - 기존 state 유지
     // 구독 해제 함수 반환 (빈 함수)
     return () => {}

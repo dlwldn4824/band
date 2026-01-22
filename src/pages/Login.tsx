@@ -7,6 +7,7 @@ import { db } from '../config/firebase'
 import TicketTransition from '../components/TicketTransition'
 import ticketImage from '../assets/배경/렉사_연합공연_티켓.png'
 import { validatePhoneNumber, formatPhoneDisplay } from '../utils/phoneFormat'
+import { getGuestsStorageKey } from '../config/firestorePaths'
 import './Login.css'
 
 const Login = () => {
@@ -86,7 +87,7 @@ const Login = () => {
                 attempts++
                 
                 // localStorage에서 guests 로드 시도
-                const savedGuests = localStorage.getItem('guests')
+                const savedGuests = localStorage.getItem(getGuestsStorageKey())
                 let guestList: any[] = []
                 
                 if (savedGuests) {
@@ -909,7 +910,7 @@ const Login = () => {
                   if (!loginSuccess) {
                     // 로그인 실패 시 약간의 지연 후 재시도 (상태 업데이트 대기)
                     setTimeout(() => {
-                      const retryGuests = JSON.parse(localStorage.getItem('guests') || '[]')
+                      const retryGuests = JSON.parse(localStorage.getItem(getGuestsStorageKey()) || '[]')
                       const retrySuccess = login(normalizedName, normalizedPhone, retryGuests)
                       if (retrySuccess) {
                         localStorage.removeItem('pendingBooking')

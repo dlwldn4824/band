@@ -24,6 +24,11 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // V2: 새 guests 컬렉션 (기존 데이터와 분리)
+    match /guests_v2/{document=**} {
+      allow read, write: if true;
+    }
+
     match /performanceData/{document=**} {
       allow read, write: if true;
     }

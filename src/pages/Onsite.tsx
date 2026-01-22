@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useData } from '../contexts/DataContext'
 import { QRCodeSVG } from 'qrcode.react'
 import { formatPhoneDisplay } from '../utils/phoneFormat'
+import { FIRESTORE_PATHS, getGuestsStorageKey } from '../config/firestorePaths'
 import './Login.css'
 import './Onsite.css'
 
@@ -113,7 +114,7 @@ const Onsite = () => {
 
         // 새로 추가된 게스트의 입금 확인 상태 업데이트
         if (guestIndex >= 0) {
-          updatedGuestList = JSON.parse(localStorage.getItem('guests') || '[]')
+          updatedGuestList = JSON.parse(localStorage.getItem(getGuestsStorageKey()) || '[]')
           updatedGuestList[guestIndex] = {
             ...updatedGuestList[guestIndex],
             paymentConfirmed: true,
@@ -124,10 +125,10 @@ const Onsite = () => {
         }
       }
 
-      // Firestore의 'guests' 문서 업데이트 (DataContext와 동일한 형식)
+      // Firestore의 'guests_v2' 문서 업데이트 (DataContext와 동일한 형식)
       // 초기화 마커 확인 - 마커가 있으면 업데이트하지 않음
       const { getFirestoreData } = await import('../services/firestoreService')
-      const currentData = await getFirestoreData('guests' as any, 'all')
+      const currentData = await getFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, FIRESTORE_PATHS.GUESTS_DOC_ID)
       const currentCleared = (currentData as any)?._cleared
       const hasClearedMarker = currentCleared !== undefined && currentCleared !== null
       

@@ -1,7 +1,8 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore'
 import { db } from '../config/firebase'
-import { setFirestoreData } from '../services/firestoreService'
+import { setFirestoreData, getFirestoreData } from '../services/firestoreService'
+import { FIRESTORE_PATHS, LOCAL_STORAGE_KEYS, getGuestsStorageKey } from '../config/firestorePaths'
 
 export interface User {
   name: string
@@ -68,7 +69,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (userData.phone && userData.phone !== 'admin') {
             try {
               // localStorage에서 guests 로드
-              const savedGuests = localStorage.getItem('guests')
+              const savedGuests = localStorage.getItem(getGuestsStorageKey())
               if (savedGuests) {
                 const guests = JSON.parse(savedGuests)
                 if (Array.isArray(guests) && guests.length > 0) {
@@ -96,7 +97,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     const paymentConfirmed = foundGuest.paymentConfirmed === true
                     if (userData.paymentConfirmed !== paymentConfirmed) {
                       userData.paymentConfirmed = paymentConfirmed
-                      console.log('[AuthContext] loadUser - paymentConfirmed 상태 업데이트:', paymentConfirmed)
                     }
                     
                     // checkedIn 상태도 업데이트
@@ -113,7 +113,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 }
               }
             } catch (error) {
-              console.warn('guests 데이터 확인 실패:', error)
             }
           }
           
@@ -138,7 +137,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               }
             } catch (error) {
               // Firestore 연결 실패해도 로컬 데이터로 계속 진행
-              console.warn('Firestore 닉네임 로드 실패 (로컬 데이터 사용):', error)
             }
           }
         }
@@ -218,15 +216,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             }
             setUser(updatedUser)
             localStorage.setItem('user', JSON.stringify(updatedUser))
-            console.log('[AuthContext] guests 변경 감지 - 상태 업데이트:', {
-              paymentConfirmed,
-              checkedIn,
-              entryNumber
-            })
           }
         }
       } catch (error) {
-        console.warn('guests 변경 확인 실패:', error)
       }
     }
 
@@ -241,7 +233,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = (name: string, phone: string, guests?: any[]): boolean => {
     // guests가 제공되지 않으면 localStorage에서 로드 (하위 호환성)
-    const guestList = guests || JSON.parse(localStorage.getItem('guests') || '[]')
+    const guestList = guests || JSON.parse(localStorage.getItem(getGuestsStorageKey()) || '[]')
     
     if (guestList.length === 0) {
       return false
@@ -300,18 +292,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         
         // localStorage 업데이트
-        localStorage.setItem('guests', JSON.stringify(updatedGuestList))
+        localStorage.setItem(getGuestsStorageKey(), JSON.stringify(updatedGuestList))
         
         // ✅ Firestore 업데이트 전에 초기화 마커 확인 (비동기)
         ;(async () => {
           try {
             const { getFirestoreData } = await import('../services/firestoreService')
-            const currentData = await getFirestoreData('guests' as any, 'all')
+            const currentData = await getFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, FIRESTORE_PATHS.GUESTS_DOC_ID)
             const currentCleared = (currentData as any)?._cleared
             const hasClearedMarker = currentCleared !== undefined && currentCleared !== null
             
             if (hasClearedMarker) {
-              console.warn('🔴 [AuthContext] ⚠️ 초기화 마커가 있어서 Firestore 업데이트 차단 (입장번호 할당)')
               return // 초기화 상태에서는 Firestore 업데이트하지 않음
             }
             
@@ -323,16 +314,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             }
             // 초기화 마커가 없으면 _cleared 필드를 명시하지 않음 (기본 동작)
             
-            setFirestoreData('guests' as any, updatePayload, 'all').catch((error: any) => {
-              console.error('Firestore 입장번호 업데이트 오류:', error)
-            })
+            setFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, updatePayload, FIRESTORE_PATHS.GUESTS_DOC_ID).catch(() => {})
           } catch (checkError) {
-            console.error('🔴 [AuthContext] 초기화 마커 확인 중 오류:', checkError)
             // 오류 발생 시에도 초기화 마커 확인 후 업데이트
             ;(async () => {
               try {
                 const { getFirestoreData } = await import('../services/firestoreService')
-                const errorCheckData = await getFirestoreData('guests' as any, 'all')
+                const errorCheckData = await getFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, FIRESTORE_PATHS.GUESTS_DOC_ID)
                 const errorCheckCleared = (errorCheckData as any)?._cleared
                 
                 const updatePayload: any = { guests: updatedGuestList }
@@ -340,11 +328,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   updatePayload._cleared = errorCheckCleared
                 }
                 
-                setFirestoreData('guests' as any, updatePayload, 'all').catch((error: any) => {
-                  console.error('Firestore 입장번호 업데이트 오류:', error)
-                })
+                setFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, updatePayload, FIRESTORE_PATHS.GUESTS_DOC_ID).catch(() => {})
               } catch (nestedError) {
-                console.error('🔴 [AuthContext] 중첩 오류 확인 중 실패:', nestedError)
               }
             })()
           }
@@ -367,16 +352,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       
       // 디버깅용 콘솔 로그
-      console.log('[AuthContext] login - entryNumber:', entryNumber)
-      console.log('[AuthContext] login - userData:', userData)
-      console.log('[AuthContext] login - foundGuest:', foundGuest)
       
       setUser(userData)
       localStorage.setItem('user', JSON.stringify(userData))
       
       // localStorage 저장 확인
       const savedUser = JSON.parse(localStorage.getItem('user') || 'null')
-      console.log('[AuthContext] localStorage 저장 후 확인:', savedUser)
       
       // Firestore에서 닉네임 로드 및 자동 설정 (비동기, 실패해도 계속 진행)
       const loadNickname = async () => {
@@ -537,7 +518,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw error
       }
       // 네트워크 오류 등은 경고만 출력하고 계속 진행 (오프라인 환경 대응)
-      console.warn('닉네임 중복 체크 실패 (계속 진행):', error)
     }
     
     const updatedUser = { ...user, nickname: trimmedNickname }
@@ -559,7 +539,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }, { merge: true })
     } catch (error: any) {
       // Firestore 저장 실패해도 로컬스토리지는 이미 저장되었으므로 계속 진행
-      console.warn('Firestore 닉네임 저장 실패 (로컬스토리지에는 저장됨):', error)
       // 서버 연결이 안 되어 있어도 로컬에서 작동하도록 에러를 던지지 않음
     }
   }

@@ -4,7 +4,8 @@ import { useData, SetlistItem, PerformanceData, BookingInfo } from '../contexts/
 import { formatPhoneDisplay } from '../utils/phoneFormat'
 import { collection, getDocs, deleteDoc, doc, query, orderBy, getDoc, updateDoc, setDoc, Timestamp } from 'firebase/firestore'
 import { db, storage } from '../config/firebase'
-import { setFirestoreData } from '../services/firestoreService'
+import { setFirestoreData, getFirestoreData } from '../services/firestoreService'
+import { FIRESTORE_PATHS, LOCAL_STORAGE_KEYS, getGuestsPath, getGuestsStorageKey } from '../config/firestorePaths'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import GuestAddModal from '../components/admin/GuestAddModal'
 import GuestEditModal from '../components/admin/GuestEditModal'
@@ -53,7 +54,6 @@ const Admin = () => {
   const [restoreJson, setRestoreJson] = useState('')
   const [guestBookingDates, setGuestBookingDates] = useState<Record<string, any>>({}) // 게스트 ID (name_phone) -> 예매 일시
   const [googleSheetsSyncStatus, setGoogleSheetsSyncStatus] = useState<string>('')
-  const [isAutoSyncing, setIsAutoSyncing] = useState(false)
   const [showPasswordModal, setShowPasswordModal] = useState(false)
   const [passwordInput, setPasswordInput] = useState('')
 
@@ -111,30 +111,12 @@ const Admin = () => {
         setUserNicknames(nicknameMap)
         setAdminList(admins)
       } catch (error) {
-        console.error('닉네임 로드 오류:', error)
       }
     }
     
     loadNicknames()
   }, [])
   
-  // 자동 동기화 상태 감지
-  useEffect(() => {
-    const handleAutoSyncStart = () => {
-      setIsAutoSyncing(true)
-    }
-    const handleAutoSyncEnd = () => {
-      setIsAutoSyncing(false)
-    }
-    
-    window.addEventListener('googleSheetsAutoSyncStart', handleAutoSyncStart)
-    window.addEventListener('googleSheetsAutoSyncEnd', handleAutoSyncEnd)
-    
-    return () => {
-      window.removeEventListener('googleSheetsAutoSyncStart', handleAutoSyncStart)
-      window.removeEventListener('googleSheetsAutoSyncEnd', handleAutoSyncEnd)
-    }
-  }, [])
 
 
   // 주류 구매 내역 불러오기
@@ -168,7 +150,6 @@ const Admin = () => {
         
         setDrinkOrders(orders)
       } catch (error) {
-        console.error('주류 구매 내역 불러오기 실패:', error)
       }
     }
 
@@ -200,7 +181,6 @@ const Admin = () => {
         
         setGuestBookingDates(bookingDatesMap)
       } catch (error) {
-        console.error('예매 일시 불러오기 실패:', error)
       }
     }
 
@@ -245,7 +225,6 @@ const Admin = () => {
       performanceData.events[0]?.title !== '관객 입장'
 
     if (needsUpdate) {
-      console.log('[Admin] events 초기 업데이트 실행')
       const updatedPerformanceData: PerformanceData = {
         ...performanceData,
         events: defaultEvents,
@@ -387,7 +366,6 @@ const Admin = () => {
           }
         })
         await Promise.all(deletePromises)
-        console.log(`추가될 ${guestsToAdd.length}명의 게스트 userProfile 삭제 완료`)
       } catch (error) {
         console.error('userProfile 삭제 오류:', error)
         // 오류가 발생해도 게스트 업로드는 계속 진행
@@ -422,7 +400,6 @@ const Admin = () => {
       setUserNicknames(nicknameMap)
     } catch (error) {
       setUploadStatus('파일 읽기 중 오류가 발생했습니다.')
-      console.error(error)
     }
   }
 
@@ -466,18 +443,10 @@ const Admin = () => {
       
       // 첫 번째 행의 키를 확인하여 실제 컬럼명 파악
       if (jsonData.length > 0 && jsonData[0] && typeof jsonData[0] === 'object') {
-        console.log('[셋리스트 업로드] 첫 번째 행의 키:', Object.keys(jsonData[0] as Record<string, unknown>))
-        console.log('[셋리스트 업로드] 첫 번째 행 데이터:', jsonData[0])
       }
       
       for (let index = 0; index < jsonData.length; index++) {
         const row: any = jsonData[index]
-        
-        // 모든 키 확인 (디버깅)
-        if (index === 0) {
-          console.log('[셋리스트 업로드] 첫 번째 행의 모든 키:', Object.keys(row))
-          console.log('[셋리스트 업로드] 첫 번째 행의 모든 값:', row)
-        }
         
         // 구분 컬럼에서 1부/2부/연합곡 인식 (다양한 가능한 컬럼명 체크)
         const gubun = (
@@ -495,16 +464,13 @@ const Admin = () => {
           if (gubun === '1부' || gubun.includes('1부')) {
             currentPart = 1
             currentTeam = null // 부가 바뀌면 팀도 초기화
-            console.log(`[${index + 1}번째 행] 구분: "${gubun}" → 1부로 설정됨`)
           } else if (gubun === '2부' || gubun.includes('2부')) {
             currentPart = 2
             currentTeam = null // 부가 바뀌면 팀도 초기화
-            console.log(`[${index + 1}번째 행] 구분: "${gubun}" → 2부로 설정됨`)
           } else if (gubun === '연합곡' || gubun.includes('연합곡')) {
             // 연합곡은 2부에 포함
             currentPart = 2
             currentTeam = null // 부가 바뀌면 팀도 초기화
-            console.log(`[${index + 1}번째 행] 구분: "${gubun}" → 연합곡(2부)로 설정됨`)
           }
         }
         
@@ -522,7 +488,6 @@ const Admin = () => {
         // 팀명이 있으면 업데이트, 없으면 이전 팀명 유지
         if (teamName) {
           currentTeam = teamName
-          console.log(`[${index + 1}번째 행] 팀명: "${teamName}" → 팀명 설정됨`)
         }
         
         // 곡명 컬럼에서 곡명 읽기 (다양한 가능한 컬럼명 체크)
@@ -558,11 +523,6 @@ const Admin = () => {
         const keyboard = row['키보드'] || ''
         const drum = row['드럼'] || ''
         
-        // 디버깅: 첫 5개 행의 정보 출력
-        if (index < 5) {
-          console.log(`[${index + 1}번째 행] 구분: "${gubun}", 팀명: "${teamName}", 곡명: "${songNameTrimmed}", 현재 part: ${currentPart}, 현재 team: ${currentTeam}`)
-          console.log(`[${index + 1}번째 행] 전체 키:`, Object.keys(row))
-        }
         
         const item: SetlistItem = {
           songName: songNameTrimmed,
@@ -612,7 +572,6 @@ const Admin = () => {
           // 첫 번째 곡이고 팀명이 없으면 team 속성 없음 (undefined)
         }
         
-        console.log(`[${index + 1}번째 곡] "${songNameTrimmed}" - part: ${item.part}, team: ${item.team || '(없음)'}`)
         setlist.push(item)
       }
 
@@ -649,21 +608,6 @@ const Admin = () => {
       })
       
       const uniquePerformers = Array.from(allPerformers).sort()
-
-      console.log('추출된 공연진:', uniquePerformers)
-      console.log('셋리스트 데이터:', setlist)
-      console.log('각 곡의 아티스트 정보:', setlist.map(item => ({
-        song: item.songName,
-        artist: item.artist || '(없음)'
-      })))
-      console.log('각 곡의 공연진 정보:', setlist.map(item => ({
-        song: item.songName,
-        vocal: item.vocal,
-        guitar: item.guitar,
-        bass: item.bass,
-        keyboard: item.keyboard,
-        drum: item.drum
-      })))
 
       // 하드코딩된 기본 정보
       const defaultEvents = [
@@ -784,7 +728,6 @@ const Admin = () => {
       setSetlistFile(null)
     } catch (error) {
       setUploadStatus('파일 읽기 중 오류가 발생했습니다.')
-      console.error(error)
     }
   }
 
@@ -1798,8 +1741,8 @@ const Admin = () => {
               </thead>
               <tbody>
                 {(() => {
-                  // 정렬된 게스트 리스트 생성
-                  let sortedGuests = [...guests]
+                  // 정렬된 게스트 리스트 생성 (삭제된 게스트 제외)
+                  let sortedGuests = guests.filter(g => g.isDeleted !== true)
                   
                   if (guestSortBy === 'entryNumber') {
                     // 입장번호 순 정렬 (입장번호가 있는 게스트가 먼저, 그 다음 입장번호 오름차순)
@@ -2170,24 +2113,6 @@ const Admin = () => {
           </button>
         </div>
         
-        {/* 자동 동기화 상태 표시 */}
-        {isAutoSyncing && (
-          <div style={{
-            marginTop: '1rem',
-            padding: '0.75rem',
-            borderRadius: '8px',
-            background: '#1a3a3a',
-            color: '#fff',
-            fontSize: '0.875rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}>
-            <span style={{ animation: 'pulse 2s infinite' }}>🔄</span>
-            자동 동기화 중...
-          </div>
-        )}
-        
         {googleSheetsSyncStatus && (
           <div style={{ 
             marginTop: '1rem', 
@@ -2373,10 +2298,20 @@ const Admin = () => {
                       console.log('🔍 [Admin] Firebase app 이름:', db.app.name)
                       console.log('🔍 [Admin] Firebase projectId:', db.app.options.projectId)
                       
+                      // ✅ 문서 경로 확인 (중요!)
+                      const adminGuestsDocRef = doc(db, FIRESTORE_PATHS.GUESTS_COLLECTION, FIRESTORE_PATHS.GUESTS_DOC_ID)
+                      console.log('🔍 [Admin] 초기화 시 사용할 doc path =', adminGuestsDocRef.path)
+                      console.log('🔍 [Admin] 초기화 시 사용할 projectId =', db.app.options.projectId)
+                      
                       // 🔍 현재 DB에 저장된 게스트 리스트 확인
                       try {
+                        // ✅ 읽기 전 경로 확인
+                        const readDocRef = doc(db, FIRESTORE_PATHS.GUESTS_COLLECTION, FIRESTORE_PATHS.GUESTS_DOC_ID)
+                        console.log('🔍 [Admin] 읽기 시 사용할 doc path =', readDocRef.path)
+                        console.log('🔍 [Admin] 읽기 시 사용할 projectId =', db.app.options.projectId)
+                        
                         const { getFirestoreData } = await import('../services/firestoreService')
-                        const currentDbData = await getFirestoreData('guests' as any, 'all')
+                        const currentDbData = await getFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, FIRESTORE_PATHS.GUESTS_DOC_ID)
                         console.log('🔍 [Admin] 현재 DB에 저장된 게스트 데이터 (전체):', currentDbData)
                         console.log('🔍 [Admin] 현재 DB에 저장된 게스트 데이터 타입:', typeof currentDbData)
                         console.log('🔍 [Admin] 현재 DB에 저장된 게스트 데이터 키:', currentDbData ? Object.keys(currentDbData) : 'null')
@@ -2397,7 +2332,7 @@ const Admin = () => {
                       
                       // 🔍 현재 state와 localStorage 비교
                       console.log('🔍 [Admin] 현재 state 게스트 수:', guests.length)
-                      const localGuests = JSON.parse(localStorage.getItem('guests') || '[]')
+                      const localGuests = JSON.parse(localStorage.getItem(getGuestsStorageKey()) || '[]')
                       console.log('🔍 [Admin] 현재 localStorage 게스트 수:', localGuests.length)
                       console.log('🔍 [Admin] ==========================================')
                       
@@ -2407,8 +2342,13 @@ const Admin = () => {
                       // 🔍 초기화 후 DB 상태 확인
                       console.log('🔍 [Admin] 초기화 후 DB 상태 확인 ==========================================')
                       try {
+                        // ✅ 읽기 전 경로 확인
+                        const afterReadDocRef = doc(db, FIRESTORE_PATHS.GUESTS_COLLECTION, FIRESTORE_PATHS.GUESTS_DOC_ID)
+                        console.log('🔍 [Admin] 초기화 후 읽기 시 사용할 doc path =', afterReadDocRef.path)
+                        console.log('🔍 [Admin] 초기화 후 읽기 시 사용할 projectId =', db.app.options.projectId)
+                        
                         const { getFirestoreData } = await import('../services/firestoreService')
-                        const afterClearData = await getFirestoreData('guests' as any, 'all')
+                        const afterClearData = await getFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, FIRESTORE_PATHS.GUESTS_DOC_ID)
                         console.log('🔍 [Admin] 초기화 후 DB 데이터:', afterClearData)
                         if (afterClearData) {
                           const afterGuests = (afterClearData as any).guests || []
@@ -2481,7 +2421,7 @@ const Admin = () => {
               <div style={{ marginBottom: '1.5rem' }}>
                 <h3 style={{ color: '#fff', marginBottom: '0.5rem', fontSize: '1rem' }}>방법 1: localStorage 백업 복원</h3>
                 <p style={{ fontSize: '0.875rem', color: '#ccc', marginBottom: '0.75rem' }}>
-                  브라우저 개발자 도구(F12) → Application → Local Storage → 해당 사이트 → 'guests' 키의 값을 복사하여 아래에 붙여넣으세요.
+                  브라우저 개발자 도구(F12) → Application → Local Storage → 해당 사이트 → '{getGuestsStorageKey()}' 키의 값을 복사하여 아래에 붙여넣으세요.
                 </p>
                 <textarea
                   value={restoreJson}
@@ -2522,10 +2462,16 @@ const Admin = () => {
                       
                       if (window.confirm(`정말로 ${parsed.length}명의 게스트 데이터를 복원하시겠습니까? 기존 데이터는 덮어씌워집니다.`)) {
                         // localStorage에 저장
-                        localStorage.setItem('guests', JSON.stringify(parsed))
+                        localStorage.setItem(getGuestsStorageKey(), JSON.stringify(parsed))
                         
                         // ✅ Firestore에 저장 (초기화 해제: _cleared를 null로 명시)
-                        await setFirestoreData('guests' as any, { guests: parsed, _cleared: null }, 'all')
+                        // 복원 작업이므로 _cleared를 null로 명시하여 초기화 해제
+                        await setFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, { 
+                          guests: parsed, 
+                          _cleared: null,
+                          lastAction: 'RESTORE',
+                          writeSource: 'Admin.restoreFromJson'
+                        }, FIRESTORE_PATHS.GUESTS_DOC_ID)
                         
                         // 페이지 새로고침하여 데이터 반영
                         window.location.reload()
@@ -2550,7 +2496,7 @@ const Admin = () => {
                 </p>
                 <button
                   onClick={() => {
-                    const savedGuests = localStorage.getItem('guests')
+                    const savedGuests = localStorage.getItem(getGuestsStorageKey())
                     if (savedGuests) {
                       try {
                         const parsed = JSON.parse(savedGuests)
@@ -3061,7 +3007,6 @@ const Admin = () => {
                   setUploadStatus('✅ 모든 채팅 메시지가 삭제되었습니다.')
                 } catch (error) {
                   setUploadStatus('❌ 채팅 메시지 삭제 중 오류가 발생했습니다.')
-                  console.error(error)
                 }
               }
             })

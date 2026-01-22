@@ -5,6 +5,7 @@ import {
 } from '../services/firestoreService'
 import { collection, getDocs, deleteDoc, doc, onSnapshot } from 'firebase/firestore'
 import { db } from '../config/firebase'
+import { FIRESTORE_PATHS, LOCAL_STORAGE_KEYS, getGuestsPath, getGuestsStorageKey } from '../config/firestorePaths'
 import * as XLSX from 'xlsx'
 
 export interface Guest {
@@ -121,12 +122,25 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   // ✅ 초기화 후 일정 시간 동안 자동 저장 차단
   const clearBlockUntilRef = useRef<number | null>(null)
   
-  const saveGuestsAllCoalesced = async (payload: { guests: Guest[], _cleared?: number | null }, maxRetries: number = 3) => {
+  // ✅ 클라이언트 ID 생성 (누가 썼는지 추적용)
+  const getClientId = (): string => {
+    let clientId = localStorage.getItem('clientId')
+    if (!clientId) {
+      clientId = `client_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      localStorage.setItem('clientId', clientId)
+    }
+    return clientId
+  }
+  
+  const saveGuestsAllCoalesced = async (
+    payload: { guests: Guest[], _cleared?: number | null }, 
+    maxRetries: number = 3,
+    writeSource: string = 'unknown'
+  ) => {
     // ✅ 초기화 후 차단 시간이 지나지 않았으면 저장 차단
     // 단, _cleared가 명시적으로 설정된 경우(초기화 작업)는 허용
     const isClearOperation = payload._cleared !== undefined && payload._cleared !== null
     if (!isClearOperation && clearBlockUntilRef.current !== null && Date.now() < clearBlockUntilRef.current) {
-      console.log('🟡 [saveGuestsAllCoalesced] ⏸️ 초기화 후 차단 시간 동안 저장 차단')
       return
     }
     
@@ -141,36 +155,22 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     
     // 초기화 작업이나 초기화 해제 작업은 항상 허용
     if (isInitializing || isClearing) {
-      console.log('🟡 [saveGuestsAllCoalesced] ✅ 초기화/해제 작업 허용:', {
-        isInitializing,
-        isClearing,
-        guestsCount: payload.guests.length,
-        _cleared: payload._cleared
-      })
       // 계속 진행
     } else if (isNormalSave) {
       // 일반 저장 작업인 경우, 초기화 마커가 있으면 차단
       try {
-        const currentData = await getFirestoreData('guests' as any, 'all')
+        const currentData = await getFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, FIRESTORE_PATHS.GUESTS_DOC_ID)
         const currentCleared = (currentData as any)?._cleared
         const hasClearedMarker = currentCleared !== undefined && currentCleared !== null
         
         if (hasClearedMarker) {
-          console.warn('🔴 [saveGuestsAllCoalesced] ❌ 초기화 마커가 있어서 일반 저장 차단:', {
-            currentCleared,
-            payloadCleared: payload._cleared,
-            guestsCount: payload.guests.length
-          })
           throw new Error('게스트 리스트가 초기화된 상태입니다. 초기화를 해제하려면 게스트를 업로드하거나 복원해주세요.')
-        } else {
-          console.log('🟡 [saveGuestsAllCoalesced] 초기화 마커 없음, 정상 저장 진행')
         }
       } catch (error: any) {
         // 초기화 마커 확인 중 오류가 발생했고, 이미 위에서 throw된 경우는 재throw
         if (error?.message?.includes('초기화된 상태')) {
           throw error
         }
-        console.warn('🟡 [saveGuestsAllCoalesced] 현재 데이터 확인 실패, 계속 진행:', error)
       }
     }
     
@@ -179,7 +179,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     
     // 이미 write가 진행 중이면 대기
     if (writeInFlightRef.current) {
-      console.log('🟡 [saveGuestsAllCoalesced] write 진행 중, 대기...')
       return
     }
     
@@ -191,11 +190,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         const currentPayload = pendingWriteRef.current
         pendingWriteRef.current = null // 처리 중인 payload 초기화
         
-        console.log('🟡 [saveGuestsAllCoalesced] Firestore write 시작:', { 
-          guestsCount: currentPayload.guests.length,
-          _cleared: currentPayload._cleared 
-        })
-        
         // ✅ 충돌 감지: write 전에 현재 문서의 updatedAt 확인
         let retryCount = 0
         let writeSuccess = false
@@ -204,7 +198,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           try {
             // 현재 Firestore 문서 읽기
             const { getFirestoreData } = await import('../services/firestoreService')
-            const currentDoc = await getFirestoreData('guests' as any, 'all') as any
+            const currentDoc = await getFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, FIRESTORE_PATHS.GUESTS_DOC_ID) as any
             
             if (currentDoc && currentDoc.updatedAt) {
               // updatedAt을 number로 변환 (Timestamp 또는 number일 수 있음)
@@ -212,68 +206,71 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
               
               // 마지막으로 본 updatedAt과 비교
               if (lastKnownUpdatedAtRef.current !== null && currentUpdatedAt !== lastKnownUpdatedAtRef.current) {
-                console.warn('🟠 [saveGuestsAllCoalesced] ⚠️ 충돌 감지!', {
-                  lastKnown: lastKnownUpdatedAtRef.current,
-                  current: currentUpdatedAt,
-                  retryCount
-                })
-                
                 // 최신 데이터로 재시도 (현재 state를 최신 Firestore 데이터와 merge)
                 if (retryCount < maxRetries - 1) {
-                  console.log('🟠 [saveGuestsAllCoalesced] 최신 데이터로 재시도...')
                   // 현재 state의 guests를 사용 (이미 최신 데이터를 반영했을 가능성)
                   // 또는 Firestore의 최신 데이터를 읽어서 merge할 수도 있음
                   retryCount++
                   await new Promise(resolve => setTimeout(resolve, 100 * retryCount)) // 백오프
                   continue
                 } else {
-                  console.error('🟠 [saveGuestsAllCoalesced] ❌ 최대 재시도 횟수 초과, 충돌로 인한 write 실패')
                   throw new Error('CONFLICT: 다른 클라이언트가 데이터를 수정했습니다. 페이지를 새로고침하고 다시 시도해주세요.')
                 }
               }
             }
             
             // 충돌 없음 또는 첫 write → 정상 진행
-            console.log('🟡 [saveGuestsAllCoalesced] Firestore write 실행 시작...')
-            console.log('🟡 [saveGuestsAllCoalesced] 저장할 payload:', {
-              guestsCount: currentPayload.guests.length,
-              _cleared: currentPayload._cleared,
-              guestsSample: currentPayload.guests.slice(0, 3)
-            })
             
-            const result = await setFirestoreData('guests' as any, currentPayload, 'all')
+            // ✅ lastAction 결정
+            let lastAction = 'AUTO_SAVE'
+            if (isInitializing) {
+              lastAction = 'CLEAR'
+            } else if (isClearing) {
+              lastAction = 'IMPORT' // 초기화 해제는 보통 업로드/복원
+            } else if (writeSource.includes('upload')) {
+              lastAction = 'UPLOAD'
+            } else if (writeSource.includes('addWalkIn')) {
+              lastAction = 'ADD_WALKIN'
+            } else if (writeSource.includes('togglePayment')) {
+              lastAction = 'TOGGLE_PAYMENT'
+            } else if (writeSource.includes('delete')) {
+              lastAction = 'DELETE'
+            } else if (writeSource.includes('update')) {
+              lastAction = 'UPDATE'
+            }
             
-            console.log('🟡 [saveGuestsAllCoalesced] setFirestoreData 결과:', result)
+            // ✅ 최종 payload 생성 (일반 저장에서는 _cleared를 포함하지 않음)
+            const finalPayload: any = {
+              guests: currentPayload.guests,
+              updatedBy: getClientId(),
+              lastAction: lastAction,
+              writeSource: writeSource
+            }
+            
+            // _cleared는 명시적으로 설정된 경우만 포함
+            // 초기화 작업: _cleared가 숫자 → 포함
+            // 초기화 해제: _cleared가 null → 포함 (명시적 해제)
+            // 일반 저장: _cleared가 undefined → 포함하지 않음 (기존 값 유지)
+            if (currentPayload._cleared !== undefined) {
+              finalPayload._cleared = currentPayload._cleared
+            }
+            // undefined인 경우는 finalPayload에 포함하지 않음 → setFirestoreData에서 기존 값 보존
+            
+            const result = await setFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, finalPayload, FIRESTORE_PATHS.GUESTS_DOC_ID)
             
             if (result === false) {
-              console.error('🟡 [saveGuestsAllCoalesced] ❌ Firestore write 실패 (false 반환)')
               throw new Error('Firestore write failed')
             }
             
             // ✅ 성공 시 updatedAt 업데이트 및 저장 후 데이터 확인
-            console.log('🟡 [saveGuestsAllCoalesced] write 성공, 저장 후 데이터 확인 중...')
-            const newDoc = await getFirestoreData('guests' as any, 'all') as any
-            console.log('🟡 [saveGuestsAllCoalesced] 저장 후 읽은 문서:', newDoc)
+            const newDoc = await getFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, FIRESTORE_PATHS.GUESTS_DOC_ID) as any
             
-            if (newDoc) {
-              const newGuests = newDoc.guests || []
-              const newCleared = newDoc._cleared
-              const newUpdatedAt = newDoc.updatedAt
-              console.log('🟡 [saveGuestsAllCoalesced] 저장 후 DB 게스트 배열 길이:', Array.isArray(newGuests) ? newGuests.length : '배열 아님')
-              console.log('🟡 [saveGuestsAllCoalesced] 저장 후 DB 초기화 마커 (_cleared):', newCleared)
-              console.log('🟡 [saveGuestsAllCoalesced] 저장 후 DB updatedAt:', newUpdatedAt)
-              
-              if (newDoc.updatedAt) {
-                const newUpdatedAtValue = newDoc.updatedAt?.toMillis?.() || newDoc.updatedAt?.seconds * 1000 || newDoc.updatedAt
-                lastKnownUpdatedAtRef.current = newUpdatedAtValue
-                console.log('🟡 [saveGuestsAllCoalesced] updatedAt 추적 업데이트:', newUpdatedAtValue)
-              }
-            } else {
-              console.warn('🟡 [saveGuestsAllCoalesced] ⚠️ 저장 후 문서를 읽을 수 없음 (null)')
+            if (newDoc && newDoc.updatedAt) {
+              const newUpdatedAtValue = newDoc.updatedAt?.toMillis?.() || newDoc.updatedAt?.seconds * 1000 || newDoc.updatedAt
+              lastKnownUpdatedAtRef.current = newUpdatedAtValue
             }
             
             writeSuccess = true
-            console.log('🟡 [saveGuestsAllCoalesced] ✅ Firestore write 성공 완료')
             
           } catch (error: any) {
             if (error?.message?.includes('CONFLICT')) {
@@ -281,7 +278,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             }
             
             if (retryCount < maxRetries - 1) {
-              console.warn('🟠 [saveGuestsAllCoalesced] write 실패, 재시도...', { retryCount, error: error?.message })
               retryCount++
               await new Promise(resolve => setTimeout(resolve, 100 * retryCount)) // 백오프
             } else {
@@ -291,52 +287,34 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         }
       }
     } catch (error: any) {
-      console.error('🟡 [saveGuestsAllCoalesced] ❌ Firestore write 오류:', error)
       throw error
     } finally {
       writeInFlightRef.current = false
     }
   }
   
-  // guests state 변경 추적 (디버깅용)
-  useEffect(() => {
-    console.log('[Guests] state size', guests.length)
-  }, [guests])
 
   useEffect(() => {
     // Firestore에서 데이터 로드
     const loadFirestoreData = async () => {
-      console.log('🔵 [초기 로드 시작] ==========================================')
-      console.log('[Guests] load start', { source: 'firestore', time: Date.now() })
       try {
         // 게스트 데이터 로드
-        const firestoreGuestsData = await getFirestoreData('guests' as any, 'all')
-        console.log('🔵 [초기 로드] Firestore 원본 데이터:', firestoreGuestsData)
+        const firestoreGuestsData = await getFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, FIRESTORE_PATHS.GUESTS_DOC_ID)
         
         let firestoreGuests: Guest[] = []
         
         if (firestoreGuestsData) {
           const data = firestoreGuestsData as any
-          console.log('🔵 [초기 로드] 파싱 전 데이터 타입:', typeof data, 'isArray:', Array.isArray(data))
-          console.log('🔵 [초기 로드] 데이터 키:', Object.keys(data))
           
           // Firestore에서 로드한 데이터가 배열인지 확인
           if (Array.isArray(data)) {
             firestoreGuests = data
-            console.log('🔵 [초기 로드] 배열 형식으로 파싱됨')
           } else if (data.guests && Array.isArray(data.guests)) {
             firestoreGuests = data.guests
-            console.log('🔵 [초기 로드] data.guests 배열로 파싱됨')
           } else if (Array.isArray(data.data)) {
             firestoreGuests = data.data
-            console.log('🔵 [초기 로드] data.data 배열로 파싱됨')
           }
         }
-        
-        console.log('🔵 [초기 로드] 파싱된 게스트 수:', firestoreGuests.length)
-        console.log('🔵 [초기 로드] 샘플 데이터:', firestoreGuests.slice(0, 3))
-        console.log('🔵 [초기 로드] 삭제된 게스트 수:', firestoreGuests.filter(g => g.isDeleted === true).length)
-        console.log('🔵 [초기 로드] 현재 state 게스트 수:', guests.length)
         
         // 초기 로드 시 Firestore 데이터만 사용 (로컬 데이터 확인하지 않음)
         // 게스트 리스트는 절대 임의로 바뀌어서는 안 되므로 Firestore 데이터를 신뢰
@@ -348,45 +326,24 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         if (firestoreGuestsData && (firestoreGuestsData as any).updatedAt) {
           const updatedAt = (firestoreGuestsData as any).updatedAt?.toMillis?.() || (firestoreGuestsData as any).updatedAt?.seconds * 1000 || (firestoreGuestsData as any).updatedAt
           lastKnownUpdatedAtRef.current = updatedAt
-          console.log('🔵 [초기 로드] updatedAt 추적:', updatedAt)
         }
-        
-        console.log('🔵 [초기 로드] 초기화 마커 확인:', {
-          _cleared: firestoreCleared,
-          isFirestoreCleared,
-          마커타입: typeof firestoreCleared,
-          마커값: firestoreCleared,
-          원본데이터_cleared: (firestoreGuestsData as any)?._cleared,
-          원본데이터_키목록: Object.keys(firestoreGuestsData || {}),
-          원본데이터_전체: firestoreGuestsData
-        })
         
         // 초기화 마커가 있으면 무조건 빈 배열 적용 (게스트 배열 길이와 관계없이)
         if (isFirestoreCleared) {
-          console.log('🟢 [초기 로드] ✅ 초기화 마커 감지됨 → 빈 배열 적용')
-          console.log('🟢 [초기 로드] 마커 타임스탬프:', firestoreCleared)
           setGuests([])
-          localStorage.setItem('guests', JSON.stringify([]))
+          localStorage.setItem(getGuestsStorageKey(), JSON.stringify([]))
           lastGuestsHashRef.current = JSON.stringify([])
-          console.log('🟢 [초기 로드] 빈 배열 적용 완료')
         } else {
-          // 초기화 마커가 없고 게스트 데이터가 있으면 적용
+          // 초기화 마커가 없으면 → 정상 상태 (초기화되지 않은 상태)
+          // Firestore에 저장된 게스트 데이터를 그대로 적용
           // ✅ 교체 패턴 (누적 금지) - Firestore가 단일 소스
-          console.log('🟡 [초기 로드] ⚠️ 초기화 마커 없음 → Firestore 데이터 적용')
-          console.log('🟡 [초기 로드] 적용할 게스트 수:', firestoreGuests.length)
           setGuests(firestoreGuests)
-          localStorage.setItem('guests', JSON.stringify(firestoreGuests))
+          localStorage.setItem(getGuestsStorageKey(), JSON.stringify(firestoreGuests))
           lastGuestsHashRef.current = JSON.stringify(firestoreGuests)
-          console.log('🟡 [초기 로드] Firestore 데이터 적용 완료')
         }
         
         // 초기 로드 완료 표시
         initialLoadCompleteRef.current = true
-        
-        // 초기 로드 완료 후 state 크기 로그
-        setTimeout(() => {
-          console.log('[Guests] state size after initial load', firestoreGuests.length)
-        }, 100)
 
         // 공연 데이터 로드
         const firestorePerformanceData = await getFirestoreData('performanceData' as any, 'main')
@@ -419,9 +376,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
               performers: loadedData.performers || []
             }
             setPerformanceDataState(updatedData)
-            await setFirestoreData('performanceData' as any, updatedData, 'main').catch(err => {
-              console.warn('[DataContext] 공연 데이터 Firestore 업데이트 실패:', err)
-            })
+            await setFirestoreData('performanceData' as any, updatedData, 'main').catch(() => {})
           } else {
             setPerformanceDataState(loadedData)
           }
@@ -460,11 +415,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
               }
               setPerformanceDataState(parsedData)
               // Firestore에 동기화 (실패해도 계속 진행)
-              await setFirestoreData('performanceData' as any, parsedData, 'main').catch(err => {
-                console.warn('[DataContext] 공연 데이터 Firestore 동기화 실패:', err)
-              })
+              await setFirestoreData('performanceData' as any, parsedData, 'main').catch(() => {})
             } catch (parseError) {
-              console.error('[DataContext] localStorage 공연 데이터 파싱 오류:', parseError)
+              // 파싱 오류 무시
             }
           } else {
             // 기본 공연 데이터 설정 (events와 ticket 포함)
@@ -498,9 +451,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             setPerformanceDataState(defaultPerformanceData)
             localStorage.setItem('performanceData', JSON.stringify(defaultPerformanceData))
             // Firestore에 동기화 (실패해도 계속 진행)
-            await setFirestoreData('performanceData' as any, defaultPerformanceData, 'main').catch(err => {
-              console.warn('[DataContext] 기본 공연 데이터 Firestore 동기화 실패:', err)
-            })
+            await setFirestoreData('performanceData' as any, defaultPerformanceData, 'main').catch(() => {})
           }
         }
 
@@ -516,12 +467,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
               setGuestbookMessages(parsedMessages)
               // Firestore에 동기화 (실패해도 계속 진행)
               if (parsedMessages.length > 0) {
-                await setFirestoreData('messages' as any, parsedMessages).catch(err => {
-                  console.warn('[DataContext] 방명록 메시지 Firestore 동기화 실패:', err)
-                })
+                await setFirestoreData('messages' as any, parsedMessages).catch(() => {})
               }
             } catch (parseError) {
-              console.error('[DataContext] localStorage 방명록 메시지 파싱 오류:', parseError)
+              // 파싱 오류 무시
             }
           }
         }
@@ -607,16 +556,15 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           }
         }
       } catch (error) {
-        console.error('Firestore 로드 오류:', error)
-        // 오류 발생 시 localStorage에서 로드
-    const savedGuests = localStorage.getItem('guests')
-    const savedPerformanceData = localStorage.getItem('performanceData')
-    const savedGuestbookMessages = localStorage.getItem('guestbookMessages')
-    const savedBookingInfo = localStorage.getItem('bookingInfo')
-    
-    if (savedGuests) {
-      setGuests(JSON.parse(savedGuests))
-    }
+        // ✅ 오류 발생 시에도 localStorage에서 로드하지 않음
+        // 초기화 마커가 있는 경우 예전 데이터를 복원하면 안 되므로
+        // Firestore 연결이 실패해도 빈 배열로 시작 (리스너가 복구되면 자동 동기화)
+        setGuests([]) // 빈 배열로 시작
+        localStorage.setItem(getGuestsStorageKey(), JSON.stringify([])) // localStorage도 빈 배열로 초기화
+        
+        const savedPerformanceData = localStorage.getItem('performanceData')
+        const savedGuestbookMessages = localStorage.getItem('guestbookMessages')
+        const savedBookingInfo = localStorage.getItem('bookingInfo')
     if (savedPerformanceData) {
       setPerformanceDataState(JSON.parse(savedPerformanceData))
     }
@@ -651,8 +599,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
     // Firestore 실시간 리스너 설정 (guests 자동 업데이트) - Firestore 데이터만 사용
     // 게스트 리스트는 절대 임의로 바뀌어서는 안 되므로 로컬 데이터를 전혀 확인하지 않음
-    const guestsDocRef = doc(db, 'guests', 'all')
-    
+    const guestsDocRef = doc(db, FIRESTORE_PATHS.GUESTS_COLLECTION, FIRESTORE_PATHS.GUESTS_DOC_ID)
     const unsubscribeGuests = onSnapshot(
       guestsDocRef,
       (snapshot) => {
@@ -672,37 +619,19 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           
           // 초기 로드가 완료되지 않았으면 리스너 실행 스킵 (초기 로드와 충돌 방지)
           if (!initialLoadCompleteRef.current) {
-            console.log('🟣 [리스너] 초기 로드 미완료, 스킵')
             return
           }
-          
-          console.log('🟣 [리스너 시작] ==========================================')
-          console.log('[Guests] load start', { source: 'listener', time: Date.now() })
-          console.log('🟣 [리스너] Firestore 원본 데이터:', data)
-          console.log('🟣 [리스너] 파싱된 게스트 수:', firestoreGuests.length)
-          console.log('🟣 [리스너] 샘플 데이터:', firestoreGuests.slice(0, 3))
-          console.log('🟣 [리스너] 삭제된 게스트 수:', firestoreGuests.filter(g => g.isDeleted === true).length)
-          // ✅ useRef로 최신 guests 참조 (클로저 문제 해결)
-          console.log('🟣 [리스너] 현재 state 게스트 수:', guestsRef.current.length)
           
           // ✅ 리스너에서 updatedAt 추적 (충돌 감지용)
           if (data && (data as any).updatedAt) {
             const updatedAt = (data as any).updatedAt?.toMillis?.() || (data as any).updatedAt?.seconds * 1000 || (data as any).updatedAt
             lastKnownUpdatedAtRef.current = updatedAt
-            console.log('🟣 [리스너] updatedAt 추적:', updatedAt)
           }
           
           // 현재 게스트 리스트 해시 생성 (중복 업데이트 방지)
           const currentHash = JSON.stringify(firestoreGuests)
-          const lastHash = lastGuestsHashRef.current
-          console.log('🟣 [리스너] 해시 비교:', {
-            현재해시길이: currentHash.length,
-            이전해시길이: lastHash.length,
-            해시동일: currentHash === lastHash
-          })
           
           if (currentHash === lastGuestsHashRef.current) {
-            console.log('🟣 [리스너] ⏭️ 게스트 리스트 변경 없음, 업데이트 스킵')
             return
           }
           lastGuestsHashRef.current = currentHash
@@ -712,49 +641,39 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           const firestoreCleared = (data as any)?._cleared
           const isFirestoreCleared = firestoreCleared !== undefined && firestoreCleared !== null
           
-          console.log('🟣 [리스너] 초기화 마커 확인:', {
-            _cleared: firestoreCleared,
-            isFirestoreCleared,
-            마커타입: typeof firestoreCleared,
-            마커값: firestoreCleared,
-            게스트배열길이: firestoreGuests.length,
-            원본데이터_cleared: (data as any)?._cleared,
-            원본데이터_키목록: Object.keys(data || {}),
-            원본데이터_전체: data
-          })
+          // ⚠️ _cleared가 null로 변경된 경우 경고 및 차단
+          if (firestoreCleared === null && firestoreGuests.length > 0) {
+            // ⚠️ 초기화 마커가 null로 변경되고 게스트가 있는 경우 → 적용 차단
+            // 이전 state가 빈 배열이었으면 초기화 상태였을 가능성이 높음
+            if (guestsRef.current.length === 0) {
+              return // 데이터 적용 차단
+            }
+          }
           
           // 초기화 마커가 있으면 무조건 빈 배열 적용 (게스트 배열 길이와 관계없이)
           if (isFirestoreCleared) {
-            console.log('🟢 [리스너] ✅ 초기화 마커 감지됨 → 빈 배열 적용')
-            console.log('🟢 [리스너] 마커 타임스탬프:', firestoreCleared)
-            console.log('🟢 [리스너] 주의: 게스트 배열 길이는', firestoreGuests.length, '이지만 마커 우선 적용')
             setGuests([])
-            localStorage.setItem('guests', JSON.stringify([]))
+            localStorage.setItem(getGuestsStorageKey(), JSON.stringify([]))
             lastGuestsHashRef.current = JSON.stringify([])
-            console.log('🟢 [리스너] 빈 배열 적용 완료')
             return
           }
           
-          // 초기화 마커가 없으면 Firestore 데이터 적용 (교체 패턴 - 누적 금지)
-          console.log('🟡 [리스너] ⚠️ 초기화 마커 없음 → Firestore 데이터 적용')
-          console.log('🟡 [리스너] 적용할 게스트 수:', firestoreGuests.length)
+          // 초기화 마커가 없으면 → 정상 상태 (초기화되지 않은 상태)
+          // Firestore에 저장된 게스트 데이터를 그대로 적용
           setGuests(firestoreGuests) // ✅ 교체 패턴 (누적 금지)
-          localStorage.setItem('guests', JSON.stringify(firestoreGuests))
+          localStorage.setItem(getGuestsStorageKey(), JSON.stringify(firestoreGuests))
           lastGuestsHashRef.current = JSON.stringify(firestoreGuests)
-          console.log('🟡 [리스너] Firestore 데이터 적용 완료')
         } else {
           // Firestore 문서가 없으면 빈 배열 적용
           const emptyHash = JSON.stringify([])
           if (emptyHash !== lastGuestsHashRef.current) {
-            console.log('[DataContext] 리스너: Firestore 문서 없음, 빈 배열 적용')
             lastGuestsHashRef.current = emptyHash
             setGuests([])
-            localStorage.setItem('guests', JSON.stringify([]))
+            localStorage.setItem(getGuestsStorageKey(), JSON.stringify([]))
           }
         }
       },
       (error) => {
-        console.error('🟣 [리스너] ❌ Firestore guests 실시간 리스너 오류:', error)
         // ✅ 에러 시 state를 변경하지 않음 - 기존 state 유지 (UI 깜빡임/리셋 방지)
         // 에러는 UI를 "리셋"시키면 안 됨. 리스너가 복구되면 자동으로 다시 동기화됨
       }
@@ -787,7 +706,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         }
       },
       (error) => {
-        console.error('Firestore performanceData 실시간 리스너 오류:', error)
+        // 에러 무시
       }
     )
 
@@ -838,25 +757,19 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       
       // 엑셀 파일 다운로드
       XLSX.writeFile(workbook, fileName)
-      console.log(`게스트 리스트가 엑셀 파일로 저장되었습니다: ${fileName}`)
     } catch (error) {
-      console.error('엑셀 파일 다운로드 오류:', error)
       // 오류가 발생해도 게스트 리스트 저장은 계속 진행
     }
   }
 
   const uploadGuests = async (newGuests: Guest[]) => {
-    console.log('[Guests] upload start', { count: newGuests.length })
-    
     // ✅ 초기화 후 차단 시간 동안 저장 차단
     if (clearBlockUntilRef.current !== null && Date.now() < clearBlockUntilRef.current) {
-      console.log('🟡 [uploadGuests] ⏸️ 초기화 후 차단 시간 동안 저장 차단')
       throw new Error('게스트 리스트가 방금 초기화되었습니다. 잠시 후 다시 시도해주세요.')
     }
     
     // ✅ 기존 게스트와 병합하여 dedupe (절대 append 금지)
     const existingGuests = [...guests]
-    console.log('[Guests] upload 기존 게스트 수:', existingGuests.length)
     
     // ✅ 중복 제거: name + phone 기준으로 고유하게 유지
     const guestMap = new Map<string, Guest>()
@@ -888,44 +801,28 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     })
     
     const processedGuests = Array.from(guestMap.values())
-    console.log('[Guests] upload processed', { 
-      original: newGuests.length, 
-      existing: existingGuests.length,
-      unique: processedGuests.length,
-      추가됨: processedGuests.length - existingGuests.filter(g => !g.isDeleted).length
-    })
     
     // Firestore에 저장 (성공 확인 후 state 업데이트)
     try {
       // 현재 Firestore 데이터 확인
-      const currentData = await getFirestoreData('guests' as any, 'all')
+      const currentData = await getFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, FIRESTORE_PATHS.GUESTS_DOC_ID)
       const currentCleared = (currentData as any)?._cleared
       const hasClearedMarker = currentCleared !== undefined && currentCleared !== null
       
-      console.log('🟡 [uploadGuests] 초기화 마커 확인:', {
-        현재마커: currentCleared,
-        마커있음: hasClearedMarker
-      })
-      
       // 초기화 마커가 있으면 게스트 업로드 불가 (초기화 상태 유지)
       if (hasClearedMarker) {
-        console.log('🔴 [uploadGuests] ❌ 초기화 마커가 있어서 게스트 업로드 불가')
         throw new Error('게스트 리스트가 초기화된 상태입니다. 먼저 게스트를 업로드하려면 초기화를 해제해주세요.')
       }
       
       // ✅ coalesce 패턴으로 write (연타/중복 방지)
-      // ✅ coalesce 패턴으로 write (연타/중복 방지)
-      await saveGuestsAllCoalesced({ guests: processedGuests, _cleared: null })
-      
-      console.log('[Guests] upload result', { ok: true })
+      // 초기화 해제: _cleared를 null로 명시
+      await saveGuestsAllCoalesced({ guests: processedGuests, _cleared: null }, 3, 'uploadGuests')
       
       // Firestore 저장 성공 후에만 state 업데이트 (교체 패턴 - 누적 금지)
       setGuests(processedGuests)
-      localStorage.setItem('guests', JSON.stringify(processedGuests))
+      localStorage.setItem(getGuestsStorageKey(), JSON.stringify(processedGuests))
       lastGuestsHashRef.current = JSON.stringify(processedGuests)
     } catch (error) {
-      console.error('[Guests] upload result', { ok: false, error })
-      console.error('Firestore 게스트 저장 오류:', error)
       // Firestore 저장 실패 시 state 업데이트하지 않음
     }
   }
@@ -933,7 +830,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const addWalkInGuest = async (name: string, phone: string, isWalkIn: boolean = true, email?: string): Promise<{ success: boolean; message?: string }> => {
     // ✅ 초기화 후 차단 시간 동안 저장 차단
     if (clearBlockUntilRef.current !== null && Date.now() < clearBlockUntilRef.current) {
-      console.log('🟡 [addWalkInGuest] ⏸️ 초기화 후 차단 시간 동안 저장 차단')
       return { success: false, message: '게스트 리스트가 방금 초기화되었습니다. 잠시 후 다시 시도해주세요.' }
     }
     
@@ -977,38 +873,30 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     // 마커가 없을 때만 null로 설정하여 초기화 상태 해제
     try {
       // 현재 Firestore 데이터 확인
-      const currentData = await getFirestoreData('guests' as any, 'all')
+      const currentData = await getFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, FIRESTORE_PATHS.GUESTS_DOC_ID)
       const currentCleared = (currentData as any)?._cleared
       const hasClearedMarker = currentCleared !== undefined && currentCleared !== null
       
-      console.log('🟡 [addWalkInGuest] 초기화 마커 확인:', {
-        현재마커: currentCleared,
-        마커있음: hasClearedMarker
-      })
-      
       // 초기화 마커가 있으면 게스트 추가 불가 (초기화 상태 유지)
       if (hasClearedMarker) {
-        console.log('🔴 [addWalkInGuest] ❌ 초기화 마커가 있어서 게스트 추가 불가')
         return { success: false, message: '게스트 리스트가 초기화된 상태입니다. 먼저 게스트를 추가하려면 초기화를 해제해주세요.' }
       }
       
       // ✅ coalesce 패턴으로 write (연타/중복 방지)
+      // 초기화 해제: _cleared를 null로 명시
       try {
-        await saveGuestsAllCoalesced({ guests: updatedGuests, _cleared: null })
+        await saveGuestsAllCoalesced({ guests: updatedGuests, _cleared: null }, 3, 'addWalkInGuest')
       } catch (error: any) {
-        console.error('[DataContext] Firestore 저장 실패:', error)
         return { success: false, message: '등록에 실패했습니다. 다시 시도해주세요.' }
       }
       
       // Firestore 저장 성공 후에만 state 업데이트
-      console.log('[DataContext] addWalkInGuest 저장 성공:', { guestName: normalizedName, totalGuests: updatedGuests.length })
       setGuests(updatedGuests)
-      localStorage.setItem('guests', JSON.stringify(updatedGuests))
+      localStorage.setItem(getGuestsStorageKey(), JSON.stringify(updatedGuests))
       lastGuestsHashRef.current = JSON.stringify(updatedGuests)
 
       return { success: true, message: '현장 구매 등록이 완료되었습니다.' }
     } catch (error) {
-      console.error('Firestore 현장 구매자 저장 오류:', error)
       return { success: false, message: '등록에 실패했습니다. 다시 시도해주세요.' }
     }
   }
@@ -1020,7 +908,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
     // ✅ 초기화 후 차단 시간 동안 저장 차단
     if (clearBlockUntilRef.current !== null && Date.now() < clearBlockUntilRef.current) {
-      console.log('🟡 [toggleGuestPayment] ⏸️ 초기화 후 차단 시간 동안 저장 차단')
       return
     }
 
@@ -1035,14 +922,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     // Firestore에 업데이트 (성공 확인 후 state 업데이트)
     try {
       // ✅ coalesce 패턴으로 write (연타/중복 방지)
-      await saveGuestsAllCoalesced({ guests: updatedGuests })
+      await saveGuestsAllCoalesced({ guests: updatedGuests }, 3, 'toggleGuestPayment')
       
       // Firestore 저장 성공 후에만 state 업데이트
       setGuests(updatedGuests)
-      localStorage.setItem('guests', JSON.stringify(updatedGuests))
+      localStorage.setItem(getGuestsStorageKey(), JSON.stringify(updatedGuests))
       lastGuestsHashRef.current = JSON.stringify(updatedGuests)
     } catch (error) {
-      console.error('Firestore 게스트 입금 확인 업데이트 오류:', error)
       // Firestore 저장 실패 시 state 업데이트하지 않음
     }
   }
@@ -1064,18 +950,14 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     setPerformanceDataState(mergedData)
     localStorage.setItem('performanceData', JSON.stringify(mergedData))
     // Firestore에 저장 (비동기로 처리, merge 옵션으로 안전하게)
-    setFirestoreData('performanceData' as any, mergedData, 'main').catch((error) => {
-      console.error('Firestore 공연 데이터 저장 오류:', error)
-    })
+    setFirestoreData('performanceData' as any, mergedData, 'main').catch(() => {})
   }
 
   const setBookingInfo = (info: BookingInfo) => {
     setBookingInfoState(info)
     localStorage.setItem('bookingInfo', JSON.stringify(info))
     // Firestore에 저장 (비동기로 처리)
-    setFirestoreData('bookingInfo' as any, info, 'main').catch((error) => {
-      console.error('Firestore 예매 정보 저장 오류:', error)
-    })
+    setFirestoreData('bookingInfo' as any, info, 'main').catch(() => {})
   }
 
   const addGuestbookMessage = (message: GuestbookMessage) => {
@@ -1083,105 +965,41 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     setGuestbookMessages(newMessages)
     localStorage.setItem('guestbookMessages', JSON.stringify(newMessages))
     // Firestore에 저장 (비동기로 처리)
-    setFirestoreData('messages' as any, message, message.id).catch((error) => {
-      console.error('Firestore 방명록 메시지 저장 오류:', error)
-    })
+    setFirestoreData('messages' as any, message, message.id).catch(() => {})
   }
 
 
   const clearGuests = async () => {
-    console.log('🔴 [초기화 시작] ==========================================')
-    console.log('[DataContext] clearGuests 호출됨')
-    
-    // 🔍 Firebase 연결 상태 확인
-    console.log('🔍 [clearGuests] Firebase 연결 상태 확인')
-    console.log('🔍 [clearGuests] Firebase db 객체:', db)
-    console.log('🔍 [clearGuests] Firebase app 이름:', db.app.name)
-    console.log('🔍 [clearGuests] Firebase projectId:', db.app.options.projectId)
-    
-    // 🔍 초기화 전 현재 DB 상태 확인
-    console.log('🔍 [clearGuests] 초기화 전 DB 상태 확인 시작')
-    try {
-      const currentDbData = await getFirestoreData('guests' as any, 'all')
-      console.log('🔍 [clearGuests] 초기화 전 DB 데이터 (전체):', currentDbData)
-      if (currentDbData) {
-        const dbGuests = (currentDbData as any).guests || []
-        const dbCleared = (currentDbData as any)._cleared
-        const dbUpdatedAt = (currentDbData as any).updatedAt
-        console.log('🔍 [clearGuests] 초기화 전 DB 게스트 배열 길이:', Array.isArray(dbGuests) ? dbGuests.length : '배열 아님')
-        console.log('🔍 [clearGuests] 초기화 전 DB 초기화 마커 (_cleared):', dbCleared)
-        console.log('🔍 [clearGuests] 초기화 전 DB updatedAt:', dbUpdatedAt)
-        console.log('🔍 [clearGuests] 초기화 전 DB 게스트 샘플 (처음 3개):', Array.isArray(dbGuests) ? dbGuests.slice(0, 3) : '배열 아님')
-      } else {
-        console.log('🔍 [clearGuests] ⚠️ 초기화 전 DB에서 게스트 데이터를 찾을 수 없음 (null)')
-      }
-    } catch (dbCheckError) {
-      console.error('🔍 [clearGuests] ❌ 초기화 전 DB 데이터 확인 중 오류:', dbCheckError)
-    }
-    
-    console.log('🔴 [초기화] 현재 state 게스트 수:', guests.length)
-    console.log('🔴 [초기화] 현재 localStorage 게스트 수:', JSON.parse(localStorage.getItem('guests') || '[]').length)
-    
     // ✅ 1. 예약된 저장 작업 취소 (초기화 전에 예약된 write가 실행되지 않도록)
     pendingWriteRef.current = null
-    console.log('🔴 [초기화] ✅ 예약된 저장 작업 취소 완료')
     
     // ✅ 2. 초기화 후 일정 시간(5초) 동안 자동 저장 차단
     clearBlockUntilRef.current = Date.now() + 5000 // 5초 후까지 차단
-    console.log('🔴 [초기화] ✅ 초기화 후 5초 동안 자동 저장 차단 설정 (차단 해제 시간:', new Date(clearBlockUntilRef.current).toISOString(), ')')
     
     // Firestore에서도 삭제 (초기화 마커와 함께)
     const clearTimestamp = Date.now()
-    console.log('🔴 [초기화] Firestore에 초기화 마커 저장 시도:', clearTimestamp)
-    console.log('🔴 [초기화] 저장할 데이터:', { guests: [], _cleared: clearTimestamp })
     
     try {
       // ✅ coalesce 패턴으로 write (연타/중복 방지)
       // 차단 시간 내이지만 clearGuests에서 직접 호출하는 것은 허용 (차단 로직에서 예외 처리)
-      console.log('🔴 [초기화] saveGuestsAllCoalesced 호출 시작...')
-      await saveGuestsAllCoalesced({ guests: [], _cleared: clearTimestamp })
-      console.log('🔴 [초기화] saveGuestsAllCoalesced 호출 완료')
-      
-      // 🔍 저장 후 즉시 DB 상태 확인
-      console.log('🔍 [clearGuests] 저장 직후 DB 상태 확인 시작')
-      try {
-        const afterWriteData = await getFirestoreData('guests' as any, 'all')
-        console.log('🔍 [clearGuests] 저장 직후 DB 데이터:', afterWriteData)
-        if (afterWriteData) {
-          const afterGuests = (afterWriteData as any).guests || []
-          const afterCleared = (afterWriteData as any)._cleared
-          const afterUpdatedAt = (afterWriteData as any).updatedAt
-          console.log('🔍 [clearGuests] 저장 직후 DB 게스트 배열 길이:', Array.isArray(afterGuests) ? afterGuests.length : '배열 아님')
-          console.log('🔍 [clearGuests] 저장 직후 DB 초기화 마커 (_cleared):', afterCleared)
-          console.log('🔍 [clearGuests] 저장 직후 DB updatedAt:', afterUpdatedAt)
-        }
-      } catch (afterWriteError) {
-        console.error('🔍 [clearGuests] ❌ 저장 직후 DB 확인 중 오류:', afterWriteError)
-      }
+      await saveGuestsAllCoalesced({ guests: [], _cleared: clearTimestamp }, 3, 'clearGuests')
       
       // Firestore 저장 성공 후에만 로컬 상태 업데이트
-      console.log('🔴 [초기화] ✅ Firestore 초기화 마커 저장 성공')
       setGuests([])
-      localStorage.setItem('guests', JSON.stringify([]))
+      localStorage.setItem(getGuestsStorageKey(), JSON.stringify([]))
       lastGuestsHashRef.current = JSON.stringify([])
       
       // 마커는 유지 (제거하지 않음) - 초기화 상태를 명확히 표시
       // 다른 클라이언트에서도 초기화 상태를 인식할 수 있도록 마커 유지
-      console.log('🔴 [초기화] ✅ 초기화 완료 (마커 유지, 타임스탬프:', clearTimestamp, ')')
-      console.log('🔴 [초기화] 이후 새로고침 시 마커가 감지되어야 함')
     } catch (error: any) {
-      console.error('🔴 [초기화] ❌ Firestore 게스트 초기화 오류:', error)
-      
       // ✅ Quota exceeded 오류 명시적 처리
       if (error?.message?.includes('QUOTA_EXCEEDED') || error?.code === 'resource-exhausted' || error?.message?.includes('quota')) {
-        console.error('🔴 [초기화] ❌ Quota exceeded - Firestore 할당량 초과')
         alert('Firestore 할당량이 초과되어 초기화에 실패했습니다.\n\n잠시 후 다시 시도해주세요. (몇 분 후 재시도 권장)')
       } else {
         alert('게스트 리스트 초기화에 실패했습니다. 다시 시도해주세요.')
       }
       
       // ✅ 실패 시: state는 이미 변경하지 않았으므로 롤백 불필요 (서버 write 실패 시 state는 그대로 유지됨)
-      console.log('🔴 [초기화] ⚠️ 서버 write 실패 - state는 변경하지 않았으므로 롤백 불필요')
     }
     
     // ✅ userProfiles 대량 삭제 제거 (쿼터 폭탄 방지)
@@ -1211,12 +1029,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     
     // ✅ 초기화 후 차단 시간 동안 저장 차단
     if (clearBlockUntilRef.current !== null && Date.now() < clearBlockUntilRef.current) {
-      console.log('🟡 [deleteGuest] ⏸️ 초기화 후 차단 시간 동안 저장 차단')
       return
     }
-    
-    const guestId = `${guest.name}_${guest.phone.replace(/[-\s()]/g, '')}`
-    console.log('[Guests] delete click', guestId, { index, currentGuestsCount: guests.length })
     
     // 실제로 삭제하지 않고 isDeleted 플래그만 설정 (취소선 표시용)
     const updatedGuests = guests.map((g, i) => {
@@ -1230,27 +1044,16 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       return g
     })
     
-    console.log('[Guests] delete before save', { 
-      before: guests.filter(g => g.isDeleted === true).length,
-      after: updatedGuests.filter(g => g.isDeleted === true).length,
-      totalBefore: guests.length,
-      totalAfter: updatedGuests.length
-    })
-    
     // Firestore에 저장 (성공 확인 후 state 업데이트)
     try {
       // ✅ coalesce 패턴으로 write (연타/중복 방지)
-      await saveGuestsAllCoalesced({ guests: updatedGuests })
-      
-      console.log('[Guests] delete result', { ok: true, savedCount: updatedGuests.length, deletedCount: updatedGuests.filter(g => g.isDeleted === true).length })
+      await saveGuestsAllCoalesced({ guests: updatedGuests }, 3, 'deleteGuest')
       
       // Firestore 저장 성공 후에만 state 업데이트
       setGuests(updatedGuests) // ✅ 교체 패턴 (누적 금지)
-      localStorage.setItem('guests', JSON.stringify(updatedGuests))
+      localStorage.setItem(getGuestsStorageKey(), JSON.stringify(updatedGuests))
       lastGuestsHashRef.current = JSON.stringify(updatedGuests)
     } catch (error) {
-      console.error('[Guests] delete result', { ok: false, error })
-      console.error('Firestore 게스트 삭제 오류:', error)
       // Firestore 저장 실패 시 state 업데이트하지 않음
     }
   }
@@ -1258,7 +1061,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const updateGuest = async (index: number, updatedGuest: Guest) => {
     // ✅ 초기화 후 차단 시간 동안 저장 차단
     if (clearBlockUntilRef.current !== null && Date.now() < clearBlockUntilRef.current) {
-      console.log('🟡 [updateGuest] ⏸️ 초기화 후 차단 시간 동안 저장 차단')
       return
     }
     
@@ -1267,14 +1069,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     // Firestore에 저장 (성공 확인 후 state 업데이트)
     try {
       // ✅ coalesce 패턴으로 write (연타/중복 방지)
-      await saveGuestsAllCoalesced({ guests: updatedGuests })
+      await saveGuestsAllCoalesced({ guests: updatedGuests }, 3, 'updateGuest')
       
       // Firestore 저장 성공 후에만 state 업데이트
       setGuests(updatedGuests)
-      localStorage.setItem('guests', JSON.stringify(updatedGuests))
+      localStorage.setItem(getGuestsStorageKey(), JSON.stringify(updatedGuests))
       lastGuestsHashRef.current = JSON.stringify(updatedGuests)
     } catch (error) {
-      console.error('Firestore 게스트 수정 오류:', error)
       // Firestore 저장 실패 시 state 업데이트하지 않음
     }
   }
@@ -1294,9 +1095,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     setEventsEnabledState(enabled)
     localStorage.setItem('eventsEnabled', enabled.toString())
     // Firestore에 저장 (비동기로 처리)
-    setFirestoreData('current' as any, { enabled }, 'events').catch((error) => {
-      console.error('Firestore 이벤트 활성화 상태 저장 오류:', error)
-    })
+    setFirestoreData('current' as any, { enabled }, 'events').catch(() => {})
   }
 
   const clearGuestbookMessages = async () => {
@@ -1313,9 +1112,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       )
       
       await Promise.all(deletePromises)
-      console.log('모든 방명록 메시지가 삭제되었습니다.')
     } catch (error) {
-      console.error('Firestore 방명록 메시지 삭제 오류:', error)
     }
   }
 
@@ -1330,9 +1127,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       )
       
       await Promise.all(deletePromises)
-      console.log('모든 채팅 메시지가 삭제되었습니다.')
     } catch (error) {
-      console.error('Firestore 채팅 메시지 삭제 오류:', error)
       throw error
     }
   }
