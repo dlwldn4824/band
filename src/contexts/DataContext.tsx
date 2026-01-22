@@ -137,10 +137,20 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     maxRetries: number = 3,
     writeSource: string = 'unknown'
   ) => {
+    console.log('[WRITE] saveGuestsAllCoalesced 시작:', {
+      guestsCount: payload.guests.length,
+      _cleared: payload._cleared,
+      _clearedType: typeof payload._cleared,
+      writeSource,
+      clearBlockUntil: clearBlockUntilRef.current,
+      now: Date.now()
+    })
+    
     // ✅ 초기화 후 차단 시간이 지나지 않았으면 저장 차단
     // 단, _cleared가 명시적으로 설정된 경우(초기화 작업)는 허용
     const isClearOperation = payload._cleared !== undefined && payload._cleared !== null
     if (!isClearOperation && clearBlockUntilRef.current !== null && Date.now() < clearBlockUntilRef.current) {
+      console.log('[WRITE] 저장 차단됨 (초기화 후 차단 시간 내)')
       return
     }
     
@@ -250,11 +260,19 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             // _cleared는 명시적으로 설정된 경우만 포함
             // 초기화 작업: _cleared가 숫자 → 포함
             // 초기화 해제: _cleared가 null → 포함 (명시적 해제)
-            // 일반 저장: _cleared가 undefined → 포함하지 않음 (기존 값 유지)
+            // 일반 저장: _cleared가 undefined → 포함하지 않음 (기존 값 보존)
             if (currentPayload._cleared !== undefined) {
               finalPayload._cleared = currentPayload._cleared
             }
             // undefined인 경우는 finalPayload에 포함하지 않음 → setFirestoreData에서 기존 값 보존
+            
+            console.log('[WRITE] Firestore write 시작:', {
+              path: `${FIRESTORE_PATHS.GUESTS_COLLECTION}/${FIRESTORE_PATHS.GUESTS_DOC_ID}`,
+              guestsCount: finalPayload.guests.length,
+              _cleared: finalPayload._cleared,
+              lastAction,
+              writeSource
+            })
             
             const result = await setFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, finalPayload, FIRESTORE_PATHS.GUESTS_DOC_ID)
             
@@ -262,8 +280,19 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
               throw new Error('Firestore write failed')
             }
             
+            console.log('[WRITE] Firestore write 성공, 저장 후 데이터 확인 중...')
+            
             // ✅ 성공 시 updatedAt 업데이트 및 저장 후 데이터 확인
             const newDoc = await getFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, FIRESTORE_PATHS.GUESTS_DOC_ID) as any
+            
+            console.log('[WRITE] 저장 후 DB 확인:', {
+              dbGuestsCount: newDoc?.guests?.length || 0,
+              dbCleared: newDoc?._cleared,
+              dbClearedType: typeof newDoc?._cleared,
+              dbUpdatedAt: newDoc?.updatedAt,
+              writeSource: newDoc?.writeSource,
+              lastAction: newDoc?.lastAction
+            })
             
             if (newDoc && newDoc.updatedAt) {
               const newUpdatedAtValue = newDoc.updatedAt?.toMillis?.() || newDoc.updatedAt?.seconds * 1000 || newDoc.updatedAt
@@ -271,6 +300,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             }
             
             writeSuccess = true
+            console.log('[WRITE] saveGuestsAllCoalesced 완료')
             
           } catch (error: any) {
             if (error?.message?.includes('CONFLICT')) {
@@ -322,6 +352,17 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         const firestoreCleared = (firestoreGuestsData as any)?._cleared
         const isFirestoreCleared = firestoreCleared !== undefined && firestoreCleared !== null && typeof firestoreCleared === 'number'
         
+        console.log('[INIT LOAD] Firestore 데이터 로드:', {
+          hasData: !!firestoreGuestsData,
+          guestsCount: firestoreGuests.length,
+          _cleared: firestoreCleared,
+          _clearedType: typeof firestoreCleared,
+          isFirestoreCleared,
+          updatedAt: (firestoreGuestsData as any)?.updatedAt,
+          writeSource: (firestoreGuestsData as any)?.writeSource,
+          lastAction: (firestoreGuestsData as any)?.lastAction
+        })
+        
         // ✅ 초기 로드 시 updatedAt 추적 (충돌 감지용)
         if (firestoreGuestsData && (firestoreGuestsData as any).updatedAt) {
           const updatedAt = (firestoreGuestsData as any).updatedAt?.toMillis?.() || (firestoreGuestsData as any).updatedAt?.seconds * 1000 || (firestoreGuestsData as any).updatedAt
@@ -330,6 +371,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         
         // 초기화 마커가 있으면 무조건 빈 배열 적용 (게스트 배열 길이와 관계없이)
         if (isFirestoreCleared) {
+          console.log('[INIT LOAD] 초기화 마커 감지 → 빈 배열 적용')
           setGuests([])
           localStorage.setItem(getGuestsStorageKey(), JSON.stringify([]))
           lastGuestsHashRef.current = JSON.stringify([])
@@ -337,6 +379,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           // 초기화 마커가 없으면 → 정상 상태 (초기화되지 않은 상태)
           // Firestore에 저장된 게스트 데이터를 그대로 적용
           // ✅ 교체 패턴 (누적 금지) - Firestore가 단일 소스
+          console.log('[INIT LOAD] 정상 상태 → 게스트 데이터 적용:', {
+            guestsCount: firestoreGuests.length
+          })
           setGuests(firestoreGuests)
           localStorage.setItem(getGuestsStorageKey(), JSON.stringify(firestoreGuests))
           lastGuestsHashRef.current = JSON.stringify(firestoreGuests)
@@ -344,6 +389,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         
         // 초기 로드 완료 표시
         initialLoadCompleteRef.current = true
+        console.log('[INIT LOAD] 초기 로드 완료')
 
         // 공연 데이터 로드
         const firestorePerformanceData = await getFirestoreData('performanceData' as any, 'main')
@@ -619,6 +665,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           
           // 초기 로드가 완료되지 않았으면 리스너 실행 스킵 (초기 로드와 충돌 방지)
           if (!initialLoadCompleteRef.current) {
+            console.log('[LISTENER] 초기 로드 미완료 → 스킵')
             return
           }
           
@@ -632,8 +679,20 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           const currentHash = JSON.stringify(firestoreGuests)
           
           if (currentHash === lastGuestsHashRef.current) {
+            console.log('[LISTENER] 해시 동일 → 스킵')
             return
           }
+          
+          console.log('[LISTENER] Firestore 변경 감지:', {
+            guestsCount: firestoreGuests.length,
+            _cleared: (data as any)?._cleared,
+            _clearedType: typeof (data as any)?._cleared,
+            updatedAt: (data as any)?.updatedAt,
+            writeSource: (data as any)?.writeSource,
+            lastAction: (data as any)?.lastAction,
+            currentStateCount: guestsRef.current.length
+          })
+          
           lastGuestsHashRef.current = currentHash
           
           // Firestore 데이터를 무조건 적용 (로컬 데이터 확인하지 않음)
@@ -643,6 +702,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           
           // 초기화 마커가 있으면 무조건 빈 배열 적용 (게스트 배열 길이와 관계없이)
           if (isFirestoreCleared) {
+            console.log('[LISTENER] 초기화 마커 감지 → 빈 배열 적용')
             setGuests([])
             localStorage.setItem(getGuestsStorageKey(), JSON.stringify([]))
             lastGuestsHashRef.current = JSON.stringify([])
@@ -651,6 +711,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           
           // 초기화 마커가 없거나 null이면 → 정상 상태 (초기화되지 않은 상태)
           // Firestore에 저장된 게스트 데이터를 그대로 적용
+          console.log('[LISTENER] 정상 상태 → 게스트 데이터 적용:', {
+            guestsCount: firestoreGuests.length
+          })
           setGuests(firestoreGuests) // ✅ 교체 패턴 (누적 금지)
           localStorage.setItem(getGuestsStorageKey(), JSON.stringify(firestoreGuests))
           lastGuestsHashRef.current = JSON.stringify(firestoreGuests)
@@ -754,6 +817,14 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const uploadGuests = async (newGuests: Guest[]) => {
+    console.log('[UPLOAD] uploadGuests 시작:', {
+      inputGuestsCount: newGuests.length,
+      currentStateCount: guests.length,
+      clearBlockUntil: clearBlockUntilRef.current,
+      now: Date.now(),
+      isBlocked: clearBlockUntilRef.current !== null && Date.now() < clearBlockUntilRef.current
+    })
+    
     // ✅ 초기화 후 차단 시간 동안 저장 차단
     if (clearBlockUntilRef.current !== null && Date.now() < clearBlockUntilRef.current) {
       throw new Error('게스트 리스트가 방금 초기화되었습니다. 잠시 후 다시 시도해주세요.')
@@ -793,17 +864,38 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     
     const processedGuests = Array.from(guestMap.values())
     
+    console.log('[UPLOAD] 게스트 처리 완료:', {
+      processedCount: processedGuests.length,
+      existingCount: existingGuests.length,
+      newCount: newGuests.length
+    })
+    
     // Firestore에 저장 (성공 확인 후 state 업데이트)
     try {
+      console.log('[UPLOAD] saveGuestsAllCoalesced 호출 시작:', {
+        guestsCount: processedGuests.length,
+        _cleared: null,
+        writeSource: 'uploadGuests'
+      })
+      
       // ✅ coalesce 패턴으로 write (연타/중복 방지)
       // 엑셀 업로드 시 초기화 마커 자동 해제: _cleared를 null로 명시
       await saveGuestsAllCoalesced({ guests: processedGuests, _cleared: null }, 3, 'uploadGuests')
+      
+      console.log('[UPLOAD] saveGuestsAllCoalesced 완료, state 업데이트 시작')
       
       // Firestore 저장 성공 후에만 state 업데이트 (교체 패턴 - 누적 금지)
       setGuests(processedGuests)
       localStorage.setItem(getGuestsStorageKey(), JSON.stringify(processedGuests))
       lastGuestsHashRef.current = JSON.stringify(processedGuests)
+      
+      console.log('[UPLOAD] uploadGuests 완료:', {
+        stateUpdated: true,
+        localStorageUpdated: true,
+        finalCount: processedGuests.length
+      })
     } catch (error) {
+      console.error('[UPLOAD] uploadGuests 실패:', error)
       // Firestore 저장 실패 시 state 업데이트하지 않음
       throw error
     }

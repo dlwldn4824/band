@@ -372,8 +372,29 @@ const Admin = () => {
       // 기존 게스트와 새 게스트 병합 (입금확인 정보가 업데이트된 기존 게스트 포함)
       const mergedGuests = [...existingGuests, ...guestsToAdd]
       
+      console.log('[UPLOAD] 엑셀 파싱 완료:', {
+        newGuestsFromFile: newGuestsFromFile.length,
+        guestsToAdd: guestsToAdd.length,
+        guestsToUpdate: guestsToUpdate.length,
+        existingGuests: existingGuests.length,
+        mergedGuests: mergedGuests.length
+      })
+      
       try {
         await uploadGuests(mergedGuests)
+        
+        // ✅ 저장 후 DB 확인
+        const { getFirestoreData } = await import('../services/firestoreService')
+        const { FIRESTORE_PATHS } = await import('../config/firestorePaths')
+        const afterWrite = await getFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, FIRESTORE_PATHS.GUESTS_DOC_ID) as any
+        console.log('[UPLOAD] DB 저장 후 확인:', {
+          dbGuestsCount: afterWrite?.guests?.length || 0,
+          dbCleared: afterWrite?._cleared,
+          dbClearedType: typeof afterWrite?._cleared,
+          localStateCount: guests.length,
+          mergedCount: mergedGuests.length
+        })
+        
         const duplicateCount = newGuestsFromFile.length - guestsToAdd.length
         if (duplicateCount > 0) {
           if (guestsToUpdate.length > 0) {
