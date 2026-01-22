@@ -381,18 +381,60 @@ const Login = () => {
       }
       
       // 이미 등록된 게스트(삭제되지 않은)인지 확인
+      // ✅ 엑셀로 업로드한 게스트도 포함해서 확인 (name, phone 필드 모두 체크)
       const existingGuest = guests.find((guest) => {
         // 삭제된 게스트는 제외
         if (guest.isDeleted === true) {
           return false
         }
+        // 이름 매칭 (한글 키 또는 영문 키 지원)
         const guestName = guest.name || guest['이름'] || guest.Name || ''
-        const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '').replace(/[-\s()]/g, '')
-        return guestName.trim() === normalizedName && guestPhone === normalizedPhoneForCompare
+        const nameMatch = guestName.trim() === normalizedName
+        
+        // 전화번호 매칭 (한글 키 또는 영문 키 지원, 하이픈/공백 제거 후 비교)
+        const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '')
+        const normalizedGuestPhone = guestPhone.replace(/[-\s()]/g, '')
+        const phoneMatch = normalizedGuestPhone === normalizedPhoneForCompare
+        
+        return nameMatch && phoneMatch
       })
       
-      // 이미 등록된 게스트면 확인 화면 건너뛰고 바로 로그인 후 티켓 애니메이션 표시
+      console.log('[Login] 게스트 확인:', {
+        inputName: normalizedName,
+        inputPhone: normalizedPhoneForCompare,
+        guestsCount: guests.length,
+        foundGuest: existingGuest ? {
+          name: existingGuest.name || existingGuest['이름'] || existingGuest.Name,
+          phone: existingGuest.phone || existingGuest['전화번호'] || existingGuest.Phone,
+          paymentConfirmed: existingGuest.paymentConfirmed,
+          isWalkIn: existingGuest.isWalkIn
+        } : null
+      })
+      
+      // ✅ 확인완료된 게스트(paymentConfirmed: true)는 바로 로그인 후 홈으로 이동
+      if (existingGuest && existingGuest.paymentConfirmed === true) {
+        console.log('[Login] 확인완료 게스트 감지 → 바로 로그인')
+        const loginSuccess = login(normalizedName, normalizedPhone, guests)
+        if (loginSuccess) {
+          // localStorage에서 pendingBooking 제거
+          localStorage.removeItem('pendingBooking')
+          
+          // 티켓 애니메이션 표시를 위한 상태 설정 (폼에서 입력된 값 사용)
+          const nameToUse = bookingName.trim() || normalizedName
+          const phoneToUse = bookingPhone.trim() || normalizedPhone
+          setBookingName(nameToUse)
+          const formattedPhone = formatPhoneDisplay(phoneToUse)
+          setBookingPhone(formattedPhone)
+          
+          // 티켓 애니메이션 표시 (확인 화면은 건너뜀)
+          setShowTicket(true)
+          return
+        }
+      }
+      
+      // ✅ 확인완료되지 않은 게스트도 이미 등록되어 있으면 바로 로그인 (기존 로직 유지)
       if (existingGuest) {
+        console.log('[Login] 등록된 게스트 감지 (확인완료 아님) → 바로 로그인')
         const loginSuccess = login(normalizedName, normalizedPhone, guests)
         if (loginSuccess) {
           // localStorage에서 pendingBooking 제거
