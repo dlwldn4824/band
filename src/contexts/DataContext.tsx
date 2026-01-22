@@ -866,8 +866,26 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       throw new Error('게스트 리스트가 방금 초기화되었습니다. 잠시 후 다시 시도해주세요.')
     }
     
-    // ✅ 기존 게스트와 병합하여 dedupe (절대 append 금지)
-    const existingGuests = [...guests]
+    // ✅ Firestore에서 최신 게스트 리스트 가져오기 (웹 예매 게스트 포함)
+    let existingGuests: Guest[] = []
+    try {
+      const currentData = await getFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, FIRESTORE_PATHS.GUESTS_DOC_ID)
+      const firestoreGuests = (currentData as any)?.guests || []
+      if (Array.isArray(firestoreGuests) && firestoreGuests.length > 0) {
+        existingGuests = firestoreGuests.filter((guest: Guest) => guest.isDeleted !== true)
+      } else {
+        // Firestore에 데이터가 없으면 로컬 state 사용
+        existingGuests = guests.filter(guest => guest.isDeleted !== true)
+      }
+    } catch (error) {
+      // Firestore 확인 실패 시 로컬 state 사용
+      existingGuests = guests.filter(guest => guest.isDeleted !== true)
+    }
+    
+    console.log('[UPLOAD] 최신 게스트 리스트 확인:', {
+      firestoreGuestsCount: existingGuests.length,
+      stateGuestsCount: guests.length
+    })
     
     // ✅ 중복 제거: name + phone 기준으로 고유하게 유지
     const guestMap = new Map<string, Guest>()
@@ -899,6 +917,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     })
     
     const processedGuests = Array.from(guestMap.values())
+    
+    console.log('[UPLOAD] 중복 제거 결과:', {
+      existingCount: existingGuests.length,
+      newCount: newGuests.length,
+      processedCount: processedGuests.length,
+      duplicatesRemoved: existingGuests.length + newGuests.length - processedGuests.length
+    })
     
     console.log('[UPLOAD] 게스트 처리 완료:', {
       processedCount: processedGuests.length,
