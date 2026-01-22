@@ -320,7 +320,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         // 게스트 리스트는 절대 임의로 바뀌어서는 안 되므로 Firestore 데이터를 신뢰
         // 초기 로드에서는 데이터만 설정하고, 리스너가 설정된 후에는 리스너가 모든 업데이트를 처리
         const firestoreCleared = (firestoreGuestsData as any)?._cleared
-        const isFirestoreCleared = firestoreCleared !== undefined && firestoreCleared !== null
+        const isFirestoreCleared = firestoreCleared !== undefined && firestoreCleared !== null && typeof firestoreCleared === 'number'
         
         // ✅ 초기 로드 시 updatedAt 추적 (충돌 감지용)
         if (firestoreGuestsData && (firestoreGuestsData as any).updatedAt) {
@@ -639,16 +639,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           // Firestore 데이터를 무조건 적용 (로컬 데이터 확인하지 않음)
           // 초기화 마커 확인 (우선순위: 마커가 있으면 무조건 빈 배열 적용)
           const firestoreCleared = (data as any)?._cleared
-          const isFirestoreCleared = firestoreCleared !== undefined && firestoreCleared !== null
-          
-          // ⚠️ _cleared가 null로 변경된 경우 경고 및 차단
-          if (firestoreCleared === null && firestoreGuests.length > 0) {
-            // ⚠️ 초기화 마커가 null로 변경되고 게스트가 있는 경우 → 적용 차단
-            // 이전 state가 빈 배열이었으면 초기화 상태였을 가능성이 높음
-            if (guestsRef.current.length === 0) {
-              return // 데이터 적용 차단
-            }
-          }
+          const isFirestoreCleared = firestoreCleared !== undefined && firestoreCleared !== null && typeof firestoreCleared === 'number'
           
           // 초기화 마커가 있으면 무조건 빈 배열 적용 (게스트 배열 길이와 관계없이)
           if (isFirestoreCleared) {
@@ -658,7 +649,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             return
           }
           
-          // 초기화 마커가 없으면 → 정상 상태 (초기화되지 않은 상태)
+          // 초기화 마커가 없거나 null이면 → 정상 상태 (초기화되지 않은 상태)
           // Firestore에 저장된 게스트 데이터를 그대로 적용
           setGuests(firestoreGuests) // ✅ 교체 패턴 (누적 금지)
           localStorage.setItem(getGuestsStorageKey(), JSON.stringify(firestoreGuests))
