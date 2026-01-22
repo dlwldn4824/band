@@ -1,5 +1,4 @@
 import { formatPhoneDisplay } from '../../utils/phoneFormat'
-import { Timestamp } from 'firebase/firestore'
 import '../../pages/Admin.css'
 
 interface DrinkOrder {
