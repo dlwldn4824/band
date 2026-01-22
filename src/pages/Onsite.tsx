@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useData } from '../contexts/DataContext'
 import { QRCodeSVG } from 'qrcode.react'
 import { formatPhoneDisplay } from '../utils/phoneFormat'
-import { FIRESTORE_PATHS, getGuestsStorageKey } from '../config/firestorePaths'
+import { getGuestsStorageKey } from '../config/firestorePaths'
 import './Login.css'
 import './Onsite.css'
 
