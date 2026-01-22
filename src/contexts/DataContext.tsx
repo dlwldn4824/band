@@ -943,16 +943,20 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }
 
     // 이미 등록된 게스트인지 확인 (전화번호 비교 시 하이픈 제거 후 비교)
+    // ✅ 삭제된 게스트도 포함해서 체크 (삭제된 게스트와 같은 이름/전화번호면 중복으로 판단)
     const normalizedPhoneForCompare = normalizedPhone.replace(/[-\s()]/g, '')
     const existingGuest = guests.find((guest) => {
-      // 삭제된 게스트는 제외
-      if (guest.isDeleted === true) return false
       const guestName = guest.name || guest['이름'] || guest.Name || ''
       const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '').replace(/[-\s()]/g, '')
       return guestName.trim() === normalizedName && guestPhone === normalizedPhoneForCompare
     })
 
     if (existingGuest) {
+      // 삭제된 게스트인 경우, 삭제 마커를 제거하고 다시 활성화
+      if (existingGuest.isDeleted === true) {
+        // 삭제된 게스트를 다시 활성화하는 대신, 중복으로 판단
+        return { success: false, message: '이미 등록된 게스트입니다. (삭제된 게스트 포함)' }
+      }
       return { success: false, message: '이미 등록된 게스트입니다.' }
     }
 

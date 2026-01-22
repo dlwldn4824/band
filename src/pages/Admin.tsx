@@ -292,12 +292,12 @@ const Admin = () => {
         }
       })
 
-      // 기존 게스트 리스트 가져오기
-      const existingGuests = [...guests]
+      // 기존 게스트 리스트 가져오기 (삭제된 게스트 제외 - 삭제된 게스트는 다시 추가하지 않음)
+      const existingGuests = guests.filter(guest => guest.isDeleted !== true)
       
       // 중복되지 않은 게스트와 중복된 게스트 분리
       const guestsToAdd: any[] = []
-      const guestsToUpdate: Array<{ index: number; guest: any }> = []
+      const guestsToUpdate: Array<{ guest: any; existingGuest: any }> = []
       
       newGuestsFromFile.forEach((guest: any) => {
         const guestName = guest.name || guest['이름'] || guest.Name || ''
@@ -308,28 +308,29 @@ const Admin = () => {
           return
         }
         
-        // 중복 체크
-        const duplicateIndex = existingGuests.findIndex((existing) => {
+        // 중복 체크 (삭제된 게스트는 이미 필터링됨)
+        const duplicateGuest = existingGuests.find((existing) => {
+          // 삭제된 게스트는 제외 (이중 체크)
+          if (existing.isDeleted === true) return false
           const existingName = (existing.name || existing['이름'] || existing.Name || '').trim()
           const existingPhone = String(existing.phone || existing['전화번호'] || existing.Phone || '').replace(/[-\s()]/g, '')
           const normalizedName = guestName.trim()
           const normalizedPhone = guestPhone.replace(/[-\s()]/g, '')
-          return existingName === normalizedName && existingPhone === normalizedPhone
+          return existingName === normalizedName && normalizedPhone === existingPhone
         })
         
-        if (duplicateIndex === -1) {
+        if (!duplicateGuest) {
           // 중복되지 않은 게스트는 추가
           guestsToAdd.push(guest)
         } else {
           // 중복된 게스트는 입금확인 정보 업데이트
-          guestsToUpdate.push({ index: duplicateIndex, guest })
+          guestsToUpdate.push({ guest, existingGuest: duplicateGuest })
         }
       })
 
       // 중복된 게스트의 입금확인 상태 업데이트
       if (guestsToUpdate.length > 0) {
-        guestsToUpdate.forEach(({ index, guest }) => {
-          const existingGuest = existingGuests[index]
+        guestsToUpdate.forEach(({ guest, existingGuest }) => {
           if (existingGuest && guest.paymentConfirmed !== undefined) {
             // 엑셀에 입금확인 정보가 있으면 업데이트
             existingGuest.paymentConfirmed = guest.paymentConfirmed
@@ -369,7 +370,50 @@ const Admin = () => {
       }
 
       // 기존 게스트와 새 게스트 병합 (입금확인 정보가 업데이트된 기존 게스트 포함)
-      const mergedGuests = [...existingGuests, ...guestsToAdd]
+      // ✅ 원본 guests 배열에서 삭제된 게스트를 제외하고, 업데이트된 게스트와 새 게스트를 병합
+      const allGuests = guests.filter(guest => guest.isDeleted !== true)
+      const updatedGuestsMap = new Map<string, any>()
+      
+      // 기존 게스트를 맵에 추가
+      allGuests.forEach(guest => {
+        const key = `${(guest.name || '').trim()}_${String(guest.phone || '').replace(/[-\s()]/g, '')}`
+        if (key && key !== '_') {
+          updatedGuestsMap.set(key, guest)
+        }
+      })
+      
+      // 업데이트된 게스트 반영
+      guestsToUpdate.forEach(({ guest, existingGuest }) => {
+        const key = `${(existingGuest.name || '').trim()}_${String(existingGuest.phone || '').replace(/[-\s()]/g, '')}`
+        if (key && key !== '_') {
+          const updatedGuest = { ...existingGuest }
+          if (guest.paymentConfirmed !== undefined) {
+            updatedGuest.paymentConfirmed = guest.paymentConfirmed
+            if (guest.paymentConfirmed) {
+              updatedGuest.paymentConfirmedAt = guest.paymentConfirmedAt || Date.now()
+            } else {
+              updatedGuest.paymentConfirmedAt = undefined
+            }
+          }
+          updatedGuestsMap.set(key, updatedGuest)
+        }
+      })
+      
+      // 새 게스트 추가
+      guestsToAdd.forEach(guest => {
+        const key = `${(guest.name || guest['이름'] || guest.Name || '').trim()}_${String(guest.phone || guest['전화번호'] || guest.Phone || '').replace(/[-\s()]/g, '')}`
+        if (key && key !== '_') {
+          updatedGuestsMap.set(key, {
+            ...guest,
+            isWalkIn: guest.isWalkIn !== undefined ? guest.isWalkIn : false,
+            paymentConfirmed: guest.paymentConfirmed !== undefined ? guest.paymentConfirmed : false,
+            isDeleted: false,
+            deletedAt: undefined
+          })
+        }
+      })
+      
+      const mergedGuests = Array.from(updatedGuestsMap.values())
       
       console.log('[UPLOAD] 엑셀 파싱 완료:', {
         newGuestsFromFile: newGuestsFromFile.length,
