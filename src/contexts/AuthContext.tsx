@@ -1,8 +1,8 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore'
 import { db } from '../config/firebase'
-import { setFirestoreData, getFirestoreData } from '../services/firestoreService'
-import { FIRESTORE_PATHS, LOCAL_STORAGE_KEYS, getGuestsStorageKey } from '../config/firestorePaths'
+import { setFirestoreData } from '../services/firestoreService'
+import { FIRESTORE_PATHS, getGuestsStorageKey } from '../config/firestorePaths'
 
 export interface User {
   name: string
@@ -355,9 +355,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       setUser(userData)
       localStorage.setItem('user', JSON.stringify(userData))
-      
-      // localStorage 저장 확인
-      const savedUser = JSON.parse(localStorage.getItem('user') || 'null')
       
       // Firestore에서 닉네임 로드 및 자동 설정 (비동기, 실패해도 계속 진행)
       const loadNickname = async () => {

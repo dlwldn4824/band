@@ -4,8 +4,7 @@ import { useData, SetlistItem, PerformanceData, BookingInfo } from '../contexts/
 import { formatPhoneDisplay } from '../utils/phoneFormat'
 import { collection, getDocs, deleteDoc, doc, query, orderBy, getDoc, updateDoc, setDoc, Timestamp } from 'firebase/firestore'
 import { db, storage } from '../config/firebase'
-import { setFirestoreData, getFirestoreData } from '../services/firestoreService'
-import { FIRESTORE_PATHS, LOCAL_STORAGE_KEYS, getGuestsPath, getGuestsStorageKey } from '../config/firestorePaths'
+import { setFirestoreData } from '../services/firestoreService'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import GuestAddModal from '../components/admin/GuestAddModal'
 import GuestEditModal from '../components/admin/GuestEditModal'
@@ -1079,8 +1078,8 @@ const Admin = () => {
     try {
       // SMS 전송 서비스 설정 (예: Twilio, 알리고 등)
       // 여기서는 mailto: 링크를 생성하여 관리자가 수동으로 전송할 수 있도록 함
-      const smsBody = encodeURIComponent(`안녕하세요 ${name}님, 입금이 확인되어 로그인 링크를 보내드립니다: ${loginLink}`)
-      const smsLink = `sms:${phone}?body=${smsBody}`
+      // const smsBody = encodeURIComponent(`안녕하세요 ${name}님, 입금이 확인되어 로그인 링크를 보내드립니다: ${loginLink}`)
+      // const smsLink = `sms:${phone}?body=${smsBody}`
       
       // 실제 SMS 전송을 원하면 Twilio API 등을 사용해야 합니다
       return false // 현재는 SMS 자동 전송 미구현

@@ -7,8 +7,7 @@ import {
   updateDoc, 
   deleteDoc,
   onSnapshot,
-  Timestamp,
-  deleteField
+  Timestamp
 } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import { FIRESTORE_PATHS } from '../config/firestorePaths'
@@ -267,7 +266,7 @@ export const subscribeToFirestore = (
             callback(null)
           }
         },
-        (error) => {
+        () => {
           // ✅ 에러 시 callback을 호출하지 않음 - 기존 state 유지 (UI 깜빡임/리셋 방지)
           // callback(null) 금지: 에러는 UI를 "리셋"시키면 안 됨
         }
@@ -284,7 +283,7 @@ export const subscribeToFirestore = (
           })
           callback(data)
         },
-        (error) => {
+        () => {
           // ✅ 에러 시 callback을 호출하지 않음 - 기존 state 유지 (UI 깜빡임/리셋 방지)
           // callback([]) 금지: 에러는 UI를 "리셋"시키면 안 됨
         }

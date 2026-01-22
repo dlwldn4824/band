@@ -5,7 +5,7 @@ import {
 } from '../services/firestoreService'
 import { collection, getDocs, deleteDoc, doc, onSnapshot } from 'firebase/firestore'
 import { db } from '../config/firebase'
-import { FIRESTORE_PATHS, LOCAL_STORAGE_KEYS, getGuestsPath, getGuestsStorageKey } from '../config/firestorePaths'
+import { FIRESTORE_PATHS, getGuestsStorageKey } from '../config/firestorePaths'
 import * as XLSX from 'xlsx'
 
 export interface Guest {
@@ -750,7 +750,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           }
         }
       },
-      (error) => {
+      () => {
         // ✅ 에러 시 state를 변경하지 않음 - 기존 state 유지 (UI 깜빡임/리셋 방지)
         // 에러는 UI를 "리셋"시키면 안 됨. 리스너가 복구되면 자동으로 다시 동기화됨
       }
@@ -782,7 +782,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           }
         }
       },
-      (error) => {
+      () => {
         // 에러 무시
       }
     )
