@@ -105,10 +105,26 @@ export const setFirestoreData = async (
       const docRef = doc(db, path, docId)
       // guests 컬렉션의 경우 완전 교체 (merge: false)로 저장하여 isDeleted 플래그가 확실히 반영되도록 함
       const mergeOption = path === 'guests' ? false : true
-      await setDoc(docRef, {
-        ...cleanedData,
-        updatedAt: Timestamp.now()
-      }, { merge: mergeOption })
+      
+      // ✅ guests 컬렉션의 경우 _cleared 필드 보존
+      let finalData = { ...cleanedData, updatedAt: Timestamp.now() }
+      if (path === 'guests' && !('_cleared' in cleanedData)) {
+        // _cleared 필드가 없으면 현재 Firestore의 _cleared 값을 읽어서 보존
+        try {
+          const currentDoc = await getDoc(docRef)
+          if (currentDoc.exists()) {
+            const currentData = currentDoc.data()
+            if (currentData && currentData._cleared !== undefined) {
+              finalData._cleared = currentData._cleared
+              console.log('🔵 [setFirestoreData] ✅ _cleared 필드 보존:', currentData._cleared)
+            }
+          }
+        } catch (preserveError) {
+          console.warn('🔵 [setFirestoreData] _cleared 보존 중 오류 (계속 진행):', preserveError)
+        }
+      }
+      
+      await setDoc(docRef, finalData, { merge: mergeOption })
       return true
     } else {
       // 새 문서 생성 (자동 ID)

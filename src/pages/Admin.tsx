@@ -2333,9 +2333,8 @@ const Admin = () => {
           >
             🔗 입금 확인 게스트 링크 생성
           </button>
-          {guests.length > 0 && (
-            <button 
-              onClick={async () => {
+          <button 
+            onClick={async () => {
                 requirePassword(async () => {
                   if (window.confirm('정말로 모든 게스트 정보와 로그인 기록(닉네임 포함)을 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
                     // ✅ 연속 클릭 방지: 버튼 비활성화
@@ -2368,8 +2367,60 @@ const Admin = () => {
                     }
                     
                     try {
+                      // 🔍 Firebase 연결 상태 확인
+                      console.log('🔍 [Admin] Firebase 연결 상태 확인 시작 ==========================================')
+                      console.log('🔍 [Admin] Firebase db 객체:', db)
+                      console.log('🔍 [Admin] Firebase app 이름:', db.app.name)
+                      console.log('🔍 [Admin] Firebase projectId:', db.app.options.projectId)
+                      
+                      // 🔍 현재 DB에 저장된 게스트 리스트 확인
+                      try {
+                        const { getFirestoreData } = await import('../services/firestoreService')
+                        const currentDbData = await getFirestoreData('guests' as any, 'all')
+                        console.log('🔍 [Admin] 현재 DB에 저장된 게스트 데이터 (전체):', currentDbData)
+                        console.log('🔍 [Admin] 현재 DB에 저장된 게스트 데이터 타입:', typeof currentDbData)
+                        console.log('🔍 [Admin] 현재 DB에 저장된 게스트 데이터 키:', currentDbData ? Object.keys(currentDbData) : 'null')
+                        
+                        if (currentDbData) {
+                          const dbGuests = (currentDbData as any).guests || []
+                          const dbCleared = (currentDbData as any)._cleared
+                          console.log('🔍 [Admin] DB 게스트 배열 길이:', Array.isArray(dbGuests) ? dbGuests.length : '배열 아님')
+                          console.log('🔍 [Admin] DB 초기화 마커 (_cleared):', dbCleared)
+                          console.log('🔍 [Admin] DB 게스트 샘플 (처음 3개):', Array.isArray(dbGuests) ? dbGuests.slice(0, 3) : '배열 아님')
+                          console.log('🔍 [Admin] DB updatedAt:', (currentDbData as any).updatedAt)
+                        } else {
+                          console.log('🔍 [Admin] ⚠️ DB에서 게스트 데이터를 찾을 수 없음 (null)')
+                        }
+                      } catch (dbCheckError) {
+                        console.error('🔍 [Admin] ❌ DB 데이터 확인 중 오류:', dbCheckError)
+                      }
+                      
+                      // 🔍 현재 state와 localStorage 비교
+                      console.log('🔍 [Admin] 현재 state 게스트 수:', guests.length)
+                      const localGuests = JSON.parse(localStorage.getItem('guests') || '[]')
+                      console.log('🔍 [Admin] 현재 localStorage 게스트 수:', localGuests.length)
+                      console.log('🔍 [Admin] ==========================================')
+                      
                       // ✅ clearGuests는 async이므로 await 필요
                       await clearGuests()
+                      
+                      // 🔍 초기화 후 DB 상태 확인
+                      console.log('🔍 [Admin] 초기화 후 DB 상태 확인 ==========================================')
+                      try {
+                        const { getFirestoreData } = await import('../services/firestoreService')
+                        const afterClearData = await getFirestoreData('guests' as any, 'all')
+                        console.log('🔍 [Admin] 초기화 후 DB 데이터:', afterClearData)
+                        if (afterClearData) {
+                          const afterGuests = (afterClearData as any).guests || []
+                          const afterCleared = (afterClearData as any)._cleared
+                          console.log('🔍 [Admin] 초기화 후 DB 게스트 배열 길이:', Array.isArray(afterGuests) ? afterGuests.length : '배열 아님')
+                          console.log('🔍 [Admin] 초기화 후 DB 초기화 마커 (_cleared):', afterCleared)
+                        }
+                        console.log('🔍 [Admin] ==========================================')
+                      } catch (afterCheckError) {
+                        console.error('🔍 [Admin] ❌ 초기화 후 DB 확인 중 오류:', afterCheckError)
+                      }
+                      
                       setUploadStatus('✅ 게스트 정보와 로그인 기록이 초기화되었습니다.')
                       
                       // 닉네임 리스트 다시 로드
@@ -2404,7 +2455,6 @@ const Admin = () => {
             >
               🗑️ 게스트 리스트 초기화
             </button>
-          )}
         </div>
 
         {uploadStatus && (
@@ -2474,8 +2524,8 @@ const Admin = () => {
                         // localStorage에 저장
                         localStorage.setItem('guests', JSON.stringify(parsed))
                         
-                        // Firestore에 저장
-                        await setFirestoreData('guests' as any, { guests: parsed }, 'all')
+                        // ✅ Firestore에 저장 (초기화 해제: _cleared를 null로 명시)
+                        await setFirestoreData('guests' as any, { guests: parsed, _cleared: null }, 'all')
                         
                         // 페이지 새로고침하여 데이터 반영
                         window.location.reload()

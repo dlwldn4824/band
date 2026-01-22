@@ -302,10 +302,53 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // localStorage 업데이트
         localStorage.setItem('guests', JSON.stringify(updatedGuestList))
         
-        // Firestore 업데이트 (비동기)
-        setFirestoreData('guests' as any, { guests: updatedGuestList }, 'all').catch((error: any) => {
-          console.error('Firestore 입장번호 업데이트 오류:', error)
-        })
+        // ✅ Firestore 업데이트 전에 초기화 마커 확인 (비동기)
+        ;(async () => {
+          try {
+            const { getFirestoreData } = await import('../services/firestoreService')
+            const currentData = await getFirestoreData('guests' as any, 'all')
+            const currentCleared = (currentData as any)?._cleared
+            const hasClearedMarker = currentCleared !== undefined && currentCleared !== null
+            
+            if (hasClearedMarker) {
+              console.warn('🔴 [AuthContext] ⚠️ 초기화 마커가 있어서 Firestore 업데이트 차단 (입장번호 할당)')
+              return // 초기화 상태에서는 Firestore 업데이트하지 않음
+            }
+            
+            // ✅ Firestore 업데이트 시 초기화 마커 보존
+            const updatePayload: any = { guests: updatedGuestList }
+            if (currentCleared !== undefined && currentCleared !== null) {
+              // 초기화 마커가 있으면 보존 (하지만 이미 위에서 차단했으므로 여기까지 오지 않음)
+              updatePayload._cleared = currentCleared
+            }
+            // 초기화 마커가 없으면 _cleared 필드를 명시하지 않음 (기본 동작)
+            
+            setFirestoreData('guests' as any, updatePayload, 'all').catch((error: any) => {
+              console.error('Firestore 입장번호 업데이트 오류:', error)
+            })
+          } catch (checkError) {
+            console.error('🔴 [AuthContext] 초기화 마커 확인 중 오류:', checkError)
+            // 오류 발생 시에도 초기화 마커 확인 후 업데이트
+            ;(async () => {
+              try {
+                const { getFirestoreData } = await import('../services/firestoreService')
+                const errorCheckData = await getFirestoreData('guests' as any, 'all')
+                const errorCheckCleared = (errorCheckData as any)?._cleared
+                
+                const updatePayload: any = { guests: updatedGuestList }
+                if (errorCheckCleared !== undefined && errorCheckCleared !== null) {
+                  updatePayload._cleared = errorCheckCleared
+                }
+                
+                setFirestoreData('guests' as any, updatePayload, 'all').catch((error: any) => {
+                  console.error('Firestore 입장번호 업데이트 오류:', error)
+                })
+              } catch (nestedError) {
+                console.error('🔴 [AuthContext] 중첩 오류 확인 중 실패:', nestedError)
+              }
+            })()
+          }
+        })()
       }
       
       // 입장번호가 항상 userData에 포함되도록 보장
