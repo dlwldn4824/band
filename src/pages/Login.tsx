@@ -923,7 +923,6 @@ const Login = () => {
                   }
                   
                   // 기존 게스트가 아닌 경우에만 명단에 추가
-                  let updatedGuests = [...guests]
                   if (!existingGuest) {
                     // Firestore에 예매 신청 정보 저장
                     const userId = `${normalizedName}_${normalizedPhone}`
@@ -939,6 +938,7 @@ const Login = () => {
                     }, { merge: true })
 
                     // 사전 예약 등록 (입금 확인 대기 상태이므로 isWalkIn: false)
+                    // ✅ addWalkInGuest가 이미 state를 업데이트하므로 별도로 추가하지 않음
                     const result = await addWalkInGuest(normalizedName, normalizedPhone, false, '')
                     
                     if (!result.success) {
@@ -946,20 +946,15 @@ const Login = () => {
                       return
                     }
                     
-                    // 새로 추가된 게스트를 updatedGuests에 직접 추가 (상태 업데이트 전에 로그인하기 위해)
-                    const newGuest = {
-                      name: normalizedName,
-                      phone: normalizedPhone,
-                      checkedIn: false,
-                      isWalkIn: false,
-                      paymentConfirmed: false, // 입금 확인 대기 상태
-                      paymentConfirmedAt: undefined
-                    }
-                    updatedGuests = [...updatedGuests, newGuest]
+                    // ✅ addWalkInGuest가 성공하면 state가 이미 업데이트되었으므로
+                    // localStorage에서 최신 게스트 리스트를 가져와서 로그인
+                    // 약간의 지연을 두어 state 업데이트를 기다림
+                    await new Promise(resolve => setTimeout(resolve, 100))
                   }
 
-                  // 로그인 시도 (입금 확인 전에도 로그인 가능하도록)
-                  const loginSuccess = login(normalizedName, normalizedPhone, updatedGuests)
+                  // ✅ 최신 게스트 리스트를 가져와서 로그인 (addWalkInGuest로 추가된 게스트 포함)
+                  const latestGuests = JSON.parse(localStorage.getItem(getGuestsStorageKey()) || '[]')
+                  const loginSuccess = login(normalizedName, normalizedPhone, latestGuests)
                   
                   if (!loginSuccess) {
                     // 로그인 실패 시 약간의 지연 후 재시도 (상태 업데이트 대기)

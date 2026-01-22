@@ -953,8 +953,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
     // 이미 등록된 게스트인지 확인 (전화번호 비교 시 하이픈 제거 후 비교)
     // ✅ 삭제된 게스트는 제외하고 활성 게스트만 체크
+    // ✅ 최신 게스트 리스트 확인 (localStorage와 state 모두 확인하여 중복 방지)
+    const latestGuestsFromStorage = JSON.parse(localStorage.getItem(getGuestsStorageKey()) || '[]')
+    const latestGuests = latestGuestsFromStorage.length > 0 ? latestGuestsFromStorage : guests
+    
     const normalizedPhoneForCompare = normalizedPhone.replace(/[-\s()]/g, '')
-    const existingGuest = guests.find((guest) => {
+    const existingGuest = latestGuests.find((guest: Guest) => {
       // 삭제된 게스트는 제외
       if (guest.isDeleted === true) {
         return false
@@ -965,6 +969,15 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     })
 
     if (existingGuest) {
+      console.log('[addWalkInGuest] 중복 게스트 발견:', {
+        name: normalizedName,
+        phone: normalizedPhoneForCompare,
+        existingGuest: {
+          name: existingGuest.name || existingGuest['이름'] || existingGuest.Name,
+          phone: existingGuest.phone || existingGuest['전화번호'] || existingGuest.Phone,
+          paymentConfirmed: existingGuest.paymentConfirmed
+        }
+      })
       return { success: false, message: '이미 등록된 게스트입니다.' }
     }
 
@@ -979,7 +992,26 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       paymentConfirmedAt: undefined // 입금 확인 시간은 관리자가 확인할 때 설정
     }
 
-    const updatedGuests = [...guests, newGuest]
+    // ✅ Map을 사용하여 중복 제거 (name + phone 기준)
+    const guestMap = new Map<string, Guest>()
+    
+    // 1. 기존 게스트 먼저 추가 (삭제된 게스트는 제외)
+    latestGuests.forEach((guest: Guest) => {
+      if (guest.isDeleted !== true) {
+        const key = `${(guest.name || '').trim()}_${String(guest.phone || '').replace(/[-\s()]/g, '')}`
+        if (key && key !== '_') {
+          guestMap.set(key, guest)
+        }
+      }
+    })
+    
+    // 2. 새 게스트 추가 (중복이면 덮어쓰기)
+    const newGuestKey = `${normalizedName}_${normalizedPhoneForCompare}`
+    if (newGuestKey && newGuestKey !== '_') {
+      guestMap.set(newGuestKey, newGuest)
+    }
+    
+    const updatedGuests = Array.from(guestMap.values())
     
     // Firestore에 저장 (성공 확인 후 state 업데이트)
     // ✅ guests 우선 원칙: 현재 state에 guests가 있으면 초기화 마커와 관계없이 추가 허용
