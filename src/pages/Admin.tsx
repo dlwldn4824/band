@@ -6,7 +6,11 @@ import { collection, getDocs, deleteDoc, doc, query, orderBy, getDoc, updateDoc,
 import { db, storage } from '../config/firebase'
 import { setFirestoreData } from '../services/firestoreService'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-// Google Sheets 연동은 직접 fetch로 구현 (서비스 함수는 나중에 사용 가능)
+import GuestAddModal from '../components/admin/GuestAddModal'
+import GuestEditModal from '../components/admin/GuestEditModal'
+import PasswordModal from '../components/admin/PasswordModal'
+import DrinkOrdersSection from '../components/admin/DrinkOrdersSection'
+import { generatePersonalLoginLink, makeGuestKey } from '../utils/adminUtils'
 import './Admin.css'
 
 const Admin = () => {
@@ -36,9 +40,7 @@ const Admin = () => {
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null)
   const [showGuestEditModal, setShowGuestEditModal] = useState(false)
   const [editingGuestIndex, setEditingGuestIndex] = useState<number | null>(null)
-  const [editingGuest, setEditingGuest] = useState<{ name: string; phone: string }>({ name: '', phone: '' })
   const [showGuestAddModal, setShowGuestAddModal] = useState(false)
-  const [newGuest, setNewGuest] = useState<{ name: string; phone: string; isWalkIn: boolean }>({ name: '', phone: '', isWalkIn: false })
   const [isEditingPerformanceInfo, setIsEditingPerformanceInfo] = useState(false)
   const [editedEventName, setEditedEventName] = useState('')
   const [editedDate, setEditedDate] = useState('')
@@ -55,17 +57,8 @@ const Admin = () => {
   const [showPasswordModal, setShowPasswordModal] = useState(false)
   const [passwordInput, setPasswordInput] = useState('')
 
-  // 개인 로그인 링크 생성 함수
-  const generatePersonalLoginLink = (name: string, phone: string): string => {
-    const normalizedPhone = phone.replace(/\D/g, '')
-    const combinedData = `${name}|${normalizedPhone}`
-    const base64Token = btoa(encodeURIComponent(combinedData))
-    const urlSafeToken = base64Token.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
-    const baseUrl = window.location.origin
-    return `${baseUrl}/t/${urlSafeToken}`
-  }
   const [drinkOrders, setDrinkOrders] = useState<Array<{ id: string; name: string; phone: string; beerQuantity: number; mojitoQuantity: number; totalAmount: number; createdAt: any; paymentConfirmed?: boolean; paymentConfirmedAt?: any; provided?: boolean; providedAt?: any; orderHistory?: Array<{ beerQuantity: number; mojitoQuantity: number; unitPrice?: number; createdAt: any; provided?: boolean; providedAt?: any }> }>>([])
-  const { uploadGuests, setPerformanceData, guests, performanceData, clearGuests, deleteGuest, updateGuest, clearSetlist, bookingInfo, setBookingInfo, clearChatMessages, toggleGuestPayment, addWalkInGuest } = useData()
+  const { uploadGuests, setPerformanceData, guests, performanceData, clearGuests, deleteGuest, clearSetlist, bookingInfo, setBookingInfo, clearChatMessages, toggleGuestPayment, addWalkInGuest } = useData()
   
   // 예매 정보 폼 상태
   const [bookingForm, setBookingForm] = useState<BookingInfo>({
@@ -194,10 +187,10 @@ const Admin = () => {
         snapshot.forEach((doc) => {
           const data = doc.data()
           const bookingName = data.name || ''
-          const bookingPhone = String(data.phone || '').replace(/[-\s()]/g, '')
+          const bookingPhone = String(data.phone || '')
           
           if (bookingName && bookingPhone) {
-            const guestId = `${bookingName}_${bookingPhone}`
+            const guestId = makeGuestKey(bookingName, bookingPhone)
             // 가장 최근 예매 일시만 저장 (여러 개가 있으면 나중 것)
             if (data.createdAt) {
               bookingDatesMap[guestId] = data.createdAt
@@ -383,9 +376,9 @@ const Admin = () => {
       try {
         const deletePromises = guestsToAdd.map(async (guest: any) => {
           const guestName = guest.name || guest['이름'] || guest.Name || ''
-          const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '').replace(/[-\s()]/g, '')
+          const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '')
           if (guestName && guestPhone) {
-            const userId = `${guestName}_${guestPhone}`
+            const userId = makeGuestKey(guestName, guestPhone)
             const userProfileRef = doc(db, 'userProfiles', userId)
             const userProfileSnap = await getDoc(userProfileRef)
             if (userProfileSnap.exists()) {
@@ -846,8 +839,8 @@ const Admin = () => {
     // 닉네임 정보 포함하여 게스트 데이터 준비
     const guestsWithNicknames = guests.map((guest) => {
       const guestName = guest.name || guest['이름'] || guest.Name || ''
-      const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '').replace(/[-\s()]/g, '')
-      const userId = `${guestName}_${guestPhone}`
+      const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '')
+      const userId = makeGuestKey(guestName, guestPhone)
       const nickname = userNicknames[userId] || ''
       const bookingDate = guestBookingDates[userId]
       const formattedBookingDate = bookingDate 
@@ -1173,11 +1166,6 @@ const Admin = () => {
   }
 
 
-  // 게스트 고유 ID 생성 함수
-  const getGuestId = (name: string, phone: string): string => {
-    const normalizedPhone = phone.replace(/\D/g, '')
-    return `${name}_${normalizedPhone}`
-  }
 
   // 입장 번호 자동 부여 함수
   const assignEntryNumbers = (currentGuests: typeof guests) => {
@@ -1257,7 +1245,7 @@ const Admin = () => {
     if (!guest) return
 
     // 게스트 고유 ID
-    const guestId = getGuestId(guest.name, guest.phone)
+    const guestId = makeGuestKey(guest.name, guest.phone)
 
     // 현재 입금 확인 상태 확인 (토글 전)
     const willBeConfirmed = !guest.paymentConfirmed
@@ -1530,7 +1518,7 @@ const Admin = () => {
     // 입금 확인이 완료되었지만 입장 번호가 없는 게스트가 있는지 확인
     // 모든 게스트 중 입장번호가 없는 게스트가 있으면 입장번호 할당
     const needsEntryNumber = guests.some(
-      guest => !guest.entryNumber
+      guest => guest.entryNumber === undefined || guest.entryNumber === null
     )
     
     if (needsEntryNumber) {
@@ -1607,7 +1595,7 @@ const Admin = () => {
     
     for (let i = 0; i < confirmedGuests.length; i++) {
       const guest = confirmedGuests[i]
-          const guestId = getGuestId(guest.name, guest.phone)
+          const guestId = makeGuestKey(guest.name, guest.phone)
           
           // 이미 링크가 있으면 스킵
           if (guestLoginLinks[guestId]) {
@@ -1650,10 +1638,14 @@ const Admin = () => {
     }
   }
   
-  // 게스트 리스트가 변경될 때마다 엑셀 파일 업데이트만 수행 (링크 자동 생성 제거)
+  // 게스트 리스트가 변경될 때마다 엑셀 파일 업데이트만 수행 (디바운스 적용)
   useEffect(() => {
     if (guests.length > 0) {
-      updateExcelFileInStorage(guests)
+      const timeoutId = setTimeout(() => {
+        updateExcelFileInStorage(guests)
+      }, 2000) // 2초 디바운스
+      
+      return () => clearTimeout(timeoutId)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [guests])
@@ -1741,481 +1733,42 @@ const Admin = () => {
       )}
       
       {/* 주류 구매 내역 섹션 */}
-      <div className="admin-section">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <div>
-        <h2>주류 구매 내역</h2>
-        <p className="section-description">
-          주류 사전 구매 내역을 확인할 수 있습니다.
-        </p>
-          </div>
-          {drinkOrders.length > 0 && (
-            <button
-              onClick={handleDeleteAllDrinkOrders}
-              style={{
-                padding: '0.75rem 1.5rem',
-                background: '#ff4444',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                fontSize: '0.9rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'background 0.2s',
-                whiteSpace: 'nowrap'
-              }}
-              onMouseOver={(e) => (e.currentTarget.style.background = '#cc0000')}
-              onMouseOut={(e) => (e.currentTarget.style.background = '#ff4444')}
-            >
-              🗑️ 전체 삭제
-            </button>
-          )}
-        </div>
-        {drinkOrders.length > 0 ? (
-          <div className="guest-list-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>번호</th>
-                  <th>이름</th>
-                  <th>전화번호</th>
-                  <th>캔 맥주</th>
-                  <th>산토리 하이볼</th>
-                  <th>총 금액</th>
-                  <th>주문 시간</th>
-                  <th>입금 확인</th>
-                  <th>관리</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(() => {
-                  // 모든 주문 항목을 수집
-                  interface OrderRow {
-                    order: any
-                    history: any | null
-                    historyIndex: number | null
-                    createdAt: any
-                  }
-                  
-                  const allOrderRows: OrderRow[] = []
-                  
-                  drinkOrders.forEach((order) => {
-                    const hasOrderHistory = order.orderHistory && Array.isArray(order.orderHistory) && order.orderHistory.length > 0
-                    
-                    if (hasOrderHistory && order.orderHistory) {
-                      // orderHistory가 있으면 각 이력을 개별 항목으로 추가
-                      order.orderHistory.forEach((history: any, historyIdx: number) => {
-                        allOrderRows.push({
-                          order,
-                          history,
-                          historyIndex: historyIdx,
-                          createdAt: history.createdAt || order.createdAt
-                        })
-                      })
-                    } else {
-                      // orderHistory가 없으면 전체 주문을 하나의 항목으로 추가
-                      allOrderRows.push({
-                        order,
-                        history: null,
-                        historyIndex: null,
-                        createdAt: order.createdAt
-                      })
-                    }
-                  })
-                  
-                  // 오래된 순으로 정렬하여 번호 부여
-                  const sortedByOldest = [...allOrderRows].sort((a, b) => {
-                    const aTime = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0
-                    const bTime = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0
-                    return aTime - bTime // 오래된 것부터
-                  })
-                  
-                  // 번호 매핑 생성 (오래된 것부터 1, 2, 3...)
-                  const numberMap = new Map<string, number>()
-                  sortedByOldest.forEach((row, index) => {
-                    const key = row.history !== null 
-                      ? `${row.order.id}-${row.historyIndex}`
-                      : row.order.id
-                    numberMap.set(key, index + 1)
-                  })
-                  
-                  // 최신 순으로 정렬하여 표시
-                  const sortedByNewest = [...allOrderRows].sort((a, b) => {
-                    const aTime = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0
-                    const bTime = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0
-                    return bTime - aTime // 최신 것부터
-                  })
-                  
-                  const rows: JSX.Element[] = []
-                  
-                  sortedByNewest.forEach((rowData) => {
-                    const { order, history, historyIndex } = rowData
-                    const rowKey = history !== null 
-                      ? `${order.id}-${historyIndex}`
-                      : order.id
-                    const rowNumber = numberMap.get(rowKey) || 0
-                    
-                    if (history !== null) {
-                      // orderHistory 항목
-                      // unitPrice가 없으면 전화번호를 확인하여 가격 결정
-                      const ADMIN_PRICE = 2000
-                      const ORIGINAL_PRICE = 3500
-                      const itemPrice = history.unitPrice || (order.phone === 'admin' ? ADMIN_PRICE : ORIGINAL_PRICE)
-                      const historyAmount = (history.beerQuantity || 0) * itemPrice + (history.mojitoQuantity || 0) * itemPrice
-                      const isProvided = history.provided === true
-                      
-                      rows.push(
-                          <tr key={`${order.id}-${historyIndex}`} className={isProvided ? 'order-provided' : 'order-not-provided'}>
-                            <td>{rowNumber}</td>
-                            <td>{order.name}</td>
-                            <td>{formatPhoneDisplay(order.phone)}</td>
-                            <td>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <span>{history.beerQuantity || 0}개</span>
-                                {order.paymentConfirmed && (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      handleDrinkOrderProvide(order.id, historyIndex!)
-                                    }}
-                                    style={{
-                                      background: isProvided ? '#28a745' : '#ffc107',
-                                      color: 'white',
-                                      border: 'none',
-                                      borderRadius: '3px',
-                                      padding: '0.15rem 0.4rem',
-                                      fontSize: '0.65rem',
-                                      cursor: 'pointer'
-                                    }}
-                                  >
-                                    {isProvided ? '✓' : '○'}
-                                  </button>
-                                )}
-                              </div>
-                            </td>
-                            <td>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <span>{history.mojitoQuantity || 0}개</span>
-                                {order.paymentConfirmed && (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      handleDrinkOrderProvide(order.id, historyIndex!)
-                                    }}
-                                    style={{
-                                      background: isProvided ? '#28a745' : '#ffc107',
-                                      color: 'white',
-                                      border: 'none',
-                                      borderRadius: '3px',
-                                      padding: '0.15rem 0.4rem',
-                                      fontSize: '0.65rem',
-                                      cursor: 'pointer'
-                                    }}
-                                  >
-                                    {isProvided ? '✓' : '○'}
-                                  </button>
-                                )}
-                              </div>
-                            </td>
-                            <td>{historyAmount.toLocaleString()}원</td>
-                            <td>
-                              {history.createdAt?.toDate ? 
-                                new Date(history.createdAt.toDate()).toLocaleString('ko-KR', {
-                                  year: 'numeric',
-                                  month: '2-digit',
-                                  day: '2-digit',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                }) : '-'}
-                            </td>
-                            <td style={{ textAlign: 'center' }}>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'center' }}>
-                                <button
-                                  onClick={() => handleDrinkOrderPaymentConfirm(order.id)}
-                                  className={`payment-confirm-button ${order.paymentConfirmed ? 'confirmed' : 'not-confirmed'}`}
-                                  title={order.paymentConfirmed && order.paymentConfirmedAt ? `입금 확인 완료 (${order.paymentConfirmedAt?.toDate ? new Date(order.paymentConfirmedAt.toDate()).toLocaleString('ko-KR') : '-'})` : '입금 확인 대기'}
-                                >
-                                  {order.paymentConfirmed ? '확인완료' : '대기중'}
-                                </button>
-                                {order.paymentConfirmed && order.paymentConfirmedAt && (
-                                  <span style={{ fontSize: '0.75rem', color: '#666' }}>
-                                    {order.paymentConfirmedAt?.toDate ? 
-                                      new Date(order.paymentConfirmedAt.toDate()).toLocaleString('ko-KR', {
-                                        year: 'numeric',
-                                        month: '2-digit',
-                                        day: '2-digit',
-                                        hour: '2-digit',
-                                        minute: '2-digit'
-                                      }) : '-'}
-                                  </span>
-                                )}
-                              </div>
-                            </td>
-                            <td>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-start' }}>
-                                <div style={{ display: 'flex', flexDirection: 'row', gap: '0.5rem', alignItems: 'center' }}>
-                                  <button
-                                    onClick={() => handleDrinkOrderProvide(order.id, historyIndex!)}
-                                    disabled={!order.paymentConfirmed}
-                                    style={{
-                                      background: isProvided ? '#28a745' : (order.paymentConfirmed ? '#ffc107' : '#cccccc'),
-                                      color: isProvided ? 'white' : (order.paymentConfirmed ? '#000' : 'white'),
-                                      border: 'none',
-                                      borderRadius: '4px',
-                                      padding: '0.4rem 0.8rem',
-                                      fontSize: '0.85rem',
-                                      cursor: order.paymentConfirmed ? 'pointer' : 'not-allowed',
-                                      transition: 'background 0.2s',
-                                      opacity: order.paymentConfirmed ? 1 : 0.6
-                                    }}
-                                    onMouseOver={(e) => {
-                                      if (order.paymentConfirmed) {
-                                        e.currentTarget.style.background = isProvided ? '#218838' : '#ffb300'
-                                      }
-                                    }}
-                                    onMouseOut={(e) => {
-                                      if (order.paymentConfirmed) {
-                                        e.currentTarget.style.background = isProvided ? '#28a745' : '#ffc107'
-                                      }
-                                    }}
-                                    title={order.paymentConfirmed ? (isProvided ? '제공완료됨' : '제공완료 처리') : '입금 확인 후 제공완료 처리 가능'}
-                                  >
-                                    {isProvided ? '제공완료' : '제공 대기'}
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteDrinkOrderHistory(order.id, historyIndex!)}
-                                    className="delete-button"
-                                    style={{
-                                      background: '#ff4444',
-                                      color: 'white',
-                                      border: 'none',
-                                      borderRadius: '4px',
-                                      padding: '0.4rem 0.8rem',
-                                      fontSize: '0.85rem',
-                                      cursor: 'pointer',
-                                      transition: 'background 0.2s'
-                                    }}
-                                    onMouseOver={(e) => (e.currentTarget.style.background = '#cc0000')}
-                                    onMouseOut={(e) => (e.currentTarget.style.background = '#ff4444')}
-                                  >
-                                    삭제
-                                  </button>
-                                </div>
-                                {isProvided && history.providedAt && (
-                                  <span style={{ fontSize: '0.75rem', color: '#666' }}>
-                                    {history.providedAt?.toDate ? 
-                                      new Date(history.providedAt.toDate()).toLocaleString('ko-KR', {
-                                        year: 'numeric',
-                                        month: '2-digit',
-                                        day: '2-digit',
-                                        hour: '2-digit',
-                                        minute: '2-digit'
-                                      }) : '-'}
-                                  </span>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        )
-                    } else {
-                      // orderHistory가 없으면 기존처럼 하나의 행으로 표시
-                      const allProvided = order.provided === true
-                      
-                      rows.push(
-                        <tr key={order.id} className={allProvided ? 'order-provided' : 'order-not-provided'}>
-                          <td>{rowNumber}</td>
-                    <td>{order.name}</td>
-                    <td>{formatPhoneDisplay(order.phone)}</td>
-                    <td>{order.beerQuantity}개</td>
-                    <td>{order.mojitoQuantity}개</td>
-                          <td>
-                            {(() => {
-                              // orderHistory를 기반으로 totalAmount 재계산 (기존 totalAmount가 잘못된 경우 대비)
-                              if (order.orderHistory && order.orderHistory.length > 0) {
-                                const ADMIN_PRICE = 2000
-                                const ORIGINAL_PRICE = 3500
-                                
-                                let calculatedTotal = 0
-                                order.orderHistory.forEach((historyItem: any) => {
-                                  // unitPrice가 없으면 전화번호를 확인하여 가격 결정
-                                  let itemPrice = historyItem.unitPrice
-                                  if (!itemPrice) {
-                                    // 전화번호가 'admin'이면 운영진 가격, 아니면 기본 가격
-                                    itemPrice = (order.phone === 'admin') ? ADMIN_PRICE : ORIGINAL_PRICE
-                                  }
-                                  const itemTotal = (historyItem.beerQuantity * itemPrice) + (historyItem.mojitoQuantity * itemPrice)
-                                  calculatedTotal += itemTotal
-                                })
-                                return calculatedTotal.toLocaleString() + '원'
-                              }
-                              // orderHistory가 없으면 전화번호를 확인하여 가격 재계산
-                              const ADMIN_PRICE = 2000
-                              const ORIGINAL_PRICE = 3500
-                              const itemPrice = order.phone === 'admin' ? ADMIN_PRICE : ORIGINAL_PRICE
-                              const calculatedTotal = (order.beerQuantity * itemPrice) + (order.mojitoQuantity * itemPrice)
-                              return calculatedTotal.toLocaleString() + '원'
-                            })()}
-                          </td>
-                    <td>
-                      {order.createdAt?.toDate ? 
-                        new Date(order.createdAt.toDate()).toLocaleString('ko-KR', {
-                          year: 'numeric',
-                          month: '2-digit',
-                          day: '2-digit',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        }) : '-'}
-                    </td>
-                          <td style={{ textAlign: 'center' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'center' }}>
-                              <button
-                                onClick={() => handleDrinkOrderPaymentConfirm(order.id)}
-                                className={`payment-confirm-button ${order.paymentConfirmed ? 'confirmed' : 'not-confirmed'}`}
-                                title={order.paymentConfirmed && order.paymentConfirmedAt ? `입금 확인 완료 (${order.paymentConfirmedAt?.toDate ? new Date(order.paymentConfirmedAt.toDate()).toLocaleString('ko-KR') : '-'})` : '입금 확인 대기'}
-                              >
-                                {order.paymentConfirmed ? '확인완료' : '대기중'}
-                              </button>
-                              {order.paymentConfirmed && order.paymentConfirmedAt && (
-                                <span style={{ fontSize: '0.75rem', color: '#666' }}>
-                                  {order.paymentConfirmedAt?.toDate ? 
-                                    new Date(order.paymentConfirmedAt.toDate()).toLocaleString('ko-KR', {
-                                      year: 'numeric',
-                                      month: '2-digit',
-                                      day: '2-digit',
-                                      hour: '2-digit',
-                                      minute: '2-digit'
-                                    }) : '-'}
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-start' }}>
-                              <div style={{ display: 'flex', flexDirection: 'row', gap: '0.5rem', alignItems: 'center' }}>
-                                <button
-                                  onClick={() => handleDrinkOrderProvide(order.id)}
-                                  disabled={!order.paymentConfirmed}
-                                  style={{
-                                    background: order.provided ? '#28a745' : (order.paymentConfirmed ? '#ffc107' : '#cccccc'),
-                                    color: order.provided ? 'white' : (order.paymentConfirmed ? '#000' : 'white'),
-                                    border: 'none',
-                                    borderRadius: '4px',
-                                    padding: '0.4rem 0.8rem',
-                                    fontSize: '0.85rem',
-                                    cursor: order.paymentConfirmed ? 'pointer' : 'not-allowed',
-                                    transition: 'background 0.2s',
-                                    opacity: order.paymentConfirmed ? 1 : 0.6
-                                  }}
-                                  onMouseOver={(e) => {
-                                    if (order.paymentConfirmed) {
-                                      e.currentTarget.style.background = order.provided ? '#218838' : '#ffb300'
-                                    }
-                                  }}
-                                  onMouseOut={(e) => {
-                                    if (order.paymentConfirmed) {
-                                      e.currentTarget.style.background = order.provided ? '#28a745' : '#ffc107'
-                                    }
-                                  }}
-                                  title={order.paymentConfirmed ? (order.provided ? '제공완료됨' : '제공완료 처리') : '입금 확인 후 제공완료 처리 가능'}
-                                >
-                                  {order.provided ? '제공완료' : '제공 대기'}
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteDrinkOrder(order.id)}
-                                  className="delete-button"
-                                  style={{
-                                    background: '#ff4444',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '4px',
-                                    padding: '0.4rem 0.8rem',
-                                    fontSize: '0.85rem',
-                                    cursor: 'pointer',
-                                    transition: 'background 0.2s'
-                                  }}
-                                  onMouseOver={(e) => (e.currentTarget.style.background = '#cc0000')}
-                                  onMouseOut={(e) => (e.currentTarget.style.background = '#ff4444')}
-                                >
-                                  삭제
-                                </button>
-                              </div>
-                              {order.provided && order.providedAt && (
-                                <span style={{ fontSize: '0.75rem', color: '#666' }}>
-                                  {order.providedAt?.toDate ? 
-                                    new Date(order.providedAt.toDate()).toLocaleString('ko-KR', {
-                                      year: 'numeric',
-                                      month: '2-digit',
-                                      day: '2-digit',
-                                      hour: '2-digit',
-                                      minute: '2-digit'
-                                    }) : '-'}
-                                </span>
-                              )}
-                            </div>
-                    </td>
-                  </tr>
-                      )
-                    }
-                  })
-                  
-                  return rows
-                })()}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <p style={{ color: '#999', textAlign: 'center', padding: '2rem' }}>
-            주류 구매 내역이 없습니다.
-          </p>
-        )}
-      </div>
+      <DrinkOrdersSection
+        drinkOrders={drinkOrders}
+        onDeleteAll={handleDeleteAllDrinkOrders}
+        onPaymentConfirm={handleDrinkOrderPaymentConfirm}
+        onProvide={handleDrinkOrderProvide}
+        onDeleteHistory={handleDeleteDrinkOrderHistory}
+        onDeleteOrder={handleDeleteDrinkOrder}
+      />
 
       {/* 게스트 리스트 섹션 */}
       <div className="admin-section">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <div className="section-header">
           <div>
             <h2>게스트 리스트</h2>
             <p className="section-description">
               등록된 게스트 목록을 확인할 수 있습니다.
             </p>
           </div>
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <div className="button-group">
             <button
               onClick={() => setGuestSortBy(guestSortBy === 'entryNumber' ? null : 'entryNumber')}
-              style={{
-                padding: '0.375rem 0.75rem',
-                background: guestSortBy === 'entryNumber' ? '#4C4CFF' : '#f5f5f5',
-                color: guestSortBy === 'entryNumber' ? '#ffffff' : '#333',
-                border: '1px solid #ddd',
-                borderRadius: '6px',
-                fontSize: '0.75rem',
-                cursor: 'pointer',
-                fontWeight: guestSortBy === 'entryNumber' ? '600' : '400'
-              }}
+              className={`sort-button ${guestSortBy === 'entryNumber' ? 'active' : ''}`}
             >
               입장번호 순
             </button>
             <button
               onClick={() => setGuestSortBy(guestSortBy === 'payment' ? null : 'payment')}
-              style={{
-                padding: '0.375rem 0.75rem',
-                background: guestSortBy === 'payment' ? '#4C4CFF' : '#f5f5f5',
-                color: guestSortBy === 'payment' ? '#ffffff' : '#333',
-                border: '1px solid #ddd',
-                borderRadius: '6px',
-                fontSize: '0.75rem',
-                cursor: 'pointer',
-                fontWeight: guestSortBy === 'payment' ? '600' : '400'
-              }}
+              className={`sort-button ${guestSortBy === 'payment' ? 'active' : ''}`}
             >
               입금 확인 순
             </button>
           </div>
           <button
             onClick={() => {
-              requirePassword(() => {
+                  requirePassword(() => {
                 if (window.confirm('게스트를 추가하시겠습니까?')) {
-                  setNewGuest({ name: '', phone: '', isWalkIn: false })
                   setShowGuestAddModal(true)
                 }
               })
@@ -2293,7 +1846,7 @@ const Admin = () => {
                   const guestPhone = formatPhoneDisplay(guestPhoneRaw)
                   const isWalkIn = guest.isWalkIn === true
                   // userId 생성 (닉네임 조회용)
-                  const userId = `${guestName}_${guestPhoneRaw}`
+                  const userId = makeGuestKey(guestName, guestPhoneRaw)
                   const guestNickname = userNicknames[userId] || '-'
                   // 예매 일시 조회
                   const bookingDate = guestBookingDates[userId]
@@ -2328,12 +1881,7 @@ const Admin = () => {
                   return (
                     <tr 
                       key={originalIndex >= 0 ? originalIndex : sortedIndex}
-                      style={{
-                        textDecoration: isDeleted ? 'line-through' : 'none',
-                        color: isDeleted ? '#999' : 'inherit',
-                        backgroundColor: isDeleted ? '#f5f5f5' : 'transparent',
-                        opacity: isDeleted ? 0.7 : 1
-                      }}
+                      className={isDeleted ? 'guest-row-deleted' : ''}
                     >
                       <td>{sortedIndex + 1}</td>
                       <td>{guestName}</td>
@@ -2344,11 +1892,11 @@ const Admin = () => {
                           {isWalkIn ? '현장 예매' : '사전 예매'}
                         </span>
                       </td>
-                      <td style={{ fontSize: '0.875rem', color: '#999' }}>
+                      <td className="text-small-gray">
                         {formattedBookingDate}
                       </td>
-                      <td style={{ textAlign: 'center' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'center' }}>
+                      <td className="text-center">
+                        <div className="flex-column-center">
                           <button
                             onClick={() => handlePaymentConfirm(originalIndex >= 0 ? originalIndex : sortedIndex)}
                             className={`payment-confirm-button ${guest.paymentConfirmed ? 'confirmed' : 'not-confirmed'}`}
@@ -2375,7 +1923,7 @@ const Admin = () => {
                           <div style={{ display: 'flex', flexDirection: 'row', gap: '0.5rem', alignItems: 'center', justifyContent: 'center' }}>
                             <input
                               type="text"
-                              value={generatePersonalLoginLink(guestName, guestPhoneRaw)}
+                              value={guestLoginLinks[userId] || generatePersonalLoginLink(guestName, guestPhoneRaw)}
                               readOnly
                               onClick={(e) => (e.target as HTMLInputElement).select()}
                               style={{
@@ -2392,7 +1940,7 @@ const Admin = () => {
                             />
                             <button
                               onClick={async () => {
-                                const loginLink = generatePersonalLoginLink(guestName, guestPhoneRaw)
+                                const loginLink = guestLoginLinks[userId] || generatePersonalLoginLink(guestName, guestPhoneRaw)
                                 try {
                                   await navigator.clipboard.writeText(loginLink)
                                   setUploadStatus(`✅ "${guestName}" 게스트의 접속 링크가 복사되었습니다.`)
@@ -2440,10 +1988,6 @@ const Admin = () => {
                               requirePassword(() => {
                                 if (window.confirm(`"${guestName}" 게스트를 수정하시겠습니까?`)) {
                                   setEditingGuestIndex(originalIndex >= 0 ? originalIndex : sortedIndex)
-                                  setEditingGuest({
-                                    name: guestName,
-                                    phone: guestPhoneRaw
-                                  })
                                   setShowGuestEditModal(true)
                                 }
                               })
@@ -2461,8 +2005,7 @@ const Admin = () => {
                                   deleteGuest(originalIndex >= 0 ? originalIndex : sortedIndex)
                                   
                                   // 해당 게스트의 booking 정보도 삭제
-                                  const normalizedPhone = guestPhoneRaw.replace(/[-\s()]/g, '')
-                                  const bookingId = `${guestName}_${normalizedPhone}`
+                                  const bookingId = makeGuestKey(guestName, guestPhoneRaw)
                                   const bookingRef = doc(db, 'bookings', bookingId)
                                   
                                   deleteDoc(bookingRef).catch((error) => {
@@ -2627,138 +2170,6 @@ const Admin = () => {
           </button>
         </div>
         
-        {/* 비밀번호 입력 모달 */}
-        {showPasswordModal && (
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0, 0, 0, 0.7)',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: 10000
-          }}>
-            <div style={{
-              background: '#2a2a2a',
-              padding: '2rem',
-              borderRadius: '12px',
-              maxWidth: '400px',
-              width: '90%',
-              border: '2px solid #444'
-            }}>
-              <h3 style={{ color: '#fff', marginBottom: '1rem', fontSize: '1.25rem' }}>
-                비밀번호 입력
-              </h3>
-              <input
-                type="password"
-                value={passwordInput}
-                onChange={(e) => {
-                  setPasswordInput(e.target.value)
-                  setPasswordError('')
-                }}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    handlePasswordConfirm()
-                  }
-                }}
-                placeholder="비밀번호를 입력하세요"
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  borderRadius: '8px',
-                  border: '1px solid #555',
-                  background: '#1a1a1a',
-                  color: '#fff',
-                  fontSize: '1rem',
-                  marginBottom: '1rem'
-                }}
-                autoFocus
-              />
-              {passwordError && (
-                <p style={{ color: '#ff4444', fontSize: '0.875rem', marginBottom: '1rem' }}>
-                  {passwordError}
-                </p>
-              )}
-              <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                <button
-                  onClick={() => {
-                    setShowPasswordModal(false)
-                    setPasswordInput('')
-                    setPasswordError('')
-                    setPendingAction(null)
-                  }}
-                  style={{
-                    padding: '0.5rem 1rem',
-                    background: '#666',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  취소
-                </button>
-                <button
-                  onClick={handlePasswordConfirm}
-                  style={{
-                    padding: '0.5rem 1rem',
-                    background: '#28a745',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: 'pointer'
-                  }}
-                  disabled={!passwordInput.trim()}
-                >
-                  확인
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {/* 자동 동기화 상태 표시 */}
-        {isAutoSyncing && (
-          <div style={{
-            marginTop: '1rem',
-            padding: '0.75rem',
-            borderRadius: '8px',
-            background: '#1a3a3a',
-            color: '#fff',
-            fontSize: '0.875rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}>
-            <span style={{ animation: 'pulse 2s infinite' }}>🔄</span>
-            자동 동기화 중...
-          </div>
-        )}
-        
-        {googleSheetsSyncStatus && (
-          <div style={{ 
-            marginTop: '1rem', 
-            padding: '0.75rem', 
-            borderRadius: '8px',
-            background: googleSheetsSyncStatus.includes('✅') ? '#1a3a1a' : '#3a1a1a',
-            color: '#fff',
-            fontSize: '0.875rem'
-          }}>
-            {googleSheetsSyncStatus}
-          </div>
-        )}
-      </div>
-
-      <div className="admin-section">
-        <h2>게스트 정보 업로드</h2>
-        <p className="section-description">
-          엑셀 파일을 업로드하세요. 엑셀 파일에는 '이름'과 '전화번호' 컬럼이 있어야 합니다.
-          게스트 리스트가 업데이트되면 Firebase Storage의 '게스트_목록.xlsx' 파일이 자동으로 업데이트됩니다.
-        </p>
-        
         {/* 자동 동기화 상태 표시 */}
         {isAutoSyncing && (
           <div style={{
@@ -2842,8 +2253,7 @@ const Admin = () => {
                 const excelData = guests.map((guest, index) => {
                   const guestName = guest.name || guest['이름'] || guest.Name || ''
                   const guestPhone = guest.phone || guest['전화번호'] || guest.Phone || ''
-                  const normalizedPhone = String(guestPhone).replace(/[-\s()]/g, '')
-                  const userId = `${guestName}_${normalizedPhone}`
+                  const userId = makeGuestKey(guestName, guestPhone)
                   const guestNickname = userNicknames[userId] || ''
                   
                   // 예매 일시 조회
@@ -2928,6 +2338,15 @@ const Admin = () => {
               onClick={async () => {
                 requirePassword(async () => {
                   if (window.confirm('정말로 모든 게스트 정보와 로그인 기록(닉네임 포함)을 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+                    // ✅ 연속 클릭 방지: 버튼 비활성화
+                    const button = document.activeElement as HTMLButtonElement
+                    if (button) {
+                      button.disabled = true
+                      button.textContent = '🔄 초기화 중...'
+                    }
+                    
+                    setUploadStatus('🔄 게스트 리스트 초기화 중...')
+                    
                     try {
                       // 모든 userProfiles 삭제 (운영진 제외)
                       const userProfilesRef = collection(db, 'userProfiles')
@@ -2948,23 +2367,39 @@ const Admin = () => {
                       // 오류가 발생해도 게스트 초기화는 계속 진행
                     }
                     
-                    clearGuests()
-                    setUploadStatus('✅ 게스트 정보와 로그인 기록이 초기화되었습니다.')
-                    
-                    // 닉네임 리스트 다시 로드
-                    const userProfilesRef = collection(db, 'userProfiles')
-                    const snapshot = await getDocs(userProfilesRef)
-                    const nicknameMap: Record<string, string> = {}
-                    snapshot.forEach((doc) => {
-                      const data = doc.data()
-                      if (data.nickname && data.nickname.trim() !== '') {
-                        nicknameMap[doc.id] = data.nickname
+                    try {
+                      // ✅ clearGuests는 async이므로 await 필요
+                      await clearGuests()
+                      setUploadStatus('✅ 게스트 정보와 로그인 기록이 초기화되었습니다.')
+                      
+                      // 닉네임 리스트 다시 로드
+                      const userProfilesRef = collection(db, 'userProfiles')
+                      const snapshot = await getDocs(userProfilesRef)
+                      const nicknameMap: Record<string, string> = {}
+                      snapshot.forEach((doc) => {
+                        const data = doc.data()
+                        if (data.nickname && data.nickname.trim() !== '') {
+                          nicknameMap[doc.id] = data.nickname
+                        }
+                      })
+                      setUserNicknames(nicknameMap)
+                    } catch (error: any) {
+                      console.error('게스트 초기화 오류:', error)
+                      if (error?.message?.includes('QUOTA_EXCEEDED') || error?.code === 'resource-exhausted') {
+                        setUploadStatus('❌ Firestore 할당량 초과로 초기화에 실패했습니다. 잠시 후 다시 시도해주세요.')
+                      } else {
+                        setUploadStatus('❌ 게스트 리스트 초기화에 실패했습니다. 다시 시도해주세요.')
                       }
-                    })
-                    setUserNicknames(nicknameMap)
+                    } finally {
+                      // ✅ 버튼 다시 활성화
+                      if (button) {
+                        button.disabled = false
+                        button.textContent = '🗑️ 게스트 리스트 초기화'
+                      }
+                    }
                   }
                 })
-              }} 
+              }}
               className="reset-button"
             >
               🗑️ 게스트 리스트 초기화
@@ -3687,368 +3122,42 @@ const Admin = () => {
       </div>
 
       {/* 비밀번호 확인 모달 */}
-      {showPasswordModal && (
-        <div className="modal-overlay" onClick={() => {
+      <PasswordModal
+        isOpen={showPasswordModal}
+        passwordInput={passwordInput}
+        passwordError={passwordError}
+        onClose={() => {
           setShowPasswordModal(false)
           setPasswordInput('')
           setPasswordError('')
           setPendingAction(null)
-        }}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>비밀번호 확인</h2>
-              <button 
-                className="modal-close"
-                onClick={() => {
-                  setShowPasswordModal(false)
-                  setPasswordInput('')
-                  setPasswordError('')
-                  setPendingAction(null)
-                }}
-              >
-                ×
-              </button>
-            </div>
-            <div className="profile-form">
-              <div className="form-group">
-                <label htmlFor="password-input">비밀번호를 입력하세요</label>
-                <input
-                  type="password"
-                  id="password-input"
-                  value={passwordInput}
-                  onChange={(e) => {
-                    setPasswordInput(e.target.value)
-                    setPasswordError('')
-                  }}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      handlePasswordConfirm()
-                    }
-                  }}
-                  placeholder="비밀번호 입력"
-                  autoFocus
-                />
-                {passwordError && (
-                  <div className="error-message" style={{ marginTop: '0.5rem' }}>
-                    {passwordError}
-                  </div>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={handlePasswordConfirm}
-                className="login-button"
-                disabled={!passwordInput.trim()}
-              >
-                확인
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+        }}
+        onPasswordChange={(value) => {
+          setPasswordInput(value)
+          setPasswordError('')
+        }}
+        onConfirm={handlePasswordConfirm}
+      />
 
       {/* 게스트 추가 모달 */}
-      {showGuestAddModal && (
-        <div className="modal-overlay" onClick={() => {
-          setShowGuestAddModal(false)
-          setNewGuest({ name: '', phone: '', isWalkIn: false })
-        }}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>게스트 추가</h2>
-              <button 
-                className="modal-close"
-                onClick={() => {
-                  setShowGuestAddModal(false)
-                  setNewGuest({ name: '', phone: '', isWalkIn: false })
-                }}
-              >
-                ×
-              </button>
-            </div>
-            <div className="profile-form">
-              <div className="form-group">
-                <label htmlFor="add-guest-name">이름</label>
-                <input
-                  type="text"
-                  id="add-guest-name"
-                  value={newGuest.name}
-                  onChange={(e) => setNewGuest({ ...newGuest, name: e.target.value })}
-                  placeholder="이름 입력"
-                  autoFocus
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="add-guest-phone">전화번호</label>
-                <input
-                  type="tel"
-                  id="add-guest-phone"
-                  value={newGuest.phone}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/[^0-9]/g, '')
-                    setNewGuest({ ...newGuest, phone: value })
-                  }}
-                  placeholder="전화번호 입력 (숫자만)"
-                />
-              </div>
-              <div className="form-group">
-                <label>예매 유형</label>
-                <div className="booking-type-options">
-                  <label className={`booking-type-label ${!newGuest.isWalkIn ? 'selected' : ''}`}>
-                    <input
-                      type="radio"
-                      name="guest-type"
-                      checked={!newGuest.isWalkIn}
-                      onChange={() => setNewGuest({ ...newGuest, isWalkIn: false })}
-                    />
-                    <span>사전 예매</span>
-                  </label>
-                  <label className={`booking-type-label ${newGuest.isWalkIn ? 'selected' : ''}`}>
-                    <input
-                      type="radio"
-                      name="guest-type"
-                      checked={newGuest.isWalkIn}
-                      onChange={() => setNewGuest({ ...newGuest, isWalkIn: true })}
-                    />
-                    <span>현장 예매</span>
-                  </label>
-                </div>
-              </div>
-              <div className="modal-buttons">
-                <button
-                  type="button"
-                  onClick={async () => {
-                    if (!newGuest.name.trim() || !newGuest.phone.trim()) {
-                      setUploadStatus('❌ 이름과 전화번호를 모두 입력해주세요.')
-                      return
-                    }
-                    // 이름과 전화번호 정규화
-                    const normalizedName = newGuest.name.trim()
-                    const normalizedPhone = newGuest.phone.replace(/[-\s()]/g, '')
-                    
-                    // 이미 등록된 게스트인지 확인
-                    const existingGuest = guests.find((guest) => {
-                      const guestName = guest.name || guest['이름'] || guest.Name || ''
-                      const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '').replace(/[-\s()]/g, '')
-                      return guestName.trim() === normalizedName && guestPhone === normalizedPhone
-                    })
-                    
-                    if (existingGuest) {
-                      setUploadStatus('❌ 이미 등록된 게스트입니다.')
-                      return
-                    }
-                    
-                    // 새로운 게스트 추가
-                    const newGuestData: any = {
-                      name: normalizedName,
-                      phone: normalizedPhone,
-                      '이름': normalizedName,
-                      '전화번호': normalizedPhone,
-                      Name: normalizedName,
-                      Phone: normalizedPhone,
-                      checkedIn: false,
-                      isWalkIn: newGuest.isWalkIn,
-                      paymentConfirmed: false
-                    }
-                    
-                    // 기존 userProfile 삭제 (깨끗한 상태로 시작)
-                    try {
-                      const userId = `${normalizedName}_${normalizedPhone}`
-                      const userProfileRef = doc(db, 'userProfiles', userId)
-                      const userProfileSnap = await getDoc(userProfileRef)
-                      if (userProfileSnap.exists()) {
-                        await deleteDoc(userProfileRef)
-                        console.log(`기존 userProfile 삭제: ${userId}`)
-                      }
-                    } catch (error) {
-                      console.error('userProfile 삭제 오류:', error)
-                      // 오류가 발생해도 게스트 추가는 계속 진행
-                    }
-                    
-                    const updatedGuests = [...guests, newGuestData]
-                    // uploadGuests를 사용하여 전체 배열 업데이트
-                    uploadGuests(updatedGuests)
-                    
-                    setShowGuestAddModal(false)
-                    setNewGuest({ name: '', phone: '', isWalkIn: false })
-                    const bookingType = newGuest.isWalkIn ? '현장 예매' : '사전 예매'
-                    setUploadStatus(`✅ "${normalizedName}" 게스트가 ${bookingType}로 추가되었습니다.`)
-                    
-                    // 닉네임 리스트 다시 로드
-                    const userProfilesRef = collection(db, 'userProfiles')
-                    const snapshot = await getDocs(userProfilesRef)
-                    const nicknameMap: Record<string, string> = {}
-                    snapshot.forEach((doc) => {
-                      const data = doc.data()
-                      if (data.nickname && data.nickname.trim() !== '') {
-                        nicknameMap[doc.id] = data.nickname
-                      }
-                    })
-                    setUserNicknames(nicknameMap)
-                  }}
-                  className="login-button modal-add-button"
-                >
-                  추가
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowGuestAddModal(false)
-                    setNewGuest({ name: '', phone: '', isWalkIn: false })
-                  }}
-                  className="login-button modal-cancel-button"
-                >
-                  취소
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <GuestAddModal
+        isOpen={showGuestAddModal}
+        onClose={() => setShowGuestAddModal(false)}
+        onSuccess={setUploadStatus}
+        onNicknamesUpdate={setUserNicknames}
+      />
 
       {/* 게스트 수정 모달 */}
-      {showGuestEditModal && editingGuestIndex !== null && (
-        <div className="modal-overlay" onClick={() => {
+      <GuestEditModal
+        isOpen={showGuestEditModal}
+        guestIndex={editingGuestIndex}
+        onClose={() => {
           setShowGuestEditModal(false)
           setEditingGuestIndex(null)
-          setEditingGuest({ name: '', phone: '' })
-        }}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>게스트 정보 수정</h2>
-              <button 
-                className="modal-close"
-                onClick={() => {
-                  setShowGuestEditModal(false)
-                  setEditingGuestIndex(null)
-                  setEditingGuest({ name: '', phone: '' })
-                }}
-              >
-                ×
-              </button>
-            </div>
-            <div className="profile-form">
-              <div className="form-group">
-                <label htmlFor="edit-guest-name">이름</label>
-                <input
-                  type="text"
-                  id="edit-guest-name"
-                  value={editingGuest.name}
-                  onChange={(e) => setEditingGuest({ ...editingGuest, name: e.target.value })}
-                  placeholder="이름 입력"
-                  autoFocus
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="edit-guest-phone">전화번호</label>
-                <input
-                  type="tel"
-                  id="edit-guest-phone"
-                  value={editingGuest.phone}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/[^0-9]/g, '')
-                    setEditingGuest({ ...editingGuest, phone: value })
-                  }}
-                  placeholder="전화번호 입력 (숫자만)"
-                />
-              </div>
-              <div className="modal-buttons">
-                <button
-                  type="button"
-                  onClick={async () => {
-                    if (!editingGuest.name.trim() || !editingGuest.phone.trim()) {
-                      setUploadStatus('❌ 이름과 전화번호를 모두 입력해주세요.')
-                      return
-                    }
-                    const currentGuest = guests[editingGuestIndex]
-                    const oldName = currentGuest.name || currentGuest['이름'] || currentGuest.Name || ''
-                    const oldPhone = String(currentGuest.phone || currentGuest['전화번호'] || currentGuest.Phone || '').replace(/[-\s()]/g, '')
-                    const newName = editingGuest.name.trim()
-                    const newPhone = editingGuest.phone.trim().replace(/[-\s()]/g, '')
-                    
-                    // 이름이나 전화번호가 변경된 경우 기존 userProfile 삭제
-                    if (oldName !== newName || oldPhone !== newPhone) {
-                      try {
-                        // 기존 userProfile 삭제
-                        if (oldName && oldPhone) {
-                          const oldUserId = `${oldName}_${oldPhone}`
-                          const oldUserProfileRef = doc(db, 'userProfiles', oldUserId)
-                          const oldUserProfileSnap = await getDoc(oldUserProfileRef)
-                          if (oldUserProfileSnap.exists()) {
-                            await deleteDoc(oldUserProfileRef)
-                          }
-                        }
-                        // 새 정보의 userProfile도 삭제 (깨끗한 상태로)
-                        const newUserId = `${newName}_${newPhone}`
-                        const newUserProfileRef = doc(db, 'userProfiles', newUserId)
-                        const newUserProfileSnap = await getDoc(newUserProfileRef)
-                        if (newUserProfileSnap.exists()) {
-                          await deleteDoc(newUserProfileRef)
-                        }
-                      } catch (error) {
-                        console.error('userProfile 삭제 오류:', error)
-                      }
-                    } else {
-                      // 이름과 전화번호가 같아도 userProfile 삭제 (깨끗한 상태로)
-                      try {
-                        const userId = `${newName}_${newPhone}`
-                        const userProfileRef = doc(db, 'userProfiles', userId)
-                        const userProfileSnap = await getDoc(userProfileRef)
-                        if (userProfileSnap.exists()) {
-                          await deleteDoc(userProfileRef)
-                        }
-                      } catch (error) {
-                        console.error('userProfile 삭제 오류:', error)
-                      }
-                    }
-                    
-                    const updatedGuest: any = {
-                      ...currentGuest,
-                      name: newName,
-                      phone: newPhone,
-                      '이름': newName,
-                      '전화번호': newPhone,
-                      Name: newName,
-                      Phone: newPhone
-                    }
-                    updateGuest(editingGuestIndex, updatedGuest)
-                    setShowGuestEditModal(false)
-                    setEditingGuestIndex(null)
-                    setEditingGuest({ name: '', phone: '' })
-                    setUploadStatus(`✅ 게스트 정보가 수정되었습니다.`)
-                    
-                    // 닉네임 리스트 다시 로드
-                    const userProfilesRef = collection(db, 'userProfiles')
-                    const snapshot = await getDocs(userProfilesRef)
-                    const nicknameMap: Record<string, string> = {}
-                    snapshot.forEach((doc) => {
-                      const data = doc.data()
-                      if (data.nickname && data.nickname.trim() !== '') {
-                        nicknameMap[doc.id] = data.nickname
-                      }
-                    })
-                    setUserNicknames(nicknameMap)
-                  }}
-                  className="login-button modal-add-button"
-                >
-                  저장
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowGuestEditModal(false)
-                    setEditingGuestIndex(null)
-                    setEditingGuest({ name: '', phone: '' })
-                  }}
-                  className="login-button modal-cancel-button"
-                >
-                  취소
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+        }}
+        onSuccess={setUploadStatus}
+        onNicknamesUpdate={setUserNicknames}
+      />
     </div>
   )
 }

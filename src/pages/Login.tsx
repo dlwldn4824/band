@@ -884,7 +884,7 @@ const Login = () => {
                     }, { merge: true })
 
                     // 사전 예약 등록 (입금 확인 대기 상태이므로 isWalkIn: false)
-                    const result = addWalkInGuest(normalizedName, normalizedPhone, false, '')
+                    const result = await addWalkInGuest(normalizedName, normalizedPhone, false, '')
                     
                     if (!result.success) {
                       setBookingError(result.message || '등록에 실패했습니다.')

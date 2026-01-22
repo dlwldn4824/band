@@ -124,6 +124,12 @@ export const setFirestoreData = async (
   } catch (error: any) {
     console.error(`[Firestore 쓰기 오류] ${path}${docId ? `/${docId}` : ''}:`, error)
     
+    // Quota exceeded 오류 명시적 처리
+    if (error?.code === 'resource-exhausted' || error?.message?.includes('quota') || error?.message?.includes('Quota')) {
+      console.error('[Firestore] ❌ Quota exceeded - Firestore 할당량 초과')
+      throw new Error('QUOTA_EXCEEDED: Firestore 할당량이 초과되었습니다. 잠시 후 다시 시도해주세요.')
+    }
+    
     // 권한 오류인 경우 false 반환
     if (error?.code === 'permission-denied' || error?.code === 7) {
       console.warn('[Firestore] 쓰기 권한이 없습니다.')
@@ -136,8 +142,8 @@ export const setFirestoreData = async (
       return false
     }
     
-    // 기타 오류는 false 반환
-    return false
+    // 기타 오류는 throw (호출자가 catch할 수 있도록)
+    throw error
   }
 }
 
@@ -200,8 +206,8 @@ export const subscribeToFirestore = (
         },
         (error) => {
           console.error(`[Firestore 구독 오류] ${path}/${docId}:`, error)
-          // 오류 발생 시 null 반환하여 앱이 계속 작동하도록 함
-          callback(null)
+          // ✅ 에러 시 callback을 호출하지 않음 - 기존 state 유지 (UI 깜빡임/리셋 방지)
+          // callback(null) 금지: 에러는 UI를 "리셋"시키면 안 됨
         }
       )
     } else {
@@ -218,19 +224,14 @@ export const subscribeToFirestore = (
         },
         (error) => {
           console.error(`[Firestore 구독 오류] ${path}:`, error)
-          // 오류 발생 시 빈 배열 반환하여 앱이 계속 작동하도록 함
-          callback([])
+          // ✅ 에러 시 callback을 호출하지 않음 - 기존 state 유지 (UI 깜빡임/리셋 방지)
+          // callback([]) 금지: 에러는 UI를 "리셋"시키면 안 됨
         }
       )
     }
   } catch (error) {
     console.error('Firestore 구독 설정 오류:', error)
-    // 초기 설정 오류 시에도 callback 호출하여 앱이 멈추지 않도록 함
-    if (docId) {
-      callback(null)
-    } else {
-      callback([])
-    }
+    // ✅ 초기 설정 오류 시에도 callback을 호출하지 않음 - 기존 state 유지
     // 구독 해제 함수 반환 (빈 함수)
     return () => {}
   }

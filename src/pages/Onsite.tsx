@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useData } from '../contexts/DataContext'
 import { QRCodeSVG } from 'qrcode.react'
-import { setFirestoreData } from '../services/firestoreService'
 import { formatPhoneDisplay } from '../utils/phoneFormat'
 import './Login.css'
 import './Onsite.css'
@@ -97,8 +96,9 @@ const Onsite = () => {
       } else {
         // 새로운 게스트 등록 (현장 예매이므로 isWalkIn: true)
         const result = addWalkInGuest(normalizedName, normalizedPhone, true, '')
-        if (!result.success) {
-          alert(result.message || '게스트 등록에 실패했습니다.')
+        const addResult = await result
+        if (!addResult.success) {
+          alert(addResult.message || '게스트 등록에 실패했습니다.')
           setIsProcessing(false)
           return
         }
@@ -125,7 +125,21 @@ const Onsite = () => {
       }
 
       // Firestore의 'guests' 문서 업데이트 (DataContext와 동일한 형식)
-      await setFirestoreData('guests' as any, { guests: updatedGuestList }, 'all')
+      // 초기화 마커 확인 - 마커가 있으면 업데이트하지 않음
+      const { getFirestoreData } = await import('../services/firestoreService')
+      const currentData = await getFirestoreData('guests' as any, 'all')
+      const currentCleared = (currentData as any)?._cleared
+      const hasClearedMarker = currentCleared !== undefined && currentCleared !== null
+      
+      if (hasClearedMarker) {
+        console.log('🔴 [Onsite] 초기화 마커가 있어서 게스트 업데이트 불가')
+        alert('게스트 리스트가 초기화된 상태입니다. 게스트를 추가하려면 먼저 초기화를 해제해주세요.')
+        setIsProcessing(false)
+        return
+      }
+      
+      // ✅ DataContext의 addWalkInGuest가 이미 Firestore에 저장하므로 여기서는 불필요
+      // addWalkInGuest가 성공하면 자동으로 Firestore에 저장됨
 
       // 개인 로그인 링크 생성 (암호화된 토큰 사용)
       const combinedData = `${normalizedName}|${normalizedPhone}`
