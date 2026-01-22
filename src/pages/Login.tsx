@@ -910,6 +910,18 @@ const Login = () => {
                     return guestName.trim() === normalizedName && guestPhone === normalizedPhoneForCompare
                   })
 
+                  // ✅ 입금 확인된 기존 게스트는 바로 로그인 (명단에 추가하지 않음)
+                  if (existingGuest && existingGuest.paymentConfirmed === true) {
+                    console.log('[Login] 확인완료 기존 게스트 → 바로 로그인 (명단 추가 안 함)')
+                    const loginSuccess = login(normalizedName, normalizedPhone, guests)
+                    if (loginSuccess) {
+                      localStorage.removeItem('pendingBooking')
+                      setShowBookingConfirmation(false)
+                      setShowTicket(true)
+                      return
+                    }
+                  }
+                  
                   // 기존 게스트가 아닌 경우에만 명단에 추가
                   let updatedGuests = [...guests]
                   if (!existingGuest) {
@@ -1005,11 +1017,15 @@ const Login = () => {
             console.log('[Login] TicketTransition - phoneToUse:', phoneToUse)
             console.log('[Login] TicketTransition - existingGuest:', existingGuest)
             console.log('[Login] TicketTransition - entryNumber:', existingGuest?.entryNumber)
+            
+            // ✅ 입금 확인된 기존 게스트는 입장 번호 표시하지 않음 (이미 등록된 게스트이므로)
+            const shouldShowEntryNumber = existingGuest && existingGuest.paymentConfirmed === true ? undefined : existingGuest?.entryNumber
+            
             return {
               name: nameToUse || '',
               date: new Date().toLocaleDateString(),
               seat: 'STANDING',
-              entryNumber: existingGuest?.entryNumber,
+              entryNumber: shouldShowEntryNumber,
               isWalkIn: existingGuest?.isWalkIn === true,
               paymentConfirmed: existingGuest?.paymentConfirmed === true,
             }

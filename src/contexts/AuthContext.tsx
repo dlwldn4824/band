@@ -272,9 +272,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const guestName = foundGuest.name || foundGuest['이름'] || name
       const guestPhone = foundGuest.phone || foundGuest['전화번호'] || phone
       
-      // 입장번호가 없으면 로그인 순서대로 할당 (항상 할당)
+      // ✅ 입금 확인된 기존 게스트는 입장 번호를 할당하지 않음 (이미 등록된 게스트이므로)
+      // 입장번호가 없고 입금 확인되지 않은 게스트만 입장번호 할당
       let entryNumber = foundGuest.entryNumber
-      if (!entryNumber) {
+      const isPaymentConfirmed = foundGuest.paymentConfirmed === true
+      
+      if (!entryNumber && !isPaymentConfirmed) {
         // 이미 입장번호가 있는 게스트들의 최대값 찾기
         const guestsWithEntryNumber = guestList.filter((g: any) => g.entryNumber !== undefined && g.entryNumber !== null)
         const maxEntryNumber = guestsWithEntryNumber.length > 0
