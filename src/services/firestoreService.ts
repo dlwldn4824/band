@@ -7,7 +7,8 @@ import {
   updateDoc, 
   deleteDoc,
   onSnapshot,
-  Timestamp
+  Timestamp,
+  deleteField
 } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import { FIRESTORE_PATHS } from '../config/firestorePaths'

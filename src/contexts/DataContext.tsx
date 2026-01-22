@@ -259,10 +259,17 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             
             // _cleared는 명시적으로 설정된 경우만 포함
             // 초기화 작업: _cleared가 숫자 → 포함
-            // 초기화 해제: _cleared가 null → 포함 (명시적 해제)
+            // 초기화 해제: _cleared가 null → deleteField()로 완전 삭제
             // 일반 저장: _cleared가 undefined → 포함하지 않음 (기존 값 보존)
             if (currentPayload._cleared !== undefined) {
-              finalPayload._cleared = currentPayload._cleared
+              if (currentPayload._cleared === null) {
+                // null이면 완전히 삭제 (초기화 해제)
+                const { deleteField } = await import('firebase/firestore')
+                finalPayload._cleared = deleteField()
+              } else {
+                // 숫자면 그대로 포함 (초기화 작업)
+                finalPayload._cleared = currentPayload._cleared
+              }
             }
             // undefined인 경우는 finalPayload에 포함하지 않음 → setFirestoreData에서 기존 값 보존
             
@@ -369,22 +376,31 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           lastKnownUpdatedAtRef.current = updatedAt
         }
         
-        // 초기화 마커가 있으면 무조건 빈 배열 적용 (게스트 배열 길이와 관계없이)
-        if (isFirestoreCleared) {
-          console.log('[INIT LOAD] 초기화 마커 감지 → 빈 배열 적용')
-          setGuests([])
-          localStorage.setItem(getGuestsStorageKey(), JSON.stringify([]))
-          lastGuestsHashRef.current = JSON.stringify([])
-        } else {
-          // 초기화 마커가 없으면 → 정상 상태 (초기화되지 않은 상태)
-          // Firestore에 저장된 게스트 데이터를 그대로 적용
-          // ✅ 교체 패턴 (누적 금지) - Firestore가 단일 소스
-          console.log('[INIT LOAD] 정상 상태 → 게스트 데이터 적용:', {
-            guestsCount: firestoreGuests.length
+        // ✅ guests 우선 원칙: guests가 있으면 guests를 믿고, guests가 비어있을 때만 _cleared 마커 확인
+        const hasGuests = Array.isArray(firestoreGuests) && firestoreGuests.length > 0
+        
+        if (hasGuests) {
+          // guests가 있으면 무조건 guests 적용 (초기화 마커와 관계없이)
+          console.log('[INIT LOAD] guests 있음 → 게스트 데이터 적용:', {
+            guestsCount: firestoreGuests.length,
+            _cleared: firestoreCleared,
+            note: 'guests 우선 적용 (초기화 마커 무시)'
           })
           setGuests(firestoreGuests)
           localStorage.setItem(getGuestsStorageKey(), JSON.stringify(firestoreGuests))
           lastGuestsHashRef.current = JSON.stringify(firestoreGuests)
+        } else if (isFirestoreCleared) {
+          // guests가 없고 초기화 마커가 있으면 → 빈 배열 적용
+          console.log('[INIT LOAD] guests 없음 + 초기화 마커 감지 → 빈 배열 적용')
+          setGuests([])
+          localStorage.setItem(getGuestsStorageKey(), JSON.stringify([]))
+          lastGuestsHashRef.current = JSON.stringify([])
+        } else {
+          // guests가 없고 초기화 마커도 없으면 → 빈 배열 적용 (정상 상태)
+          console.log('[INIT LOAD] guests 없음 + 초기화 마커 없음 → 빈 배열 적용 (정상 상태)')
+          setGuests([])
+          localStorage.setItem(getGuestsStorageKey(), JSON.stringify([]))
+          lastGuestsHashRef.current = JSON.stringify([])
         }
         
         // 초기 로드 완료 표시
@@ -696,27 +712,34 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           lastGuestsHashRef.current = currentHash
           
           // Firestore 데이터를 무조건 적용 (로컬 데이터 확인하지 않음)
-          // 초기화 마커 확인 (우선순위: 마커가 있으면 무조건 빈 배열 적용)
+          // ✅ guests 우선 원칙: guests가 있으면 guests를 믿고, guests가 비어있을 때만 _cleared 마커 확인
           const firestoreCleared = (data as any)?._cleared
           const isFirestoreCleared = firestoreCleared !== undefined && firestoreCleared !== null && typeof firestoreCleared === 'number'
+          const hasGuests = Array.isArray(firestoreGuests) && firestoreGuests.length > 0
           
-          // 초기화 마커가 있으면 무조건 빈 배열 적용 (게스트 배열 길이와 관계없이)
-          if (isFirestoreCleared) {
-            console.log('[LISTENER] 초기화 마커 감지 → 빈 배열 적용')
+          if (hasGuests) {
+            // guests가 있으면 무조건 guests 적용 (초기화 마커와 관계없이)
+            console.log('[LISTENER] guests 있음 → 게스트 데이터 적용:', {
+              guestsCount: firestoreGuests.length,
+              _cleared: firestoreCleared,
+              note: 'guests 우선 적용 (초기화 마커 무시)'
+            })
+            setGuests(firestoreGuests) // ✅ 교체 패턴 (누적 금지)
+            localStorage.setItem(getGuestsStorageKey(), JSON.stringify(firestoreGuests))
+            lastGuestsHashRef.current = JSON.stringify(firestoreGuests)
+          } else if (isFirestoreCleared) {
+            // guests가 없고 초기화 마커가 있으면 → 빈 배열 적용
+            console.log('[LISTENER] guests 없음 + 초기화 마커 감지 → 빈 배열 적용')
             setGuests([])
             localStorage.setItem(getGuestsStorageKey(), JSON.stringify([]))
             lastGuestsHashRef.current = JSON.stringify([])
-            return
+          } else {
+            // guests가 없고 초기화 마커도 없으면 → 빈 배열 적용 (정상 상태)
+            console.log('[LISTENER] guests 없음 + 초기화 마커 없음 → 빈 배열 적용 (정상 상태)')
+            setGuests([])
+            localStorage.setItem(getGuestsStorageKey(), JSON.stringify([]))
+            lastGuestsHashRef.current = JSON.stringify([])
           }
-          
-          // 초기화 마커가 없거나 null이면 → 정상 상태 (초기화되지 않은 상태)
-          // Firestore에 저장된 게스트 데이터를 그대로 적용
-          console.log('[LISTENER] 정상 상태 → 게스트 데이터 적용:', {
-            guestsCount: firestoreGuests.length
-          })
-          setGuests(firestoreGuests) // ✅ 교체 패턴 (누적 금지)
-          localStorage.setItem(getGuestsStorageKey(), JSON.stringify(firestoreGuests))
-          lastGuestsHashRef.current = JSON.stringify(firestoreGuests)
         } else {
           // Firestore 문서가 없으면 빈 배열 적용
           const emptyHash = JSON.stringify([])
