@@ -168,12 +168,16 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       // 계속 진행
     } else if (isNormalSave) {
       // 일반 저장 작업인 경우, 초기화 마커가 있으면 차단
+      // ✅ guests 우선 원칙: guests가 있으면 초기화 마커와 관계없이 저장 허용
       try {
         const currentData = await getFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, FIRESTORE_PATHS.GUESTS_DOC_ID)
         const currentCleared = (currentData as any)?._cleared
-        const hasClearedMarker = currentCleared !== undefined && currentCleared !== null
+        const isFirestoreCleared = currentCleared !== undefined && currentCleared !== null && typeof currentCleared === 'number'
+        const currentGuests = (currentData as any)?.guests || []
+        const hasGuests = Array.isArray(currentGuests) && currentGuests.length > 0
         
-        if (hasClearedMarker) {
+        // guests가 없고 초기화 마커가 있을 때만 차단
+        if (!hasGuests && isFirestoreCleared) {
           throw new Error('게스트 리스트가 초기화된 상태입니다. 초기화를 해제하려면 게스트를 업로드하거나 복원해주세요.')
         }
       } catch (error: any) {
@@ -966,21 +970,24 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const updatedGuests = [...guests, newGuest]
     
     // Firestore에 저장 (성공 확인 후 state 업데이트)
-    // 현재 Firestore의 초기화 마커 확인 - 마커가 있으면 유지하지 않음 (초기화 상태 유지)
-    // 마커가 없을 때만 null로 설정하여 초기화 상태 해제
+    // ✅ guests 우선 원칙: 현재 state에 guests가 있으면 초기화 마커와 관계없이 추가 허용
+    // 초기화 마커는 숫자(타임스탬프)일 때만 초기화 상태로 판단
     try {
       // 현재 Firestore 데이터 확인
       const currentData = await getFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, FIRESTORE_PATHS.GUESTS_DOC_ID)
       const currentCleared = (currentData as any)?._cleared
-      const hasClearedMarker = currentCleared !== undefined && currentCleared !== null
+      const isFirestoreCleared = currentCleared !== undefined && currentCleared !== null && typeof currentCleared === 'number'
+      const currentGuests = (currentData as any)?.guests || []
+      const hasGuests = Array.isArray(currentGuests) && currentGuests.length > 0
       
-      // 초기화 마커가 있으면 게스트 추가 불가 (초기화 상태 유지)
-      if (hasClearedMarker) {
-        return { success: false, message: '게스트 리스트가 초기화된 상태입니다. 먼저 게스트를 추가하려면 초기화를 해제해주세요.' }
+      // ✅ guests가 있으면 초기화 마커와 관계없이 추가 허용
+      // guests가 없고 초기화 마커가 있으면 차단
+      if (!hasGuests && isFirestoreCleared) {
+        return { success: false, message: '게스트 리스트가 초기화된 상태입니다. 먼저 엑셀 파일로 게스트를 업로드해주세요.' }
       }
       
       // ✅ coalesce 패턴으로 write (연타/중복 방지)
-      // 초기화 해제: _cleared를 null로 명시
+      // 초기화 해제: _cleared를 null로 명시 (deleteField로 완전 삭제)
       try {
         await saveGuestsAllCoalesced({ guests: updatedGuests, _cleared: null }, 3, 'addWalkInGuest')
       } catch (error: any) {
