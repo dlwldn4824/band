@@ -303,7 +303,7 @@ const Dashboard = () => {
                         gap: '0.5rem',
                         alignItems: 'center'
                       }}>
-                        {/* 계좌번호, 입금주, 가격을 같은 행에 표시 (가운데 정렬) */}
+                        {/* 첫 번째 행: 은행명 + 계좌번호 */}
                         <div style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -336,6 +336,15 @@ const Dashboard = () => {
                               {bookingInfo.accountNumber}
                             </span>
                           )}
+                        </div>
+                        {/* 두 번째 행: 입금주 + 가격 */}
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '0.5rem',
+                          flexWrap: 'wrap'
+                        }}>
                           {bookingInfo.accountName && (
                             <span style={{
                               color: '#ffffff',
