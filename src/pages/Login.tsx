@@ -1054,15 +1054,15 @@ const Login = () => {
             console.log('[Login] TicketTransition - phoneToUse:', phoneToUse)
             console.log('[Login] TicketTransition - existingGuest:', existingGuest)
             console.log('[Login] TicketTransition - entryNumber:', existingGuest?.entryNumber)
+            console.log('[Login] TicketTransition - paymentConfirmed:', existingGuest?.paymentConfirmed)
             
-            // ✅ 입금 확인된 기존 게스트는 입장 번호 표시하지 않음 (이미 등록된 게스트이므로)
-            const shouldShowEntryNumber = existingGuest && existingGuest.paymentConfirmed === true ? undefined : existingGuest?.entryNumber
-            
+            // ✅ entryNumber 전달 (입금 확인 여부와 관계없이 표시)
+            // TicketTransition 컴포넌트에서 paymentConfirmed 상태에 따라 스탬프 표시 방식 결정
             return {
               name: nameToUse || '',
               date: new Date().toLocaleDateString(),
               seat: 'STANDING',
-              entryNumber: shouldShowEntryNumber,
+              entryNumber: existingGuest?.entryNumber,
               isWalkIn: existingGuest?.isWalkIn === true,
               paymentConfirmed: existingGuest?.paymentConfirmed === true,
             }
