@@ -16,7 +16,7 @@ import './Dashboard.css'
 const Dashboard = () => {
   // ✅ 모든 Hook은 최상단에서 조건 없이 호출
   const { user, setNickname, isAdmin, adminName, isLoading } = useAuth()
-  const { performanceData, guests } = useData()
+  const { performanceData, guests, bookingInfo } = useData()
   const { token: tokenFromParams } = useParams<{ token?: string }>()
   const [searchParams] = useSearchParams()
   const tokenFromQuery = searchParams.get('token')
@@ -237,6 +237,128 @@ const Dashboard = () => {
                   {isAdmin ? '운영진 구매 1500원 할인!' : '사전 구매 시 500원 할인!'}
                 </p>
               </div>
+              
+              {/* 입금 미확인자에게 입금 계좌 정보 표시 */}
+              {(() => {
+                // 입금 미확인 상태 확인
+                const guestInfo = guests.find((g) => {
+                  const guestName = g.name || g['이름'] || g.Name || ''
+                  const guestPhone = String(g.phone || g['전화번호'] || g.Phone || '').replace(/[-\s()]/g, '')
+                  const userName = user?.name || ''
+                  const userPhone = String(user?.phone || '').replace(/[-\s()]/g, '')
+                  return guestName === userName && guestPhone === userPhone
+                })
+                const isPaymentConfirmed = guestInfo?.paymentConfirmed === true || user?.paymentConfirmed === true
+                
+                // 입금 미확인 상태이고 bookingInfo가 있으면 계좌 정보 표시
+                if (!isPaymentConfirmed && bookingInfo && bookingInfo.accountNumber) {
+                  // 가격 결정: 사전 예매는 preBookingPrice, 현장 예매는 walkInPrice
+                  const isWalkIn = guestInfo?.isWalkIn === true
+                  const price = isWalkIn 
+                    ? (bookingInfo.walkInPrice || '6천원')
+                    : (bookingInfo.preBookingPrice || '5천원')
+                  const copyAccountNumber = async () => {
+                    if (!bookingInfo.accountNumber) return
+                    try {
+                      await navigator.clipboard.writeText(bookingInfo.accountNumber)
+                      alert('계좌번호가 복사되었습니다!')
+                    } catch (err) {
+                      const textArea = document.createElement('textarea')
+                      textArea.value = bookingInfo.accountNumber
+                      textArea.style.position = 'fixed'
+                      textArea.style.opacity = '0'
+                      document.body.appendChild(textArea)
+                      textArea.select()
+                      try {
+                        document.execCommand('copy')
+                        alert('계좌번호가 복사되었습니다!')
+                      } catch (e) {
+                        alert('계좌번호 복사에 실패했습니다.')
+                      }
+                      document.body.removeChild(textArea)
+                    }
+                  }
+                  
+                  return (
+                    <div style={{
+                      padding: '1rem',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      borderRadius: '8px',
+                      marginTop: '0.75rem',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      textAlign: 'center'
+                    }}>
+                      <p style={{
+                        margin: '0 0 0.5rem 0',
+                        color: '#ffffff',
+                        fontSize: '0.875rem',
+                        fontWeight: '600',
+                        textAlign: 'center'
+                      }}>
+                        아직 입금이 확인 되지 않았습니다!
+                      </p>
+                      <div style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.5rem',
+                        alignItems: 'center'
+                      }}>
+                        {/* 계좌번호, 입금주, 가격을 같은 행에 표시 (가운데 정렬) */}
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '0.5rem',
+                          flexWrap: 'wrap'
+                        }}>
+                          {bookingInfo.bankName && (
+                            <span style={{
+                              color: '#ffffff',
+                              fontSize: '0.8rem',
+                              fontWeight: '500'
+                            }}>
+                              {bookingInfo.bankName}
+                            </span>
+                          )}
+                          {bookingInfo.accountNumber && (
+                            <span
+                              onClick={copyAccountNumber}
+                              style={{
+                                color: '#ffffff',
+                                fontSize: '0.8rem',
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                                textDecoration: 'underline',
+                                textDecorationStyle: 'dotted'
+                              }}
+                              title="클릭하여 복사"
+                            >
+                              {bookingInfo.accountNumber}
+                            </span>
+                          )}
+                          {bookingInfo.accountName && (
+                            <span style={{
+                              color: '#ffffff',
+                              fontSize: '0.8rem',
+                              opacity: 0.9
+                            }}>
+                              입금주: {bookingInfo.accountName}
+                            </span>
+                          )}
+                          <span style={{
+                            color: '#ffffff',
+                            fontSize: '0.8rem',
+                            fontWeight: '600'
+                          }}>
+                            가격: {price}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                }
+                return null
+              })()}
             </div>
           )}
         </div>
