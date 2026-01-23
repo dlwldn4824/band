@@ -3,6 +3,7 @@ import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import { setFirestoreData } from '../services/firestoreService'
 import { FIRESTORE_PATHS, getGuestsStorageKey } from '../config/firestorePaths'
+import { normalizePhone } from '../utils/guestUtils'
 
 export interface User {
   name: string
@@ -122,7 +123,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // Firestore에서 nickname 로드 시도 (실패해도 로컬 데이터로 계속 진행)
           if (userData.phone && userData.phone !== 'admin') {
             try {
-              const userId = `${userData.name}_${userData.phone}`
+              // ✅ userId는 전화번호만 사용
+              const userId = normalizePhone(userData.phone)
               const userProfileRef = doc(db, 'userProfiles', userId)
               const userProfileSnap = await getDoc(userProfileRef)
               
@@ -362,7 +364,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Firestore에서 닉네임 로드 및 자동 설정 (비동기, 실패해도 계속 진행)
       const loadNickname = async () => {
         try {
-          const userId = `${guestName}_${guestPhone}`
+          // ✅ userId는 전화번호만 사용
+          const userId = normalizePhone(guestPhone)
           const userProfileRef = doc(db, 'userProfiles', userId)
           const userProfileSnap = await getDoc(userProfileRef)
           
@@ -528,7 +531,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     // Firestore에 저장 시도 (실패해도 계속 진행)
     try {
-      const userId = `${user.name}_${user.phone}`
+      // ✅ userId는 전화번호만 사용
+      const userId = normalizePhone(user.phone || '')
       const userProfileRef = doc(db, 'userProfiles', userId)
       
       await setDoc(userProfileRef, {

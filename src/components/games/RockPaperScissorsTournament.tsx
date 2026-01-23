@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { doc, setDoc, onSnapshot, serverTimestamp, getDoc } from 'firebase/firestore'
 import { db } from '../../config/firebase'
 import { useAuth } from '../../contexts/AuthContext'
+import { normalizePhone } from '../../utils/guestUtils'
 import './Game.css'
 
 type Choice = 'rock' | 'paper' | 'scissors' | null
@@ -192,7 +193,8 @@ const RockPaperScissorsTournament = () => {
   const joinGame = async () => {
     if (!user || !gameState) return
 
-    const userId = `${user.name}_${user.phone}`
+    // ✅ userId는 전화번호만 사용
+    const userId = normalizePhone(user.phone || '')
     const participantName = user.nickname || user.name
 
     const existingParticipant = gameState.participants.find(p => p.userId === userId)
@@ -218,7 +220,8 @@ const RockPaperScissorsTournament = () => {
   const submitChoice = async (choice: Choice) => {
     if (!user || !gameState || gameState.status !== 'playing') return
 
-    const userId = `${user.name}_${user.phone}`
+    // ✅ userId는 전화번호만 사용
+    const userId = normalizePhone(user.phone || '')
     const participant = gameState.participants.find(p => p.userId === userId && p.isAlive)
 
     if (!participant) {

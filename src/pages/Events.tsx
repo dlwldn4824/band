@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useData } from '../contexts/DataContext'
 import { doc, setDoc, getDoc, Timestamp } from 'firebase/firestore'
 import { db } from '../config/firebase'
+import { normalizePhone } from '../utils/guestUtils'
 import RouletteMirror from '../components/games/RouletteMirror'
 import EntryNumberDrawMirror from '../components/games/EntryNumberDrawMirror'
 import LEDBoard from '../components/games/LEDBoard'
@@ -112,7 +113,8 @@ const Events = () => {
 
     const loadPurchasedDrinks = async () => {
       try {
-        const userId = `${user.name}_${user.phone}`
+        // ✅ userId는 전화번호만 사용
+        const userId = normalizePhone(user.phone || '')
         const orderRef = doc(db, 'drinkOrders', userId)
         const orderSnap = await getDoc(orderRef)
 
@@ -708,7 +710,8 @@ const Events = () => {
 
                   try {
                     // 사용자 ID 생성 (name_phone)
-                    const userId = `${user.name}_${user.phone}`
+                    // ✅ userId는 전화번호만 사용
+                    const userId = normalizePhone(user.phone || '')
                     const orderRef = doc(db, 'drinkOrders', userId)
                     
                     // 기존 주문 내역 가져오기

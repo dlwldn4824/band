@@ -6,6 +6,7 @@ import Events from '../components/Events'
 import ticketImage from '../assets/배경/렉사_연합공연_티켓.png'
 import editIcon from '../assets/배경/수정_아이콘.png'
 import { formatPhoneDisplay } from '../utils/phoneFormat'
+import { normalizePhone } from '../utils/guestUtils'
 import { collection, getDocs } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import posterImage from '../assets/배경/연합공연_최종포스터.jpeg'
@@ -411,8 +412,8 @@ const Dashboard = () => {
                           // 전화번호 뒷자리 마스킹 처리 (admin에서만) - 010-1234-5678 -> 010-1234-****
                           const maskedPhone = guestPhone.replace(/-(\d{4})$/, '-****')
                           const isWalkIn = guest.isWalkIn === true
-                          // userId 생성 (닉네임 조회용)
-                          const userId = `${guestName}_${guestPhoneRaw}`
+                          // ✅ userId 생성 (닉네임 조회용, 전화번호만 사용)
+                          const userId = normalizePhone(guestPhoneRaw)
                           const guestNickname = userNicknames[userId] || '-'
                           return (
                             <tr key={index}>

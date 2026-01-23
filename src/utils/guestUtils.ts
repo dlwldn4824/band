@@ -49,6 +49,7 @@ export const isDuplicateGuest = (
 /**
  * 게스트 배열 중복 제거 (전화번호 기준)
  * 삭제된 게스트는 제외하고, 같은 전화번호가 있으면 나중 값으로 덮어쓰기
+ * 키는 전화번호만 사용 (이름은 변경 가능하므로)
  */
 export const dedupeGuests = (guests: Array<{ name?: string; phone?: string; isDeleted?: boolean; [key: string]: any }>): Array<any> => {
   const guestMap = new Map<string, any>()
@@ -59,15 +60,14 @@ export const dedupeGuests = (guests: Array<{ name?: string; phone?: string; isDe
       continue
     }
     
+    // ✅ 전화번호만 키로 사용 (이름은 무시)
     const guestPhone = normalizePhone(guest.phone || guest['전화번호'] || guest.Phone)
     if (!guestPhone) {
       continue
     }
     
-    const key = getGuestKey(guest.name || guest['이름'] || guest.Name, guestPhone)
-    if (!key) {
-      continue
-    }
+    // 키는 정규화된 전화번호만 사용
+    const key = guestPhone
     
     // 정규화된 값으로 저장 (일관성 유지)
     const normalizedGuest = {
@@ -76,7 +76,7 @@ export const dedupeGuests = (guests: Array<{ name?: string; phone?: string; isDe
       name: normalizeName(guest.name || guest['이름'] || guest.Name)
     }
     
-    // 같은 키가 있으면 나중 값으로 덮어쓰기 (upsert 패턴)
+    // 같은 키(전화번호)가 있으면 나중 값으로 덮어쓰기 (upsert 패턴)
     guestMap.set(key, normalizedGuest)
   }
   

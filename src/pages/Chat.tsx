@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { normalizePhone } from '../utils/guestUtils'
 import onlineIcon from '../assets/배경/온라인.png'
 import sendIconActive from '../assets/배경/전송_활성화.png'
 import sendIconInactive from '../assets/배경/전송_비활성화.png'
@@ -103,7 +104,8 @@ const Chat = () => {
 
     // 온라인 사용자로 등록 (테스트 모드가 아닐 때만)
     const registerOnlineUser = async () => {
-      const userId = `${user.name}_${user.phone}`
+      // ✅ userId는 전화번호만 사용
+      const userId = normalizePhone(user.phone || '')
       onlineUserRef.current = userId
       const userRef = doc(db, 'onlineUsers', userId)
       

@@ -72,19 +72,25 @@ const Login = () => {
             return
           }
           
-          // 데이터 형식: "이름|전화번호"
-          const parts = decodedData.split('|')
-          if (parts.length !== 2 || !parts[0] || !parts[1]) {
-            console.warn('잘못된 토큰 형식')
-            navigate('/login', { replace: true })
-            return
+          // ✅ 토큰 형식: 전화번호만 (phone-only)
+          // 이전 형식 "이름|전화번호"도 호환성을 위해 지원
+          let normalizedPhone: string
+          let decodedName: string | null = null
+          
+          if (decodedData.includes('|')) {
+            // 이전 형식: "이름|전화번호" (하위 호환성)
+            const parts = decodedData.split('|')
+            if (parts.length !== 2 || !parts[1]) {
+              console.warn('잘못된 토큰 형식')
+              navigate('/login', { replace: true })
+              return
+            }
+            decodedName = parts[0]
+            normalizedPhone = normalizePhone(parts[1])
+          } else {
+            // 새 형식: 전화번호만
+            normalizedPhone = normalizePhone(decodedData)
           }
-          
-          const decodedName = parts[0]
-          const decodedPhone = parts[1]
-          
-          // 전화번호 정규화 (유틸리티 함수 사용)
-          const normalizedPhone = normalizePhone(decodedPhone)
           
           if (!normalizedPhone) {
             console.warn('전화번호가 유효하지 않습니다')
@@ -133,8 +139,26 @@ const Login = () => {
             return
           }
           
+          // ✅ 전화번호로 게스트 찾기 (이름은 DB에서 가져옴)
+          const foundGuest = availableGuests.find((g: any) => {
+            if (g.isDeleted === true) return false
+            const guestPhone = normalizePhone(g.phone || g['전화번호'] || g.Phone)
+            return guestPhone === normalizedPhone && guestPhone !== ''
+          })
+          
+          // 게스트를 찾지 못했으면 로그인 실패
+          if (!foundGuest) {
+            console.error('[Login] 자동 로그인 실패 - 게스트를 찾을 수 없습니다')
+            setIsProcessingAutoLogin(false)
+            navigate('/login', { replace: true })
+            return
+          }
+          
+          // ✅ 게스트 이름 사용 (토큰에 이름이 없을 수 있으므로)
+          const guestName = normalizeName(foundGuest.name || foundGuest['이름'] || foundGuest.Name || decodedName || '')
+          
           // 자동 로그인 시도
-          const loginSuccess = login(decodedName, normalizedPhone, availableGuests)
+          const loginSuccess = login(guestName, normalizedPhone, availableGuests)
           console.log('[Login] 자동 로그인 결과:', loginSuccess)
           
           if (loginSuccess) {
@@ -147,9 +171,9 @@ const Login = () => {
             
             // 로딩 상태 해제 후 티켓 애니메이션 표시
             setIsProcessingAutoLogin(false)
-            setBookingName(decodedName)
+            setBookingName(guestName)
             // 전화번호 포맷팅
-            const formattedPhone = formatPhoneDisplay(decodedPhone)
+            const formattedPhone = formatPhoneDisplay(normalizedPhone)
             setBookingPhone(formattedPhone)
             setShowTicket(true)
           } else {
@@ -219,11 +243,11 @@ const Login = () => {
     }
   }, [])
 
-  // 개인 로그인 링크 생성 함수
-  const generatePersonalLoginLink = (name: string, phone: string): string => {
-    const normalizedPhone = phone.replace(/\D/g, '')
-    const combinedData = `${name}|${normalizedPhone}`
-    const base64Token = btoa(encodeURIComponent(combinedData))
+  // 개인 로그인 링크 생성 함수 (phone-only)
+  const generatePersonalLoginLink = (_name: string, phone: string): string => {
+    // ✅ 전화번호만 사용 (이름은 무시)
+    const normalizedPhone = normalizePhone(phone)
+    const base64Token = btoa(encodeURIComponent(normalizedPhone))
     const urlSafeToken = base64Token.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
     return urlSafeToken
   }
@@ -1065,7 +1089,8 @@ const Login = () => {
               
               // Firestore에 티켓 애니메이션을 본 기록 저장
               try {
-                const userId = `${currentUser.name}_${currentUser.phone}`
+                // ✅ userId는 전화번호만 사용
+                const userId = normalizePhone(currentUser.phone || '')
                 const userProfileRef = doc(db, 'userProfiles', userId)
                 await setDoc(userProfileRef, {
                   name: currentUser.name,

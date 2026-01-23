@@ -6,7 +6,7 @@ import {
 import { collection, getDocs, deleteDoc, doc, onSnapshot } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import { FIRESTORE_PATHS, getGuestsStorageKey } from '../config/firestorePaths'
-import { normalizePhone, normalizeName, getGuestKey, dedupeGuests } from '../utils/guestUtils'
+import { normalizePhone, normalizeName, dedupeGuests } from '../utils/guestUtils'
 import * as XLSX from 'xlsx'
 
 export interface Guest {
@@ -222,8 +222,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             }
             
             // ✅ 초기화 작업이 아닌 경우에만 merge (초기화는 빈 배열로 덮어쓰기)
+            // ⚠️ 중요: currentPayload 기준으로 isInitializing 재계산 (coalesce 중 payload 변경 대응)
+            const currentIsInitializing = currentPayload._cleared !== undefined && currentPayload._cleared !== null && typeof currentPayload._cleared === 'number'
+            
             let finalGuests: Guest[] = currentPayload.guests
-            if (!isInitializing) {
+            if (!currentIsInitializing) {
               // 기존 guests + 새로운 guests를 합치고 중복 제거
               const mergedGuests = [...existingGuests, ...currentPayload.guests]
               finalGuests = dedupeGuests(mergedGuests)
@@ -258,11 +261,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             
             // 충돌 없음 또는 첫 write → 정상 진행
             
-            // ✅ lastAction 결정
+            // ✅ lastAction 결정 (currentPayload 기준으로 재계산)
+            const currentIsClearing = currentPayload._cleared === null && currentPayload.guests.length > 0
             let lastAction = 'AUTO_SAVE'
-            if (isInitializing) {
+            if (currentIsInitializing) {
               lastAction = 'CLEAR'
-            } else if (isClearing) {
+            } else if (currentIsClearing) {
               lastAction = 'IMPORT' // 초기화 해제는 보통 업로드/복원
             } else if (writeSource.includes('upload')) {
               lastAction = 'UPLOAD'
@@ -916,8 +920,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     // 1. 기존 게스트 먼저 추가 (삭제된 게스트는 제외)
     existingGuests.forEach(guest => {
       if (guest.isDeleted !== true) {
-        const guestPhone = guest.phone || guest['전화번호'] || guest.Phone || ''
-        const key = getGuestKey(guest.name || guest['이름'] || guest.Name, guestPhone)
+        const rawPhone = guest.phone || guest['전화번호'] || guest.Phone || ''
+        // ✅ 전화번호만 키로 사용 (이름은 무시)
+        const key = normalizePhone(rawPhone)
         if (key) {
           guestMap.set(key, guest)
         }
@@ -926,14 +931,15 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     
     // 2. 새 게스트 추가/업데이트 (기존 게스트를 덮어쓰기)
     newGuests.forEach(guest => {
-      const guestPhone = guest.phone || guest['전화번호'] || guest.Phone || ''
-      const key = getGuestKey(guest.name || guest['이름'] || guest.Name, guestPhone)
+      const rawPhone = guest.phone || guest['전화번호'] || guest.Phone || ''
+      // ✅ 전화번호만 키로 사용 (이름은 무시)
+      const key = normalizePhone(rawPhone)
       if (key) {
         // 이미 있으면 업데이트, 없으면 추가 (upsert 패턴)
         guestMap.set(key, {
           ...guest,
           // 정규화된 전화번호로 저장 (일관성 유지)
-          phone: normalizePhone(guestPhone),
+          phone: key,
           name: normalizeName(guest.name || guest['이름'] || guest.Name),
           isWalkIn: guest.isWalkIn !== undefined ? guest.isWalkIn : false,
           paymentConfirmed: guest.paymentConfirmed !== undefined ? guest.paymentConfirmed : false,
@@ -1093,8 +1099,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     // 1. 기존 게스트 먼저 추가 (삭제된 게스트는 제외)
     latestGuests.forEach((guest: Guest) => {
       if (guest.isDeleted !== true) {
-        const guestPhone = guest.phone || guest['전화번호'] || guest.Phone || ''
-        const key = getGuestKey(guest.name || guest['이름'] || guest.Name, guestPhone)
+        const rawPhone = guest.phone || guest['전화번호'] || guest.Phone || ''
+        // ✅ 전화번호만 키로 사용 (이름은 무시)
+        const key = normalizePhone(rawPhone)
         if (key) {
           guestMap.set(key, guest)
         }
@@ -1102,9 +1109,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     })
     
     // 2. 새 게스트 추가 (중복이면 덮어쓰기)
-    const newGuestKey = getGuestKey(normalizedName, normalizedPhone)
-    if (newGuestKey) {
-      guestMap.set(newGuestKey, {
+    // ✅ 전화번호만 키로 사용 (이름은 무시)
+    if (normalizedPhone) {
+      guestMap.set(normalizedPhone, {
         ...newGuest,
         // 정규화된 값으로 저장 (일관성 유지)
         phone: normalizedPhone,
