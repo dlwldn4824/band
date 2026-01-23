@@ -414,16 +414,25 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           // ✅ 삭제된 게스트 필터링 (화면에 표시되지 않도록)
           const activeGuests = firestoreGuests.filter(guest => guest.isDeleted !== true)
           
+          const deletedCount = firestoreGuests.length - activeGuests.length
+          const updatedAt = (firestoreGuestsData as any)?.updatedAt?.toMillis?.() || (firestoreGuestsData as any)?.updatedAt?.seconds * 1000 || (firestoreGuestsData as any)?.updatedAt || 0
+          
           console.log('[INIT LOAD] guests 있음 → 게스트 데이터 적용:', {
             totalGuestsCount: firestoreGuests.length,
             activeGuestsCount: activeGuests.length,
-            deletedCount: firestoreGuests.length - activeGuests.length,
+            deletedCount: deletedCount,
             _cleared: firestoreCleared,
             note: 'guests 우선 적용 (초기화 마커 무시, 삭제된 게스트 제외)'
           })
           setGuests(activeGuests)
           localStorage.setItem(getGuestsStorageKey(), JSON.stringify(activeGuests))
-          lastGuestsHashRef.current = JSON.stringify(activeGuests)
+          // ✅ 해시도 동일한 payload 형식으로 업데이트
+          lastGuestsHashRef.current = JSON.stringify({
+            active: activeGuests,
+            deletedCount: deletedCount,
+            totalCount: firestoreGuests.length,
+            updatedAt: updatedAt
+          })
         } else if (isFirestoreCleared) {
           // guests가 없고 초기화 마커가 있으면 → 빈 배열 적용
           console.log('[INIT LOAD] guests 없음 + 초기화 마커 감지 → 빈 배열 적용')
@@ -726,9 +735,19 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             lastKnownUpdatedAtRef.current = updatedAt
           }
           
-          // ✅ 삭제된 게스트를 제외한 활성 게스트만으로 해시 생성 (중복 업데이트 방지)
+          // ✅ 해시 생성: activeGuests + deletedCount 포함하여 삭제 변경도 감지
           const activeGuestsForHash = firestoreGuests.filter(guest => guest.isDeleted !== true)
-          const currentHash = JSON.stringify(activeGuestsForHash)
+          const deletedCount = firestoreGuests.length - activeGuestsForHash.length
+          const updatedAt = (data as any)?.updatedAt?.toMillis?.() || (data as any)?.updatedAt?.seconds * 1000 || (data as any)?.updatedAt || 0
+          
+          // 해시에 activeGuests, deletedCount, updatedAt 포함하여 삭제 변경도 감지
+          const hashPayload = {
+            active: activeGuestsForHash,
+            deletedCount: deletedCount,
+            totalCount: firestoreGuests.length,
+            updatedAt: updatedAt
+          }
+          const currentHash = JSON.stringify(hashPayload)
           
           if (currentHash === lastGuestsHashRef.current) {
             console.log('[LISTENER] 해시 동일 → 스킵')
@@ -766,7 +785,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             })
             setGuests(activeGuests) // ✅ 교체 패턴 (누적 금지) - 삭제된 게스트 제외
             localStorage.setItem(getGuestsStorageKey(), JSON.stringify(activeGuests))
-            lastGuestsHashRef.current = JSON.stringify(activeGuests)
+            // ✅ 해시도 동일한 payload 형식으로 업데이트
+            lastGuestsHashRef.current = JSON.stringify({
+              active: activeGuests,
+              deletedCount: firestoreGuests.length - activeGuests.length,
+              totalCount: firestoreGuests.length,
+              updatedAt: updatedAt
+            })
           } else if (isFirestoreCleared) {
             // guests가 없고 초기화 마커가 있으면 → 빈 배열 적용
             console.log('[LISTENER] guests 없음 + 초기화 마커 감지 → 빈 배열 적용')
@@ -979,10 +1004,19 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       
       console.log('[UPLOAD] saveGuestsAllCoalesced 완료, state 업데이트 시작')
       
-      // Firestore 저장 성공 후에만 state 업데이트 (교체 패턴 - 누적 금지)
-      setGuests(processedGuests)
-      localStorage.setItem(getGuestsStorageKey(), JSON.stringify(processedGuests))
-      lastGuestsHashRef.current = JSON.stringify(processedGuests)
+      // ✅ Firestore 저장 성공 후에만 state 업데이트 (삭제된 게스트는 제외)
+      // state는 항상 activeGuests만 유지
+      const activeGuests = processedGuests.filter(g => g.isDeleted !== true)
+      setGuests(activeGuests)
+      localStorage.setItem(getGuestsStorageKey(), JSON.stringify(activeGuests))
+      // ✅ 해시도 동일한 payload 형식으로 업데이트
+      const deletedCount = processedGuests.length - activeGuests.length
+      lastGuestsHashRef.current = JSON.stringify({
+        active: activeGuests,
+        deletedCount: deletedCount,
+        totalCount: processedGuests.length,
+        updatedAt: Date.now()
+      })
       
       console.log('[UPLOAD] uploadGuests 완료:', {
         stateUpdated: true,
@@ -1146,10 +1180,19 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         return { success: false, message: '등록에 실패했습니다. 다시 시도해주세요.' }
       }
       
-      // Firestore 저장 성공 후에만 state 업데이트
-      setGuests(updatedGuests)
-      localStorage.setItem(getGuestsStorageKey(), JSON.stringify(updatedGuests))
-      lastGuestsHashRef.current = JSON.stringify(updatedGuests)
+      // ✅ Firestore 저장 성공 후에만 state 업데이트 (삭제된 게스트는 제외)
+      // state는 항상 activeGuests만 유지
+      const activeGuests = updatedGuests.filter(g => g.isDeleted !== true)
+      setGuests(activeGuests)
+      localStorage.setItem(getGuestsStorageKey(), JSON.stringify(activeGuests))
+      // ✅ 해시도 동일한 payload 형식으로 업데이트
+      const deletedCount = updatedGuests.length - activeGuests.length
+      lastGuestsHashRef.current = JSON.stringify({
+        active: activeGuests,
+        deletedCount: deletedCount,
+        totalCount: updatedGuests.length,
+        updatedAt: Date.now()
+      })
 
       return { success: true, message: '현장 구매 등록이 완료되었습니다.' }
     } catch (error) {
@@ -1180,10 +1223,19 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       // ✅ coalesce 패턴으로 write (연타/중복 방지)
       await saveGuestsAllCoalesced({ guests: updatedGuests }, 3, 'toggleGuestPayment')
       
-      // Firestore 저장 성공 후에만 state 업데이트
-      setGuests(updatedGuests)
-      localStorage.setItem(getGuestsStorageKey(), JSON.stringify(updatedGuests))
-      lastGuestsHashRef.current = JSON.stringify(updatedGuests)
+      // ✅ Firestore 저장 성공 후에만 state 업데이트 (삭제된 게스트는 제외)
+      // state는 항상 activeGuests만 유지
+      const activeGuests = updatedGuests.filter(g => g.isDeleted !== true)
+      setGuests(activeGuests)
+      localStorage.setItem(getGuestsStorageKey(), JSON.stringify(activeGuests))
+      // ✅ 해시도 동일한 payload 형식으로 업데이트
+      const deletedCount = updatedGuests.length - activeGuests.length
+      lastGuestsHashRef.current = JSON.stringify({
+        active: activeGuests,
+        deletedCount: deletedCount,
+        totalCount: updatedGuests.length,
+        updatedAt: Date.now()
+      })
     } catch (error) {
       // Firestore 저장 실패 시 state 업데이트하지 않음
     }
@@ -1305,10 +1357,19 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       // ✅ coalesce 패턴으로 write (연타/중복 방지)
       await saveGuestsAllCoalesced({ guests: updatedGuests }, 3, 'deleteGuest')
       
-      // Firestore 저장 성공 후에만 state 업데이트
-      setGuests(updatedGuests) // ✅ 교체 패턴 (누적 금지)
-      localStorage.setItem(getGuestsStorageKey(), JSON.stringify(updatedGuests))
-      lastGuestsHashRef.current = JSON.stringify(updatedGuests)
+      // ✅ Firestore 저장 성공 후에만 state 업데이트 (삭제된 게스트는 제외)
+      // state는 항상 activeGuests만 유지 (삭제 기록은 Firestore에만)
+      const activeGuests = updatedGuests.filter(g => g.isDeleted !== true)
+      setGuests(activeGuests)
+      localStorage.setItem(getGuestsStorageKey(), JSON.stringify(activeGuests))
+      // ✅ 해시도 동일한 payload 형식으로 업데이트
+      const deletedCount = updatedGuests.length - activeGuests.length
+      lastGuestsHashRef.current = JSON.stringify({
+        active: activeGuests,
+        deletedCount: deletedCount,
+        totalCount: updatedGuests.length,
+        updatedAt: Date.now()
+      })
     } catch (error) {
       // Firestore 저장 실패 시 state 업데이트하지 않음
     }
@@ -1327,10 +1388,19 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       // ✅ coalesce 패턴으로 write (연타/중복 방지)
       await saveGuestsAllCoalesced({ guests: updatedGuests }, 3, 'updateGuest')
       
-      // Firestore 저장 성공 후에만 state 업데이트
-      setGuests(updatedGuests)
-      localStorage.setItem(getGuestsStorageKey(), JSON.stringify(updatedGuests))
-      lastGuestsHashRef.current = JSON.stringify(updatedGuests)
+      // ✅ Firestore 저장 성공 후에만 state 업데이트 (삭제된 게스트는 제외)
+      // state는 항상 activeGuests만 유지
+      const activeGuests = updatedGuests.filter(g => g.isDeleted !== true)
+      setGuests(activeGuests)
+      localStorage.setItem(getGuestsStorageKey(), JSON.stringify(activeGuests))
+      // ✅ 해시도 동일한 payload 형식으로 업데이트
+      const deletedCount = updatedGuests.length - activeGuests.length
+      lastGuestsHashRef.current = JSON.stringify({
+        active: activeGuests,
+        deletedCount: deletedCount,
+        totalCount: updatedGuests.length,
+        updatedAt: Date.now()
+      })
     } catch (error) {
       // Firestore 저장 실패 시 state 업데이트하지 않음
     }

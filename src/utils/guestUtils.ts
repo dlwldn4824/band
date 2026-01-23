@@ -24,8 +24,10 @@ export const normalizeName = (name: string | undefined | null): string => {
 /**
  * 게스트 중복 키 생성 (전화번호만 사용 - 이름은 변경 가능하므로)
  * 전화번호가 동일하면 같은 사람으로 간주
+ * @param _name - 사용하지 않음 (하위 호환성을 위해 유지)
+ * @param phone - 전화번호
  */
-export const getGuestKey = (name: string | undefined | null, phone: string | undefined | null): string => {
+export const getGuestKey = (_name: string | undefined | null, phone: string | undefined | null): string => {
   const normalizedPhone = normalizePhone(phone)
   if (!normalizedPhone) return ''
   // 전화번호만 키로 사용 (이름은 변경 가능하므로)
