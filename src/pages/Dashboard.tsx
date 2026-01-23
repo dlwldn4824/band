@@ -238,8 +238,9 @@ const Dashboard = () => {
                 </p>
               </div>
               
-              {/* 입금 미확인자에게 입금 계좌 정보 표시 */}
+              {/* 입금 미확인자에게 입금 계좌 정보 표시 (Admin/운영진에는 미표시) */}
               {(() => {
+                if (isAdmin) return null
                 // 입금 미확인 상태 확인
                 const guestInfo = guests.find((g) => {
                   const guestName = g.name || g['이름'] || g.Name || ''

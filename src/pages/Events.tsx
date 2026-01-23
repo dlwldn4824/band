@@ -113,8 +113,18 @@ const Events = () => {
 
     const loadPurchasedDrinks = async () => {
       try {
-        // ✅ userId는 전화번호만 사용
-        const userId = normalizePhone(user.phone || '')
+        // ✅ 운영진은 'admin' 또는 이름 기반, 일반 사용자는 전화번호만 사용
+        const userId = isAdmin && user.phone === 'admin' 
+          ? `admin_${user.name || 'admin'}`.replace(/\s+/g, '_')
+          : normalizePhone(user.phone || '')
+        
+        if (!userId) {
+          setPurchasedBeerQuantity(0)
+          setPurchasedMojitoQuantity(0)
+          setPurchaseHistory([])
+          return
+        }
+        
         const orderRef = doc(db, 'drinkOrders', userId)
         const orderSnap = await getDoc(orderRef)
 
@@ -162,12 +172,18 @@ const Events = () => {
     loadPurchasedDrinks()
   }, [user])
 
-  // 결제 모달이 열릴 때 추가 주문 확인란 초기화
+  // 결제 모달이 열릴 때 추가 주문 확인란 초기화 및 운영진 자동 확인
   useEffect(() => {
     if (!showPaymentModal) {
       setAdditionalOrderConfirmed(false)
+      setPaymentConfirmed(false)
+    } else {
+      // 운영진은 자동으로 paymentConfirmed를 true로 설정
+      if (isAdmin) {
+        setPaymentConfirmed(true)
+      }
     }
-  }, [showPaymentModal])
+  }, [showPaymentModal, isAdmin])
 
   // 주류 구매 모달이 닫힐 때 수량 초기화
   useEffect(() => {
@@ -703,15 +719,24 @@ const Events = () => {
 
               <button
                 className="drink-confirm-button"
-                disabled={!paymentConfirmed}
+                disabled={!isAdmin && !paymentConfirmed}
                 onClick={async (e) => {
                   e.stopPropagation()
-                  if (!user || !paymentConfirmed) return
+                  // 운영진은 paymentConfirmed 체크 건너뛰기
+                  if (!user || (!isAdmin && !paymentConfirmed)) return
 
                   try {
-                    // 사용자 ID 생성 (name_phone)
-                    // ✅ userId는 전화번호만 사용
-                    const userId = normalizePhone(user.phone || '')
+                    // 사용자 ID 생성
+                    // ✅ 운영진은 'admin' 또는 이름 기반, 일반 사용자는 전화번호만 사용
+                    const userId = isAdmin && user.phone === 'admin' 
+                      ? `admin_${user.name || 'admin'}`.replace(/\s+/g, '_')
+                      : normalizePhone(user.phone || '')
+                    
+                    if (!userId) {
+                      alert('사용자 정보를 확인할 수 없습니다.')
+                      return
+                    }
+                    
                     const orderRef = doc(db, 'drinkOrders', userId)
                     
                     // 기존 주문 내역 가져오기
