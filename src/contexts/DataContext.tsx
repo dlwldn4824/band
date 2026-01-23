@@ -227,8 +227,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             
             let finalGuests: Guest[] = currentPayload.guests
             if (!currentIsInitializing) {
-              // 기존 guests + 새로운 guests를 합치고 중복 제거
-              const mergedGuests = [...existingGuests, ...currentPayload.guests]
+              // ✅ payload 자체를 먼저 dedupe (payload 내부 중복 제거)
+              const incomingDeduped = dedupeGuests(currentPayload.guests)
+              // 기존 guests + dedupe된 새로운 guests를 합치고 중복 제거
+              const mergedGuests = [...existingGuests, ...incomingDeduped]
               finalGuests = dedupeGuests(mergedGuests)
               
               console.log('[WRITE] 중복 제거 결과:', {
@@ -1249,13 +1251,51 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       return
     }
 
-    const updatedGuests = [...guests]
-    const currentPaymentStatus = updatedGuests[index].paymentConfirmed
-    updatedGuests[index] = {
-      ...updatedGuests[index],
-      paymentConfirmed: !currentPaymentStatus,
-      paymentConfirmedAt: !currentPaymentStatus ? Date.now() : undefined // 결제 확인 시 시간 기록, 취소 시 삭제
+    // ✅ 같은 전화번호를 가진 모든 게스트를 찾아서 동시에 토글
+    const targetGuest = guests[index]
+    const targetPhone = normalizePhone(targetGuest.phone || targetGuest['전화번호'] || targetGuest.Phone)
+    
+    if (!targetPhone) {
+      return
     }
+    
+    // 디버깅: 같은 전화번호를 가진 게스트 수 확인
+    const matches = guests.filter(g => {
+      const gPhone = normalizePhone(g.phone || g['전화번호'] || g.Phone)
+      return gPhone === targetPhone
+    })
+    console.log('[PAY] toggleGuestPayment:', {
+      targetPhone,
+      samePhoneCount: matches.length,
+      matches: matches.map(m => ({
+        name: m.name || m['이름'] || m.Name,
+        phone: m.phone || m['전화번호'] || m.Phone,
+        paymentConfirmed: m.paymentConfirmed,
+        paymentConfirmedAt: m.paymentConfirmedAt
+      }))
+    })
+    
+    // ✅ 현재 target의 상태를 기준으로 반대로 토글 (같은 전화번호를 가진 모든 게스트)
+    const currentAny = matches.find(g => {
+      const gPhone = normalizePhone(g.phone || g['전화번호'] || g.Phone)
+      return gPhone === targetPhone
+    })
+    const currentPaymentStatus = !!currentAny?.paymentConfirmed
+    const next = !currentPaymentStatus
+    const nextAt = next ? Date.now() : undefined
+
+    // ✅ 같은 전화번호를 가진 모든 게스트를 동시에 토글
+    const updatedGuests = guests.map(g => {
+      const gPhone = normalizePhone(g.phone || g['전화번호'] || g.Phone)
+      if (gPhone !== targetPhone) {
+        return g
+      }
+      return {
+        ...g,
+        paymentConfirmed: next,
+        paymentConfirmedAt: nextAt
+      }
+    })
 
     // Firestore에 업데이트 (성공 확인 후 state 업데이트)
     try {
