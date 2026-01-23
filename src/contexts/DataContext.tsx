@@ -6,6 +6,7 @@ import {
 import { collection, getDocs, deleteDoc, doc, onSnapshot } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import { FIRESTORE_PATHS, getGuestsStorageKey } from '../config/firestorePaths'
+import { normalizePhone, normalizeName, getGuestKey, dedupeGuests } from '../utils/guestUtils'
 import * as XLSX from 'xlsx'
 
 export interface Guest {
@@ -214,6 +215,28 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             const { getFirestoreData } = await import('../services/firestoreService')
             const currentDoc = await getFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, FIRESTORE_PATHS.GUESTS_DOC_ID) as any
             
+            // ✅ 기존 DB 데이터와 merge하여 중복 방지
+            let existingGuests: Guest[] = []
+            if (currentDoc && Array.isArray(currentDoc.guests)) {
+              existingGuests = currentDoc.guests
+            }
+            
+            // ✅ 초기화 작업이 아닌 경우에만 merge (초기화는 빈 배열로 덮어쓰기)
+            let finalGuests: Guest[] = currentPayload.guests
+            if (!isInitializing) {
+              // 기존 guests + 새로운 guests를 합치고 중복 제거
+              const mergedGuests = [...existingGuests, ...currentPayload.guests]
+              finalGuests = dedupeGuests(mergedGuests)
+              
+              console.log('[WRITE] 중복 제거 결과:', {
+                existingCount: existingGuests.length,
+                incomingCount: currentPayload.guests.length,
+                mergedCount: mergedGuests.length,
+                dedupedCount: finalGuests.length,
+                duplicatesRemoved: mergedGuests.length - finalGuests.length
+              })
+            }
+            
             if (currentDoc && currentDoc.updatedAt) {
               // updatedAt을 number로 변환 (Timestamp 또는 number일 수 있음)
               const currentUpdatedAt = currentDoc.updatedAt?.toMillis?.() || currentDoc.updatedAt?.seconds * 1000 || currentDoc.updatedAt
@@ -253,9 +276,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
               lastAction = 'UPDATE'
             }
             
-            // ✅ 최종 payload 생성 (일반 저장에서는 _cleared를 포함하지 않음)
+            // ✅ 최종 payload 생성 (merge된 guests 사용)
             const finalPayload: any = {
-              guests: currentPayload.guests,
+              guests: finalGuests,
               updatedBy: getClientId(),
               lastAction: lastAction,
               writeSource: writeSource
@@ -887,14 +910,15 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       stateGuestsCount: guests.length
     })
     
-    // ✅ 중복 제거: name + phone 기준으로 고유하게 유지
+    // ✅ 중복 제거: 전화번호만 키로 사용 (이름은 변경 가능하므로)
     const guestMap = new Map<string, Guest>()
     
     // 1. 기존 게스트 먼저 추가 (삭제된 게스트는 제외)
     existingGuests.forEach(guest => {
       if (guest.isDeleted !== true) {
-        const key = `${(guest.name || '').trim()}_${String(guest.phone || '').replace(/[-\s()]/g, '')}`
-        if (key && key !== '_') {
+        const guestPhone = guest.phone || guest['전화번호'] || guest.Phone || ''
+        const key = getGuestKey(guest.name || guest['이름'] || guest.Name, guestPhone)
+        if (key) {
           guestMap.set(key, guest)
         }
       }
@@ -902,11 +926,15 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     
     // 2. 새 게스트 추가/업데이트 (기존 게스트를 덮어쓰기)
     newGuests.forEach(guest => {
-      const key = `${(guest.name || '').trim()}_${String(guest.phone || '').replace(/[-\s()]/g, '')}`
-      if (key && key !== '_') {
+      const guestPhone = guest.phone || guest['전화번호'] || guest.Phone || ''
+      const key = getGuestKey(guest.name || guest['이름'] || guest.Name, guestPhone)
+      if (key) {
         // 이미 있으면 업데이트, 없으면 추가 (upsert 패턴)
         guestMap.set(key, {
           ...guest,
+          // 정규화된 전화번호로 저장 (일관성 유지)
+          phone: normalizePhone(guestPhone),
+          name: normalizeName(guest.name || guest['이름'] || guest.Name),
           isWalkIn: guest.isWalkIn !== undefined ? guest.isWalkIn : false,
           paymentConfirmed: guest.paymentConfirmed !== undefined ? guest.paymentConfirmed : false,
           // 삭제 마커 제거 (새로 업로드하면 활성화)
@@ -968,18 +996,17 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       return { success: false, message: '게스트 리스트가 방금 초기화되었습니다. 잠시 후 다시 시도해주세요.' }
     }
     
-    // 이름과 전화번호 정규화
-    const normalizedName = name.trim()
-    const normalizedPhone = phone.replace(/[-\s()]/g, '')
+    // 이름과 전화번호 정규화 (통일된 함수 사용)
+    const normalizedName = normalizeName(name)
+    const normalizedPhone = normalizePhone(phone)
 
     if (!normalizedName || !normalizedPhone) {
       return { success: false, message: '이름과 전화번호를 입력해주세요.' }
     }
 
-    // 이미 등록된 게스트인지 확인 (전화번호 비교 시 하이픈 제거 후 비교)
+    // 이미 등록된 게스트인지 확인 (전화번호만 비교 - 이름은 변경 가능)
     // ✅ 삭제된 게스트는 제외하고 활성 게스트만 체크
     // ✅ Firestore에서 최신 데이터를 직접 확인하여 엑셀 업로드 게스트도 인식
-    const normalizedPhoneForCompare = normalizedPhone.replace(/[-\s()]/g, '')
     
     // 1. 먼저 Firestore에서 최신 데이터 확인 (엑셀 업로드 게스트 포함)
     let existingGuest: Guest | undefined = undefined
@@ -992,9 +1019,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           if (guest.isDeleted === true) {
             return false
           }
-          const guestName = guest.name || guest['이름'] || guest.Name || ''
-          const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '').replace(/[-\s()]/g, '')
-          return guestName.trim() === normalizedName && guestPhone === normalizedPhoneForCompare
+          // 전화번호만 비교 (이름은 변경 가능하므로)
+          const guestPhone = normalizePhone(guest.phone || guest['전화번호'] || guest.Phone)
+          return guestPhone === normalizedPhone && guestPhone !== ''
         })
       }
     } catch (error) {
@@ -1011,16 +1038,16 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         if (guest.isDeleted === true) {
           return false
         }
-        const guestName = guest.name || guest['이름'] || guest.Name || ''
-        const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '').replace(/[-\s()]/g, '')
-        return guestName.trim() === normalizedName && guestPhone === normalizedPhoneForCompare
+        // 전화번호만 비교 (이름은 변경 가능하므로)
+        const guestPhone = normalizePhone(guest.phone || guest['전화번호'] || guest.Phone)
+        return guestPhone === normalizedPhone && guestPhone !== ''
       })
     }
 
     if (existingGuest) {
       console.log('[addWalkInGuest] 중복 게스트 발견:', {
         name: normalizedName,
-        phone: normalizedPhoneForCompare,
+        phone: normalizedPhone,
         source: 'Firestore 또는 로컬',
         existingGuest: {
           name: existingGuest.name || existingGuest['이름'] || existingGuest.Name,
@@ -1060,23 +1087,29 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       latestGuests = latestGuestsFromStorage.length > 0 ? latestGuestsFromStorage : guests
     }
     
-    // ✅ Map을 사용하여 중복 제거 (name + phone 기준)
+    // ✅ Map을 사용하여 중복 제거 (전화번호만 키로 사용)
     const guestMap = new Map<string, Guest>()
     
     // 1. 기존 게스트 먼저 추가 (삭제된 게스트는 제외)
     latestGuests.forEach((guest: Guest) => {
       if (guest.isDeleted !== true) {
-        const key = `${(guest.name || '').trim()}_${String(guest.phone || '').replace(/[-\s()]/g, '')}`
-        if (key && key !== '_') {
+        const guestPhone = guest.phone || guest['전화번호'] || guest.Phone || ''
+        const key = getGuestKey(guest.name || guest['이름'] || guest.Name, guestPhone)
+        if (key) {
           guestMap.set(key, guest)
         }
       }
     })
     
     // 2. 새 게스트 추가 (중복이면 덮어쓰기)
-    const newGuestKey = `${normalizedName}_${normalizedPhoneForCompare}`
-    if (newGuestKey && newGuestKey !== '_') {
-      guestMap.set(newGuestKey, newGuest)
+    const newGuestKey = getGuestKey(normalizedName, normalizedPhone)
+    if (newGuestKey) {
+      guestMap.set(newGuestKey, {
+        ...newGuest,
+        // 정규화된 값으로 저장 (일관성 유지)
+        phone: normalizedPhone,
+        name: normalizedName
+      })
     }
     
     const updatedGuests = Array.from(guestMap.values())

@@ -11,6 +11,7 @@ import GuestEditModal from '../components/admin/GuestEditModal'
 import PasswordModal from '../components/admin/PasswordModal'
 import DrinkOrdersSection from '../components/admin/DrinkOrdersSection'
 import { generatePersonalLoginLink, makeGuestKey } from '../utils/adminUtils'
+import { normalizePhone, normalizeName, getGuestKey } from '../utils/guestUtils'
 import './Admin.css'
 
 const Admin = () => {
@@ -283,12 +284,18 @@ const Admin = () => {
                                 String(paymentStatus).trim().toLowerCase() === 'y' ||
                                 String(paymentStatus).trim().toLowerCase() === 'yes'
         
+        // 이름과 전화번호 정규화
+        const rawName = row['이름'] || row['name'] || row['Name'] || ''
+        const rawPhone = String(row['전화번호'] || row['phone'] || row['Phone'] || '')
+        const normalizedName = normalizeName(rawName)
+        const normalizedPhone = normalizePhone(rawPhone)
+        
         return {
-        name: row['이름'] || row['name'] || row['Name'] || '',
-        phone: String(row['전화번호'] || row['phone'] || row['Phone'] || ''),
+          name: normalizedName,
+          phone: normalizedPhone,
           paymentConfirmed: paymentConfirmed,
           paymentConfirmedAt: paymentConfirmed ? Date.now() : undefined,
-        ...row
+          ...row
         }
       })
 
@@ -310,19 +317,21 @@ const Admin = () => {
         existingGuests = guests.filter(guest => guest.isDeleted !== true)
       }
       
-      // ✅ 엑셀 파일 내부 중복 제거 (같은 이름/전화번호가 엑셀에 여러 번 있으면 하나만 사용)
+      // ✅ 엑셀 파일 내부 중복 제거 (같은 전화번호가 엑셀에 여러 번 있으면 하나만 사용)
       const excelGuestMap = new Map<string, any>()
       newGuestsFromFile.forEach((guest: any) => {
-        const guestName = guest.name || guest['이름'] || guest.Name || ''
-        const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '')
+        // 이미 정규화된 name과 phone 사용
+        const guestName = guest.name || ''
+        const guestPhone = guest.phone || ''
         
         // 이름과 전화번호가 모두 있어야 함
-        if (!guestName.trim() || !guestPhone.trim()) {
+        if (!guestName || !guestPhone) {
           return
         }
         
-        const key = `${guestName.trim()}_${guestPhone.replace(/[-\s()]/g, '')}`
-        if (key && key !== '_') {
+        // getGuestKey를 사용하여 전화번호 기반 키 생성
+        const key = getGuestKey(guestName, guestPhone)
+        if (key) {
           // 엑셀 내부 중복: 같은 키가 있으면 나중 것을 사용 (또는 먼저 것을 유지)
           if (!excelGuestMap.has(key)) {
             excelGuestMap.set(key, guest)
@@ -338,18 +347,24 @@ const Admin = () => {
       const guestsToUpdate: Array<{ guest: any; existingGuest: any }> = []
       
       uniqueGuestsFromFile.forEach((guest: any) => {
-        const guestName = guest.name || guest['이름'] || guest.Name || ''
-        const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '')
-        const normalizedName = guestName.trim()
-        const normalizedPhone = guestPhone.replace(/[-\s()]/g, '')
+        // 이미 정규화된 name과 phone 사용
+        const guestName = guest.name || ''
+        const guestPhone = guest.phone || ''
         
-        // 기존 게스트와 중복 체크
+        // 이름과 전화번호가 모두 있어야 함
+        if (!guestName || !guestPhone) {
+          return
+        }
+        
+        // 기존 게스트와 중복 체크 (전화번호 기반)
+        const guestKey = getGuestKey(guestName, guestPhone)
         const duplicateGuest = existingGuests.find((existing) => {
           // 삭제된 게스트는 제외 (이중 체크)
           if (existing.isDeleted === true) return false
-          const existingName = (existing.name || existing['이름'] || existing.Name || '').trim()
-          const existingPhone = String(existing.phone || existing['전화번호'] || existing.Phone || '').replace(/[-\s()]/g, '')
-          return existingName === normalizedName && existingPhone === normalizedPhone
+          const existingName = normalizeName(existing.name || existing['이름'] || existing.Name || '')
+          const existingPhone = normalizePhone(existing.phone || existing['전화번호'] || existing.Phone || '')
+          const existingKey = getGuestKey(existingName, existingPhone)
+          return guestKey === existingKey
         })
         
         if (!duplicateGuest) {
@@ -385,8 +400,9 @@ const Admin = () => {
       // 업로드되는 게스트의 기존 userProfile 삭제 (깨끗한 상태로 시작)
       try {
         const deletePromises = guestsToAdd.map(async (guest: any) => {
-          const guestName = guest.name || guest['이름'] || guest.Name || ''
-          const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '')
+          // 이미 정규화된 name과 phone 사용
+          const guestName = guest.name || ''
+          const guestPhone = guest.phone || ''
           if (guestName && guestPhone) {
             const userId = makeGuestKey(guestName, guestPhone)
             const userProfileRef = doc(db, 'userProfiles', userId)
@@ -407,19 +423,32 @@ const Admin = () => {
       const allGuests = guests.filter(guest => guest.isDeleted !== true)
       const updatedGuestsMap = new Map<string, any>()
       
-      // 기존 게스트를 맵에 추가
+      // 기존 게스트를 맵에 추가 (정규화된 값 사용)
       allGuests.forEach(guest => {
-        const key = `${(guest.name || '').trim()}_${String(guest.phone || '').replace(/[-\s()]/g, '')}`
-        if (key && key !== '_') {
-          updatedGuestsMap.set(key, guest)
+        const guestName = normalizeName(guest.name || '')
+        const guestPhone = normalizePhone(guest.phone || '')
+        const key = getGuestKey(guestName, guestPhone)
+        if (key) {
+          // 정규화된 값으로 저장
+          updatedGuestsMap.set(key, {
+            ...guest,
+            name: guestName,
+            phone: guestPhone
+          })
         }
       })
       
       // 업데이트된 게스트 반영
       guestsToUpdate.forEach(({ guest, existingGuest }) => {
-        const key = `${(existingGuest.name || '').trim()}_${String(existingGuest.phone || '').replace(/[-\s()]/g, '')}`
-        if (key && key !== '_') {
-          const updatedGuest = { ...existingGuest }
+        const existingName = normalizeName(existingGuest.name || '')
+        const existingPhone = normalizePhone(existingGuest.phone || '')
+        const key = getGuestKey(existingName, existingPhone)
+        if (key) {
+          const updatedGuest = { 
+            ...existingGuest,
+            name: existingName,
+            phone: existingPhone
+          }
           if (guest.paymentConfirmed !== undefined) {
             updatedGuest.paymentConfirmed = guest.paymentConfirmed
             if (guest.paymentConfirmed) {
@@ -432,12 +461,16 @@ const Admin = () => {
         }
       })
       
-      // 새 게스트 추가
+      // 새 게스트 추가 (이미 정규화된 값 사용)
       guestsToAdd.forEach(guest => {
-        const key = `${(guest.name || guest['이름'] || guest.Name || '').trim()}_${String(guest.phone || guest['전화번호'] || guest.Phone || '').replace(/[-\s()]/g, '')}`
-        if (key && key !== '_') {
+        const guestName = guest.name || ''
+        const guestPhone = guest.phone || ''
+        const key = getGuestKey(guestName, guestPhone)
+        if (key) {
           updatedGuestsMap.set(key, {
             ...guest,
+            name: guestName,
+            phone: guestPhone,
             isWalkIn: guest.isWalkIn !== undefined ? guest.isWalkIn : false,
             paymentConfirmed: guest.paymentConfirmed !== undefined ? guest.paymentConfirmed : false,
             isDeleted: false,

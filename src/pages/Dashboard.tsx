@@ -32,12 +32,6 @@ const Dashboard = () => {
   const location = useLocation()
   const navigate = useNavigate()
   
-  // location이 변경될 때마다 리렌더링 트리거
-  useEffect(() => {
-    // location이 변경되면 컴포넌트가 리렌더링됨
-  }, [location.pathname, location.state])
-
-  // ✅ Hook 호출 완료 후 조건부 return
   // localStorage에서 user를 확인하여 로그인 상태 체크 (상태 업데이트 지연 대응)
   const savedUser = localStorage.getItem('user')
   let parsedUser = null
@@ -51,48 +45,25 @@ const Dashboard = () => {
   
   const hasUser = user !== null || (parsedUser !== null && parsedUser.name && parsedUser.phone)
   
-  // 인증 로딩 중일 때는 로딩 UI 표시
-  if (isLoading) {
-    return (
-      <div className="dashboard">
-        <div style={{ padding: '2rem', textAlign: 'center', color: '#fff' }}>로딩 중...</div>
-      </div>
-    )
-  }
-  
-  // 개인 링크 토큰이 있고 아직 로그인되지 않았으면 Login 컴포넌트 렌더링
-  // 단, localStorage에 user가 있으면 로그인된 것으로 간주하여 Dashboard 표시
-  if (token && !hasUser) {
-    console.log('[Dashboard] Rendering Login component - token:', token, 'user:', user, 'savedUser:', savedUser, 'parsedUser:', parsedUser, 'hasUser:', hasUser, 'pathname:', location.pathname)
-    return <Login />
-  }
-  
-  // 사용자가 없고 토큰도 없으면 로그인 페이지로 리다이렉트
-  if (!hasUser && !token) {
-    return (
-      <div className="dashboard">
-        <div style={{ padding: '2rem', textAlign: 'center', color: '#fff' }}>
-          로그인이 필요합니다. 잠시 후 로그인 페이지로 이동합니다...
-        </div>
-      </div>
-    )
-  }
-  
-  // hasUser가 true이면 Dashboard 렌더링 계속
+  // ✅ 모든 Hook은 조건부 return 전에 호출 (Hook 순서 보장)
   
   // 로그인 후 개인 링크 경로 확인
   useEffect(() => {
-    if (token && user) {
-      // 쿼리 스트링에서 토큰을 읽은 경우 `/t/:token` 경로로 리다이렉트
-      if (tokenFromQuery && location.pathname !== `/t/${token}`) {
-        console.log('[Dashboard] Redirecting from query string to personal link path:', `/t/${token}`)
-        navigate(`/t/${token}`, { replace: true })
-      }
-      // URL 파라미터의 토큰이 있고 경로가 맞지 않으면 수정
-      else if (tokenFromParams && location.pathname !== `/t/${token}`) {
-        console.log('[Dashboard] User logged in but pathname is not personal link, current:', location.pathname, 'expected:', `/t/${token}`)
-        navigate(`/t/${token}`, { replace: true })
-      }
+    // 로그인 되었고 token이 있을 때만 동작
+    if (!token || !user) return
+
+    // 쿼리 스트링에서 토큰을 읽은 경우 `/t/:token` 경로로 리다이렉트
+    if (tokenFromQuery && location.pathname !== `/t/${token}`) {
+      console.log('[Dashboard] Redirecting from query string to personal link path:', `/t/${token}`)
+      navigate(`/t/${token}`, { replace: true })
+      return
+    }
+
+    // URL 파라미터의 토큰이 있고 경로가 맞지 않으면 수정
+    if (tokenFromParams && location.pathname !== `/t/${token}`) {
+      console.log('[Dashboard] User logged in but pathname is not personal link, current:', location.pathname, 'expected:', `/t/${token}`)
+      navigate(`/t/${token}`, { replace: true })
+      return
     }
   }, [token, tokenFromQuery, tokenFromParams, user, location.pathname, navigate])
 
@@ -150,7 +121,36 @@ const Dashboard = () => {
     loadNicknames()
   }, [isAdmin])
 
-  // 렌더링 조건 디버깅
+  // ✅ 이제부터 조건부 return (모든 Hook 호출 완료 후)
+  
+  // 인증 로딩 중일 때는 로딩 UI 표시
+  if (isLoading) {
+    return (
+      <div className="dashboard">
+        <div style={{ padding: '2rem', textAlign: 'center', color: '#fff' }}>로딩 중...</div>
+      </div>
+    )
+  }
+  
+  // 개인 링크 토큰이 있고 아직 로그인되지 않았으면 Login 컴포넌트 렌더링
+  // 단, localStorage에 user가 있으면 로그인된 것으로 간주하여 Dashboard 표시
+  if (token && !hasUser) {
+    console.log('[Dashboard] Rendering Login component - token:', token, 'user:', user, 'savedUser:', savedUser, 'parsedUser:', parsedUser, 'hasUser:', hasUser, 'pathname:', location.pathname)
+    return <Login />
+  }
+  
+  // 사용자가 없고 토큰도 없으면 로그인 페이지로 리다이렉트
+  if (!hasUser && !token) {
+    return (
+      <div className="dashboard">
+        <div style={{ padding: '2rem', textAlign: 'center', color: '#fff' }}>
+          로그인이 필요합니다. 잠시 후 로그인 페이지로 이동합니다...
+        </div>
+      </div>
+    )
+  }
+  
+  // hasUser가 true이면 Dashboard 렌더링 계속
 
   return (
     <div className="dashboard">

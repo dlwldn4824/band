@@ -8,6 +8,7 @@ import TicketTransition from '../components/TicketTransition'
 import ticketImage from '../assets/배경/렉사_연합공연_티켓.png'
 import { validatePhoneNumber, formatPhoneDisplay } from '../utils/phoneFormat'
 import { getGuestsStorageKey } from '../config/firestorePaths'
+import { normalizePhone, normalizeName } from '../utils/guestUtils'
 import './Login.css'
 
 const Login = () => {
@@ -49,23 +50,31 @@ const Login = () => {
         setIsProcessingAutoLogin(true)
         
         try {
-          let decodedData: string
+          let decodedData: string | null = null
           
+          // 안전한 base64 디코딩
           try {
             // URL-safe base64 디코딩 (+ -> -, / -> _, = 제거)
             const urlSafeToken = tokenParam.replace(/-/g, '+').replace(/_/g, '/')
             // 패딩 추가
             const paddedToken = urlSafeToken + '='.repeat((4 - urlSafeToken.length % 4) % 4)
-            decodedData = decodeURIComponent(atob(paddedToken))
+            const base64Decoded = atob(paddedToken)
+            decodedData = decodeURIComponent(base64Decoded)
           } catch (e) {
             console.warn('URL 파라미터 디코딩 실패:', e)
             navigate('/login', { replace: true })
             return
           }
           
+          if (!decodedData) {
+            console.warn('디코딩된 데이터가 없습니다')
+            navigate('/login', { replace: true })
+            return
+          }
+          
           // 데이터 형식: "이름|전화번호"
           const parts = decodedData.split('|')
-          if (parts.length !== 2) {
+          if (parts.length !== 2 || !parts[0] || !parts[1]) {
             console.warn('잘못된 토큰 형식')
             navigate('/login', { replace: true })
             return
@@ -74,8 +83,14 @@ const Login = () => {
           const decodedName = parts[0]
           const decodedPhone = parts[1]
           
-          // 전화번호 정규화
-          const normalizedPhone = decodedPhone.replace(/\D/g, '')
+          // 전화번호 정규화 (유틸리티 함수 사용)
+          const normalizedPhone = normalizePhone(decodedPhone)
+          
+          if (!normalizedPhone) {
+            console.warn('전화번호가 유효하지 않습니다')
+            navigate('/login', { replace: true })
+            return
+          }
           
           // guests가 로드될 때까지 대기 (최대 5초)
           let attempts = 0
@@ -359,49 +374,52 @@ const Login = () => {
     window.scrollTo(0, 0)
 
     try {
-      // 전화번호 정규화
-      const normalizedPhone = bookingPhone.trim().replace(/\D/g, '')
-      const normalizedPhoneForCompare = normalizedPhone.replace(/[-\s()]/g, '')
-      const normalizedName = bookingName.trim()
+      // 전화번호 및 이름 정규화 (유틸리티 함수 사용)
+      const normalizedPhone = normalizePhone(bookingPhone)
+      const normalizedName = normalizeName(bookingName)
+      
+      if (!normalizedPhone || !normalizedName) {
+        setBookingError('이름과 전화번호를 모두 입력해주세요.')
+        return
+      }
       
       // 같은 전화번호로 다른 이름이 이미 등록되어 있는지 확인
       const duplicateGuest = guests.find((guest) => {
-        const guestName = guest.name || guest['이름'] || guest.Name || ''
-        const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '').replace(/[-\s()]/g, '')
+        // 삭제된 게스트는 제외
+        if (guest.isDeleted === true) {
+          return false
+        }
+        const guestPhone = normalizePhone(guest.phone || guest['전화번호'] || guest.Phone)
+        const guestName = normalizeName(guest.name || guest['이름'] || guest.Name)
         // 전화번호는 같지만 이름이 다른 경우
-        return guestPhone === normalizedPhoneForCompare && guestName.trim() !== normalizedName
+        return guestPhone === normalizedPhone && guestName !== normalizedName
       })
       
       if (duplicateGuest) {
         // 중복된 전화번호 발견 - 확인 모달 표시
-        const existingName = duplicateGuest.name || duplicateGuest['이름'] || duplicateGuest.Name || ''
+        const existingName = normalizeName(duplicateGuest.name || duplicateGuest['이름'] || duplicateGuest.Name)
         setDuplicateGuestName(existingName)
         setShowPhoneDuplicateModal(true)
         return
       }
       
       // 이미 등록된 게스트(삭제되지 않은)인지 확인
-      // ✅ 엑셀로 업로드한 게스트도 포함해서 확인 (name, phone 필드 모두 체크)
+      // ✅ 엑셀로 업로드한 게스트도 포함해서 확인 (정규화된 값으로 비교)
       const existingGuest = guests.find((guest) => {
         // 삭제된 게스트는 제외
         if (guest.isDeleted === true) {
           return false
         }
-        // 이름 매칭 (한글 키 또는 영문 키 지원)
-        const guestName = guest.name || guest['이름'] || guest.Name || ''
-        const nameMatch = guestName.trim() === normalizedName
+        // 정규화된 값으로 비교
+        const guestPhone = normalizePhone(guest.phone || guest['전화번호'] || guest.Phone)
+        const guestName = normalizeName(guest.name || guest['이름'] || guest.Name)
         
-        // 전화번호 매칭 (한글 키 또는 영문 키 지원, 하이픈/공백 제거 후 비교)
-        const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '')
-        const normalizedGuestPhone = guestPhone.replace(/[-\s()]/g, '')
-        const phoneMatch = normalizedGuestPhone === normalizedPhoneForCompare
-        
-        return nameMatch && phoneMatch
+        return guestPhone === normalizedPhone && guestName === normalizedName
       })
       
       console.log('[Login] 게스트 확인:', {
         inputName: normalizedName,
-        inputPhone: normalizedPhoneForCompare,
+        inputPhone: normalizedPhone,
         guestsCount: guests.length,
         foundGuest: existingGuest ? {
           name: existingGuest.name || existingGuest['이름'] || existingGuest.Name,
@@ -898,16 +916,15 @@ const Login = () => {
                   const normalizedPhone = bookingPhone.replace(/\D/g, '')
                   const normalizedName = bookingName.trim()
                   
-                  // 기존 게스트인지 확인 (삭제되지 않은 게스트만)
-                  const normalizedPhoneForCompare = normalizedPhone.replace(/[-\s()]/g, '')
+                  // 기존 게스트인지 확인 (삭제되지 않은 게스트만, 정규화된 값으로 비교)
                   const existingGuest = guests.find((guest) => {
                     // 삭제된 게스트는 제외
                     if (guest.isDeleted === true) {
                       return false
                     }
-                    const guestName = guest.name || guest['이름'] || guest.Name || ''
-                    const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '').replace(/[-\s()]/g, '')
-                    return guestName.trim() === normalizedName && guestPhone === normalizedPhoneForCompare
+                    const guestPhone = normalizePhone(guest.phone || guest['전화번호'] || guest.Phone)
+                    const guestName = normalizeName(guest.name || guest['이름'] || guest.Name)
+                    return guestPhone === normalizedPhone && guestName === normalizedName
                   })
 
                   // ✅ 입금 확인된 기존 게스트는 바로 로그인 (명단에 추가하지 않음)
@@ -998,15 +1015,16 @@ const Login = () => {
             const nameToUse = bookingName || currentUser?.name || ''
             const phoneToUse = bookingPhone.replace(/\D/g, '') || currentUser?.phone?.replace(/\D/g, '') || ''
             
-            const normalizedPhone = phoneToUse.replace(/\D/g, '')
+            const normalizedPhone = normalizePhone(phoneToUse)
+            const normalizedName = normalizeName(nameToUse)
             const existingGuest = guests.find((g) => {
               // 삭제된 게스트는 제외
               if (g.isDeleted === true) {
                 return false
               }
-              const gName = g.name || g['이름'] || g.Name || ''
-              const gPhone = String(g.phone || g['전화번호'] || g.Phone || '').replace(/[-\s()]/g, '')
-              return gName.trim() === nameToUse.trim() && gPhone === normalizedPhone
+              const gPhone = normalizePhone(g.phone || g['전화번호'] || g.Phone)
+              const gName = normalizeName(g.name || g['이름'] || g.Name)
+              return gPhone === normalizedPhone && gName === normalizedName
             })
             console.log('[Login] TicketTransition - nameToUse:', nameToUse)
             console.log('[Login] TicketTransition - phoneToUse:', phoneToUse)

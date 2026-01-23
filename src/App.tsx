@@ -5,6 +5,7 @@ import { DataProvider } from './contexts/DataContext'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminProtectedRoute from './components/AdminProtectedRoute'
+import ErrorBoundary from './components/ErrorBoundary'
 import Login from './pages/Login'
 import AdminLogin from './pages/AdminLogin'
 import Admin from './pages/Admin'
@@ -213,11 +214,13 @@ function AppRoutes() {
 function App() {
   useAppHeight()
   return (
-    <AuthProvider>
-      <DataProvider>
-        <AppRoutes />
-      </DataProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <DataProvider>
+          <AppRoutes />
+        </DataProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   )
 }
 
