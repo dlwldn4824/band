@@ -288,6 +288,14 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
               writeSource: writeSource
             }
             
+            // ✅ 삭제된 게스트 수 확인 로그
+            const deletedCount = finalGuests.filter((g: Guest) => g.isDeleted === true).length
+            console.log('[WRITE] deleted in finalPayload:', deletedCount, {
+              totalGuests: finalGuests.length,
+              activeGuests: finalGuests.length - deletedCount,
+              deletedGuests: deletedCount
+            })
+            
             // _cleared는 명시적으로 설정된 경우만 포함
             // 초기화 작업: _cleared가 숫자 → 포함
             // 초기화 해제: _cleared가 null → deleteField()로 완전 삭제
@@ -918,20 +926,22 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       throw new Error('게스트 리스트가 방금 초기화되었습니다. 잠시 후 다시 시도해주세요.')
     }
     
-    // ✅ Firestore에서 최신 게스트 리스트 가져오기 (웹 예매 게스트 포함)
+    // ✅ Firestore에서 최신 게스트 리스트 가져오기 (웹 예매 게스트 포함, 삭제된 게스트도 포함)
+    // 엑셀 업로드 시 삭제된 게스트도 포함하여 가져오되, 새로 업로드된 게스트로 덮어쓰면 복구됨
     let existingGuests: Guest[] = []
     try {
       const currentData = await getFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, FIRESTORE_PATHS.GUESTS_DOC_ID)
       const firestoreGuests = (currentData as any)?.guests || []
       if (Array.isArray(firestoreGuests) && firestoreGuests.length > 0) {
-        existingGuests = firestoreGuests.filter((guest: Guest) => guest.isDeleted !== true)
+        // ✅ 삭제된 게스트도 포함 (dedupeGuests에서 처리)
+        existingGuests = firestoreGuests
       } else {
-        // Firestore에 데이터가 없으면 로컬 state 사용
-        existingGuests = guests.filter(guest => guest.isDeleted !== true)
+        // Firestore에 데이터가 없으면 로컬 state 사용 (삭제된 게스트도 포함)
+        existingGuests = guests
       }
     } catch (error) {
-      // Firestore 확인 실패 시 로컬 state 사용
-      existingGuests = guests.filter(guest => guest.isDeleted !== true)
+      // Firestore 확인 실패 시 로컬 state 사용 (삭제된 게스트도 포함)
+      existingGuests = guests
     }
     
     console.log('[UPLOAD] 최신 게스트 리스트 확인:', {
@@ -942,25 +952,24 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     // ✅ 중복 제거: 전화번호만 키로 사용 (이름은 변경 가능하므로)
     const guestMap = new Map<string, Guest>()
     
-    // 1. 기존 게스트 먼저 추가 (삭제된 게스트는 제외)
+    // 1. 기존 게스트 먼저 추가 (삭제된 게스트도 포함하여 저장)
     existingGuests.forEach(guest => {
-      if (guest.isDeleted !== true) {
-        const rawPhone = guest.phone || guest['전화번호'] || guest.Phone || ''
-        // ✅ 전화번호만 키로 사용 (이름은 무시)
-        const key = normalizePhone(rawPhone)
-        if (key) {
-          guestMap.set(key, guest)
-        }
+      const rawPhone = guest.phone || guest['전화번호'] || guest.Phone || ''
+      // ✅ 전화번호만 키로 사용 (이름은 무시)
+      const key = normalizePhone(rawPhone)
+      if (key) {
+        guestMap.set(key, guest)
       }
     })
     
-    // 2. 새 게스트 추가/업데이트 (기존 게스트를 덮어쓰기)
+    // 2. 새 게스트 추가/업데이트 (기존 게스트를 덮어쓰기, 삭제된 게스트도 복구)
     newGuests.forEach(guest => {
       const rawPhone = guest.phone || guest['전화번호'] || guest.Phone || ''
       // ✅ 전화번호만 키로 사용 (이름은 무시)
       const key = normalizePhone(rawPhone)
       if (key) {
         // 이미 있으면 업데이트, 없으면 추가 (upsert 패턴)
+        // ✅ 새로 업로드된 게스트는 삭제 마커 제거 (복구)
         guestMap.set(key, {
           ...guest,
           // 정규화된 전화번호로 저장 (일관성 유지)
@@ -968,7 +977,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           name: normalizeName(guest.name || guest['이름'] || guest.Name),
           isWalkIn: guest.isWalkIn !== undefined ? guest.isWalkIn : false,
           paymentConfirmed: guest.paymentConfirmed !== undefined ? guest.paymentConfirmed : false,
-          // 삭제 마커 제거 (새로 업로드하면 활성화)
+          // 삭제 마커 제거 (새로 업로드하면 활성화/복구)
           isDeleted: false,
           deletedAt: undefined
         })
@@ -1048,17 +1057,14 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     // ✅ 삭제된 게스트는 제외하고 활성 게스트만 체크
     // ✅ Firestore에서 최신 데이터를 직접 확인하여 엑셀 업로드 게스트도 인식
     
-    // 1. 먼저 Firestore에서 최신 데이터 확인 (엑셀 업로드 게스트 포함)
+    // 1. 먼저 Firestore에서 최신 데이터 확인 (엑셀 업로드 게스트 포함, 삭제된 게스트도 포함)
     let existingGuest: Guest | undefined = undefined
     try {
       const currentData = await getFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, FIRESTORE_PATHS.GUESTS_DOC_ID)
       const firestoreGuests = (currentData as any)?.guests || []
       if (Array.isArray(firestoreGuests) && firestoreGuests.length > 0) {
+        // ✅ 삭제된 게스트도 포함하여 검색 (복구 처리용)
         existingGuest = firestoreGuests.find((guest: Guest) => {
-          // 삭제된 게스트는 제외
-          if (guest.isDeleted === true) {
-            return false
-          }
           // 전화번호만 비교 (이름은 변경 가능하므로)
           const guestPhone = normalizePhone(guest.phone || guest['전화번호'] || guest.Phone)
           return guestPhone === normalizedPhone && guestPhone !== ''
@@ -1073,18 +1079,16 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       const latestGuestsFromStorage = JSON.parse(localStorage.getItem(getGuestsStorageKey()) || '[]')
       const latestGuests = latestGuestsFromStorage.length > 0 ? latestGuestsFromStorage : guests
       
+      // ✅ 삭제된 게스트도 포함하여 검색 (복구 처리용)
       existingGuest = latestGuests.find((guest: Guest) => {
-        // 삭제된 게스트는 제외
-        if (guest.isDeleted === true) {
-          return false
-        }
         // 전화번호만 비교 (이름은 변경 가능하므로)
         const guestPhone = normalizePhone(guest.phone || guest['전화번호'] || guest.Phone)
         return guestPhone === normalizedPhone && guestPhone !== ''
       })
     }
 
-    if (existingGuest) {
+    // ✅ 이미 있는데 삭제되지 않은 활성 게스트면 중복으로 처리
+    if (existingGuest && existingGuest.isDeleted !== true) {
       console.log('[addWalkInGuest] 중복 게스트 발견:', {
         name: normalizedName,
         phone: normalizedPhone,
@@ -1096,6 +1100,29 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         }
       })
       return { success: false, message: '이미 등록된 게스트입니다.' }
+    }
+    
+    // ✅ 삭제된 게스트가 있으면 복구 처리 (isDeleted: false로 업데이트)
+    if (existingGuest && existingGuest.isDeleted === true) {
+      console.log('[addWalkInGuest] 삭제된 게스트 복구:', {
+        name: normalizedName,
+        phone: normalizedPhone,
+        existingGuest: {
+          name: existingGuest.name || existingGuest['이름'] || existingGuest.Name,
+          phone: existingGuest.phone || existingGuest['전화번호'] || existingGuest.Phone,
+          isDeleted: existingGuest.isDeleted
+        }
+      })
+      // 기존 게스트를 복구하여 사용 (isDeleted: false로 업데이트)
+      existingGuest = {
+        ...existingGuest,
+        isDeleted: false,
+        deletedAt: undefined,
+        // 새로 입력된 정보로 업데이트
+        name: normalizedName,
+        phone: normalizedPhone,
+        isWalkIn: isWalkIn
+      }
     }
 
     // 새로운 게스트 추가 (사전 예매 또는 현장 예매)
@@ -1130,27 +1157,39 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     // ✅ Map을 사용하여 중복 제거 (전화번호만 키로 사용)
     const guestMap = new Map<string, Guest>()
     
-    // 1. 기존 게스트 먼저 추가 (삭제된 게스트는 제외)
+    // 1. 기존 게스트 먼저 추가 (삭제된 게스트도 포함하여 저장)
     latestGuests.forEach((guest: Guest) => {
-      if (guest.isDeleted !== true) {
-        const rawPhone = guest.phone || guest['전화번호'] || guest.Phone || ''
-        // ✅ 전화번호만 키로 사용 (이름은 무시)
-        const key = normalizePhone(rawPhone)
-        if (key) {
-          guestMap.set(key, guest)
-        }
+      const rawPhone = guest.phone || guest['전화번호'] || guest.Phone || ''
+      // ✅ 전화번호만 키로 사용 (이름은 무시)
+      const key = normalizePhone(rawPhone)
+      if (key) {
+        guestMap.set(key, guest)
       }
     })
     
-    // 2. 새 게스트 추가 (중복이면 덮어쓰기)
+    // 2. 새 게스트 추가 또는 삭제된 게스트 복구
     // ✅ 전화번호만 키로 사용 (이름은 무시)
     if (normalizedPhone) {
-      guestMap.set(normalizedPhone, {
-        ...newGuest,
-        // 정규화된 값으로 저장 (일관성 유지)
-        phone: normalizedPhone,
-        name: normalizedName
-      })
+      // 삭제된 게스트를 복구하는 경우 기존 정보를 유지하면서 isDeleted만 false로 변경
+      if (existingGuest && existingGuest.isDeleted === true) {
+        guestMap.set(normalizedPhone, {
+          ...existingGuest,
+          // 정규화된 값으로 저장 (일관성 유지)
+          phone: normalizedPhone,
+          name: normalizedName,
+          isDeleted: false,
+          deletedAt: undefined,
+          isWalkIn: isWalkIn
+        })
+      } else {
+        // 새로운 게스트 추가
+        guestMap.set(normalizedPhone, {
+          ...newGuest,
+          // 정규화된 값으로 저장 (일관성 유지)
+          phone: normalizedPhone,
+          name: normalizedName
+        })
+      }
     }
     
     const updatedGuests = Array.from(guestMap.values())
