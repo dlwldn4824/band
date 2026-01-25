@@ -11,7 +11,7 @@ import GuestEditModal from '../components/admin/GuestEditModal'
 import PasswordModal from '../components/admin/PasswordModal'
 import DrinkOrdersSection from '../components/admin/DrinkOrdersSection'
 import { generatePersonalLoginLink, makeGuestKey } from '../utils/adminUtils'
-import { normalizePhone, normalizeName } from '../utils/guestUtils'
+import { normalizePhone, normalizeName, normalizeKoreanMobile } from '../utils/guestUtils'
 import './Admin.css'
 
 const Admin = () => {
@@ -56,7 +56,7 @@ const Admin = () => {
   const [passwordInput, setPasswordInput] = useState('')
 
   const [drinkOrders, setDrinkOrders] = useState<Array<{ id: string; name: string; phone: string; beerQuantity: number; mojitoQuantity: number; totalAmount: number; createdAt: any; paymentConfirmed?: boolean; paymentConfirmedAt?: any; provided?: boolean; providedAt?: any; orderHistory?: Array<{ beerQuantity: number; mojitoQuantity: number; unitPrice?: number; createdAt: any; provided?: boolean; providedAt?: any }> }>>([])
-  const { uploadGuests, setPerformanceData, guests, performanceData, clearGuests, deleteGuest, clearSetlist, bookingInfo, setBookingInfo, clearChatMessages, toggleGuestPayment, addWalkInGuest } = useData()
+  const { uploadGuests, setPerformanceData, guests, performanceData, clearGuests, deleteGuest, clearSetlist, bookingInfo, setBookingInfo, clearChatMessages, toggleGuestPayment, addWalkInGuest, deduplicateGuests, fixGuestPhones } = useData()
   
   // 예매 정보 폼 상태
   const [bookingForm, setBookingForm] = useState<BookingInfo>({
@@ -286,13 +286,14 @@ const Admin = () => {
         
         // 이름과 전화번호 정규화
         const rawName = row['이름'] || row['name'] || row['Name'] || ''
-        const rawPhone = String(row['전화번호'] || row['phone'] || row['Phone'] || '')
+        const rawPhone = row['전화번호'] || row['phone'] || row['Phone'] || ''
         const normalizedName = normalizeName(rawName)
-        const normalizedPhone = normalizePhone(rawPhone)
+        // ✅ 한국 휴대폰 번호 보정 (앞 0이 날아가는 문제 해결)
+        const normalizedPhone = normalizeKoreanMobile(rawPhone)
         
         return {
           name: normalizedName,
-          phone: normalizedPhone,
+          phone: normalizedPhone, // ✅ 문자열로 저장 (앞 0 보존)
           paymentConfirmed: paymentConfirmed,
           paymentConfirmedAt: paymentConfirmed ? Date.now() : undefined,
           ...row
@@ -2205,8 +2206,10 @@ const Admin = () => {
                 // 현재 메모리의 게스트 데이터를 엑셀 형식으로 변환 (CORS 문제 없음)
                 const excelData = guests.map((guest, index) => {
                   const guestName = guest.name || guest['이름'] || guest.Name || ''
-                  const guestPhone = guest.phone || guest['전화번호'] || guest.Phone || ''
-                  const userId = makeGuestKey(guestName, guestPhone)
+                  const guestPhoneRaw = guest.phone || guest['전화번호'] || guest.Phone || ''
+                  // ✅ 전화번호를 010-1234-5678 형식으로 포맷팅
+                  const guestPhoneFormatted = formatPhoneDisplay(guestPhoneRaw)
+                  const userId = makeGuestKey(guestName, guestPhoneRaw)
                   const guestNickname = userNicknames[userId] || ''
                   
                   // 예매 일시 조회
@@ -2220,7 +2223,7 @@ const Admin = () => {
                   return {
                     번호: index + 1,
                     이름: guestName,
-                    전화번호: guestPhone,
+                    전화번호: guestPhoneFormatted, // ✅ 포맷팅된 전화번호 저장
                     닉네임: guestNickname,
                     삭제여부: guest.isDeleted ? '삭제됨' : '',
                     삭제시간: guest.deletedAt 
@@ -2337,6 +2340,72 @@ const Admin = () => {
             >
               🗑️ 게스트 리스트 초기화
             </button>
+          <button 
+            onClick={async () => {
+              requirePassword(async () => {
+                if (window.confirm('중복된 게스트를 정리하시겠습니까? 같은 전화번호를 가진 게스트 중 나중에 등록된 항목이 유지됩니다.')) {
+                  // ✅ 연속 클릭 방지: 버튼 비활성화
+                  const button = document.activeElement as HTMLButtonElement
+                  if (button) {
+                    button.disabled = true
+                    button.textContent = '🔄 정리 중...'
+                  }
+                  
+                  setUploadStatus('🔄 중복 게스트 정리 중...')
+                  
+                  try {
+                    const result = await deduplicateGuests()
+                    setUploadStatus(result.message)
+                  } catch (error: any) {
+                    console.error('중복 정리 오류:', error)
+                    setUploadStatus('❌ 중복 정리에 실패했습니다. 다시 시도해주세요.')
+                  } finally {
+                    // ✅ 버튼 다시 활성화
+                    if (button) {
+                      button.disabled = false
+                      button.textContent = '🔧 중복 게스트 정리'
+                    }
+                  }
+                }
+              })
+            }}
+            className="reset-button"
+          >
+            🔧 중복 게스트 정리
+          </button>
+          <button 
+            onClick={async () => {
+              requirePassword(async () => {
+                if (window.confirm('전화번호 앞 0이 날아간 게스트를 복구하시겠습니까? (10자리 → 11자리)')) {
+                  // ✅ 연속 클릭 방지: 버튼 비활성화
+                  const button = document.activeElement as HTMLButtonElement
+                  if (button) {
+                    button.disabled = true
+                    button.textContent = '🔄 복구 중...'
+                  }
+                  
+                  setUploadStatus('🔄 전화번호 복구 중...')
+                  
+                  try {
+                    const result = await fixGuestPhones()
+                    setUploadStatus(result.message)
+                  } catch (error: any) {
+                    console.error('전화번호 복구 오류:', error)
+                    setUploadStatus('❌ 전화번호 복구에 실패했습니다. 다시 시도해주세요.')
+                  } finally {
+                    // ✅ 버튼 다시 활성화
+                    if (button) {
+                      button.disabled = false
+                      button.textContent = '📞 전화번호 복구'
+                    }
+                  }
+                }
+              })
+            }}
+            className="reset-button"
+          >
+            📞 전화번호 복구
+          </button>
         </div>
 
         {uploadStatus && (

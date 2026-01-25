@@ -14,11 +14,61 @@ export const normalizePhone = (phone: string | undefined | null): string => {
 }
 
 /**
+ * 한국 휴대폰 번호 보정 (엑셀 업로드 시 앞 0이 날아가는 문제 해결)
+ * - 숫자로 저장된 경우 문자열로 변환
+ * - 지수표기 방지
+ * - 10자리면 앞에 0 붙여서 11자리로 보정
+ */
+export const normalizeKoreanMobile = (raw: any): string => {
+  // 1) 원본을 문자열로
+  let s = String(raw ?? '').trim()
+
+  // 2) 지수표기(1.027e10 같은) 방지: 숫자면 정수 문자열로 변환
+  //    (엑셀에서 큰 숫자가 지수로 오는 경우 대비)
+  if (typeof raw === 'number' && Number.isFinite(raw)) {
+    s = Math.trunc(raw).toString()
+  }
+
+  // 3) 숫자만 남김
+  s = s.replace(/\D/g, '')
+
+  // 4) 10자리면(앞 0이 날아간 휴대폰) '0'을 붙여서 11자리로
+  if (s.length === 10) {
+    s = '0' + s
+  }
+
+  return s // 예: 01027865023
+}
+
+/**
  * 이름 정규화 (앞뒤 공백 제거)
  */
 export const normalizeName = (name: string | undefined | null): string => {
   if (!name) return ''
   return String(name).trim()
+}
+
+/**
+ * 게스트 객체에서 전화번호 필드 추출 (다양한 필드명 지원)
+ * 엑셀 업로드, 웹 예매 등 다양한 소스에서 올 수 있는 다양한 필드명을 모두 지원
+ */
+export const getGuestPhone = (guest: any): string => {
+  if (!guest || typeof guest !== 'object') return ''
+  
+  // 다양한 필드명 시도 (우선순위 순)
+  return guest.phone || 
+         guest['전화번호'] || 
+         guest.Phone || 
+         guest.phoneNumber || 
+         guest['연락처'] || 
+         guest['휴대폰'] || 
+         guest['핸드폰'] ||
+         guest['전화 번호'] ||
+         guest['전화번호 '] ||
+         guest['Phone'] ||
+         guest['PHONE'] ||
+         String(guest.phone || '').trim() || // 숫자로 저장된 경우
+         ''
 }
 
 /**

@@ -6,7 +6,7 @@ import {
 import { collection, getDocs, deleteDoc, doc, onSnapshot } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import { FIRESTORE_PATHS, getGuestsStorageKey } from '../config/firestorePaths'
-import { normalizePhone, normalizeName, dedupeGuests } from '../utils/guestUtils'
+import { normalizePhone, normalizeName, dedupeGuests, normalizeKoreanMobile } from '../utils/guestUtils'
 import * as XLSX from 'xlsx'
 
 export interface Guest {
@@ -92,6 +92,8 @@ interface DataContextType {
   setEventsEnabled: (enabled: boolean) => void
   clearGuestbookMessages: () => void
   clearChatMessages: () => Promise<void>
+  deduplicateGuests: () => Promise<{ success: boolean; message: string; removedCount?: number }>
+  fixGuestPhones: () => Promise<{ success: boolean; message: string; fixedCount?: number }>
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined)
@@ -1537,6 +1539,136 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
+  const deduplicateGuests = async (): Promise<{ success: boolean; message: string; removedCount?: number }> => {
+    try {
+      // ✅ 초기화 후 차단 시간 동안 저장 차단
+      if (clearBlockUntilRef.current !== null && Date.now() < clearBlockUntilRef.current) {
+        return { success: false, message: '게스트 리스트가 방금 초기화되었습니다. 잠시 후 다시 시도해주세요.' }
+      }
+
+      // Firestore에서 최신 게스트 리스트 가져오기 (삭제된 게스트도 포함)
+      const currentData = await getFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, FIRESTORE_PATHS.GUESTS_DOC_ID)
+      const firestoreGuests = (currentData as any)?.guests || []
+      
+      if (!Array.isArray(firestoreGuests) || firestoreGuests.length === 0) {
+        return { success: true, message: '정리할 게스트가 없습니다.', removedCount: 0 }
+      }
+
+      const beforeCount = firestoreGuests.length
+
+      // ✅ 전화번호만 키로 사용하여 중복 제거 (dedupeGuests 사용)
+      const deduplicatedGuests = dedupeGuests(firestoreGuests)
+
+      const afterCount = deduplicatedGuests.length
+      const removedCount = beforeCount - afterCount
+
+      if (removedCount === 0) {
+        return { success: true, message: '중복된 게스트가 없습니다.', removedCount: 0 }
+      }
+
+      // ✅ 중복 제거된 게스트 리스트를 Firestore에 저장
+      await saveGuestsAllCoalesced({ guests: deduplicatedGuests, _cleared: undefined }, 3, 'deduplicateGuests')
+
+      // ✅ state 업데이트 (삭제된 게스트는 제외)
+      const activeGuests = deduplicatedGuests.filter(g => g.isDeleted !== true)
+      setGuests(activeGuests)
+      localStorage.setItem(getGuestsStorageKey(), JSON.stringify(activeGuests))
+
+      // ✅ 해시 업데이트
+      const deletedCount = deduplicatedGuests.length - activeGuests.length
+      lastGuestsHashRef.current = JSON.stringify({
+        active: activeGuests,
+        deletedCount: deletedCount,
+        totalCount: deduplicatedGuests.length,
+        updatedAt: Date.now()
+      })
+
+      return { 
+        success: true, 
+        message: `✅ 중복 정리 완료: ${removedCount}개의 중복 게스트가 제거되었습니다. (전체: ${beforeCount} → ${afterCount})`,
+        removedCount 
+      }
+    } catch (error) {
+      console.error('[deduplicateGuests] 중복 정리 실패:', error)
+      return { 
+        success: false, 
+        message: `❌ 중복 정리 실패: ${error instanceof Error ? error.message : '알 수 없는 오류'}` 
+      }
+    }
+  }
+
+  const fixGuestPhones = async (): Promise<{ success: boolean; message: string; fixedCount?: number }> => {
+    try {
+      // ✅ 초기화 후 차단 시간 동안 저장 차단
+      if (clearBlockUntilRef.current !== null && Date.now() < clearBlockUntilRef.current) {
+        return { success: false, message: '게스트 리스트가 방금 초기화되었습니다. 잠시 후 다시 시도해주세요.' }
+      }
+
+      // Firestore에서 최신 게스트 리스트 가져오기
+      const currentData = await getFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, FIRESTORE_PATHS.GUESTS_DOC_ID)
+      const firestoreGuests = (currentData as any)?.guests || []
+      
+      if (!Array.isArray(firestoreGuests) || firestoreGuests.length === 0) {
+        return { success: true, message: '복구할 게스트가 없습니다.', fixedCount: 0 }
+      }
+
+      let fixedCount = 0
+
+      // 전화번호 보정
+      const fixedGuests = firestoreGuests.map((g: any) => {
+        const raw = g.phone ?? g['전화번호'] ?? g.Phone ?? ''
+        const oldNormalized = normalizePhone(String(raw))
+        const newPhone = normalizeKoreanMobile(raw)
+        const newNormalized = normalizePhone(newPhone)
+
+        // 바뀐 경우만 카운트
+        if (oldNormalized !== newNormalized && oldNormalized.length === 10 && newNormalized.length === 11) {
+          fixedCount++
+        }
+
+        return {
+          ...g,
+          phone: newPhone, // ✅ 문자열로 저장 (앞 0 보존)
+          '전화번호': newPhone,
+          Phone: newPhone,
+        }
+      })
+
+      if (fixedCount === 0) {
+        return { success: true, message: '복구할 전화번호가 없습니다. (모든 전화번호가 정상입니다)', fixedCount: 0 }
+      }
+
+      // ✅ Firestore에 저장
+      await saveGuestsAllCoalesced({ guests: fixedGuests, _cleared: undefined }, 3, 'fixGuestPhones')
+
+      // ✅ state 업데이트 (삭제된 게스트는 제외)
+      const activeGuests = fixedGuests.filter(g => g.isDeleted !== true)
+      setGuests(activeGuests)
+      localStorage.setItem(getGuestsStorageKey(), JSON.stringify(activeGuests))
+
+      // ✅ 해시 업데이트
+      const deletedCount = fixedGuests.length - activeGuests.length
+      lastGuestsHashRef.current = JSON.stringify({
+        active: activeGuests,
+        deletedCount: deletedCount,
+        totalCount: fixedGuests.length,
+        updatedAt: Date.now()
+      })
+
+      return { 
+        success: true, 
+        message: `✅ 전화번호 복구 완료: ${fixedCount}개의 전화번호가 복구되었습니다. (10자리 → 11자리)`,
+        fixedCount 
+      }
+    } catch (error) {
+      console.error('[fixGuestPhones] 전화번호 복구 실패:', error)
+      return { 
+        success: false, 
+        message: `❌ 전화번호 복구 실패: ${error instanceof Error ? error.message : '알 수 없는 오류'}` 
+      }
+    }
+  }
+
   return (
     <DataContext.Provider value={{ 
       guests, 
@@ -1556,7 +1688,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       clearSetlist,
       setEventsEnabled,
       clearGuestbookMessages,
-      clearChatMessages
+      clearChatMessages,
+      deduplicateGuests,
+      fixGuestPhones
     }}>
       {children}
     </DataContext.Provider>

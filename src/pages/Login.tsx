@@ -2,13 +2,15 @@ import { useState, useEffect } from 'react'
 import { useNavigate, Link, useParams, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useData } from '../contexts/DataContext'
+import type { Guest } from '../contexts/DataContext'
 import { doc, setDoc, onSnapshot, getDoc } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import TicketTransition from '../components/TicketTransition'
 import ticketImage from '../assets/배경/렉사_연합공연_티켓.png'
 import { validatePhoneNumber, formatPhoneDisplay } from '../utils/phoneFormat'
-import { getGuestsStorageKey } from '../config/firestorePaths'
-import { normalizePhone, normalizeName } from '../utils/guestUtils'
+import { getGuestsStorageKey, FIRESTORE_PATHS } from '../config/firestorePaths'
+import { normalizePhone, normalizeName, getGuestPhone } from '../utils/guestUtils'
+import { getFirestoreData } from '../services/firestoreService'
 import './Login.css'
 
 const Login = () => {
@@ -428,23 +430,87 @@ const Login = () => {
       }
       
       // 이미 등록된 게스트(삭제되지 않은)인지 확인
-      // ✅ 엑셀로 업로드한 게스트도 포함해서 확인 (정규화된 값으로 비교)
-      const existingGuest = guests.find((guest) => {
-        // 삭제된 게스트는 제외
-        if (guest.isDeleted === true) {
-          return false
+      // ✅ 엑셀로 업로드한 게스트도 포함해서 확인 (전화번호만으로 비교 - 이름은 변경 가능)
+      // ✅ addWalkInGuest와 동일한 로직: Firestore에서 직접 확인
+      let existingGuest: Guest | undefined = undefined
+      let resolvedGuests: Guest[] = [] // ✅ existingGuest를 찾을 때 사용한 배열 저장
+      
+      // 1. 먼저 Firestore에서 최신 데이터 확인 (엑셀 업로드 게스트 포함, 삭제된 게스트도 포함)
+      try {
+        const currentData = await getFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, FIRESTORE_PATHS.GUESTS_DOC_ID)
+        const firestoreGuests = (currentData as any)?.guests || []
+        if (Array.isArray(firestoreGuests) && firestoreGuests.length > 0) {
+          resolvedGuests = firestoreGuests // ✅ Firestore에서 찾은 배열 저장
+          
+          // ✅ 디버깅: 샘플 데이터 구조 확인
+          console.log('[Login] firestoreGuests sample keys:', firestoreGuests?.[0] ? Object.keys(firestoreGuests[0]) : null)
+          console.log('[Login] firestoreGuests sample:', firestoreGuests?.[0])
+          
+          // ✅ 디버깅: 첫 5개 게스트의 필드명과 전화번호 확인
+          const debug = firestoreGuests.slice(0, 5).map((g: any) => ({
+            keys: Object.keys(g),
+            name: g.name ?? g['이름'] ?? g.Name ?? g.username ?? g.nickname,
+            phoneRaw: getGuestPhone(g),
+            phoneNormalized: normalizePhone(getGuestPhone(g)),
+            phoneField: g.phone,
+            전화번호Field: g['전화번호'],
+            PhoneField: g.Phone
+          }))
+          console.log('[Login] debug first 5:', debug)
+          console.log('[Login] 입력한 전화번호 (normalized):', normalizedPhone)
+          
+          // ✅ 삭제된 게스트는 제외하고 활성 게스트만 검색
+          existingGuest = firestoreGuests.find((guest: Guest) => {
+            if (guest.isDeleted === true) return false
+            // ✅ 확장된 필드명 매칭 사용
+            const guestPhoneRaw = getGuestPhone(guest)
+            const guestPhone = normalizePhone(guestPhoneRaw)
+            const matches = guestPhone === normalizedPhone && guestPhone !== ''
+            
+            // ✅ 매칭 시도 로그 (처음 몇 개만)
+            if (firestoreGuests.indexOf(guest) < 3) {
+              console.log('[Login] 매칭 시도:', {
+                guestName: guest.name || guest['이름'] || guest.Name,
+                guestPhoneRaw,
+                guestPhone,
+                inputPhone: normalizedPhone,
+                matches
+              })
+            }
+            
+            return matches
+          })
         }
-        // 정규화된 값으로 비교
-        const guestPhone = normalizePhone(guest.phone || guest['전화번호'] || guest.Phone)
-        const guestName = normalizeName(guest.name || guest['이름'] || guest.Name)
+      } catch (error) {
+        console.warn('[Login] Firestore 확인 실패, 로컬 데이터 확인:', error)
+      }
+      
+      // 2. Firestore에서 찾지 못했으면 로컬 데이터 확인 (state + localStorage)
+      if (!existingGuest) {
+        const latestGuestsFromStorage = JSON.parse(localStorage.getItem(getGuestsStorageKey()) || '[]')
+        const latestGuests = latestGuestsFromStorage.length > 0 ? latestGuestsFromStorage : guests
         
-        return guestPhone === normalizedPhone && guestName === normalizedName
-      })
+        resolvedGuests = latestGuests // ✅ 로컬에서 찾은 배열 저장
+        
+        existingGuest = latestGuests.find((guest: Guest) => {
+          if (guest.isDeleted === true) return false
+          // ✅ 확장된 필드명 매칭 사용
+          const guestPhone = normalizePhone(getGuestPhone(guest))
+          return guestPhone === normalizedPhone && guestPhone !== ''
+        })
+      }
+      
+      // ✅ resolvedGuests가 비어있으면 기본값으로 guests 사용 (안전장치)
+      if (resolvedGuests.length === 0) {
+        resolvedGuests = guests
+      }
       
       console.log('[Login] 게스트 확인:', {
         inputName: normalizedName,
         inputPhone: normalizedPhone,
-        guestsCount: guests.length,
+        guestsStateCount: guests.length,
+        resolvedGuestsCount: resolvedGuests.length,
+        checkedFirestore: true,
         foundGuest: existingGuest ? {
           name: existingGuest.name || existingGuest['이름'] || existingGuest.Name,
           phone: existingGuest.phone || existingGuest['전화번호'] || existingGuest.Phone,
@@ -456,13 +522,16 @@ const Login = () => {
       // ✅ 확인완료된 게스트(paymentConfirmed: true)는 바로 로그인 후 홈으로 이동
       if (existingGuest && existingGuest.paymentConfirmed === true) {
         console.log('[Login] 확인완료 게스트 감지 → 바로 로그인')
-        const loginSuccess = login(normalizedName, normalizedPhone, guests)
+        // ✅ 기존 게스트의 이름 사용 (엑셀 업로드 시 정규화된 이름)
+        const existingName = normalizeName(existingGuest.name || existingGuest['이름'] || existingGuest.Name || normalizedName)
+        // ✅ existingGuest를 찾을 때 사용한 배열로 로그인 (guests state가 최신이 아닐 수 있음)
+        const loginSuccess = login(existingName, normalizedPhone, resolvedGuests)
         if (loginSuccess) {
           // localStorage에서 pendingBooking 제거
           localStorage.removeItem('pendingBooking')
           
-          // 티켓 애니메이션 표시를 위한 상태 설정 (폼에서 입력된 값 사용)
-          const nameToUse = bookingName.trim() || normalizedName
+          // 티켓 애니메이션 표시를 위한 상태 설정 (기존 게스트의 이름 사용)
+          const nameToUse = existingName
           const phoneToUse = bookingPhone.trim() || normalizedPhone
           setBookingName(nameToUse)
           const formattedPhone = formatPhoneDisplay(phoneToUse)
@@ -477,13 +546,16 @@ const Login = () => {
       // ✅ 확인완료되지 않은 게스트도 이미 등록되어 있으면 바로 로그인 (기존 로직 유지)
       if (existingGuest) {
         console.log('[Login] 등록된 게스트 감지 (확인완료 아님) → 바로 로그인')
-        const loginSuccess = login(normalizedName, normalizedPhone, guests)
+        // ✅ 기존 게스트의 이름 사용 (엑셀 업로드 시 정규화된 이름)
+        const existingName = normalizeName(existingGuest.name || existingGuest['이름'] || existingGuest.Name || normalizedName)
+        // ✅ existingGuest를 찾을 때 사용한 배열로 로그인 (guests state가 최신이 아닐 수 있음)
+        const loginSuccess = login(existingName, normalizedPhone, resolvedGuests)
         if (loginSuccess) {
           // localStorage에서 pendingBooking 제거
           localStorage.removeItem('pendingBooking')
           
-          // 티켓 애니메이션 표시를 위한 상태 설정 (폼에서 입력된 값 사용)
-          const nameToUse = bookingName.trim() || normalizedName
+          // 티켓 애니메이션 표시를 위한 상태 설정 (기존 게스트의 이름 사용)
+          const nameToUse = existingName
           const phoneToUse = bookingPhone.trim() || normalizedPhone
           setBookingName(nameToUse)
           const formattedPhone = formatPhoneDisplay(phoneToUse)
