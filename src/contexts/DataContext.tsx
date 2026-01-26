@@ -19,6 +19,8 @@ export interface Guest {
   isWalkIn?: boolean // 현장 예매 여부
   paymentConfirmed?: boolean // 입금 확인 완료 여부
   paymentConfirmedAt?: number // 입금 확인 시간 (timestamp)
+  ticketReceived?: boolean // 티켓 수령 여부
+  ticketReceivedAt?: number // 티켓 수령 시간 (timestamp)
   isDeleted?: boolean // 삭제 여부 (취소선 표시용)
   deletedAt?: number // 삭제 시간 (timestamp)
   [key: string]: any
@@ -82,6 +84,7 @@ interface DataContextType {
   uploadGuests: (guests: Guest[]) => Promise<void>
   addWalkInGuest: (name: string, phone: string, isWalkIn?: boolean, email?: string) => Promise<{ success: boolean; message?: string }>
   toggleGuestPayment: (index: number) => Promise<void>
+  toggleGuestTicketReceived: (index: number) => Promise<void>
   setPerformanceData: (data: PerformanceData) => void
   setBookingInfo: (info: BookingInfo) => void
   addGuestbookMessage: (message: GuestbookMessage) => void
@@ -1322,6 +1325,74 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
+  const toggleGuestTicketReceived = async (index: number) => {
+    if (index < 0 || index >= guests.length) {
+      return
+    }
+
+    // ✅ 초기화 후 차단 시간 동안 저장 차단
+    if (clearBlockUntilRef.current !== null && Date.now() < clearBlockUntilRef.current) {
+      return
+    }
+
+    // ✅ 같은 전화번호를 가진 모든 게스트를 찾아서 동시에 토글
+    const targetGuest = guests[index]
+    const targetPhone = normalizePhone(targetGuest.phone || targetGuest['전화번호'] || targetGuest.Phone)
+    
+    if (!targetPhone) {
+      return
+    }
+    
+    // ✅ 현재 target의 상태를 기준으로 반대로 토글 (같은 전화번호를 가진 모든 게스트)
+    const matches = guests.filter(g => {
+      const gPhone = normalizePhone(g.phone || g['전화번호'] || g.Phone)
+      return gPhone === targetPhone
+    })
+    
+    const currentAny = matches.find(g => {
+      const gPhone = normalizePhone(g.phone || g['전화번호'] || g.Phone)
+      return gPhone === targetPhone
+    })
+    const currentTicketStatus = !!currentAny?.ticketReceived
+    const next = !currentTicketStatus
+    const nextAt = next ? Date.now() : undefined
+
+    // ✅ 같은 전화번호를 가진 모든 게스트를 동시에 토글
+    const updatedGuests = guests.map(g => {
+      const gPhone = normalizePhone(g.phone || g['전화번호'] || g.Phone)
+      if (gPhone !== targetPhone) {
+        return g
+      }
+      return {
+        ...g,
+        ticketReceived: next,
+        ticketReceivedAt: nextAt
+      }
+    })
+
+    // Firestore에 업데이트 (성공 확인 후 state 업데이트)
+    try {
+      // ✅ coalesce 패턴으로 write (연타/중복 방지)
+      await saveGuestsAllCoalesced({ guests: updatedGuests }, 3, 'toggleGuestTicketReceived')
+      
+      // ✅ Firestore 저장 성공 후에만 state 업데이트 (삭제된 게스트는 제외)
+      // state는 항상 activeGuests만 유지
+      const activeGuests = updatedGuests.filter(g => g.isDeleted !== true)
+      setGuests(activeGuests)
+      localStorage.setItem(getGuestsStorageKey(), JSON.stringify(activeGuests))
+      // ✅ 해시도 동일한 payload 형식으로 업데이트
+      const deletedCount = updatedGuests.length - activeGuests.length
+      lastGuestsHashRef.current = JSON.stringify({
+        active: activeGuests,
+        deletedCount: deletedCount,
+        totalCount: updatedGuests.length,
+        updatedAt: Date.now()
+      })
+    } catch (error) {
+      // Firestore 저장 실패 시 state 업데이트하지 않음
+    }
+  }
+
   const setPerformanceData = (data: PerformanceData) => {
     // 기존 데이터와 안전하게 병합 (중요한 데이터 보호)
     const mergedData: PerformanceData = {
@@ -1679,6 +1750,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       uploadGuests, 
       addWalkInGuest,
       toggleGuestPayment,
+      toggleGuestTicketReceived,
       setPerformanceData,
       setBookingInfo,
       addGuestbookMessage,

@@ -56,7 +56,7 @@ const Admin = () => {
   const [passwordInput, setPasswordInput] = useState('')
 
   const [drinkOrders, setDrinkOrders] = useState<Array<{ id: string; name: string; phone: string; beerQuantity: number; mojitoQuantity: number; totalAmount: number; createdAt: any; paymentConfirmed?: boolean; paymentConfirmedAt?: any; provided?: boolean; providedAt?: any; orderHistory?: Array<{ beerQuantity: number; mojitoQuantity: number; unitPrice?: number; createdAt: any; provided?: boolean; providedAt?: any }> }>>([])
-  const { uploadGuests, setPerformanceData, guests, performanceData, clearGuests, deleteGuest, clearSetlist, bookingInfo, setBookingInfo, clearChatMessages, toggleGuestPayment, addWalkInGuest, deduplicateGuests, fixGuestPhones } = useData()
+  const { uploadGuests, setPerformanceData, guests, performanceData, clearGuests, deleteGuest, clearSetlist, bookingInfo, setBookingInfo, clearChatMessages, toggleGuestPayment, toggleGuestTicketReceived, addWalkInGuest, deduplicateGuests, fixGuestPhones } = useData()
   
   // 예매 정보 폼 상태
   const [bookingForm, setBookingForm] = useState<BookingInfo>({
@@ -1761,6 +1761,7 @@ const Admin = () => {
                   <th>예매 일시</th>
                   <th>입금 확인</th>
                   <th>입장 번호</th>
+                  <th>티켓 수령</th>
                   <th>접속 링크</th>
                   <th>관리</th>
                 </tr>
@@ -1890,6 +1891,28 @@ const Admin = () => {
                         </div>
                       </td>
                       <td>{guest.entryNumber ? `${guest.entryNumber}번` : '-'}</td>
+                      <td className="text-center">
+                        <div className="flex-column-center">
+                          <button
+                            onClick={() => toggleGuestTicketReceived(originalIndex >= 0 ? originalIndex : sortedIndex)}
+                            className={`payment-confirm-button ${guest.ticketReceived ? 'confirmed' : 'not-confirmed'}`}
+                            title={guest.ticketReceived && guest.ticketReceivedAt ? `티켓 수령 완료 (${new Date(guest.ticketReceivedAt).toLocaleString('ko-KR')})` : '티켓 수령 대기'}
+                          >
+                            {guest.ticketReceived ? '수령완료' : '미수령'}
+                          </button>
+                          {guest.ticketReceived && guest.ticketReceivedAt && (
+                            <span style={{ fontSize: '0.75rem', color: '#666' }}>
+                              {new Date(guest.ticketReceivedAt).toLocaleString('ko-KR', {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td>
                         {guest.paymentConfirmed ? (
                           <div style={{ display: 'flex', flexDirection: 'row', gap: '0.5rem', alignItems: 'center', justifyContent: 'center' }}>
