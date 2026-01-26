@@ -46,7 +46,7 @@ const DrinkOrdersSection = ({
         <div>
           <h2>주류 구매 내역</h2>
           <p className="section-description">
-            주류 사전 구매 내역을 확인할 수 있습니다.
+            주류 구매 내역을 확인할 수 있습니다.
           </p>
         </div>
         {drinkOrders.length > 0 && (

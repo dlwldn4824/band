@@ -640,7 +640,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
                 bankName: '카카오뱅크',
                 accountNumber: '3333254015574',
                 walkInPrice: '6천원',
-                preBookingPrice: '5천원',
+                preBookingPrice: '6천원', // 사전예매 기간 종료로 6천원으로 통일
                 refundPolicy: '환불 불가',
                 contactPhone: '01048246873'
               }

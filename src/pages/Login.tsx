@@ -950,23 +950,8 @@ const Login = () => {
               <div className="payment-item payment-item-row">
                 <span className="payment-label">입금하실 금액:</span>
                 <span className="payment-amount">
-                  {(() => {
-                    // 기존 게스트인지 확인 (사전예약인지 현장예매인지)
-                    const normalizedPhone = bookingPhone.replace(/[-\s()]/g, '')
-                    const existingGuest = guests.find((guest: any) => {
-                      const guestName = guest.name || guest['이름'] || guest.Name || ''
-                      const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '').replace(/[-\s()]/g, '')
-                      return guestName.trim() === bookingName.trim() && guestPhone === normalizedPhone
-                    })
-                    
-                    // 사전예약인 경우 5천원, 현장예매인 경우 walkInPrice(6천원) 표시
-                    if (existingGuest && existingGuest.isWalkIn === true) {
-                      return bookingInfo.walkInPrice || '6천원'
-                    } else {
-                      // 사전 예약은 항상 5천원
-                      return bookingInfo.preBookingPrice || '5천원'
-                    }
-                  })()}
+                  {/* 사전예매 기간 종료로 모든 예매는 6천원 */}
+                  {bookingInfo.walkInPrice || '6천원'}
                 </span>
               </div>
             </div>

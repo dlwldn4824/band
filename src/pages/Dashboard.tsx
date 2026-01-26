@@ -225,7 +225,7 @@ const Dashboard = () => {
                   fontSize: '1.125rem',
                   fontWeight: '700'
                 }}>
-                  주류 사전 구매 바로가기
+                  주류 구매 바로가기
                 </h3>
                 
                 <p style={{ 
@@ -234,7 +234,7 @@ const Dashboard = () => {
                   fontSize: '0.8rem',
                   opacity: 0.9
                 }}>
-                  {isAdmin ? '운영진 구매 1500원 할인!' : '사전 구매 시 500원 할인!'}
+                  {isAdmin ? '운영진 구매 1500원 할인!' : '수제 레몬 하이볼과 캔맥주 마시면서 공연 관람하자!'}
                 </p>
               </div>
               
@@ -253,11 +253,8 @@ const Dashboard = () => {
                 
                 // 입금 미확인 상태이고 bookingInfo가 있으면 계좌 정보 표시
                 if (!isPaymentConfirmed && bookingInfo && bookingInfo.accountNumber) {
-                  // 가격 결정: 사전 예매는 preBookingPrice, 현장 예매는 walkInPrice
-                  const isWalkIn = guestInfo?.isWalkIn === true
-                  const price = isWalkIn 
-                    ? (bookingInfo.walkInPrice || '6천원')
-                    : (bookingInfo.preBookingPrice || '5천원')
+                  // 사전예매 기간 종료로 모든 예매는 6천원
+                  const price = bookingInfo.walkInPrice || '6천원'
                   const copyAccountNumber = async () => {
                     if (!bookingInfo.accountNumber) return
                     try {
