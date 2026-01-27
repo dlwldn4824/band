@@ -252,72 +252,80 @@ const Onsite = () => {
   }
 
   if (showAccount) {
+    // 표시·복사용 계좌 정보 (bookingInfo 없거나 필드 비었을 때 기본값 사용)
+    const bankName = bookingInfo?.bankName || '카카오뱅크'
+    const accountNumber = bookingInfo?.accountNumber || '3333254015574'
+    const accountName = bookingInfo?.accountName || '이지우'
+    const walkInPrice = bookingInfo?.walkInPrice || '6천원'
+
+    const copyAccountNumber = async () => {
+      if (!accountNumber) return
+      try {
+        await navigator.clipboard.writeText(accountNumber)
+        alert('계좌번호가 복사되었습니다!')
+      } catch (err) {
+        const textArea = document.createElement('textarea')
+        textArea.value = accountNumber
+        textArea.style.position = 'fixed'
+        textArea.style.opacity = '0'
+        document.body.appendChild(textArea)
+        textArea.select()
+        try {
+          document.execCommand('copy')
+          alert('계좌번호가 복사되었습니다!')
+        } catch (e) {
+          alert('계좌번호 복사에 실패했습니다.')
+        }
+        document.body.removeChild(textArea)
+      }
+    }
+
     return (
       <div className="login-page onsite-page">
-        <div className="login-container booking-confirmation onsite-container">
-          <div className="confirmation-header">
+        <div className="onsite-account-modal">
+          <div className="onsite-account-header">
             <h1>계좌 정보</h1>
           </div>
 
-          {/* 내 정보 박스 */}
-          <div className="info-box">
-            <div className="info-box-header">
-              <h3>내 정보</h3>
+          {/* 내 정보 섹션 */}
+          <div className="onsite-my-info">
+            <h3>내 정보</h3>
+            <div className="onsite-info-field">
+              <span className="onsite-info-label">이름</span>
+              <span className="onsite-info-value">{name}</span>
             </div>
-            <div className="info-content">
-              <div className="info-item">
-                <span className="info-label">이름</span>
-                <span className="info-value">{name}</span>
-              </div>
-              <div className="info-item">
-                <span className="info-label">연락처</span>
-                <span className="info-value">{formatPhoneDisplay(phone)}</span>
-              </div>
+            <div className="onsite-info-field">
+              <span className="onsite-info-label">연락처</span>
+              <span className="onsite-info-value">{formatPhoneDisplay(phone)}</span>
             </div>
           </div>
 
-          {/* 결제 정보 박스 */}
-          {bookingInfo && (
-            <div className="payment-box onsite-payment-box">
-              <div className="payment-item onsite-payment-item onsite-payment-single-row">
-                <div className="payment-item-group">
-                  <span className="payment-label">입금 계좌:</span>
-                  <div className="payment-value account-info-row">
-                  {bookingInfo.bankName && bookingInfo.accountName && (
-                    <span className="bank-name">{bookingInfo.bankName} 입금주 {bookingInfo.accountName || '이지우'}</span>
-                  )}
-                    {!bookingInfo.bankName && !bookingInfo.accountName && (
-                      <span>(미설정)</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="payment-item onsite-payment-item">
-                <div className="payment-item-group">
-                  <span className="payment-label">입금하실 금액:</span>
-                  <span className="payment-amount">{bookingInfo.walkInPrice || '(미설정)'}</span>
-                </div>
-              </div>
+          {/* 입금 계좌 섹션 - 항상 표시, bookingInfo 없으면 기본값 사용 */}
+          <div className="onsite-deposit-account">
+            <span className="onsite-deposit-label">입금 계좌</span>
+            <div className="onsite-account-info">
+              <span
+                className="onsite-account-number"
+                onClick={copyAccountNumber}
+                style={{ cursor: 'pointer' }}
+              >
+                {bankName} {accountNumber} (예금주: {accountName})
+              </span>
+              <p className="onsite-copy-hint">*계좌번호를 클릭하시면 복사됩니다</p>
             </div>
-          )}
-
-          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap', width: '100%' }}>
-            <button
-              className="booking-confirm-button"
-              onClick={() => setShowAccount(false)}
-              style={{ width: 'auto', flex: '0 1 auto', minWidth: '150px', maxWidth: '200px', marginTop: '1rem', background: '#666666' }}
-            >
-              돌아가기
-            </button>
-            <button
-              className="booking-confirm-button"
-              onClick={handlePaymentComplete}
-              disabled={isProcessing}
-              style={{ width: 'auto', flex: '0 1 auto', minWidth: '150px', maxWidth: '200px', marginTop: '1rem' }}
-            >
-              {isProcessing ? '처리 중...' : '결제완료'}
-            </button>
+            <div className="onsite-payment-amount">
+              <span>입금하실 금액: {walkInPrice}</span>
+            </div>
           </div>
+
+          {/* 결제완료 버튼 */}
+          <button
+            className="onsite-payment-complete-button"
+            onClick={handlePaymentComplete}
+            disabled={isProcessing}
+          >
+            {isProcessing ? '처리 중...' : '결제완료'}
+          </button>
         </div>
       </div>
     )

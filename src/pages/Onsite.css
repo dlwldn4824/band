@@ -118,3 +118,142 @@
   margin-right: 0;
 }
 
+/* 현장 예매 계좌 정보 모달 스타일 (이미지 디자인 기준) */
+.onsite-account-modal {
+  background: #333333;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  padding: 2rem;
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.onsite-account-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.onsite-account-header h1 {
+  color: #ffffff;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+  font-family: 'Pretendard', sans-serif;
+}
+
+/* 내 정보 섹션 */
+.onsite-my-info {
+  margin-bottom: 2rem;
+}
+
+.onsite-my-info h3 {
+  color: #ffffff;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 1rem 0;
+  font-family: 'Pretendard', sans-serif;
+}
+
+.onsite-info-field {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1rem;
+}
+
+.onsite-info-label {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+  font-family: 'Pretendard', sans-serif;
+}
+
+.onsite-info-value {
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: 'Pretendard', sans-serif;
+}
+
+/* 입금 계좌 섹션 */
+.onsite-deposit-account {
+  margin-bottom: 2rem;
+}
+
+.onsite-deposit-label {
+  display: block;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  font-family: 'Pretendard', sans-serif;
+}
+
+.onsite-account-info {
+  margin-bottom: 1rem;
+}
+
+.onsite-account-number {
+  color: #4A90E2;
+  font-size: 1rem;
+  font-weight: 500;
+  display: block;
+  margin-bottom: 0.5rem;
+  font-family: 'Pretendard', sans-serif;
+  word-break: break-all;
+}
+
+.onsite-account-number:hover {
+  text-decoration: underline;
+}
+
+.onsite-copy-hint {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.75rem;
+  margin: 0.5rem 0 0 0;
+  font-family: 'Pretendard', sans-serif;
+}
+
+.onsite-payment-amount {
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-top: 1rem;
+  font-family: 'Pretendard', sans-serif;
+}
+
+/* 결제완료 버튼 */
+.onsite-payment-complete-button {
+  width: 100%;
+  padding: 1rem;
+  background: #FF6B6B;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-family: 'Pretendard', sans-serif;
+  margin-top: 1rem;
+}
+
+.onsite-payment-complete-button:hover:not(:disabled) {
+  background: #FF5252;
+}
+
+.onsite-payment-complete-button:disabled {
+  background: #999999;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+@media (max-width: 768px) {
+  .onsite-account-modal {
+    padding: 1.5rem;
+    max-width: 95%;
+  }
+}
+
