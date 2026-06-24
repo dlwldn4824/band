@@ -12,6 +12,7 @@ import PasswordModal from '../components/admin/PasswordModal'
 import DrinkOrdersSection from '../components/admin/DrinkOrdersSection'
 import { generatePersonalLoginLink, makeGuestKey } from '../utils/adminUtils'
 import { normalizePhone, normalizeName, normalizeKoreanMobile } from '../utils/guestUtils'
+import { DEFAULT_TIMELINE_EVENTS, createDefaultPerformanceSection, getPerformanceSections } from '../utils/performanceEvents'
 import './Admin.css'
 
 const Admin = () => {
@@ -47,6 +48,7 @@ const Admin = () => {
   const [editedDate, setEditedDate] = useState('')
   const [guestSortBy, setGuestSortBy] = useState<'entryNumber' | 'payment' | null>(null)
   const [editedVenue, setEditedVenue] = useState('')
+  const [editedVenueAddress, setEditedVenueAddress] = useState('')
   const [editedEvents, setEditedEvents] = useState<Array<{ title: string; description: string; time?: string }>>([])
   const [pendingBookings] = useState<Array<{ id: string; name: string; phone: string; email: string; createdAt: any }>>([])
   const [guestLoginLinks, setGuestLoginLinks] = useState<Record<string, string>>({}) // 게스트 ID (name_phone) -> 로그인 링크
@@ -56,7 +58,7 @@ const Admin = () => {
   const [passwordInput, setPasswordInput] = useState('')
 
   const [drinkOrders, setDrinkOrders] = useState<Array<{ id: string; name: string; phone: string; beerQuantity: number; mojitoQuantity: number; totalAmount: number; createdAt: any; paymentConfirmed?: boolean; paymentConfirmedAt?: any; provided?: boolean; providedAt?: any; orderHistory?: Array<{ beerQuantity: number; mojitoQuantity: number; unitPrice?: number; createdAt: any; provided?: boolean; providedAt?: any }> }>>([])
-  const { uploadGuests, setPerformanceData, guests, performanceData, clearGuests, deleteGuest, clearSetlist, bookingInfo, setBookingInfo, clearChatMessages, toggleGuestPayment, toggleGuestTicketReceived, addWalkInGuest, deduplicateGuests, fixGuestPhones } = useData()
+  const { uploadGuests, setPerformanceData, guests, performanceData, clearGuests, deleteGuest, clearSetlist, bookingInfo, setBookingInfo, clearChatMessages, toggleGuestPayment, toggleGuestTicketReceived, addWalkInGuest, deduplicateGuests, fixGuestPhones, eventsFeatures, setEventsFeature } = useData()
   
   // 예매 정보 폼 상태
   const [bookingForm, setBookingForm] = useState<BookingInfo>({
@@ -185,59 +187,33 @@ const Admin = () => {
     loadBookingDates()
   }, [guests]) // guests가 변경될 때마다 다시 로드
 
-  // 하드코딩된 공연 정보 (자동 설정) - 한 번만 실행되도록 useRef로 보호
+  // 공연 정보 기본값 설정 (events가 비어 있을 때만)
   const hasInitializedEvents = useRef(false)
   useEffect(() => {
-    if (!performanceData || hasInitializedEvents.current) return // 이미 초기화했으면 실행하지 않음
+    if (!performanceData || hasInitializedEvents.current) return
 
-    // 하드코딩된 공연 정보 설정 (항상 events와 ticket은 하드코딩된 값으로 덮어쓰기)
-    const defaultEvents = [
-      {
-        title: '관객 입장',
-        description: '관객 입장 시간입니다.',
-        time: '18:30-19:00'
-      },
-      {
-        title: '1부',
-        description: '멜로딕의 2번째 단독공연이 시작됩니다.',
-        time: '19:00-20:00'
-      },
-      {
-        title: '2부',
-        description: '10분 휴식 시간 후 2부가 시작됩니다.',
-        time: '20:10-21:00'
+    if (!performanceData.events || performanceData.events.length === 0) {
+      const defaultTicket = {
+        eventName: '2025 멜로딕 단독 공연',
+        date: '2025년 12월 27일 (토)',
+        venue: '얼라이브 홀',
+        venueAddress: '서울특별시 마포구 독막로7길 20 지하',
+        seat: '자유석',
       }
-    ]
 
-    const defaultTicket = {
-      eventName: '2025 멜로딕 단독 공연',
-      date: '2025년 12월 27일 (토)',
-      venue: '얼라이브 홀',
-      seat: '자유석'
-    }
-
-    // events 배열의 길이가 3개가 아니거나 첫 번째 이벤트가 '관객 입장'이 아니면 업데이트
-    const needsUpdate = 
-      !performanceData.events || 
-      performanceData.events.length !== 3 ||
-      performanceData.events[0]?.title !== '관객 입장'
-
-    if (needsUpdate) {
       const updatedPerformanceData: PerformanceData = {
         ...performanceData,
-        events: defaultEvents,
-        ticket: defaultTicket,
-        // 셋리스트와 공연진은 기존 값 유지 (절대 덮어쓰지 않음)
+        events: DEFAULT_TIMELINE_EVENTS,
+        ticket: performanceData.ticket || defaultTicket,
         setlist: performanceData.setlist || [],
-        performers: performanceData.performers || []
+        performers: performanceData.performers || [],
       }
 
       setPerformanceData(updatedPerformanceData)
-      hasInitializedEvents.current = true // 초기화 완료 표시
-    } else {
-      hasInitializedEvents.current = true // 이미 올바른 상태면 초기화 완료로 표시
     }
-  }, [performanceData]) // performanceData가 변경될 때마다 확인
+
+    hasInitializedEvents.current = true
+  }, [performanceData])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -576,7 +552,7 @@ const Admin = () => {
 
       // 엑셀 데이터에서 곡명, 아티스트명, 공연진 정보, 이미지 추출
       // 새로운 컬럼 구조: 구분, 팀명, 곡명, 아티스트, 보컬, 기타, 베이스, 키보드, 드럼
-      let currentPart: 1 | 2 | null = null
+      let currentPart: number | null = null
       let currentTeam: string | null = null
       const setlist: SetlistItem[] = []
       
@@ -600,16 +576,26 @@ const Admin = () => {
         
         // 구분 컬럼 값이 있으면 무조건 업데이트 (각 행마다 확인)
         if (gubun) {
-          if (gubun === '1부' || gubun.includes('1부')) {
-            currentPart = 1
-            currentTeam = null // 부가 바뀌면 팀도 초기화
-          } else if (gubun === '2부' || gubun.includes('2부')) {
-            currentPart = 2
-            currentTeam = null // 부가 바뀌면 팀도 초기화
-          } else if (gubun === '연합곡' || gubun.includes('연합곡')) {
-            // 연합곡은 2부에 포함
-            currentPart = 2
-            currentTeam = null // 부가 바뀌면 팀도 초기화
+          const performanceSections = getPerformanceSections(performanceData?.events)
+          let matchedCustomSection = false
+
+          performanceSections.forEach((section, idx) => {
+            if (gubun === section.title || gubun.includes(section.title)) {
+              currentPart = idx + 1
+              currentTeam = null
+              matchedCustomSection = true
+            }
+          })
+
+          if (!matchedCustomSection) {
+            const partMatch = gubun.match(/(\d+)\s*부/)
+            if (partMatch) {
+              currentPart = parseInt(partMatch[1], 10)
+              currentTeam = null
+            } else if (gubun.includes('연합곡')) {
+              currentPart = performanceSections.length > 0 ? performanceSections.length : 2
+              currentTeam = null
+            }
           }
         }
         
@@ -748,30 +734,16 @@ const Admin = () => {
       
       const uniquePerformers = Array.from(allPerformers).sort()
 
-      // 하드코딩된 기본 정보
-      const defaultEvents = [
-        {
-          title: '관객 입장',
-          description: '관객 입장 시간입니다.',
-          time: '18:30-19:00'
-        },
-        {
-          title: '1부',
-          description: '멜로딕의 2번째 단독공연이 시작됩니다.',
-          time: '19:00-20:00'
-        },
-        {
-          title: '2부',
-          description: '10분 휴식 시간 후 2부가 시작됩니다.',
-          time: '20:10-21:00'
-        }
-      ]
+      const defaultEvents = performanceData?.events?.length
+        ? performanceData.events
+        : DEFAULT_TIMELINE_EVENTS
 
       const defaultTicket = {
         eventName: '2025 멜로딕 단독 공연',
         date: '2025년 12월 27일 (토)',
         venue: '얼라이브 홀',
-        seat: '자유석'
+        venueAddress: '서울특별시 마포구 독막로7길 20 지하',
+        seat: '자유석',
       }
 
       // 기존 공연 정보와 병합 (events와 ticket도 함께 포함하여 완전한 데이터로 저장)
@@ -1701,6 +1673,59 @@ const Admin = () => {
         </div>
       )}
       
+      <div className="admin-section">
+        <h2>기타 기능 관리</h2>
+        <p className="section-description">
+          기타 탭에 표시할 기능을 개별적으로 활성화하거나 비활성화합니다. 비활성화된 기능은 관객 및 운영진 화면에서 보이지 않습니다.
+        </p>
+        <div className="feature-toggle-list">
+          <label className="feature-toggle-item">
+            <input
+              type="checkbox"
+              checked={eventsFeatures.drinkPurchase}
+              onChange={(e) => setEventsFeature('drinkPurchase', e.target.checked)}
+            />
+            <div className="feature-toggle-text">
+              <span className="feature-toggle-label">주류 구매</span>
+              <span className="feature-toggle-desc">기타 탭 및 대시보드 주류 구매 바로가기</span>
+            </div>
+          </label>
+          <label className="feature-toggle-item">
+            <input
+              type="checkbox"
+              checked={eventsFeatures.directions}
+              onChange={(e) => setEventsFeature('directions', e.target.checked)}
+            />
+            <div className="feature-toggle-text">
+              <span className="feature-toggle-label">길찾기</span>
+              <span className="feature-toggle-desc">공연장 위치 안내 카드</span>
+            </div>
+          </label>
+          <label className="feature-toggle-item">
+            <input
+              type="checkbox"
+              checked={eventsFeatures.entryDraw}
+              onChange={(e) => setEventsFeature('entryDraw', e.target.checked)}
+            />
+            <div className="feature-toggle-text">
+              <span className="feature-toggle-label">입장 번호 추첨</span>
+              <span className="feature-toggle-desc">체크인 관객 추첨 게임</span>
+            </div>
+          </label>
+          <label className="feature-toggle-item">
+            <input
+              type="checkbox"
+              checked={eventsFeatures.ledBoard}
+              onChange={(e) => setEventsFeature('ledBoard', e.target.checked)}
+            />
+            <div className="feature-toggle-text">
+              <span className="feature-toggle-label">전광판 만들기</span>
+              <span className="feature-toggle-desc">응원 전광판 게임</span>
+            </div>
+          </label>
+        </div>
+      </div>
+
       {/* 주류 구매 내역 섹션 */}
       <DrinkOrdersSection
         drinkOrders={drinkOrders}
@@ -2564,7 +2589,7 @@ const Admin = () => {
       <div className="admin-section">
         <h2>공연 정보 관리</h2>
         <p className="section-description">
-          공연 정보를 수정할 수 있습니다. 공연진은 셋리스트 업로드 시 자동으로 반영됩니다.
+          공연 정보를 수정할 수 있습니다. 타임라인의 공연 섹션 제목을 수정하거나 섹션을 추가할 수 있으며, 공연진은 셋리스트 업로드 시 자동으로 반영됩니다.
         </p>
         {performanceData && (performanceData.events || performanceData.ticket) && (
           <>
@@ -2583,6 +2608,11 @@ const Admin = () => {
                 {performanceData.ticket && (
                   <div className="info-item">
                     <strong>공연장:</strong> {performanceData.ticket.venue}
+                  </div>
+                )}
+                {performanceData.ticket?.venueAddress && (
+                  <div className="info-item">
+                    <strong>공연장 주소:</strong> {performanceData.ticket.venueAddress}
                   </div>
                 )}
                 {performanceData.events && performanceData.events.length > 0 && (
@@ -2618,6 +2648,7 @@ const Admin = () => {
                       setEditedEventName(performanceData.ticket?.eventName || '')
                       setEditedDate(performanceData.ticket?.date || '')
                       setEditedVenue(performanceData.ticket?.venue || '')
+                      setEditedVenueAddress(performanceData.ticket?.venueAddress || '')
                       setEditedEvents(performanceData.events ? [...performanceData.events] : [])
                       setIsEditingPerformanceInfo(true)
                     }}
@@ -2659,13 +2690,68 @@ const Admin = () => {
                     placeholder="공연장을 입력하세요"
                   />
                 </div>
+                <div className="form-group">
+                  <label htmlFor="event-venue-address">공연장 주소</label>
+                  <input
+                    type="text"
+                    id="event-venue-address"
+                    value={editedVenueAddress}
+                    onChange={(e) => setEditedVenueAddress(e.target.value)}
+                    placeholder="예: 서울특별시 마포구 독막로7길 20 지하"
+                  />
+                </div>
                 {editedEvents.length > 0 && (
                   <div style={{ marginTop: '1.5rem' }}>
-                    <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem', fontWeight: '600' }}>타임라인 이벤트</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', gap: '1rem', flexWrap: 'wrap' }}>
+                      <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '600' }}>타임라인 이벤트</h3>
+                      <button
+                        type="button"
+                        className="sample-button"
+                        onClick={() => {
+                          const nextSectionIndex = getPerformanceSections(editedEvents).length + 1
+                          setEditedEvents([
+                            ...editedEvents,
+                            createDefaultPerformanceSection(nextSectionIndex),
+                          ])
+                        }}
+                      >
+                        + 공연 섹션 추가
+                      </button>
+                    </div>
                     {editedEvents.map((event, index) => (
                       <div key={index} style={{ marginBottom: '1.5rem', padding: '1rem', background: '#f9f9f9', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
-                        <div style={{ marginBottom: '0.5rem', fontWeight: '600', color: '#333' }}>
-                          {event.title}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem', gap: '0.75rem' }}>
+                          <div style={{ fontWeight: '600', color: '#666', fontSize: '0.9rem' }}>
+                            {index === 0 ? '입장 (첫 번째 타임라인)' : `공연 섹션 ${index}`}
+                          </div>
+                          {index > 0 && (
+                            <button
+                              type="button"
+                              className="reset-button"
+                              style={{ padding: '0.35rem 0.75rem', fontSize: '0.85rem' }}
+                              onClick={() => {
+                                if (window.confirm(`"${event.title}" 섹션을 삭제하시겠습니까?`)) {
+                                  setEditedEvents(editedEvents.filter((_, i) => i !== index))
+                                }
+                              }}
+                            >
+                              삭제
+                            </button>
+                          )}
+                        </div>
+                        <div className="form-group" style={{ marginBottom: '0.75rem' }}>
+                          <label htmlFor={`event-title-${index}`}>제목</label>
+                          <input
+                            type="text"
+                            id={`event-title-${index}`}
+                            value={event.title}
+                            onChange={(e) => {
+                              const updated = [...editedEvents]
+                              updated[index] = { ...updated[index], title: e.target.value }
+                              setEditedEvents(updated)
+                            }}
+                            placeholder={index === 0 ? '예: 관객 입장' : '예: 1부'}
+                          />
                         </div>
                         <div className="form-group" style={{ marginBottom: '0.75rem' }}>
                           <label htmlFor={`event-time-${index}`}>시간</label>
@@ -2707,7 +2793,19 @@ const Admin = () => {
                       e.stopPropagation()
                       
                       if (!editedEventName.trim() || !editedDate.trim() || !editedVenue.trim()) {
-                        setUploadStatus('모든 필드를 입력해주세요.')
+                        setUploadStatus('공연명, 날짜, 공연장을 입력해주세요.')
+                        setTimeout(() => setUploadStatus(''), 3000)
+                        return
+                      }
+
+                      if (editedEvents.some((event) => !event.title.trim())) {
+                        setUploadStatus('모든 타임라인 이벤트에 제목을 입력해주세요.')
+                        setTimeout(() => setUploadStatus(''), 3000)
+                        return
+                      }
+
+                      if (editedEvents.length < 2) {
+                        setUploadStatus('최소 1개의 공연 섹션이 필요합니다.')
                         setTimeout(() => setUploadStatus(''), 3000)
                         return
                       }
@@ -2725,10 +2823,11 @@ const Admin = () => {
                           eventName: editedEventName.trim(),
                           date: editedDate.trim(),
                           venue: editedVenue.trim(),
+                          venueAddress: editedVenueAddress.trim(),
                           seat: performanceData.ticket?.seat || '자유석'
                         },
                         events: editedEvents.length > 0 ? editedEvents.map(event => ({
-                          title: event.title, // 제목은 변경 불가
+                          title: event.title.trim(),
                           description: event.description.trim(),
                           time: event.time?.trim() || ''
                         })) : performanceData.events
@@ -3002,9 +3101,15 @@ const Admin = () => {
           </div>
 
           <button
-            onClick={() => {
-              setBookingInfo(bookingForm)
-              setUploadStatus('✅ 예매 정보가 저장되었습니다.')
+            onClick={async () => {
+              try {
+                await setBookingInfo(bookingForm)
+                setUploadStatus('✅ 예매 정보가 저장되었습니다.')
+                setTimeout(() => setUploadStatus(''), 3000)
+              } catch {
+                setUploadStatus('❌ 예매 정보 저장에 실패했습니다. 다시 시도해주세요.')
+                setTimeout(() => setUploadStatus(''), 5000)
+              }
             }}
             className="save-booking-info-button"
           >

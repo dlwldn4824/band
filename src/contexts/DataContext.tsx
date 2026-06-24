@@ -7,6 +7,7 @@ import { collection, getDocs, deleteDoc, doc, onSnapshot } from 'firebase/firest
 import { db } from '../config/firebase'
 import { FIRESTORE_PATHS, getGuestsStorageKey } from '../config/firestorePaths'
 import { normalizePhone, normalizeName, dedupeGuests, normalizeKoreanMobile } from '../utils/guestUtils'
+import { DEFAULT_TIMELINE_EVENTS } from '../utils/performanceEvents'
 import * as XLSX from 'xlsx'
 
 export interface Guest {
@@ -35,7 +36,7 @@ export interface SetlistItem {
   bass?: string
   keyboard?: string
   drum?: string
-  part?: 1 | 2 // 1부 또는 2부 구분
+  part?: number // 공연 섹션 번호 (1부터 시작, 타임라인의 공연 섹션 순서와 대응)
   team?: string // 팀명 (멜로딕, 노을, 렉사 등)
 }
 
@@ -51,6 +52,7 @@ export interface PerformanceData {
     eventName: string
     date: string
     venue: string
+    venueAddress?: string
     seat?: string
   }
 }
@@ -74,6 +76,76 @@ export interface BookingInfo {
   contactPhone: string // 안내 전화번호
 }
 
+export const DEFAULT_BOOKING_INFO: BookingInfo = {
+  accountName: '이지우',
+  bankName: '카카오뱅크',
+  accountNumber: '3333254015574',
+  walkInPrice: '6천원',
+  refundPolicy: '환불 불가',
+  contactPhone: '01048246873',
+}
+
+export const parseBookingInfo = (data: unknown): BookingInfo | null => {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return null
+  const record = data as Record<string, unknown>
+  if (!record.accountNumber || typeof record.accountNumber !== 'string') return null
+
+  return {
+    accountName: String(record.accountName || DEFAULT_BOOKING_INFO.accountName),
+    bankName: String(record.bankName || DEFAULT_BOOKING_INFO.bankName),
+    accountNumber: String(record.accountNumber),
+    walkInPrice: String(record.walkInPrice || DEFAULT_BOOKING_INFO.walkInPrice),
+    preBookingPrice: record.preBookingPrice ? String(record.preBookingPrice) : undefined,
+    refundPolicy: String(record.refundPolicy || DEFAULT_BOOKING_INFO.refundPolicy),
+    contactPhone: String(record.contactPhone || DEFAULT_BOOKING_INFO.contactPhone),
+  }
+}
+
+export interface EventsFeatureSettings {
+  drinkPurchase: boolean
+  directions: boolean
+  entryDraw: boolean
+  ledBoard: boolean
+}
+
+export const DEFAULT_EVENTS_FEATURES: EventsFeatureSettings = {
+  drinkPurchase: false,
+  directions: false,
+  entryDraw: false,
+  ledBoard: false,
+}
+
+export const parseEventsFeatures = (data: unknown): EventsFeatureSettings => {
+  if (!data || typeof data !== 'object') {
+    return { ...DEFAULT_EVENTS_FEATURES }
+  }
+
+  const record = data as Record<string, unknown>
+  const hasIndividualFlags = ['drinkPurchase', 'directions', 'entryDraw', 'ledBoard'].some(
+    (key) => typeof record[key] === 'boolean'
+  )
+
+  if (hasIndividualFlags) {
+    return {
+      drinkPurchase: record.drinkPurchase === true,
+      directions: record.directions === true,
+      entryDraw: record.entryDraw === true,
+      ledBoard: record.ledBoard === true,
+    }
+  }
+
+  const legacyEnabled = record.enabled === true
+  return {
+    drinkPurchase: legacyEnabled,
+    directions: legacyEnabled,
+    entryDraw: legacyEnabled,
+    ledBoard: legacyEnabled,
+  }
+}
+
+export const hasAnyEventsFeature = (features: EventsFeatureSettings): boolean =>
+  features.drinkPurchase || features.directions || features.entryDraw || features.ledBoard
+
 
 interface DataContextType {
   guests: Guest[]
@@ -81,18 +153,20 @@ interface DataContextType {
   guestbookMessages: GuestbookMessage[]
   bookingInfo: BookingInfo | null
   eventsEnabled: boolean
+  eventsFeatures: EventsFeatureSettings
   uploadGuests: (guests: Guest[]) => Promise<void>
   addWalkInGuest: (name: string, phone: string, isWalkIn?: boolean, email?: string) => Promise<{ success: boolean; message?: string }>
   toggleGuestPayment: (index: number) => Promise<void>
   toggleGuestTicketReceived: (index: number) => Promise<void>
   setPerformanceData: (data: PerformanceData) => void
-  setBookingInfo: (info: BookingInfo) => void
+  setBookingInfo: (info: BookingInfo) => Promise<void>
   addGuestbookMessage: (message: GuestbookMessage) => void
   clearGuests: () => void
   deleteGuest: (index: number) => Promise<void>
   updateGuest: (index: number, updatedGuest: Guest) => Promise<void>
   clearSetlist: () => void
   setEventsEnabled: (enabled: boolean) => void
+  setEventsFeature: (key: keyof EventsFeatureSettings, enabled: boolean) => void
   clearGuestbookMessages: () => void
   clearChatMessages: () => Promise<void>
   deduplicateGuests: () => Promise<{ success: boolean; message: string; removedCount?: number }>
@@ -106,7 +180,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [performanceData, setPerformanceDataState] = useState<PerformanceData | null>(null)
   const [guestbookMessages, setGuestbookMessages] = useState<GuestbookMessage[]>([])
   const [bookingInfo, setBookingInfoState] = useState<BookingInfo | null>(null)
-  const [eventsEnabled, setEventsEnabledState] = useState<boolean>(false)
+  const [eventsFeatures, setEventsFeaturesState] = useState<EventsFeatureSettings>(DEFAULT_EVENTS_FEATURES)
+  const eventsEnabled = hasAnyEventsFeature(eventsFeatures)
   
   // 초기 로드 완료 여부 추적 (리스너와 충돌 방지)
   const initialLoadCompleteRef = useRef(false)
@@ -152,24 +227,18 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       now: Date.now()
     })
     
-    // ✅ 초기화 후 차단 시간이 지나지 않았으면 저장 차단
-    // 단, _cleared가 명시적으로 설정된 경우(초기화 작업)는 허용
+    const isInitializing = payload._cleared !== undefined && payload._cleared !== null && typeof payload._cleared === 'number'
+    const isClearing = payload._cleared === null && payload.guests.length > 0
+    const isNormalSave = payload._cleared === undefined
+    
+    // 초기화 직후 차단 시간에도 예매 등록(초기화 해제)은 허용
     const isClearOperation = payload._cleared !== undefined && payload._cleared !== null
-    if (!isClearOperation && clearBlockUntilRef.current !== null && Date.now() < clearBlockUntilRef.current) {
+    if (!isClearOperation && !isClearing && clearBlockUntilRef.current !== null && Date.now() < clearBlockUntilRef.current) {
       console.log('[WRITE] 저장 차단됨 (초기화 후 차단 시간 내)')
       return
     }
     
     // ✅ 초기화 마커 보존 및 보호 로직
-    // 1. 초기화 작업: _cleared가 숫자(타임스탬프)인 경우 → 항상 허용
-    // 2. 초기화 해제: _cleared가 null이고 guests가 있는 경우 → 허용
-    // 3. 일반 저장: _cleared가 undefined인 경우 → 초기화 마커가 있으면 차단
-    
-    const isInitializing = payload._cleared !== undefined && payload._cleared !== null && typeof payload._cleared === 'number'
-    const isClearing = payload._cleared === null && payload.guests.length > 0
-    const isNormalSave = payload._cleared === undefined
-    
-    // 초기화 작업이나 초기화 해제 작업은 항상 허용
     if (isInitializing || isClearing) {
       // 계속 진행
     } else if (isNormalSave) {
@@ -470,31 +539,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         const firestorePerformanceData = await getFirestoreData('performanceData' as any, 'main')
         if (firestorePerformanceData && !Array.isArray(firestorePerformanceData)) {
           const loadedData = firestorePerformanceData as PerformanceData
-          // events 배열이 3개가 아니거나 첫 번째가 '관객 입장'이 아니면 업데이트
-          if (!loadedData.events || loadedData.events.length !== 3 || loadedData.events[0]?.title !== '관객 입장') {
-            const defaultEvents = [
-              {
-                title: '관객 입장',
-                description: '관객 입장 시간입니다.',
-                time: '18:30-19:00'
-              },
-              {
-                title: '1부',
-                description: '멜로딕의 2번째 단독공연이 시작됩니다.',
-                time: '19:00-20:00'
-              },
-              {
-                title: '2부',
-                description: '10분 휴식 시간 후 2부가 시작됩니다.',
-                time: '20:10-21:00'
-              }
-            ]
-            const updatedData = { 
-              ...loadedData, 
-              events: defaultEvents,
-              // 셋리스트와 공연진은 기존 값 유지 (절대 덮어쓰지 않음)
+          if (!loadedData.events || loadedData.events.length === 0) {
+            const updatedData = {
+              ...loadedData,
+              events: DEFAULT_TIMELINE_EVENTS,
               setlist: loadedData.setlist || [],
-              performers: loadedData.performers || []
+              performers: loadedData.performers || [],
             }
             setPerformanceDataState(updatedData)
             await setFirestoreData('performanceData' as any, updatedData, 'main').catch(() => {})
@@ -507,25 +557,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             try {
               const parsedData = JSON.parse(savedPerformanceData)
               // events 배열이 3개가 아니거나 첫 번째가 '관객 입장'이 아니면 업데이트
-              if (!parsedData.events || parsedData.events.length !== 3 || parsedData.events[0]?.title !== '관객 입장') {
-                const defaultEvents = [
-                  {
-                    title: '관객 입장',
-                    description: '관객 입장 시간입니다.',
-                    time: '18:30-19:00'
-                  },
-                  {
-                    title: '1부',
-                    description: '멜로딕의 2번째 단독공연이 시작됩니다.',
-                    time: '19:00-20:00'
-                  },
-                  {
-                    title: '2부',
-                    description: '10분 휴식 시간 후 2부가 시작됩니다.',
-                    time: '20:10-21:00'
-                  }
-                ]
-                parsedData.events = defaultEvents
+              if (!parsedData.events || parsedData.events.length === 0) {
+                parsedData.events = DEFAULT_TIMELINE_EVENTS
               }
               // 셋리스트와 공연진은 기존 값 유지 (절대 덮어쓰지 않음)
               if (!parsedData.setlist) {
@@ -543,28 +576,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           } else {
             // 기본 공연 데이터 설정 (events와 ticket 포함)
             const defaultPerformanceData: PerformanceData = {
-              events: [
-                {
-                  title: '관객 입장',
-                  description: '관객 입장 시간입니다.',
-                  time: '18:30-19:00'
-                },
-                {
-                  title: '1부',
-                  description: '멜로딕의 2번째 단독공연이 시작됩니다.',
-                  time: '19:00-20:00'
-                },
-                {
-                  title: '2부',
-                  description: '10분 휴식 시간 후 2부가 시작됩니다.',
-                  time: '20:10-21:00'
-                }
-              ],
+              events: DEFAULT_TIMELINE_EVENTS,
               ticket: {
                 eventName: '2025 멜로딕 단독 공연',
                 date: '2025년 12월 27일 (토)',
                 venue: '얼라이브 홀',
-                seat: '자유석'
+                venueAddress: '서울특별시 마포구 독막로7길 20 지하',
+                seat: '자유석',
               },
               setlist: [],
               performers: []
@@ -596,84 +614,63 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           }
         }
 
-        // 이벤트 활성화 상태 로드
+        // 이벤트 기능 설정 로드
         const firestoreEventsStatus = await getFirestoreData('current' as any, 'events')
-        if (firestoreEventsStatus && !Array.isArray(firestoreEventsStatus) && typeof (firestoreEventsStatus as any).enabled === 'boolean') {
-          setEventsEnabledState((firestoreEventsStatus as any).enabled)
+        if (firestoreEventsStatus && !Array.isArray(firestoreEventsStatus)) {
+          const parsedFeatures = parseEventsFeatures(firestoreEventsStatus)
+          setEventsFeaturesState(parsedFeatures)
+          localStorage.setItem('eventsFeatures', JSON.stringify(parsedFeatures))
+          localStorage.setItem('eventsEnabled', hasAnyEventsFeature(parsedFeatures).toString())
         } else {
-          const savedEventsEnabled = localStorage.getItem('eventsEnabled')
-          if (savedEventsEnabled !== null) {
-            setEventsEnabledState(savedEventsEnabled === 'true')
+          const savedEventsFeatures = localStorage.getItem('eventsFeatures')
+          if (savedEventsFeatures) {
+            try {
+              const parsedFeatures = parseEventsFeatures(JSON.parse(savedEventsFeatures))
+              setEventsFeaturesState(parsedFeatures)
+            } catch {
+              const savedEventsEnabled = localStorage.getItem('eventsEnabled')
+              if (savedEventsEnabled !== null) {
+                const legacyEnabled = savedEventsEnabled === 'true'
+                const legacyFeatures = {
+                  drinkPurchase: legacyEnabled,
+                  directions: legacyEnabled,
+                  entryDraw: legacyEnabled,
+                  ledBoard: legacyEnabled,
+                }
+                setEventsFeaturesState(legacyFeatures)
+              }
+            }
+          } else {
+            const savedEventsEnabled = localStorage.getItem('eventsEnabled')
+            if (savedEventsEnabled !== null) {
+              const legacyEnabled = savedEventsEnabled === 'true'
+              setEventsFeaturesState({
+                drinkPurchase: legacyEnabled,
+                directions: legacyEnabled,
+                entryDraw: legacyEnabled,
+                ledBoard: legacyEnabled,
+              })
+            }
           }
         }
 
 
-        // 예매 정보 로드
+        // 예매 정보 로드 (Firestore → localStorage → 기본값)
         const firestoreBookingInfo = await getFirestoreData('bookingInfo' as any, 'main')
-        if (firestoreBookingInfo && !Array.isArray(firestoreBookingInfo)) {
-          const bookingData = firestoreBookingInfo as any
-          if (bookingData.accountName && bookingData.bankName && bookingData.accountNumber) {
-            // 기존 데이터가 '7천원' 또는 '5천원'이면 '6천원'으로 업데이트
-            if (bookingData.walkInPrice === '7천원' || bookingData.walkInPrice === '5천원') {
-              bookingData.walkInPrice = '6천원'
-              await setFirestoreData('bookingInfo' as any, bookingData, 'main')
-              localStorage.setItem('bookingInfo', JSON.stringify(bookingData))
-            }
-            setBookingInfoState(bookingData as BookingInfo)
-          } else {
-            // Firestore 데이터가 불완전한 경우 localStorage 확인
-            const savedBookingInfo = localStorage.getItem('bookingInfo')
-            if (savedBookingInfo) {
-              const parsedInfo = JSON.parse(savedBookingInfo)
-              // 기존 데이터가 '7천원' 또는 '5천원'이면 '6천원'으로 업데이트
-              if (parsedInfo.walkInPrice === '7천원' || parsedInfo.walkInPrice === '5천원') {
-                parsedInfo.walkInPrice = '6천원'
-                localStorage.setItem('bookingInfo', JSON.stringify(parsedInfo))
-                await setFirestoreData('bookingInfo' as any, parsedInfo, 'main')
-              }
-              setBookingInfoState(parsedInfo)
-              await setFirestoreData('bookingInfo' as any, parsedInfo, 'main')
-            } else {
-              // 기본값 설정
-              const defaultBookingInfo: BookingInfo = {
-                accountName: '이지우',
-                bankName: '카카오뱅크',
-                accountNumber: '3333254015574',
-                walkInPrice: '6천원',
-                preBookingPrice: '6천원', // 사전예매 기간 종료로 6천원으로 통일
-                refundPolicy: '환불 불가',
-                contactPhone: '01048246873'
-              }
-              setBookingInfoState(defaultBookingInfo)
-              localStorage.setItem('bookingInfo', JSON.stringify(defaultBookingInfo))
-              await setFirestoreData('bookingInfo' as any, defaultBookingInfo, 'main')
-            }
-          }
+        const parsedFirestoreBooking = parseBookingInfo(firestoreBookingInfo)
+        if (parsedFirestoreBooking) {
+          setBookingInfoState(parsedFirestoreBooking)
+          localStorage.setItem('bookingInfo', JSON.stringify(parsedFirestoreBooking))
         } else {
           const savedBookingInfo = localStorage.getItem('bookingInfo')
-          if (savedBookingInfo) {
-            const parsedInfo = JSON.parse(savedBookingInfo)
-            // 기존 데이터가 '7천원'이면 '6천원'으로 업데이트
-            if (parsedInfo.walkInPrice === '7천원') {
-              parsedInfo.walkInPrice = '6천원'
-              localStorage.setItem('bookingInfo', JSON.stringify(parsedInfo))
-              await setFirestoreData('bookingInfo' as any, parsedInfo, 'main')
-            }
-            setBookingInfoState(parsedInfo)
-            await setFirestoreData('bookingInfo' as any, parsedInfo, 'main')
+          const parsedLocalBooking = savedBookingInfo ? parseBookingInfo(JSON.parse(savedBookingInfo)) : null
+          if (parsedLocalBooking) {
+            setBookingInfoState(parsedLocalBooking)
+            await setFirestoreData('bookingInfo' as any, parsedLocalBooking, 'main').catch(() => {})
           } else {
-            // 기본값 설정
-            const defaultBookingInfo: BookingInfo = {
-              accountName: '이지우',
-              bankName: '카카오뱅크',
-              accountNumber: '3333254015574',
-              walkInPrice: '6천원',
-              refundPolicy: '환불 불가',
-              contactPhone: '01048246873'
-            }
-            setBookingInfoState(defaultBookingInfo)
-            localStorage.setItem('bookingInfo', JSON.stringify(defaultBookingInfo))
-            await setFirestoreData('bookingInfo' as any, defaultBookingInfo, 'main')
+            setBookingInfoState(DEFAULT_BOOKING_INFO)
+            localStorage.setItem('bookingInfo', JSON.stringify(DEFAULT_BOOKING_INFO))
+            await setFirestoreData('bookingInfo' as any, DEFAULT_BOOKING_INFO, 'main').catch(() => {})
           }
         }
       } catch (error) {
@@ -693,25 +690,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       setGuestbookMessages(JSON.parse(savedGuestbookMessages))
     }
     if (savedBookingInfo) {
-          const parsedInfo = JSON.parse(savedBookingInfo)
-          // 기존 데이터가 '7천원' 또는 '5천원'이면 '6천원'으로 업데이트
-          if (parsedInfo.walkInPrice === '7천원' || parsedInfo.walkInPrice === '5천원') {
-            parsedInfo.walkInPrice = '6천원'
-            localStorage.setItem('bookingInfo', JSON.stringify(parsedInfo))
+          const parsedLocalBooking = parseBookingInfo(JSON.parse(savedBookingInfo))
+          if (parsedLocalBooking) {
+            setBookingInfoState(parsedLocalBooking)
           }
-          setBookingInfoState(parsedInfo)
-        } else {
-          // 기본값 설정
-          const defaultBookingInfo: BookingInfo = {
-            accountName: '이지우',
-            bankName: '카카오뱅크',
-            accountNumber: '3333254015574',
-            walkInPrice: '6천원',
-            refundPolicy: '환불 불가',
-            contactPhone: '01048246873'
-          }
-          setBookingInfoState(defaultBookingInfo)
-          localStorage.setItem('bookingInfo', JSON.stringify(defaultBookingInfo))
         }
       }
     }
@@ -846,13 +828,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           // 서버의 최신 데이터로 업데이트 (셋리스트 보호)
           if (data) {
             setPerformanceDataState((prevData) => {
-              // 기존 셋리스트가 있고 새 데이터에 셋리스트가 없거나 비어있으면 유지
               const mergedData: PerformanceData = {
                 ...data,
-                setlist: data.setlist && data.setlist.length > 0 
-                  ? data.setlist 
+                setlist: Array.isArray(data.setlist)
+                  ? data.setlist
                   : (prevData?.setlist || []),
-                performers: data.performers && data.performers.length > 0
+                performers: Array.isArray(data.performers)
                   ? data.performers
                   : (prevData?.performers || [])
               }
@@ -867,10 +848,42 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       }
     )
 
+    const eventsDocRef = doc(db, 'current', 'events')
+    const unsubscribeEventsFeatures = onSnapshot(
+      eventsDocRef,
+      (snapshot) => {
+        if (!snapshot.exists()) return
+        const parsedFeatures = parseEventsFeatures(snapshot.data())
+        setEventsFeaturesState(parsedFeatures)
+        localStorage.setItem('eventsFeatures', JSON.stringify(parsedFeatures))
+        localStorage.setItem('eventsEnabled', hasAnyEventsFeature(parsedFeatures).toString())
+      },
+      () => {
+        // 에러 무시
+      }
+    )
+
+    const bookingInfoDocRef = doc(db, 'bookingInfo', 'main')
+    const unsubscribeBookingInfo = onSnapshot(
+      bookingInfoDocRef,
+      (snapshot) => {
+        if (!snapshot.exists()) return
+        const parsedBooking = parseBookingInfo(snapshot.data())
+        if (!parsedBooking) return
+        setBookingInfoState(parsedBooking)
+        localStorage.setItem('bookingInfo', JSON.stringify(parsedBooking))
+      },
+      () => {
+        // 에러 무시
+      }
+    )
+
     // cleanup 함수
     return () => {
       unsubscribeGuests()
       unsubscribePerformanceData()
+      unsubscribeEventsFeatures()
+      unsubscribeBookingInfo()
     }
   }, [])
 
@@ -1047,10 +1060,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const addWalkInGuest = async (name: string, phone: string, isWalkIn: boolean = true, email?: string): Promise<{ success: boolean; message?: string }> => {
-    // ✅ 초기화 후 차단 시간 동안 저장 차단
-    if (clearBlockUntilRef.current !== null && Date.now() < clearBlockUntilRef.current) {
-      return { success: false, message: '게스트 리스트가 방금 초기화되었습니다. 잠시 후 다시 시도해주세요.' }
-    }
+    // 예매 등록은 초기화 직후에도 허용 (saveGuestsAllCoalesced에서 _cleared: null로 마커 해제)
     
     // 이름과 전화번호 정규화 (통일된 함수 사용)
     const normalizedName = normalizeName(name)
@@ -1202,22 +1212,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const updatedGuests = Array.from(guestMap.values())
     
     // Firestore에 저장 (성공 확인 후 state 업데이트)
-    // ✅ guests 우선 원칙: 현재 state에 guests가 있으면 초기화 마커와 관계없이 추가 허용
-    // 초기화 마커는 숫자(타임스탬프)일 때만 초기화 상태로 판단
     try {
-      // 현재 Firestore 데이터 확인
-      const currentData = await getFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, FIRESTORE_PATHS.GUESTS_DOC_ID)
-      const currentCleared = (currentData as any)?._cleared
-      const isFirestoreCleared = currentCleared !== undefined && currentCleared !== null && typeof currentCleared === 'number'
-      const currentGuests = (currentData as any)?.guests || []
-      const hasGuests = Array.isArray(currentGuests) && currentGuests.length > 0
-      
-      // ✅ guests가 있으면 초기화 마커와 관계없이 추가 허용
-      // guests가 없고 초기화 마커가 있으면 차단
-      if (!hasGuests && isFirestoreCleared) {
-        return { success: false, message: '게스트 리스트가 초기화된 상태입니다. 먼저 엑셀 파일로 게스트를 업로드해주세요.' }
-      }
-      
       // ✅ coalesce 패턴으로 write (연타/중복 방지)
       // 초기화 해제: _cleared를 null로 명시 (deleteField로 완전 삭제)
       try {
@@ -1240,7 +1235,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         updatedAt: Date.now()
       })
 
-      return { success: true, message: '현장 구매 등록이 완료되었습니다.' }
+      return { success: true, message: isWalkIn ? '현장 예매 등록이 완료되었습니다.' : '예매 등록이 완료되었습니다.' }
     } catch (error) {
       return { success: false, message: '등록에 실패했습니다. 다시 시도해주세요.' }
     }
@@ -1394,16 +1389,14 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const setPerformanceData = (data: PerformanceData) => {
-    // 기존 데이터와 안전하게 병합 (중요한 데이터 보호)
     const mergedData: PerformanceData = {
-      ...performanceData, // 기존 데이터 우선
-      ...data, // 새 데이터로 덮어쓰기
-      // 셋리스트와 공연진은 기존 값이 있으면 유지 (절대 덮어쓰지 않음)
-      setlist: data.setlist && data.setlist.length > 0 
-        ? data.setlist 
+      ...performanceData,
+      ...data,
+      setlist: 'setlist' in data
+        ? (data.setlist ?? [])
         : (performanceData?.setlist || []),
-      performers: data.performers && data.performers.length > 0
-        ? data.performers
+      performers: 'performers' in data
+        ? (data.performers ?? [])
         : (performanceData?.performers || [])
     }
     
@@ -1413,11 +1406,18 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     setFirestoreData('performanceData' as any, mergedData, 'main').catch(() => {})
   }
 
-  const setBookingInfo = (info: BookingInfo) => {
-    setBookingInfoState(info)
-    localStorage.setItem('bookingInfo', JSON.stringify(info))
-    // Firestore에 저장 (비동기로 처리)
-    setFirestoreData('bookingInfo' as any, info, 'main').catch(() => {})
+  const setBookingInfo = async (info: BookingInfo) => {
+    const normalizedInfo: BookingInfo = {
+      ...DEFAULT_BOOKING_INFO,
+      ...info,
+      walkInPrice: info.walkInPrice?.trim() || DEFAULT_BOOKING_INFO.walkInPrice,
+    }
+    setBookingInfoState(normalizedInfo)
+    localStorage.setItem('bookingInfo', JSON.stringify(normalizedInfo))
+    const saved = await setFirestoreData('bookingInfo' as any, normalizedInfo, 'main')
+    if (saved === false) {
+      throw new Error('예매 정보 저장에 실패했습니다.')
+    }
   }
 
   const addGuestbookMessage = (message: GuestbookMessage) => {
@@ -1559,21 +1559,48 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const clearSetlist = () => {
-    if (performanceData) {
-      const updatedData: PerformanceData = {
-        ...performanceData,
-        setlist: [],
-        performers: []
-      }
-      setPerformanceData(updatedData)
+    if (!performanceData) return
+
+    const updatedData: PerformanceData = {
+      ...performanceData,
+      setlist: [],
+      performers: []
     }
+    setPerformanceDataState(updatedData)
+    localStorage.setItem('performanceData', JSON.stringify(updatedData))
+    setFirestoreData('performanceData' as any, updatedData, 'main').catch(() => {})
+  }
+
+  const persistEventsFeatures = (features: EventsFeatureSettings) => {
+    setEventsFeaturesState(features)
+    localStorage.setItem('eventsFeatures', JSON.stringify(features))
+    localStorage.setItem('eventsEnabled', hasAnyEventsFeature(features).toString())
+    setFirestoreData('current' as any, {
+      enabled: hasAnyEventsFeature(features),
+      ...features,
+    }, 'events').catch(() => {})
   }
 
   const setEventsEnabled = (enabled: boolean) => {
-    setEventsEnabledState(enabled)
-    localStorage.setItem('eventsEnabled', enabled.toString())
-    // Firestore에 저장 (비동기로 처리)
-    setFirestoreData('current' as any, { enabled }, 'events').catch(() => {})
+    persistEventsFeatures({
+      drinkPurchase: enabled,
+      directions: enabled,
+      entryDraw: enabled,
+      ledBoard: enabled,
+    })
+  }
+
+  const setEventsFeature = (key: keyof EventsFeatureSettings, enabled: boolean) => {
+    setEventsFeaturesState((prev) => {
+      const updated = { ...prev, [key]: enabled }
+      localStorage.setItem('eventsFeatures', JSON.stringify(updated))
+      localStorage.setItem('eventsEnabled', hasAnyEventsFeature(updated).toString())
+      setFirestoreData('current' as any, {
+        enabled: hasAnyEventsFeature(updated),
+        ...updated,
+      }, 'events').catch(() => {})
+      return updated
+    })
   }
 
   const clearGuestbookMessages = async () => {
@@ -1747,6 +1774,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       guestbookMessages,
       bookingInfo,
       eventsEnabled,
+      eventsFeatures,
       uploadGuests, 
       addWalkInGuest,
       toggleGuestPayment,
@@ -1759,6 +1787,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       updateGuest,
       clearSetlist,
       setEventsEnabled,
+      setEventsFeature,
       clearGuestbookMessages,
       clearChatMessages,
       deduplicateGuests,

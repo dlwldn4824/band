@@ -50,21 +50,29 @@ const Events = () => {
   // const DISCOUNTED_PRICE = ORIGINAL_PRICE - DISCOUNT_AMOUNT
   const ADMIN_PRICE = 2000 // 운영진 가격
   const { isAdmin, user, isLoading } = useAuth()
-  const { eventsEnabled, setEventsEnabled, bookingInfo } = useData()
+  const { eventsEnabled, eventsFeatures, bookingInfo, performanceData } = useData()
   const navigate = useNavigate()
   const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
-  
-  // 현재 경로가 /events인지 확인 (admin이 아닌 일반 사용자 페이지)
-  const isPublicEventsPage = location.pathname === '/events'
-  
+
   // URL 쿼리 파라미터에서 게임 타입 읽기
   useEffect(() => {
     const gameParam = searchParams.get('game') as GameType | null
-    if (gameParam && ['roulette', 'draw', 'ledboard'].includes(gameParam)) {
-      setCurrentGame(gameParam)
+    if (!gameParam || !['roulette', 'draw', 'ledboard'].includes(gameParam)) return
+
+    const isDisabled =
+      (gameParam === 'draw' && !eventsFeatures.entryDraw) ||
+      (gameParam === 'ledboard' && !eventsFeatures.ledBoard) ||
+      gameParam === 'roulette'
+
+    if (isDisabled) {
+      setCurrentGame('menu')
+      setSearchParams({})
+      return
     }
-  }, [searchParams])
+
+    setCurrentGame(gameParam)
+  }, [searchParams, eventsFeatures, setSearchParams])
 
   // 디버깅: Events 페이지 렌더링 상태 로그
   useEffect(() => {
@@ -76,18 +84,17 @@ const Events = () => {
     console.log('================================')
   }, [isAdmin, user, eventsEnabled, currentGame])
 
-  // 운영진이 아니고 이벤트가 활성화되지 않았으면 접근 차단
+  // 활성화된 기능이 없으면 접근 차단
   useEffect(() => {
-    // 로딩 중이면 리다이렉트하지 않음 (새로고침 시 이벤트 페이지 유지)
     if (isLoading) {
       console.log('[Events] 로딩 중, 리다이렉트 대기')
       return
     }
     
     console.log('[Events] 접근 권한 체크:', { isAdmin, eventsEnabled, isLoading })
-    if (!isAdmin && !eventsEnabled) {
-      console.log('[Events] 접근 차단 → /dashboard로 리다이렉트')
-      navigate('/dashboard')
+    if (!eventsEnabled) {
+      console.log('[Events] 접근 차단 → dashboard로 리다이렉트')
+      navigate(isAdmin ? '/admin/dashboard' : '/dashboard')
     } else {
       console.log('[Events] 접근 허용')
     }
@@ -96,12 +103,11 @@ const Events = () => {
   // Dashboard에서 주류 구매 모달을 열도록 요청한 경우
   useEffect(() => {
     const state = location.state as { openDrinkModal?: boolean } | null
-    if (state?.openDrinkModal) {
+    if (state?.openDrinkModal && eventsFeatures.drinkPurchase) {
       setShowDrinkModal(true)
-      // state를 초기화하여 다시 방문 시 모달이 자동으로 열리지 않도록
       window.history.replaceState({}, document.title)
     }
-  }, [location.state])
+  }, [location.state, eventsFeatures.drinkPurchase])
 
   // 구매 모달의 수량은 항상 0부터 시작
   // 내 구매 정보 섹션은 Firestore의 주문 정보를 기반으로 별도로 표시
@@ -194,6 +200,17 @@ const Events = () => {
     }
   }, [showDrinkModal])
 
+  useEffect(() => {
+    if (currentGame === 'draw' && !eventsFeatures.entryDraw) {
+      setCurrentGame('menu')
+      setSearchParams({})
+    }
+    if (currentGame === 'ledboard' && !eventsFeatures.ledBoard) {
+      setCurrentGame('menu')
+      setSearchParams({})
+    }
+  }, [currentGame, eventsFeatures, setSearchParams])
+
   // 할인 기간 카운트다운 (사전예매 기간 종료로 비활성화)
   // useEffect(() => {
   //   const updateTimeRemaining = () => {
@@ -232,13 +249,10 @@ const Events = () => {
     )
   }
 
-  // 운영진이 게임을 시작하면 이벤트 활성화
   const handleGameStart = (gameId: GameType) => {
-    if (isAdmin && !eventsEnabled) {
-      setEventsEnabled(true)
-    }
+    if (gameId === 'draw' && !eventsFeatures.entryDraw) return
+    if (gameId === 'ledboard' && !eventsFeatures.ledBoard) return
     setCurrentGame(gameId)
-    // URL 쿼리 파라미터 업데이트
     setSearchParams({ game: gameId })
   }
   
@@ -264,19 +278,13 @@ const Events = () => {
     { id: 'ledboard', name: '전광판 만들기', icon: boardIcon ,description: ['전광판을 만들어', '응원하세요!'] },
   ]
 
-  // 게임 목록 필터링
-  // /events 페이지는 추첨과 전광판 보임 (isPublicEventsPage가 true면 draw와 ledboard만, isAdmin 상태와 무관)
-  // /admin/events 페이지는 운영진은 모든 게임, 일반 사용자는 룰렛 제외
-  // 룰렛은 모든 페이지에서 비활성화됨
-  // 로딩 중이거나 상태가 불안정할 때는 빈 배열 반환하여 깜빡임 방지
-  // isPublicEventsPage를 먼저 체크하여 /events 페이지에서는 draw와 ledboard만 보이도록 보장
   const games = isLoading
     ? []
-    : isPublicEventsPage
-      ? allGames.filter(game => game.id === 'ledboard') // /events 페이지는 draw와 ledboard만 (isAdmin과 무관)
-      : isAdmin 
-        ? allGames 
-        : allGames.filter(game => game.id !== 'roulette') // /admin/events에서 일반 사용자는 룰렛 제외
+    : allGames.filter((game) => {
+        if (game.id === 'draw') return eventsFeatures.entryDraw
+        if (game.id === 'ledboard') return eventsFeatures.ledBoard
+        return false
+      })
 
   console.log('[Events] 게임 목록:', {
     isAdmin,
@@ -286,6 +294,14 @@ const Events = () => {
   })
 
   if (currentGame !== 'menu') {
+    const isCurrentGameDisabled =
+      (currentGame === 'draw' && !eventsFeatures.entryDraw) ||
+      (currentGame === 'ledboard' && !eventsFeatures.ledBoard)
+
+    if (isCurrentGameDisabled) {
+      return null
+    }
+
     console.log('[Events] 게임 플레이 모드:', currentGame)
     return (
       <div className="events-page">
@@ -302,9 +318,11 @@ const Events = () => {
     setShowDirectionsModal(true)
   }
 
+  const venueName = performanceData?.ticket?.venue || '얼라이브 홀'
+  const venueAddress = performanceData?.ticket?.venueAddress || '서울특별시 마포구 독막로7길 20 지하'
+
   const handleKakaoMap = () => {
-    // 카카오맵에서 주소 검색
-    const address = encodeURIComponent('서울특별시 마포구 독막로7길 20 지하')
+    const address = encodeURIComponent(venueAddress)
     const kakaoMapUrl = `https://map.kakao.com/link/search/${address}`
     window.open(kakaoMapUrl, '_blank')
   }
@@ -406,18 +424,7 @@ const Events = () => {
         )}
 
         <div className="games-grid">
-        {/* <div
-          className="game-card"
-          onClick={() => navigate('/products')}
-        >
-          <div className="game-icon">
-            <img src={shopIcon} alt="상품 소개" />
-          </div>
-
-          <h3>상품 소개</h3>
-          <p>공연 기념품을 <br/>확인하세요</p>
-          <button className="play-button">확인하기</button>
-        </div> */}
+        {eventsFeatures.drinkPurchase && (
         <div
           className="game-card"
           onClick={() => setShowDrinkModal(true)}
@@ -430,6 +437,8 @@ const Events = () => {
           <p>캔 맥주, 산토리 하이볼 <br/>사전 구매하기</p>
           <button className="play-button">구매하기</button>
         </div>
+        )}
+        {eventsFeatures.directions && (
         <div
           className="game-card"
           onClick={handleDirections}
@@ -442,6 +451,7 @@ const Events = () => {
           <p>공연장 위치를 <br/>확인하세요</p>
           <button className="play-button">확인하기</button>
         </div>
+        )}
         {games.map((game) => (
           <div
             key={game.id}
@@ -853,10 +863,10 @@ const Events = () => {
               {/* 주소 */}
               <div className="directions-address">
                 <p className="directions-address-title">
-                 얼라이브 홀
+                 {venueName}
                 </p>
                 <p className="directions-address-text">
-                  서울특별시 마포구 독막로7길 20 지하
+                  {venueAddress}
                 </p>
               </div>
 

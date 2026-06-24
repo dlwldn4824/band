@@ -19,6 +19,7 @@ import bassIcon from '../assets/배경/베이스.png'
 import keyboardIcon from '../assets/배경/키보드.png'
 import drumIcon from '../assets/배경/드럼.png'
 import './Performances.css'
+import { getPerformanceSections } from '../utils/performanceEvents'
 
 // ===== 곡 소개 이미지 =====
 import img1 from '../assets/렉사X멜로딕 곡소개/1.행운을빌어요.jpeg'
@@ -62,17 +63,24 @@ const Performances = () => {
     // location이 변경되면 컴포넌트가 리렌더링됨
   }, [location.pathname, location.state])
   const [selectedSongIndex, setSelectedSongIndex] = useState<number | null>(null)
-  const [selectedPart, setSelectedPart] = useState<1 | 2>(1)
+  const [selectedPart, setSelectedPart] = useState(1)
+  const performanceSections = getPerformanceSections(performanceData?.events)
 
-  // 타임라인에서 클릭한 부로 이동
+  // 타임라인에서 클릭한 섹션으로 이동
   useEffect(() => {
-    if (location.state && typeof (location.state as any).part === 'number') {
-      const part = (location.state as any).part as 1 | 2
-      if (part === 1 || part === 2) {
+    if (location.state && typeof (location.state as { part?: number }).part === 'number') {
+      const part = (location.state as { part: number }).part
+      if (part >= 1 && part <= Math.max(performanceSections.length, 1)) {
         setSelectedPart(part)
       }
     }
-  }, [location.state])
+  }, [location.state, performanceSections.length])
+
+  useEffect(() => {
+    if (performanceSections.length > 0 && selectedPart > performanceSections.length) {
+      setSelectedPart(1)
+    }
+  }, [performanceSections.length, selectedPart])
 
   // 선택된 곡의 응원 메시지 가져오기
   useEffect(() => {
@@ -350,71 +358,50 @@ const Performances = () => {
     )
   }
 
-  // 1부/2부 구분 - part 속성을 기반으로 분류
-  const part1Songs = performanceData.setlist.filter(song => song.part === 1)
-  const part2Songs = performanceData.setlist.filter(song => song.part === 2)
-  
-  // 디버깅: part 분류 상태 확인
-  console.log('[Performances] 전체 곡 수:', performanceData.setlist.length)
-  console.log('[Performances] 1부 곡 수:', part1Songs.length)
-  console.log('[Performances] 2부 곡 수:', part2Songs.length)
-  console.log('[Performances] part 속성 분포:', {
-    part1: part1Songs.length,
-    part2: part2Songs.length,
-    noPart: performanceData.setlist.filter(song => !song.part).length
-  })
-  
-  // part 속성이 없는 경우 (기존 데이터 호환성) - 개수로 나누기
+  const sectionCount = Math.max(performanceSections.length, 2)
   const songsWithoutPart = performanceData.setlist.filter(song => !song.part)
-  let part1Count: number
+  const hasPartData = songsWithoutPart.length !== performanceData.setlist.length
+
   let displaySongs: SetlistItem[]
   let startIndex: number
-  
-  if (songsWithoutPart.length === performanceData.setlist.length) {
-    // 모든 곡에 part가 없으면 기존 방식으로 분류
-    const totalSongs = performanceData.setlist.length
-    part1Count = Math.ceil(totalSongs / 2)
-    const part1SongsFallback = performanceData.setlist.slice(0, part1Count)
-    const part2SongsFallback = performanceData.setlist.slice(part1Count)
-    
-    displaySongs = selectedPart === 1 ? part1SongsFallback : part2SongsFallback
-    startIndex = selectedPart === 1 ? 0 : part1Count
+
+  if (!hasPartData) {
+    const songsPerSection = Math.ceil(performanceData.setlist.length / sectionCount)
+    const sectionStart = (selectedPart - 1) * songsPerSection
+    displaySongs = performanceData.setlist.slice(sectionStart, sectionStart + songsPerSection)
+    startIndex = sectionStart
   } else {
-    // part 속성이 있는 경우 - part 기반으로 분류
-    part1Count = part1Songs.length
-    displaySongs = selectedPart === 1 ? part1Songs : part2Songs
-    // part 기반일 때는 전체 setlist에서의 인덱스를 계산
-    startIndex = selectedPart === 1 
-      ? 0 
-      : performanceData.setlist.findIndex(song => song.part === 2)
-    if (startIndex === -1) startIndex = part1Count
-    
-    console.log('[Performances] 선택된 부:', selectedPart)
-    console.log('[Performances] 표시할 곡 수:', displaySongs.length)
-    console.log('[Performances] 시작 인덱스:', startIndex)
+    displaySongs = performanceData.setlist.filter(song => song.part === selectedPart)
+    startIndex = performanceData.setlist.findIndex(song => song.part === selectedPart)
+    if (startIndex === -1) startIndex = 0
   }
+
+  const selectedSectionTitle = performanceSections[selectedPart - 1]?.title || `${selectedPart}부`
 
   return (
     <div className="performances-page">
       <div className="performances-content">
-        {/* 1부/2부 선택 버튼 */}
         <div className="part-selector">
-          <button
-            className={`part-button ${selectedPart === 1 ? 'active' : ''}`}
-            onClick={() => setSelectedPart(1)}
-          >
-            1부
-          </button>
-          <button
-            className={`part-button ${selectedPart === 2 ? 'active' : ''}`}
-            onClick={() => {
-              console.log('[Performances] 2부 버튼 클릭, part2Songs.length:', part2Songs.length)
-              setSelectedPart(2)
-            }}
-            disabled={songsWithoutPart.length === performanceData.setlist.length ? false : part2Songs.length === 0}
-          >
-            2부
-          </button>
+          {(performanceSections.length > 0
+            ? performanceSections
+            : [{ title: '1부', description: '', time: '' }, { title: '2부', description: '', time: '' }]
+          ).map((section, index) => {
+            const partNumber = index + 1
+            const sectionSongCount = hasPartData
+              ? (performanceData.setlist ?? []).filter(song => song.part === partNumber).length
+              : Math.ceil((performanceData.setlist ?? []).length / sectionCount)
+
+            return (
+              <button
+                key={`${section.title}-${partNumber}`}
+                className={`part-button ${selectedPart === partNumber ? 'active' : ''}`}
+                onClick={() => setSelectedPart(partNumber)}
+                disabled={hasPartData && sectionSongCount === 0}
+              >
+                {section.title}
+              </button>
+            )
+          })}
         </div>
 
         {/* 셋리스트 리스트 */}
@@ -508,12 +495,9 @@ const Performances = () => {
                     <div className="song-info-header">
                       <button className="song-part-button">
                         {(() => {
-                          const totalSongs2 = performanceData.setlist.length
-                          const currentNumber = selectedSongIndex + 1
-                          const part1Count2 = Math.ceil(totalSongs2 / 2)
-                          const part = currentNumber <= part1Count2 ? 1 : 2
-                          const partNumber = part === 1 ? currentNumber : currentNumber - part1Count2
-                          return `${part}부 ${partNumber}번째 곡`
+                          const currentNumber = displaySongs.findIndex(song => song === selectedSong) + 1
+                          if (currentNumber <= 0) return selectedSectionTitle
+                          return `${selectedSectionTitle} ${currentNumber}번째 곡`
                         })()}
                       </button>
                       <span className="song-number-display">

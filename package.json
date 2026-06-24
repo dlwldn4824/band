@@ -13,8 +13,11 @@
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
     "firebase": "^12.7.0",
     "html5-qrcode": "^2.3.8",
+    "nodemailer": "^9.0.1",
     "qrcode.react": "^4.2.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

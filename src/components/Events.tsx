@@ -16,27 +16,13 @@ const Events = ({ events }: EventsProps) => {
   const navigate = useNavigate()
   const location = useLocation()
   
-  // 디버깅: events 배열 확인
-  console.log('[Events] events 배열:', events)
-  console.log('[Events] events 개수:', events?.length)
-  
-  // 현재 경로가 admin인지 일반 사용자인지 확인
   const isAdminPage = location.pathname.startsWith('/admin')
   
-  const handleEventClick = (eventTitle: string, index: number) => {
-    // 0번 dot이거나 "관객 입장"인 경우 클릭 불가
-    if (index === 0 || eventTitle.includes('관객 입장')) {
-      return
-    }
-    
-    // 1부 또는 2부인지 확인
-    if (eventTitle.includes('1부')) {
-      const path = isAdminPage ? '/admin/performances' : '/performances'
-      navigate(path, { state: { part: 1 } })
-    } else if (eventTitle.includes('2부')) {
-      const path = isAdminPage ? '/admin/performances' : '/performances'
-      navigate(path, { state: { part: 2 } })
-    }
+  const handleEventClick = (index: number) => {
+    if (index === 0) return
+
+    const path = isAdminPage ? '/admin/performances' : '/performances'
+    navigate(path, { state: { part: index } })
   }
 
   const handleSetlistClick = () => {
@@ -56,9 +42,8 @@ const Events = ({ events }: EventsProps) => {
           </div>
           
           {events.map((event, index) => {
-            // 0번 dot이거나 "관객 입장"인 경우 클릭 불가 및 hover 효과 제거
-            const isGuestEntry = index === 0 || event.title.includes('관객 입장')
-            const isClickable = !isGuestEntry && event.title.includes('부')
+            const isGuestEntry = index === 0
+            const isClickable = index > 0
             
             return (
               <div key={index} className="timeline-row">
@@ -66,7 +51,7 @@ const Events = ({ events }: EventsProps) => {
                   <div 
                     className={`timeline-dot ${isGuestEntry ? 'no-hover' : ''}`}
                     style={{ cursor: isClickable ? 'pointer' : 'default' }}
-                    onClick={() => isClickable && handleEventClick(event.title, index)}
+                    onClick={() => isClickable && handleEventClick(index)}
                   >
                     {index}
                   </div>
@@ -75,7 +60,7 @@ const Events = ({ events }: EventsProps) => {
                   <div 
                     className={`timeline-content ${isGuestEntry ? 'no-hover' : ''}`}
                     style={{ cursor: isClickable ? 'pointer' : 'default' }}
-                    onClick={() => isClickable && handleEventClick(event.title, index)}
+                    onClick={() => isClickable && handleEventClick(index)}
                   >
                     <div className="event-header">
                       <h3 className="event-title">{event.title}</h3>
@@ -104,4 +89,3 @@ const Events = ({ events }: EventsProps) => {
 }
 
 export default Events
-

@@ -138,9 +138,11 @@ const Layout = ({ children }: LayoutProps) => {
                 <Link to="/admin/chat" className={`nav-link ${isActive('/admin/chat')}`} onClick={(e) => handleNavClick('/admin/chat', e)}>
                   채팅
                 </Link>
+                {eventsEnabled && (
                 <Link to="/admin/events" className={`nav-link ${isActive('/admin/events')}`} onClick={(e) => handleNavClick('/admin/events', e)}>
                   기타
                 </Link>
+                )}
               </>
             ) : isAuthenticated ? (
               <>

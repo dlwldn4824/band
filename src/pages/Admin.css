@@ -1270,3 +1270,52 @@
   }
 }
 
+.feature-toggle-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.feature-toggle-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+  background: #fafafa;
+  cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.feature-toggle-item:hover {
+  border-color: #D88676;
+  background: #fff;
+}
+
+.feature-toggle-item input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  margin-top: 0.15rem;
+  accent-color: #D88676;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.feature-toggle-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.feature-toggle-label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.feature-toggle-desc {
+  font-size: 0.875rem;
+  color: #666;
+  line-height: 1.4;
+}

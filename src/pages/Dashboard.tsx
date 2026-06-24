@@ -16,7 +16,7 @@ import './Dashboard.css'
 const Dashboard = () => {
   // ✅ 모든 Hook은 최상단에서 조건 없이 호출
   const { user, setNickname, isAdmin, adminName, isLoading } = useAuth()
-  const { performanceData, guests, bookingInfo } = useData()
+  const { performanceData, guests, bookingInfo, eventsFeatures } = useData()
   const { token: tokenFromParams } = useParams<{ token?: string }>()
   const [searchParams] = useSearchParams()
   const tokenFromQuery = searchParams.get('token')
@@ -198,6 +198,7 @@ const Dashboard = () => {
           {user && (
             <div style={{ marginTop: '1.5rem', width: '90%', maxWidth: '90%', marginLeft: 'auto', marginRight: 'auto' }}>
               {/* 주류 홍보 문구 */}
+              {eventsFeatures.drinkPurchase && (
               <div 
                 style={{
                   padding: '1rem',
@@ -237,6 +238,7 @@ const Dashboard = () => {
                   {isAdmin ? '운영진 구매 1500원 할인!' : '수제 레몬 하이볼과 캔맥주 마시면서 공연 관람하자!'}
                 </p>
               </div>
+              )}
               
               {/* 입금 미확인자에게 입금 계좌 정보 표시 (Admin/운영진에는 미표시) */}
               {(() => {
@@ -253,8 +255,7 @@ const Dashboard = () => {
                 
                 // 입금 미확인 상태이고 bookingInfo가 있으면 계좌 정보 표시
                 if (!isPaymentConfirmed && bookingInfo && bookingInfo.accountNumber) {
-                  // 사전예매 기간 종료로 모든 예매는 6천원
-                  const price = bookingInfo.walkInPrice || '6천원'
+                  const price = bookingInfo.walkInPrice
                   const copyAccountNumber = async () => {
                     if (!bookingInfo.accountNumber) return
                     try {

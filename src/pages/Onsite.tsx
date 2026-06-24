@@ -125,29 +125,6 @@ const Onsite = () => {
         }
       }
 
-      // Firestore의 'guests_v2' 문서 업데이트 (DataContext와 동일한 형식)
-      // 초기화 마커 확인 - 마커가 있으면 업데이트하지 않음
-      // ✅ guests 우선 원칙: guests가 있으면 초기화 마커와 관계없이 추가 허용
-      // 초기화 마커는 숫자(타임스탬프)일 때만 초기화 상태로 판단
-      const { getFirestoreData } = await import('../services/firestoreService')
-      const { FIRESTORE_PATHS } = await import('../config/firestorePaths')
-      const currentData = await getFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, FIRESTORE_PATHS.GUESTS_DOC_ID)
-      const currentCleared = (currentData as any)?._cleared
-      const isFirestoreCleared = currentCleared !== undefined && currentCleared !== null && typeof currentCleared === 'number'
-      const currentGuests = (currentData as any)?.guests || []
-      const hasGuests = Array.isArray(currentGuests) && currentGuests.length > 0
-      
-      // guests가 없고 초기화 마커가 있을 때만 차단
-      if (!hasGuests && isFirestoreCleared) {
-        console.log('🔴 [Onsite] 초기화 마커가 있어서 게스트 업데이트 불가')
-        alert('게스트 리스트가 초기화된 상태입니다. 먼저 엑셀 파일로 게스트를 업로드해주세요.')
-        setIsProcessing(false)
-        return
-      }
-      
-      // ✅ DataContext의 addWalkInGuest가 이미 Firestore에 저장하므로 여기서는 불필요
-      // addWalkInGuest가 성공하면 자동으로 Firestore에 저장됨
-
       // 개인 로그인 링크 생성 (암호화된 토큰 사용)
       const combinedData = `${normalizedName}|${normalizedPhone}`
       const base64Token = btoa(encodeURIComponent(combinedData))

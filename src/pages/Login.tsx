@@ -945,13 +945,12 @@ const Login = () => {
                 </div>
               </div>
               {bookingInfo.accountNumber && (
-                <p className="copy-hint">입금주: 이지우 계좌번호를 클릭하면 복사됩니다</p>
+                <p className="copy-hint">입금주: {bookingInfo.accountName || '이지우'} 계좌번호를 클릭하면 복사됩니다</p>
               )}
               <div className="payment-item payment-item-row">
                 <span className="payment-label">입금하실 금액:</span>
                 <span className="payment-amount">
-                  {/* 사전예매 기간 종료로 모든 예매는 6천원 */}
-                  {bookingInfo.walkInPrice || '6천원'}
+                  {bookingInfo.walkInPrice}
                 </span>
               </div>
             </div>
