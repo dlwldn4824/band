@@ -10,7 +10,7 @@ import { formatPhoneDisplay } from '../utils/phoneFormat'
 import { normalizePhone } from '../utils/guestUtils'
 import { collection, getDocs } from 'firebase/firestore'
 import { db } from '../config/firebase'
-import posterImage from '../assets/배경/연합공연_최종포스터.jpeg'
+import posterImage from '../assets/background/glow-poster.png'
 import Login from './Login'
 import './Dashboard.css'
 import { trackEvent, useBannerImpression } from '../analytics'
@@ -643,7 +643,7 @@ const Dashboard = () => {
           <div className="poster-section">
             <img 
               src={posterImage} 
-              alt="공연 포스터" 
+              alt="GLOW 공연 포스터" 
               className="poster-image"
               loading="lazy"
               decoding="async"
