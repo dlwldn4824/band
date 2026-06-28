@@ -148,7 +148,7 @@ export const parseEventsFeatures = (data: unknown): EventsFeatureSettings => {
 }
 
 export const hasAnyEventsFeature = (features: EventsFeatureSettings): boolean =>
-  features.drinkPurchase || features.directions || features.entryDraw || features.ledBoard
+  features.drinkPurchase || features.entryDraw || features.ledBoard
 
 
 interface DataContextType {

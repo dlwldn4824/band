@@ -8,9 +8,7 @@ import { normalizePhone } from '../utils/guestUtils'
 import RouletteMirror from '../components/games/RouletteMirror'
 import EntryNumberDrawMirror from '../components/games/EntryNumberDrawMirror'
 import LEDBoard from '../components/games/LEDBoard'
-import directionsImage from '../assets/배경/몽향_지도.png'
 import './Events.css'
-import { DEFAULT_VENUE_NAME, DEFAULT_VENUE_ADDRESS } from '../utils/venueDefaults'
 import {
   trackEvent,
   trackModal,
@@ -23,7 +21,6 @@ import { isEventDay } from '../analytics/device'
 import { getDaysBeforePerformance } from '../utils/bookingTime'
 
 import shopIcon from '../assets/icons/shop.png'
-import mapIcon from '../assets/icons/map.png'
 import randomIcon from '../assets/icons/random.png'
 import boardIcon from '../assets/icons/board.png'
 
@@ -33,7 +30,6 @@ type GameType = 'menu' | 'roulette' | 'draw' | 'ledboard'
 const Events = () => {
   // ✅ 모든 Hook은 최상단에서 조건 없이 호출
   const [currentGame, setCurrentGame] = useState<GameType>('menu')
-  const [showDirectionsModal, setShowDirectionsModal] = useState(false)
   const [showDrinkModal, setShowDrinkModal] = useState(false)
   const [beerQuantity, setBeerQuantity] = useState(0)
   const [mojitoQuantity, setMojitoQuantity] = useState(0)
@@ -341,23 +337,6 @@ const Events = () => {
     )
   }
 
-  const handleDirections = () => {
-    setShowDirectionsModal(true)
-    void trackEvent('directions_modal_opened', {})
-    void trackEvent('feature_card_clicked', { feature_name: 'directions' })
-    trackModal('directions', 'opened', { source: 'events_card' })
-  }
-
-  const venueName = performanceData?.ticket?.venue || DEFAULT_VENUE_NAME
-  const venueAddress = performanceData?.ticket?.venueAddress || DEFAULT_VENUE_ADDRESS
-
-  const handleKakaoMap = () => {
-    const address = encodeURIComponent(venueAddress)
-    const kakaoMapUrl = `https://map.kakao.com/link/search/${address}`
-    void trackEvent('kakao_map_opened', {})
-    window.open(kakaoMapUrl, '_blank')
-  }
-
   const openDrinkModal = (source: 'dashboard_banner' | 'events_card') => {
     setShowDrinkModal(true)
     void trackEvent('drink_modal_opened', { source })
@@ -474,20 +453,6 @@ const Events = () => {
           <h3>주류 구매</h3>
           <p>캔 맥주, 산토리 하이볼 <br/>사전 구매하기</p>
           <button className="play-button">구매하기</button>
-        </div>
-        )}
-        {eventsFeatures.directions && (
-        <div
-          className="game-card"
-          onClick={handleDirections}
-        >
-          <div className="game-icon map-icon">
-            <img src={mapIcon} alt="길찾기" />
-          </div>
-
-          <h3>길찾기</h3>
-          <p>공연장 위치를 <br/>확인하세요</p>
-          <button className="play-button">확인하기</button>
         </div>
         )}
         {games.map((game) => (
@@ -879,57 +844,6 @@ const Events = () => {
                 }}
               >
                 확인하기
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 길찾기 모달 */}
-      {showDirectionsModal && (
-        <div 
-          className="directions-modal-overlay"
-          onClick={() => setShowDirectionsModal(false)}
-        >
-          <div 
-            className="directions-modal"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              className="directions-modal-close"
-              onClick={() => setShowDirectionsModal(false)}
-            >
-            </button>
-            <div className="directions-modal-content">
-              <h2 className="directions-modal-title">공연장 위치</h2>
-              
-              {/* 길 안내 이미지 */}
-              <div className="directions-image-container">
-                <img 
-                  src={directionsImage} 
-                  alt="복합문화공간 몽향 위치" 
-                  className="directions-image"
-                  loading="lazy"
-                  decoding="async"
-                />
-              </div>
-
-              {/* 주소 */}
-              <div className="directions-address">
-                <p className="directions-address-title">
-                 {venueName}
-                </p>
-                <p className="directions-address-text">
-                  {venueAddress}
-                </p>
-              </div>
-
-              {/* 카카오맵 연결 버튼 */}
-              <button
-                className="directions-kakao-button"
-                onClick={handleKakaoMap}
-              >
-                카카오맵에서 길찾기
               </button>
             </div>
           </div>

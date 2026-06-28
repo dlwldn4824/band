@@ -98,13 +98,15 @@
   border-radius: 20px;
   max-width: 500px;
   width: 100%;
-  max-height: calc(90dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)); /* iOS Safari 뷰포트 문제 해결 */
-  max-height: calc(calc(var(--vh, 1vh) * 90) - env(safe-area-inset-top) - env(safe-area-inset-bottom)); /* --vh 변수 우선 사용 */
+  max-height: calc(100dvh - var(--header-base-height) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 2rem);
+  max-height: calc(calc(var(--vh, 1vh) * 100) - var(--header-base-height) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 2rem);
   overflow-y: auto;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   animation: slideUp 0.3s ease;
   position: relative;
   z-index: 10002;
+  display: flex;
+  flex-direction: column;
 }
 
 .directions-modal-close {
@@ -156,26 +158,27 @@
 .directions-modal-content {
   position: relative;
   z-index: 10003;
-  padding: 2rem 1.5rem;
+  padding: 1.5rem 1.25rem 1.25rem;
   text-align: center;
+  flex: 1;
+  min-height: 0;
 }
 
 .directions-modal-title {
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   font-weight: 700;
   color: #ffffff;
-  margin: 0 0 1.5rem 0;
+  margin: 0 0 1rem 0;
   font-family: 'HakgyoansimJayeonR', sans-serif;
 }
 
 .directions-image-container {
   width: 100%;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
   border-radius: 12px;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.05);
-  min-height: 200px;
-  max-height: 60vh;
+  max-height: 36dvh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -183,22 +186,22 @@
 
 .directions-image {
   width: 100%;
-  height: 100%;
+  height: auto;
   object-fit: contain;
   display: block;
   max-width: 100%;
-  max-height: 60vh;
+  max-height: 36dvh;
 }
 
 .directions-address {
-  margin-bottom: 1.5rem;
-  padding: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.875rem;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 12px;
 }
 
 .directions-address-title {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   color: #ffffff;
   margin: 0 0 0.75rem 0;
   font-family: 'HakgyoansimJayeonR', sans-serif;
@@ -550,6 +553,55 @@
 @media (max-width: 768px) {
   .events-page h1 {
     font-size: 2rem;
+  }
+
+  .directions-modal-overlay {
+    padding: 0.75rem;
+    padding-top: calc(var(--header-base-height) + env(safe-area-inset-top) + 0.5rem);
+    padding-bottom: calc(env(safe-area-inset-bottom) + 0.75rem);
+  }
+
+  .directions-modal {
+    max-height: calc(100dvh - var(--header-base-height) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 1.25rem);
+    border-radius: 16px;
+  }
+
+  .directions-modal-content {
+    padding: 1.25rem 1rem 1rem;
+  }
+
+  .directions-modal-title {
+    font-size: 1.15rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .directions-image-container {
+    max-height: 28dvh;
+    margin-bottom: 0.75rem;
+  }
+
+  .directions-image {
+    max-height: 28dvh;
+  }
+
+  .directions-address {
+    margin-bottom: 0.75rem;
+    padding: 0.75rem;
+  }
+
+  .directions-address-title {
+    font-size: 1.1rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .directions-address-text {
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  .directions-kakao-button {
+    padding: 0.8rem 1.25rem;
+    font-size: 0.95rem;
   }
 
   .games-grid {

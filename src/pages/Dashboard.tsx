@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams, useSearchParams } from 'react-rout
 import { useAuth } from '../contexts/AuthContext'
 import { useData } from '../contexts/DataContext'
 import Events from '../components/Events'
+import VenueDirections from '../components/VenueDirections'
 import ticketImage from '../assets/배경/렉사_연합공연_티켓.png'
 import editIcon from '../assets/배경/수정_아이콘.png'
 import { formatPhoneDisplay } from '../utils/phoneFormat'
@@ -468,9 +469,6 @@ const Dashboard = () => {
           </section>
         )}
 
-
-
-
         {isAdmin && (
           <section className="dashboard-section">
             <div className="checkin-card" style={{ background: '#000000', border: '2px solid #444', color: '#ffffff' }}>
@@ -632,6 +630,8 @@ const Dashboard = () => {
             </div>
           </div>
         )}
+
+        <VenueDirections />
 
         {performanceData?.events && performanceData.events.length > 0 && (
           <section className="dashboard-section">

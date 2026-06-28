@@ -13,7 +13,7 @@ const Layout = ({ children }: LayoutProps) => {
   const location = useLocation()
   const navigate = useNavigate()
   const { isAuthenticated, logout, isAdmin } = useAuth()
-  const { eventsEnabled, performanceData } = useData()
+  const { performanceData } = useData()
   
   // 새로고침 시 admin 상태가 아직 로드되지 않았을 수 있으므로
   // localStorage에서 직접 확인하여 깜빡임 방지
@@ -140,11 +140,6 @@ const Layout = ({ children }: LayoutProps) => {
                 <Link to="/admin/chat" className={`nav-link ${isActive('/admin/chat')}`} onClick={(e) => handleNavClick('/admin/chat', e, 'chat')}>
                   채팅
                 </Link>
-                {eventsEnabled && (
-                <Link to="/admin/events" className={`nav-link ${isActive('/admin/events')}`} onClick={(e) => handleNavClick('/admin/events', e, 'events')}>
-                  기타
-                </Link>
-                )}
               </>
             ) : isAuthenticated ? (
               <>
@@ -157,22 +152,12 @@ const Layout = ({ children }: LayoutProps) => {
                 <Link to="/chat" className={`nav-link ${isActive('/chat')}`} onClick={(e) => handleNavClick('/chat', e, 'chat')}>
                   채팅
                 </Link>
-                {eventsEnabled && (
-                  <Link to="/events" className={`nav-link ${isActive('/events')}`} onClick={(e) => handleNavClick('/events', e, 'events')}>
-                    기타
-                  </Link>
-                )}
               </>
             ) : (
               <>
                 <Link to="/performances" className={`nav-link ${isActive('/performances')}`} onClick={(e) => handleNavClick('/performances', e, 'performances')}>
                   공연 정보
                 </Link>
-                {eventsEnabled && (
-                  <Link to="/events" className={`nav-link ${isActive('/events')}`} onClick={(e) => handleNavClick('/events', e, 'events')}>
-                    기타
-                  </Link>
-                )}
               </>
             )}
           </nav>

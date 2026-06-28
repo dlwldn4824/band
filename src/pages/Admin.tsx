@@ -1640,9 +1640,9 @@ const Admin = () => {
       )}
       
       <div className="admin-section">
-        <h2>기타 기능 관리</h2>
+        <h2>부가 기능 관리</h2>
         <p className="section-description">
-          기타 탭에 표시할 기능을 개별적으로 활성화하거나 비활성화합니다. 비활성화된 기능은 관객 및 운영진 화면에서 보이지 않습니다.
+          홈·이벤트 페이지에 표시할 부가 기능을 개별적으로 활성화하거나 비활성화합니다. 비활성화된 기능은 관객 및 운영진 화면에서 보이지 않습니다.
         </p>
         <div className="feature-toggle-list">
           <label className="feature-toggle-item">
@@ -1656,7 +1656,7 @@ const Admin = () => {
             />
             <div className="feature-toggle-text">
               <span className="feature-toggle-label">주류 구매</span>
-              <span className="feature-toggle-desc">기타 탭 및 대시보드 주류 구매 바로가기</span>
+              <span className="feature-toggle-desc">대시보드 주류 구매 바로가기 및 이벤트 페이지 주류 구매</span>
             </div>
           </label>
           <label className="feature-toggle-item">
@@ -1670,7 +1670,7 @@ const Admin = () => {
             />
             <div className="feature-toggle-text">
               <span className="feature-toggle-label">길찾기</span>
-              <span className="feature-toggle-desc">공연장 위치 안내 카드</span>
+              <span className="feature-toggle-desc">홈 화면 위치 안내 카드</span>
             </div>
           </label>
           <label className="feature-toggle-item">
