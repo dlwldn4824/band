@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useData } from '../contexts/DataContext'
 import { useAuth } from '../contexts/AuthContext'
+import { trackEvent } from '../analytics'
 import './Login.css'
 
 const AdminLogin = () => {
@@ -66,6 +67,7 @@ const AdminLogin = () => {
 
     // 운영진 로그인 성공 - 운영진 상태 설정
     setAdmin(true, normalizedName)
+    void trackEvent('admin_login_succeeded', { admin_name: normalizedName, is_performer: true })
     
     // 운영자도 user 객체를 설정하여 채팅 등 기능 사용 가능하도록
     updateUser({

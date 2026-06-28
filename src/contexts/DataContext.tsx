@@ -3,11 +3,14 @@ import {
   getFirestoreData, 
   setFirestoreData
 } from '../services/firestoreService'
-import { collection, getDocs, deleteDoc, doc, onSnapshot } from 'firebase/firestore'
+import { collection, getDocs, deleteDoc, doc, onSnapshot, setDoc, Timestamp } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import { FIRESTORE_PATHS, getGuestsStorageKey } from '../config/firestorePaths'
 import { normalizePhone, normalizeName, dedupeGuests, normalizeKoreanMobile } from '../utils/guestUtils'
 import { DEFAULT_TIMELINE_EVENTS } from '../utils/performanceEvents'
+import { DEFAULT_VENUE_NAME, DEFAULT_VENUE_ADDRESS } from '../utils/venueDefaults'
+import { getBookingDocId, type BookingSource } from '../utils/bookingTime'
+import { buildBookingSubmittedPayload, trackBookingSubmitted } from '../analytics/bookingAnalytics'
 import * as XLSX from 'xlsx'
 
 export interface Guest {
@@ -24,6 +27,7 @@ export interface Guest {
   ticketReceivedAt?: number // 티켓 수령 시간 (timestamp)
   isDeleted?: boolean // 삭제 여부 (취소선 표시용)
   deletedAt?: number // 삭제 시간 (timestamp)
+  bookedAt?: number // 예매 등록 시각 (timestamp)
   [key: string]: any
 }
 
@@ -155,7 +159,17 @@ interface DataContextType {
   eventsEnabled: boolean
   eventsFeatures: EventsFeatureSettings
   uploadGuests: (guests: Guest[]) => Promise<void>
-  addWalkInGuest: (name: string, phone: string, isWalkIn?: boolean, email?: string) => Promise<{ success: boolean; message?: string }>
+  addWalkInGuest: (
+    name: string,
+    phone: string,
+    isWalkIn?: boolean,
+    email?: string,
+    options?: {
+      source?: BookingSource
+      bookedAt?: number
+      skipAnalytics?: boolean
+    }
+  ) => Promise<{ success: boolean; message?: string }>
   toggleGuestPayment: (index: number) => Promise<void>
   toggleGuestTicketReceived: (index: number) => Promise<void>
   setPerformanceData: (data: PerformanceData) => void
@@ -580,8 +594,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
               ticket: {
                 eventName: '2025 멜로딕 단독 공연',
                 date: '2025년 12월 27일 (토)',
-                venue: '얼라이브 홀',
-                venueAddress: '서울특별시 마포구 독막로7길 20 지하',
+                venue: DEFAULT_VENUE_NAME,
+                venueAddress: DEFAULT_VENUE_ADDRESS,
                 seat: '자유석',
               },
               setlist: [],
@@ -1059,7 +1073,17 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
-  const addWalkInGuest = async (name: string, phone: string, isWalkIn: boolean = true, email?: string): Promise<{ success: boolean; message?: string }> => {
+  const addWalkInGuest = async (
+    name: string,
+    phone: string,
+    isWalkIn: boolean = true,
+    email?: string,
+    options?: {
+      source?: BookingSource
+      bookedAt?: number
+      skipAnalytics?: boolean
+    }
+  ): Promise<{ success: boolean; message?: string }> => {
     // 예매 등록은 초기화 직후에도 허용 (saveGuestsAllCoalesced에서 _cleared: null로 마커 해제)
     
     // 이름과 전화번호 정규화 (통일된 함수 사용)
@@ -1135,14 +1159,15 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         ...existingGuest,
         isDeleted: false,
         deletedAt: undefined,
-        // 새로 입력된 정보로 업데이트
         name: normalizedName,
         phone: normalizedPhone,
-        isWalkIn: isWalkIn
+        isWalkIn: isWalkIn,
+        bookedAt: existingGuest.bookedAt ?? options?.bookedAt ?? Date.now(),
       }
     }
 
     // 새로운 게스트 추가 (사전 예매 또는 현장 예매)
+    const bookedAt = options?.bookedAt ?? Date.now()
     const newGuest: Guest = {
       name: normalizedName,
       phone: normalizedPhone,
@@ -1150,7 +1175,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       checkedIn: false,
       isWalkIn: isWalkIn,
       paymentConfirmed: false, // 예매 신청 시 입금 확인은 대기중
-      paymentConfirmedAt: undefined // 입금 확인 시간은 관리자가 확인할 때 설정
+      paymentConfirmedAt: undefined, // 입금 확인 시간은 관리자가 확인할 때 설정
+      bookedAt,
     }
 
     // ✅ Firestore에서 최신 게스트 리스트 가져오기 (엑셀 업로드 게스트 포함)
@@ -1191,18 +1217,17 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       if (existingGuest && existingGuest.isDeleted === true) {
         guestMap.set(normalizedPhone, {
           ...existingGuest,
-          // 정규화된 값으로 저장 (일관성 유지)
           phone: normalizedPhone,
           name: normalizedName,
           isDeleted: false,
           deletedAt: undefined,
-          isWalkIn: isWalkIn
+          isWalkIn: isWalkIn,
+          bookedAt: existingGuest.bookedAt ?? bookedAt,
         })
       } else {
         // 새로운 게스트 추가
         guestMap.set(normalizedPhone, {
           ...newGuest,
-          // 정규화된 값으로 저장 (일관성 유지)
           phone: normalizedPhone,
           name: normalizedName
         })
@@ -1234,6 +1259,43 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         totalCount: updatedGuests.length,
         updatedAt: Date.now()
       })
+
+      const savedGuest = guestMap.get(normalizedPhone)
+      const finalBookedAt = savedGuest?.bookedAt ?? bookedAt
+      const bookingSource: BookingSource =
+        options?.source ?? (isWalkIn ? 'onsite' : 'web_login')
+      const performanceDate = performanceData?.ticket?.date ?? null
+
+      try {
+        const bookingRef = doc(db, 'bookings', getBookingDocId(normalizedPhone))
+        await setDoc(
+          bookingRef,
+          {
+            name: normalizedName,
+            phone: normalizedPhone,
+            email: email || '',
+            isWalkIn,
+            bookedAt: finalBookedAt,
+            createdAt: Timestamp.fromMillis(finalBookedAt),
+            updatedAt: Timestamp.now(),
+            source: bookingSource,
+          },
+          { merge: true }
+        )
+      } catch {
+        // bookings 동기화 실패는 예매 등록을 막지 않음
+      }
+
+      if (!options?.skipAnalytics) {
+        trackBookingSubmitted(
+          buildBookingSubmittedPayload(
+            bookingSource,
+            isWalkIn,
+            finalBookedAt,
+            performanceDate
+          )
+        )
+      }
 
       return { success: true, message: isWalkIn ? '현장 예매 등록이 완료되었습니다.' : '예매 등록이 완료되었습니다.' }
     } catch (error) {

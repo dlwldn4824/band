@@ -12,7 +12,6 @@ import {
   serverTimestamp
 } from 'firebase/firestore'
 import { db } from '../config/firebase'
-import demoImage from '../assets/배경/데모 이미지.png'
 import vocalIcon from '../assets/배경/마이크.png'
 import guitarIcon from '../assets/배경/기타.png'
 import bassIcon from '../assets/배경/베이스.png'
@@ -20,25 +19,7 @@ import keyboardIcon from '../assets/배경/키보드.png'
 import drumIcon from '../assets/배경/드럼.png'
 import './Performances.css'
 import { getPerformanceSections } from '../utils/performanceEvents'
-
-// ===== 곡 소개 이미지 =====
-import img1 from '../assets/렉사X멜로딕 곡소개/1.행운을빌어요.jpeg'
-import img2 from '../assets/렉사X멜로딕 곡소개/2.0+0.jpg'
-import img3 from '../assets/렉사X멜로딕 곡소개/3.talk.jpeg'
-import img4 from '../assets/렉사X멜로딕 곡소개/4.good bye bye.jpeg'
-import img5 from '../assets/렉사X멜로딕 곡소개/5.Pretender.png'
-import img6 from '../assets/렉사X멜로딕 곡소개/6.항해.jpg'
-import img7 from '../assets/렉사X멜로딕 곡소개/7.어지러워.png'
-import img8 from '../assets/렉사X멜로딕 곡소개/8.강가에서.png'
-import img9 from '../assets/렉사X멜로딕 곡소개/9.축배.png'
-import img10 from '../assets/렉사X멜로딕 곡소개/10.ㅈㅣㅂ.jpg'
-import img11 from '../assets/렉사X멜로딕 곡소개/11.눈.jpg'
-import img12 from '../assets/렉사X멜로딕 곡소개/12.사랑의 미학.jpg'
-import img13 from '../assets/렉사X멜로딕 곡소개/13.Ling Ling.jpg'
-import img14 from '../assets/렉사X멜로딕 곡소개/14.Letter.jpg'
-import img15 from '../assets/렉사X멜로딕 곡소개/15.찬란.jpg'
-import img16 from '../assets/렉사X멜로딕 곡소개/16.Antifreeze.jpg'
-import img17 from '../assets/렉사X멜로딕 곡소개/17.연합곡.png'
+import { trackEvent, getDaysSinceSetlistUpload } from '../analytics'
 
 interface SongComment {
   id: string
@@ -81,6 +62,18 @@ const Performances = () => {
       setSelectedPart(1)
     }
   }, [performanceSections.length, selectedPart])
+
+  useEffect(() => {
+    const section = performanceSections[selectedPart - 1]
+    void trackEvent('performances_viewed', {
+      selected_part: String(selectedPart),
+      section_title: section?.title,
+      days_since_setlist_upload: getDaysSinceSetlistUpload(),
+    })
+    if (!performanceData?.setlist?.length) {
+      void trackEvent('performances_empty_state_viewed', {})
+    }
+  }, [])
 
   // 선택된 곡의 응원 메시지 가져오기
   useEffect(() => {
@@ -163,6 +156,10 @@ const Performances = () => {
       console.log('[Performances] 사용자 정보:', { name: user.name, nickname: user.nickname, phone: user.phone })
       
       const docRef = await addDoc(collection(db, 'songComments'), commentData)
+      void trackEvent('song_comment_posted', {
+        song_name: selectedSong.songName,
+        message_length: commentInput.trim().length,
+      })
       
       console.log('[Performances] 응원 메시지 추가 성공, 문서 ID:', docRef.id)
       setCommentInput('')
@@ -232,89 +229,6 @@ const Performances = () => {
       }
     }
   }, [selectedSong])
-
-  // 이미지 매핑 (import된 이미지 사용)
-  const imageMap: { [key:string]:string } = {
-    '행운을빌어요': img1,
-    '행운을 빌어요': img1,
-    
-    '0+0': img2,
-
-    'talk': img3,
-    'Talk': img3,
-
-    'good bye bye': img4,
-    'Good Bye Bye': img4,
-    '굿바이바이': img4,
-    '굿바이 바이': img4,
-
-    'Pretender': img5,
-    'pretender': img5,
-
-    '항해': img6,
-
-    '어지러워': img7,
-
-    '강가에서': img8,
-
-    '축배': img9,
-
-    'ㅈㅣㅂ': img10,
-
-    '눈': img11,
-
-    '사랑의 미학': img12,
-    '사랑의미학': img12,
-    
-
-    'Ling Ling': img13,
-    'ling ling': img13,
-
-    'Letter': img14,
-    'letter': img14,
-    
-
-    '찬란': img15,
-
-    'Antifreeze': img16,
-    'antifreeze': img16,
-    
-    '???': img17,
-    '연합 곡': img17,
-  }
-
-  // 곡 이름에 맞는 이미지 반환 (import 기반)
-  const getSongImage = (songName: string): string | undefined => {
-    if (!songName) return undefined
-
-    // 1) 먼저 원본 곡 이름으로 정확 매칭 (특수문자 포함)
-    if (imageMap[songName]) {
-      return imageMap[songName]
-    }
-
-    const normalize = (str: string) =>
-      str.replace(/\s+/g, '').replace(/[^\w가-힣]/g, '').toLowerCase()
-
-    const normalizedSongName = normalize(songName)
-
-    // 2) 정규화된 곡 이름으로 정확 매칭
-    for (const [key, path] of Object.entries(imageMap)) {
-      const nk = normalize(key)
-      if (nk && nk === normalizedSongName) {
-        return path
-      }
-    }
-
-    // 3) 정확 매칭이 안 되면 부분 매칭 (빈 문자열 제외)
-    for (const [key, path] of Object.entries(imageMap)) {
-      const nk = normalize(key)
-      if (nk && normalizedSongName && (normalizedSongName.includes(nk) || nk.includes(normalizedSongName))) {
-        return path
-      }
-    }
-
-    return undefined
-  }
 
   const getSessionInfo = (item: SetlistItem) => {
     const sessions: { [key: string]: string[] } = {
@@ -440,6 +354,11 @@ const Performances = () => {
                         onClick={() => {
                           setSelectedSong(item)
                           setSelectedSongIndex(globalIndex)
+                          void trackEvent('song_detail_opened', {
+                            song_name: item.songName,
+                            part: item.part,
+                            song_index: globalIndex,
+                          })
                         }}
                       >
                         <div className="song-item-content">
@@ -473,19 +392,17 @@ const Performances = () => {
                 ×
               </button>
 
-              {/* 이미지 배너 */}
-              <div className="song-image-container">
-                <img
-                  src={getSongImage(selectedSong.songName) || selectedSong.image || demoImage}
-                  alt={`${selectedSong.songName} 이미지`}
-                  className="song-image"
-                  loading="lazy"
-                  decoding="async"
-                  onError={(e) => {
-                    e.currentTarget.src = demoImage
-                  }}
-                />
-              </div>
+              {selectedSong.image?.trim() && (
+                <div className="song-image-container">
+                  <img
+                    src={selectedSong.image.trim()}
+                    alt={`${selectedSong.songName} 이미지`}
+                    className="song-image"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </div>
+              )}
 
               {/* 곡 정보 및 세션 정보, 응원하기 스크롤 영역 */}
               <div className="song-detail-scrollable">

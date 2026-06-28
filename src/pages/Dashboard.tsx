@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useData } from '../contexts/DataContext'
@@ -12,6 +12,7 @@ import { db } from '../config/firebase'
 import posterImage from '../assets/배경/연합공연_최종포스터.jpeg'
 import Login from './Login'
 import './Dashboard.css'
+import { trackEvent, useBannerImpression } from '../analytics'
 
 const Dashboard = () => {
   // ✅ 모든 Hook은 최상단에서 조건 없이 호출
@@ -32,6 +33,26 @@ const Dashboard = () => {
   const [sortBy, setSortBy] = useState<'name' | null>(null)
   const location = useLocation()
   const navigate = useNavigate()
+  const drinkBannerRef = useRef<HTMLDivElement>(null)
+  const paymentBannerTrackedRef = useRef(false)
+  useBannerImpression(drinkBannerRef, 'drink_promo', 'dashboard', !!(user && eventsFeatures.drinkPurchase))
+
+  useEffect(() => {
+    if (!user || isAdmin || paymentBannerTrackedRef.current) return
+    const guestInfo = guests.find((g) => {
+      const guestPhone = String(g.phone || g['전화번호'] || g.Phone || '').replace(/[-\s()]/g, '')
+      const userPhone = String(user.phone || '').replace(/[-\s()]/g, '')
+      return guestPhone === userPhone && guestPhone !== ''
+    })
+    const isPaymentConfirmed = guestInfo?.paymentConfirmed === true || user.paymentConfirmed === true
+    if (!isPaymentConfirmed && bookingInfo?.accountNumber) {
+      paymentBannerTrackedRef.current = true
+      void trackEvent('banner_impression', {
+        banner_id: 'payment_pending',
+        placement: 'dashboard',
+      })
+    }
+  }, [user, isAdmin, guests, bookingInfo?.accountNumber])
   
   // localStorage에서 user를 확인하여 로그인 상태 체크 (상태 업데이트 지연 대응)
   const savedUser = localStorage.getItem('user')
@@ -47,6 +68,15 @@ const Dashboard = () => {
   const hasUser = user !== null || (parsedUser !== null && parsedUser.name && parsedUser.phone)
   
   // ✅ 모든 Hook은 조건부 return 전에 호출 (Hook 순서 보장)
+
+  useEffect(() => {
+    if (!hasUser && isLoading) return
+    void trackEvent('dashboard_viewed', {
+      has_nickname: !!user?.nickname,
+      payment_status: user?.paymentConfirmed === true,
+      ticket_received: user?.checkedIn === true,
+    })
+  }, [])
   
   // 로그인 후 개인 링크 경로 확인
   useEffect(() => {
@@ -200,6 +230,7 @@ const Dashboard = () => {
               {/* 주류 홍보 문구 */}
               {eventsFeatures.drinkPurchase && (
               <div 
+                ref={drinkBannerRef}
                 style={{
                   padding: '1rem',
                   background: 'linear-gradient(135deg, #FF4C4C 0%, #E63E3E 100%)',
@@ -210,7 +241,15 @@ const Dashboard = () => {
                   boxShadow: '0 4px 12px rgba(255, 76, 76, 0.3)',
                   width: '100%'
                 }}
-                onClick={() => navigate('/events', { state: { openDrinkModal: true } })}
+                onClick={() => {
+                  void trackEvent('cta_clicked', {
+                    cta_name: 'drink_banner',
+                    source_page: '/dashboard',
+                    banner_id: 'drink_promo',
+                    placement: 'dashboard',
+                  })
+                  navigate('/events', { state: { openDrinkModal: true } })
+                }}
                 onMouseOver={(e) => {
                   e.currentTarget.style.transform = 'translateY(-2px)'
                   e.currentTarget.style.boxShadow = '0 6px 16px rgba(255, 76, 76, 0.4)'

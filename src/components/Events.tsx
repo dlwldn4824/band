@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom'
+import { trackEvent } from '../analytics'
 import './Events.css'
 import clockIcon from '../assets/배경/시계이미지.png'
 
@@ -21,11 +22,20 @@ const Events = ({ events }: EventsProps) => {
   const handleEventClick = (index: number) => {
     if (index === 0) return
 
+    const event = events[index]
+    void trackEvent('timeline_event_clicked', {
+      event_index: index,
+      event_title: event?.title || '',
+      target_part: String(index),
+    })
+    void trackEvent('cta_clicked', { cta_name: 'timeline_footer', source_page: location.pathname })
+
     const path = isAdminPage ? '/admin/performances' : '/performances'
     navigate(path, { state: { part: index } })
   }
 
   const handleSetlistClick = () => {
+    void trackEvent('cta_clicked', { cta_name: 'setlist_link', source_page: location.pathname })
     const path = isAdminPage ? '/admin/performances' : '/performances'
     navigate(path)
   }

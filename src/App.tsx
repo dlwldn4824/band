@@ -2,6 +2,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
 import { AuthProvider } from './contexts/AuthContext'
 import { DataProvider } from './contexts/DataContext'
+import { AnalyticsProvider } from './analytics'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminProtectedRoute from './components/AdminProtectedRoute'
@@ -217,7 +218,9 @@ function App() {
     <ErrorBoundary>
       <AuthProvider>
         <DataProvider>
-          <AppRoutes />
+          <AnalyticsProvider>
+            <AppRoutes />
+          </AnalyticsProvider>
         </DataProvider>
       </AuthProvider>
     </ErrorBoundary>

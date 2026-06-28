@@ -18,6 +18,7 @@ import {
   deleteDoc
 } from 'firebase/firestore'
 import { db } from '../config/firebase'
+import { trackEvent, trackFeatureDenied, setSessionLastFeature } from '../analytics'
 import './Chat.css'
 
 // Google Drive 공유 폴더 링크 (환경변수 또는 설정에서 관리)
@@ -78,6 +79,18 @@ const Chat = () => {
   useEffect(() => {
     // location이 변경되면 컴포넌트가 리렌더링됨
   }, [location.pathname, (location.state as any)])
+
+  useEffect(() => {
+    const chatEnabled = isAdmin || user?.paymentConfirmed === true
+    void trackEvent('chat_page_viewed', { chat_enabled: !!chatEnabled })
+  }, [])
+
+  useEffect(() => {
+    if (user && !isAdmin && user.paymentConfirmed !== true) {
+      void trackEvent('chat_blocked_viewed', {})
+      trackFeatureDenied('chat_blocked')
+    }
+  }, [user, isAdmin])
 
   // 개발 모드에서 100명 시뮬레이션 테스트
   const isTestMode = import.meta.env.DEV && sessionStorage.getItem('chat-test-100-users') === 'true'
@@ -358,6 +371,8 @@ const Chat = () => {
         message: inputMessage.trim(),
         timestamp: serverTimestamp()
     })
+    void trackEvent('chat_message_sent', { message_length: inputMessage.trim().length })
+    setSessionLastFeature('chat')
     setInputMessage('')
     } catch (error) {
       console.error('메시지 전송 오류:', error)

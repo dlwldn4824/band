@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useData, GuestbookMessage } from '../contexts/DataContext'
+import { trackEvent } from '../analytics'
 import './Guestbook.css'
 
 // 메모지 디자인 타입
@@ -345,6 +346,8 @@ const Guestbook = () => {
       rotation,
       position,
     } as any)
+
+    void trackEvent('guestbook_message_posted', { ornament_type: selectedDesign })
 
     // 페이지가 가득 찼으면 다음 페이지로 이동
     if (targetPage > currentPage) {

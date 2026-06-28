@@ -8,8 +8,19 @@ import { normalizePhone } from '../utils/guestUtils'
 import RouletteMirror from '../components/games/RouletteMirror'
 import EntryNumberDrawMirror from '../components/games/EntryNumberDrawMirror'
 import LEDBoard from '../components/games/LEDBoard'
-import directionsImage from '../assets/배경/얼라이브홀_지도.png'
+import directionsImage from '../assets/배경/몽향_지도.png'
 import './Events.css'
+import { DEFAULT_VENUE_NAME, DEFAULT_VENUE_ADDRESS } from '../utils/venueDefaults'
+import {
+  trackEvent,
+  trackModal,
+  trackFunnelAbandon,
+  markFunnelComplete,
+  trackFeatureDenied,
+  setSessionLastFeature,
+} from '../analytics'
+import { isEventDay } from '../analytics/device'
+import { getDaysBeforePerformance } from '../utils/bookingTime'
 
 import shopIcon from '../assets/icons/shop.png'
 import mapIcon from '../assets/icons/map.png'
@@ -94,17 +105,30 @@ const Events = () => {
     console.log('[Events] 접근 권한 체크:', { isAdmin, eventsEnabled, isLoading })
     if (!eventsEnabled) {
       console.log('[Events] 접근 차단 → dashboard로 리다이렉트')
+      void trackEvent('events_redirected', { enabled: false })
+      trackFeatureDenied('events_disabled')
       navigate(isAdmin ? '/admin/dashboard' : '/dashboard')
     } else {
       console.log('[Events] 접근 허용')
     }
   }, [isAdmin, eventsEnabled, isLoading, navigate])
 
+  useEffect(() => {
+    if (isLoading || !eventsEnabled) return
+    const enabledFeatures = Object.entries(eventsFeatures)
+      .filter(([, enabled]) => enabled)
+      .map(([key]) => key)
+    void trackEvent('events_page_viewed', { enabled_features: enabledFeatures })
+    setSessionLastFeature('events')
+  }, [isLoading, eventsEnabled])
+
   // Dashboard에서 주류 구매 모달을 열도록 요청한 경우
   useEffect(() => {
     const state = location.state as { openDrinkModal?: boolean } | null
     if (state?.openDrinkModal && eventsFeatures.drinkPurchase) {
       setShowDrinkModal(true)
+      void trackEvent('drink_modal_opened', { source: 'dashboard_banner' })
+      trackModal('drink', 'opened', { source: 'dashboard_banner' })
       window.history.replaceState({}, document.title)
     }
   }, [location.state, eventsFeatures.drinkPurchase])
@@ -252,12 +276,15 @@ const Events = () => {
   const handleGameStart = (gameId: GameType) => {
     if (gameId === 'draw' && !eventsFeatures.entryDraw) return
     if (gameId === 'ledboard' && !eventsFeatures.ledBoard) return
+    void trackEvent('feature_card_clicked', { feature_name: gameId })
+    void trackEvent('game_started', { game_type: gameId })
     setCurrentGame(gameId)
     setSearchParams({ game: gameId })
   }
   
   // 게임 종료 시 URL에서 게임 파라미터 제거
   const handleGameBack = () => {
+    void trackEvent('game_finished', { game_type: currentGame })
     setCurrentGame('menu')
     setSearchParams({})
   }
@@ -316,15 +343,26 @@ const Events = () => {
 
   const handleDirections = () => {
     setShowDirectionsModal(true)
+    void trackEvent('directions_modal_opened', {})
+    void trackEvent('feature_card_clicked', { feature_name: 'directions' })
+    trackModal('directions', 'opened', { source: 'events_card' })
   }
 
-  const venueName = performanceData?.ticket?.venue || '얼라이브 홀'
-  const venueAddress = performanceData?.ticket?.venueAddress || '서울특별시 마포구 독막로7길 20 지하'
+  const venueName = performanceData?.ticket?.venue || DEFAULT_VENUE_NAME
+  const venueAddress = performanceData?.ticket?.venueAddress || DEFAULT_VENUE_ADDRESS
 
   const handleKakaoMap = () => {
     const address = encodeURIComponent(venueAddress)
     const kakaoMapUrl = `https://map.kakao.com/link/search/${address}`
+    void trackEvent('kakao_map_opened', {})
     window.open(kakaoMapUrl, '_blank')
+  }
+
+  const openDrinkModal = (source: 'dashboard_banner' | 'events_card') => {
+    setShowDrinkModal(true)
+    void trackEvent('drink_modal_opened', { source })
+    trackModal('drink', 'opened', { source })
+    trackFunnelAbandon('drink_order', 'drink_modal_opened')
   }
 
   return (
@@ -427,7 +465,7 @@ const Events = () => {
         {eventsFeatures.drinkPurchase && (
         <div
           className="game-card"
-          onClick={() => setShowDrinkModal(true)}
+          onClick={() => openDrinkModal('events_card')}
         >
           <div className="game-icon">
             <img src={shopIcon} alt="주류 구매" />
@@ -807,6 +845,22 @@ const Events = () => {
                       orderHistory: updatedHistory
                     }, { merge: true })
 
+                    markFunnelComplete('drink_order', 'drink_modal_opened')
+                    const performanceDate = performanceData?.ticket?.date ?? null
+                    const now = Date.now()
+                    void trackEvent('drink_order_submitted', {
+                      beer_qty: beerQuantity,
+                      mojito_qty: mojitoQuantity,
+                      total_amount: totalAmount,
+                      is_admin_price: user.phone === 'admin',
+                      source: (location.state as { openDrinkModal?: boolean } | null)?.openDrinkModal
+                        ? 'dashboard_banner'
+                        : 'events_card',
+                      order_id: userId,
+                      is_event_day: isEventDay(performanceDate),
+                      days_before_performance: getDaysBeforePerformance(performanceDate, now) ?? undefined,
+                    })
+
                     // 구매 정보 업데이트
                     setPurchasedBeerQuantity(totalBeerQuantity)
                     setPurchasedMojitoQuantity(totalMojitoQuantity)
@@ -853,7 +907,7 @@ const Events = () => {
               <div className="directions-image-container">
                 <img 
                   src={directionsImage} 
-                  alt="길 안내" 
+                  alt="복합문화공간 몽향 위치" 
                   className="directions-image"
                   loading="lazy"
                   decoding="async"

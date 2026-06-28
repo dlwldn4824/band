@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import * as XLSX from 'xlsx'
-import { useData, SetlistItem, PerformanceData, BookingInfo } from '../contexts/DataContext'
+import { useData, PerformanceData, BookingInfo } from '../contexts/DataContext'
 import { formatPhoneDisplay } from '../utils/phoneFormat'
 import { collection, getDocs, deleteDoc, doc, query, orderBy, getDoc, updateDoc, setDoc, Timestamp } from 'firebase/firestore'
 import { db, storage } from '../config/firebase'
@@ -13,6 +13,21 @@ import DrinkOrdersSection from '../components/admin/DrinkOrdersSection'
 import { generatePersonalLoginLink, makeGuestKey } from '../utils/adminUtils'
 import { normalizePhone, normalizeName, normalizeKoreanMobile } from '../utils/guestUtils'
 import { DEFAULT_TIMELINE_EVENTS, createDefaultPerformanceSection, getPerformanceSections } from '../utils/performanceEvents'
+import { DEFAULT_VENUE_NAME, DEFAULT_VENUE_ADDRESS } from '../utils/venueDefaults'
+import {
+  parseBookedAtFromRow,
+  parseBookedAt,
+  getBookingDocId,
+  getBookingLeadTimeMetrics,
+} from '../utils/bookingTime'
+import { formatBookedAtDisplay } from '../utils/formatBookedAt'
+import {
+  readSetlistGrid,
+  parseSetlistFromGrid,
+  collectPerformersFromSetlist,
+} from '../utils/setlistExcel'
+import { trackEvent, recordSetlistUploadAt } from '../analytics'
+import { hashGuestId } from '../analytics/hashUserId'
 import './Admin.css'
 
 const Admin = () => {
@@ -32,6 +47,11 @@ const Admin = () => {
       document.documentElement.style.overflow = originalHtmlOverflow
     }
   }, [])
+
+  useEffect(() => {
+    void trackEvent('manage_page_viewed', {})
+  }, [])
+
   const [file, setFile] = useState<File | null>(null)
   const [setlistFile, setSetlistFile] = useState<File | null>(null)
   const [uploadStatus, setUploadStatus] = useState('')
@@ -156,36 +176,53 @@ const Admin = () => {
     loadDrinkOrders()
   }, [])
 
-  // 예매 일시 불러오기 (bookings 컬렉션에서)
+  // 예매 일시 불러오기 (bookings 컬렉션 + guests.bookedAt 병합)
   useEffect(() => {
     const loadBookingDates = async () => {
       try {
         const bookingsRef = collection(db, 'bookings')
         const snapshot = await getDocs(bookingsRef)
-        
-        const bookingDatesMap: Record<string, any> = {}
-        
-        snapshot.forEach((doc) => {
-          const data = doc.data()
+
+        const bookingDatesMap: Record<string, unknown> = {}
+
+        snapshot.forEach((bookingDoc) => {
+          const data = bookingDoc.data()
           const bookingName = data.name || ''
           const bookingPhone = String(data.phone || '')
-          
-          if (bookingName && bookingPhone) {
-            const guestId = makeGuestKey(bookingName, bookingPhone)
-            // 가장 최근 예매 일시만 저장 (여러 개가 있으면 나중 것)
-            if (data.createdAt) {
-              bookingDatesMap[guestId] = data.createdAt
+          const timestamp = data.bookedAt ?? data.createdAt
+          const parsed = parseBookedAt(timestamp)
+
+          if (parsed) {
+            const phoneKey = getBookingDocId(bookingPhone || bookingDoc.id)
+            if (phoneKey) {
+              bookingDatesMap[phoneKey] = parsed
+            }
+            if (bookingName && bookingPhone) {
+              bookingDatesMap[makeGuestKey(bookingName, bookingPhone)] = parsed
             }
           }
         })
-        
+
+        guests.forEach((guest) => {
+          if (!guest.bookedAt) return
+          const guestPhone = normalizePhone(String(guest.phone || guest['전화번호'] || guest.Phone || ''))
+          if (guestPhone) {
+            bookingDatesMap[guestPhone] = guest.bookedAt
+          }
+          const guestName = String(guest.name || guest['이름'] || guest.Name || '')
+          if (guestName && guestPhone) {
+            bookingDatesMap[makeGuestKey(guestName, guestPhone)] = guest.bookedAt
+          }
+        })
+
         setGuestBookingDates(bookingDatesMap)
       } catch (error) {
+        // ignore
       }
     }
 
     loadBookingDates()
-  }, [guests]) // guests가 변경될 때마다 다시 로드
+  }, [guests])
 
   // 공연 정보 기본값 설정 (events가 비어 있을 때만)
   const hasInitializedEvents = useRef(false)
@@ -196,8 +233,8 @@ const Admin = () => {
       const defaultTicket = {
         eventName: '2025 멜로딕 단독 공연',
         date: '2025년 12월 27일 (토)',
-        venue: '얼라이브 홀',
-        venueAddress: '서울특별시 마포구 독막로7길 20 지하',
+        venue: DEFAULT_VENUE_NAME,
+        venueAddress: DEFAULT_VENUE_ADDRESS,
         seat: '자유석',
       }
 
@@ -266,12 +303,15 @@ const Admin = () => {
         const normalizedName = normalizeName(rawName)
         // ✅ 한국 휴대폰 번호 보정 (앞 0이 날아가는 문제 해결)
         const normalizedPhone = normalizeKoreanMobile(rawPhone)
+        const parsedBookedAt = parseBookedAtFromRow(row as Record<string, unknown>)
         
         return {
           name: normalizedName,
           phone: normalizedPhone, // ✅ 문자열로 저장 (앞 0 보존)
           paymentConfirmed: paymentConfirmed,
           paymentConfirmedAt: paymentConfirmed ? Date.now() : undefined,
+          bookedAt: parsedBookedAt ?? undefined,
+          isWalkIn: false,
           ...row
         }
       })
@@ -435,23 +475,34 @@ const Admin = () => {
               updatedGuest.paymentConfirmedAt = undefined
             }
           }
+          if (!updatedGuest.bookedAt && guest.bookedAt) {
+            updatedGuest.bookedAt = guest.bookedAt
+          }
           updatedGuestsMap.set(key, updatedGuest)
         }
       })
       
       // 새 게스트 추가 (이미 정규화된 값 사용)
+      let withExcelDateCount = 0
+      let defaultedToNowCount = 0
       guestsToAdd.forEach(guest => {
         const guestName = guest.name || ''
         const guestPhone = guest.phone || ''
-        // ✅ 전화번호만 키로 사용 (이름은 무시)
         const key = guestPhone
         if (key) {
+          const bookedAt = guest.bookedAt ?? Date.now()
+          if (guest.bookedAt) {
+            withExcelDateCount += 1
+          } else {
+            defaultedToNowCount += 1
+          }
           updatedGuestsMap.set(key, {
             ...guest,
             name: guestName,
             phone: guestPhone,
             isWalkIn: guest.isWalkIn !== undefined ? guest.isWalkIn : false,
             paymentConfirmed: guest.paymentConfirmed !== undefined ? guest.paymentConfirmed : false,
+            bookedAt,
             isDeleted: false,
             deletedAt: undefined
           })
@@ -495,6 +546,15 @@ const Admin = () => {
         } else {
           setUploadStatus(`✅ ${guestsToAdd.length}명의 게스트가 추가되었습니다. (기존 로그인 정보 삭제됨)`)
         }
+        void trackEvent('guests_upload_completed', {
+          guest_count: guestsToAdd.length,
+          duplicate_removed_count: duplicateCount > 0 ? duplicateCount : 0,
+        })
+        void trackEvent('bookings_import_backfilled', {
+          import_count: guestsToAdd.length + guestsToUpdate.length,
+          with_excel_date_count: withExcelDateCount,
+          defaulted_to_now_count: defaultedToNowCount,
+        })
         setFile(null)
       } catch (uploadError: any) {
         const errorMessage = uploadError?.message || '알 수 없는 오류'
@@ -540,199 +600,23 @@ const Admin = () => {
 
     try {
       const data = await setlistFile.arrayBuffer()
-      const workbook = XLSX.read(data)
-      const sheetName = workbook.SheetNames[0]
-      const worksheet = workbook.Sheets[sheetName]
-      const jsonData = XLSX.utils.sheet_to_json(worksheet)
+      const grid = await readSetlistGrid(data)
 
-      if (jsonData.length === 0) {
-        setUploadStatus('엑셀 파일에 데이터가 없습니다.')
+      if (!grid.some((row) => row.some((cell) => String(cell).trim()))) {
+        setUploadStatus(
+          '엑셀 파일을 읽을 수 없습니다. 파일을 다시 저장한 뒤 업로드하거나, 곡/곡명 열이 있는지 확인해주세요.'
+        )
         return
       }
 
-      // 엑셀 데이터에서 곡명, 아티스트명, 공연진 정보, 이미지 추출
-      // 새로운 컬럼 구조: 구분, 팀명, 곡명, 아티스트, 보컬, 기타, 베이스, 키보드, 드럼
-      let currentPart: number | null = null
-      let currentTeam: string | null = null
-      const setlist: SetlistItem[] = []
-      
-      // 첫 번째 행의 키를 확인하여 실제 컬럼명 파악
-      if (jsonData.length > 0 && jsonData[0] && typeof jsonData[0] === 'object') {
-      }
-      
-      for (let index = 0; index < jsonData.length; index++) {
-        const row: any = jsonData[index]
-        
-        // 구분 컬럼에서 1부/2부/연합곡 인식 (다양한 가능한 컬럼명 체크)
-        const gubun = (
-          row['구분'] || 
-          row['Gubun'] || 
-          row['구분 '] || 
-          row['구분\n'] ||
-          row['구분\r'] ||
-          row['구분\r\n'] ||
-          String(row['구분'] || '').trim()
-        ).trim()
-        
-        // 구분 컬럼 값이 있으면 무조건 업데이트 (각 행마다 확인)
-        if (gubun) {
-          const performanceSections = getPerformanceSections(performanceData?.events)
-          let matchedCustomSection = false
-
-          performanceSections.forEach((section, idx) => {
-            if (gubun === section.title || gubun.includes(section.title)) {
-              currentPart = idx + 1
-              currentTeam = null
-              matchedCustomSection = true
-            }
-          })
-
-          if (!matchedCustomSection) {
-            const partMatch = gubun.match(/(\d+)\s*부/)
-            if (partMatch) {
-              currentPart = parseInt(partMatch[1], 10)
-              currentTeam = null
-            } else if (gubun.includes('연합곡')) {
-              currentPart = performanceSections.length > 0 ? performanceSections.length : 2
-              currentTeam = null
-            }
-          }
-        }
-        
-        // 팀명 컬럼에서 팀명 읽기 (다양한 가능한 컬럼명 체크)
-        const teamName = (
-          row['팀명'] || 
-          row['Tim Myeong'] || 
-          row['팀명 '] || 
-          row['팀명\n'] ||
-          row['팀명\r'] ||
-          row['팀명\r\n'] ||
-          String(row['팀명'] || '').trim()
-        ).trim()
-        
-        // 팀명이 있으면 업데이트, 없으면 이전 팀명 유지
-        if (teamName) {
-          currentTeam = teamName
-        }
-        
-        // 곡명 컬럼에서 곡명 읽기 (다양한 가능한 컬럼명 체크)
-        const songName = (
-          row['곡명'] || 
-          row['Gok Myeong'] || 
-          row['곡명 '] || 
-          row['곡명\n'] ||
-          row['곡명\r'] ||
-          row['곡명\r\n'] ||
-          String(row['곡명'] || '').trim()
-        )
-        const songNameTrimmed = songName.trim()
-        
-        // 곡명이 없으면 스킵 (구분이나 팀명만 있는 행)
-        if (!songNameTrimmed) {
-          continue
-        }
-        
-        // 여러 가능한 헤더명 체크 (아티스트를 우선으로)
-        const artist = 
-          row['아티스트'] || 
-          row['아티스트명'] || 
-          row['Artist'] || 
-          row['artist'] || 
-          row['ARTIST'] ||
-          row['아티스트 '] || // 공백 붙은 경우
-          ''
-        const image = row['이미지'] || row['image'] || row['Image'] || row['이미지URL'] || row['imageUrl'] || row['img'] || ''
-        const vocal = row['보컬'] || ''
-        const guitar = row['기타'] || ''
-        const bass = row['베이스'] || ''
-        const keyboard = row['키보드'] || ''
-        const drum = row['드럼'] || ''
-        
-        
-        const item: SetlistItem = {
-          songName: songNameTrimmed,
-          artist: artist ? artist.trim() : '',
-        }
-        
-        if (image && image.trim()) {
-          item.image = image.trim()
-        }
-        if (vocal && vocal.trim() && vocal.trim() !== '-') {
-          item.vocal = vocal.trim()
-        }
-        if (guitar && guitar.trim() && guitar.trim() !== '-') {
-          item.guitar = guitar.trim()
-        }
-        if (bass && bass.trim() && bass.trim() !== '-') {
-          item.bass = bass.trim()
-        }
-        if (keyboard && keyboard.trim() && keyboard.trim() !== '-') {
-          item.keyboard = keyboard.trim()
-        }
-        if (drum && drum.trim() && drum.trim() !== '-') {
-          item.drum = drum.trim()
-        }
-        
-        // part 정보 추가 (1부 또는 2부) - currentPart가 null이 아니면 항상 할당
-        if (currentPart !== null) {
-          item.part = currentPart
-        } else {
-          // part가 없으면 이전 곡의 part 유지
-          if (setlist.length > 0 && setlist[setlist.length - 1].part) {
-            item.part = setlist[setlist.length - 1].part
-          } else {
-            // 첫 번째 곡이고 part가 없으면 기본값 1부
-            item.part = 1
-          }
-        }
-        
-        // team 정보 추가 (현재 팀명) - currentTeam이 있으면 할당, 없으면 이전 팀명 유지
-        if (currentTeam) {
-          item.team = currentTeam
-        } else {
-          // 팀명이 없으면 이전 곡의 팀명 유지
-          if (setlist.length > 0 && setlist[setlist.length - 1].team) {
-            item.team = setlist[setlist.length - 1].team
-          }
-          // 첫 번째 곡이고 팀명이 없으면 team 속성 없음 (undefined)
-        }
-        
-        setlist.push(item)
-      }
+      const setlist = parseSetlistFromGrid(grid, performanceData?.events)
 
       if (setlist.length === 0) {
-        setUploadStatus('셋리스트 데이터를 찾을 수 없습니다. "곡명" 컬럼을 확인해주세요.')
+        setUploadStatus('셋리스트 데이터를 찾을 수 없습니다. "곡" 또는 "곡명" 컬럼을 확인해주세요.')
         return
       }
 
-      // 셋리스트에서 모든 공연진 정보 수집 (중복 제거)
-      const allPerformers = new Set<string>()
-      
-      setlist.forEach((item) => {
-        // 각 세션의 멤버들을 추출 (쉼표로 구분된 경우 처리)
-        const extractMembers = (members: string | undefined) => {
-          if (!members || !members.trim()) return []
-          return members.split(',').map(m => m.trim()).filter(m => m && m !== '-' && m !== '')
-        }
-        
-        extractMembers(item.vocal).forEach(name => {
-          if (name) allPerformers.add(name)
-        })
-        extractMembers(item.guitar).forEach(name => {
-          if (name) allPerformers.add(name)
-        })
-        extractMembers(item.bass).forEach(name => {
-          if (name) allPerformers.add(name)
-        })
-        extractMembers(item.keyboard).forEach(name => {
-          if (name) allPerformers.add(name)
-        })
-        extractMembers(item.drum).forEach(name => {
-          if (name) allPerformers.add(name)
-        })
-      })
-      
-      const uniquePerformers = Array.from(allPerformers).sort()
+      const uniquePerformers = collectPerformersFromSetlist(setlist).sort()
 
       const defaultEvents = performanceData?.events?.length
         ? performanceData.events
@@ -741,8 +625,8 @@ const Admin = () => {
       const defaultTicket = {
         eventName: '2025 멜로딕 단독 공연',
         date: '2025년 12월 27일 (토)',
-        venue: '얼라이브 홀',
-        venueAddress: '서울특별시 마포구 독막로7길 20 지하',
+        venue: DEFAULT_VENUE_NAME,
+        venueAddress: DEFAULT_VENUE_ADDRESS,
         seat: '자유석',
       }
 
@@ -825,6 +709,13 @@ const Admin = () => {
       } else {
         setUploadStatus(`✅ ${setlist.length}곡의 셋리스트가 업로드되었습니다. (공연진 정보가 없습니다. 엑셀 파일에 보컬, 기타, 베이스, 키보드, 드럼 컬럼을 확인해주세요.)`)
       }
+      const uploadedAt = Date.now()
+      recordSetlistUploadAt(uploadedAt)
+      void trackEvent('setlist_upload_completed', {
+        song_count: setlist.length,
+        performer_count: uniquePerformers.length,
+        uploaded_at: uploadedAt,
+      })
       setSetlistFile(null)
     } catch (error) {
       setUploadStatus('파일 읽기 중 오류가 발생했습니다.')
@@ -885,12 +776,7 @@ const Admin = () => {
       const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '')
       const userId = makeGuestKey(guestName, guestPhone)
       const nickname = userNicknames[userId] || ''
-      const bookingDate = guestBookingDates[userId]
-      const formattedBookingDate = bookingDate 
-        ? (bookingDate.toDate 
-            ? bookingDate.toDate().toLocaleString('ko-KR')
-            : new Date(bookingDate).toLocaleString('ko-KR'))
-        : ''
+      const formattedBookingDate = formatBookedAtDisplay(guest, guestBookingDates)
       
       return {
         ...guest,
@@ -1059,8 +945,24 @@ const Admin = () => {
     }
   }
 
+  // 운영진 userProfile 삭제 (phone === 'admin')
+  const deleteAdminUserProfile = async (performerName: string) => {
+    const userProfilesRef = collection(db, 'userProfiles')
+    const snapshot = await getDocs(userProfilesRef)
+
+    const deletePromises: Promise<void>[] = []
+    snapshot.forEach((docSnapshot) => {
+      const data = docSnapshot.data()
+      if (data.phone === 'admin' && data.name?.trim() === performerName.trim()) {
+        deletePromises.push(deleteDoc(doc(db, 'userProfiles', docSnapshot.id)))
+      }
+    })
+
+    await Promise.all(deletePromises)
+  }
+
   // 공연진 추가 함수
-  const handleAddPerformer = () => {
+  const handleAddPerformer = async () => {
     if (!newPerformerName.trim()) {
       setUploadStatus('공연진 이름을 입력해주세요.')
       return
@@ -1088,37 +990,56 @@ const Admin = () => {
       performers: updatedPerformers
     }
 
-    setPerformanceData(updatedPerformanceData)
-    setNewPerformerName('')
-    setUploadStatus(`✅ "${trimmedName}" 공연진이 추가되었습니다.`)
-  }
-
-  // 공연진 삭제 함수
-  const handleDeletePerformer = (index: number) => {
-    if (!performanceData || !performanceData.performers) {
-      return
-    }
-
-    const performerName = performanceData.performers[index]
-    const currentPerformers = performanceData.performers
-    
-    requirePassword(() => {
-      if (!performanceData || !performanceData.performers) {
+    try {
+      const saved = await setFirestoreData('performanceData' as any, updatedPerformanceData, 'main')
+      if (saved === false) {
+        setUploadStatus('❌ 공연진 추가 저장에 실패했습니다. 다시 시도해주세요.')
         return
-      }
-      
-      if (!window.confirm(`"${performerName}" 공연진을 삭제하시겠습니까?`)) {
-        return
-      }
-
-      const updatedPerformers = currentPerformers.filter((_, i) => i !== index)
-      const updatedPerformanceData: PerformanceData = {
-        ...performanceData,
-        performers: updatedPerformers
       }
 
       setPerformanceData(updatedPerformanceData)
-      setUploadStatus(`✅ "${performerName}" 공연진이 삭제되었습니다.`)
+      setNewPerformerName('')
+      setUploadStatus(`✅ "${trimmedName}" 공연진이 추가되었습니다.`)
+    } catch {
+      setUploadStatus('❌ 공연진 추가 중 오류가 발생했습니다.')
+    }
+  }
+
+  // 공연진 삭제 함수 (Firestore performanceData + 운영진 userProfile)
+  const handleDeletePerformer = (index: number) => {
+    if (!performanceData?.performers?.length) return
+
+    const performerName = performanceData.performers[index]
+
+    requirePassword(() => {
+      void (async () => {
+        if (!performanceData?.performers?.length) return
+
+        if (!window.confirm(`"${performerName}" 공연진을 삭제하시겠습니까?\n\n공연진 목록과 DB에서 제거됩니다.`)) {
+          return
+        }
+
+        const updatedPerformers = performanceData.performers.filter((_, i) => i !== index)
+        const updatedPerformanceData: PerformanceData = {
+          ...performanceData,
+          performers: updatedPerformers,
+        }
+
+        try {
+          const saved = await setFirestoreData('performanceData' as any, updatedPerformanceData, 'main')
+          if (saved === false) {
+            setUploadStatus('❌ 공연진 삭제 저장에 실패했습니다. 다시 시도해주세요.')
+            return
+          }
+
+          await deleteAdminUserProfile(performerName)
+
+          setPerformanceData(updatedPerformanceData)
+          setUploadStatus(`✅ "${performerName}" 공연진이 삭제되었습니다.`)
+        } catch {
+          setUploadStatus('❌ 공연진 삭제 중 오류가 발생했습니다.')
+        }
+      })()
     })
   }
 
@@ -1263,6 +1184,26 @@ const Admin = () => {
     // 입금 확인 토글
     toggleGuestPayment(index)
 
+    void hashGuestId(guest.phone || guest['전화번호'] || '').then((guestIdHash) => {
+      const leadTime = getBookingLeadTimeMetrics(
+        guest,
+        guestBookingDates,
+        performanceData?.ticket?.date ?? null
+      )
+      void trackEvent('guest_payment_toggled', {
+        guest_id_hash: guestIdHash,
+        new_status: willBeConfirmed,
+        ...leadTime,
+      })
+
+      if (willBeConfirmed) {
+        void trackEvent('booking_payment_confirmed', {
+          guest_id_hash: guestIdHash,
+          ...leadTime,
+        })
+      }
+    })
+
     // 입금 확인 시 링크 생성
     if (willBeConfirmed) {
       try {
@@ -1321,6 +1262,17 @@ const Admin = () => {
       
       setUploadStatus(willBeConfirmed ? '✅ 입금 확인이 완료되었습니다.' : '✅ 입금 확인이 해제되었습니다.')
       setTimeout(() => setUploadStatus(''), 3000)
+
+      if (willBeConfirmed) {
+        const createdAt = currentData.createdAt?.toDate?.() ?? currentData.createdAt
+        const confirmLatencyHours = createdAt
+          ? Math.round((Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60))
+          : undefined
+        void trackEvent('drink_payment_confirmed', {
+          order_id: orderId,
+          confirm_latency_hours: confirmLatencyHours,
+        })
+      }
     } catch (error) {
       console.error('주류 주문 입금 확인 실패:', error)
       setUploadStatus('❌ 입금 확인 처리에 실패했습니다.')
@@ -1398,6 +1350,18 @@ const Admin = () => {
       
       setUploadStatus('✅ 제공완료 상태가 업데이트되었습니다.')
       setTimeout(() => setUploadStatus(''), 3000)
+
+      const latestOrder = (await getDoc(orderRef)).data()
+      if (latestOrder?.provided) {
+        const createdAt = latestOrder.createdAt?.toDate?.() ?? latestOrder.createdAt
+        const provideLatencyMin = createdAt
+          ? Math.round((Date.now() - new Date(createdAt).getTime()) / (1000 * 60))
+          : undefined
+        void trackEvent('drink_order_provided', {
+          order_id: orderId,
+          provide_latency_min: provideLatencyMin,
+        })
+      }
     } catch (error) {
       console.error('주류 주문 제공완료 처리 실패:', error)
       setUploadStatus('❌ 제공완료 처리에 실패했습니다.')
@@ -1613,7 +1577,9 @@ const Admin = () => {
 
         if (!existingGuest) {
           // 게스트가 없으면 추가
-          const result = await addWalkInGuest(name.trim(), normalizedPhone, false)
+          const result = await addWalkInGuest(name.trim(), normalizedPhone, false, '', {
+            source: 'admin_approve',
+          })
           if (result.success) {
             setUploadStatus(`✅ "${name}" 예매 신청이 승인되었고 게스트 목록에 추가되었습니다.`)
           } else {
@@ -1683,7 +1649,10 @@ const Admin = () => {
             <input
               type="checkbox"
               checked={eventsFeatures.drinkPurchase}
-              onChange={(e) => setEventsFeature('drinkPurchase', e.target.checked)}
+              onChange={(e) => {
+                setEventsFeature('drinkPurchase', e.target.checked)
+                void trackEvent('feature_toggle_changed', { feature_name: 'drinkPurchase', enabled: e.target.checked })
+              }}
             />
             <div className="feature-toggle-text">
               <span className="feature-toggle-label">주류 구매</span>
@@ -1694,7 +1663,10 @@ const Admin = () => {
             <input
               type="checkbox"
               checked={eventsFeatures.directions}
-              onChange={(e) => setEventsFeature('directions', e.target.checked)}
+              onChange={(e) => {
+                setEventsFeature('directions', e.target.checked)
+                void trackEvent('feature_toggle_changed', { feature_name: 'directions', enabled: e.target.checked })
+              }}
             />
             <div className="feature-toggle-text">
               <span className="feature-toggle-label">길찾기</span>
@@ -1705,7 +1677,10 @@ const Admin = () => {
             <input
               type="checkbox"
               checked={eventsFeatures.entryDraw}
-              onChange={(e) => setEventsFeature('entryDraw', e.target.checked)}
+              onChange={(e) => {
+                setEventsFeature('entryDraw', e.target.checked)
+                void trackEvent('feature_toggle_changed', { feature_name: 'entryDraw', enabled: e.target.checked })
+              }}
             />
             <div className="feature-toggle-text">
               <span className="feature-toggle-label">입장 번호 추첨</span>
@@ -1716,7 +1691,10 @@ const Admin = () => {
             <input
               type="checkbox"
               checked={eventsFeatures.ledBoard}
-              onChange={(e) => setEventsFeature('ledBoard', e.target.checked)}
+              onChange={(e) => {
+                setEventsFeature('ledBoard', e.target.checked)
+                void trackEvent('feature_toggle_changed', { feature_name: 'ledBoard', enabled: e.target.checked })
+              }}
             />
             <div className="feature-toggle-text">
               <span className="feature-toggle-label">전광판 만들기</span>
@@ -1844,24 +1822,7 @@ const Admin = () => {
                   const userId = makeGuestKey(guestName, guestPhoneRaw)
                   const guestNickname = userNicknames[userId] || '-'
                   // 예매 일시 조회
-                  const bookingDate = guestBookingDates[userId]
-                  const formattedBookingDate = bookingDate 
-                    ? (bookingDate.toDate 
-                        ? bookingDate.toDate().toLocaleString('ko-KR', {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })
-                        : new Date(bookingDate).toLocaleString('ko-KR', {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          }))
-                    : '-'
+                  const formattedBookingDate = formatBookedAtDisplay(guest, guestBookingDates) || '-'
                   
                   // 원본 guests 배열에서의 인덱스 찾기 (삭제된 게스트 제외)
                   const originalIndex = guests.findIndex((g) => {
@@ -1919,7 +1880,17 @@ const Admin = () => {
                       <td className="text-center">
                         <div className="flex-column-center">
                           <button
-                            onClick={() => toggleGuestTicketReceived(originalIndex >= 0 ? originalIndex : sortedIndex)}
+                            onClick={() => {
+                              const idx = originalIndex >= 0 ? originalIndex : sortedIndex
+                              const willReceive = !guest.ticketReceived
+                              toggleGuestTicketReceived(idx)
+                              void hashGuestId(guestPhone).then((guestIdHash) => {
+                                void trackEvent('guest_ticket_toggled', {
+                                  guest_id_hash: guestIdHash,
+                                  new_status: willReceive,
+                                })
+                              })
+                            }}
                             className={`payment-confirm-button ${guest.ticketReceived ? 'confirmed' : 'not-confirmed'}`}
                             title={guest.ticketReceived && guest.ticketReceivedAt ? `티켓 수령 완료 (${new Date(guest.ticketReceivedAt).toLocaleString('ko-KR')})` : '티켓 수령 대기'}
                           >
@@ -2261,12 +2232,7 @@ const Admin = () => {
                   const guestNickname = userNicknames[userId] || ''
                   
                   // 예매 일시 조회
-                  const bookingDate = guestBookingDates[userId]
-                  const formattedBookingDate = bookingDate 
-                    ? (bookingDate.toDate 
-                        ? bookingDate.toDate().toLocaleString('ko-KR')
-                        : new Date(bookingDate).toLocaleString('ko-KR'))
-                    : ''
+                  const formattedBookingDate = formatBookedAtDisplay(guest, guestBookingDates)
                   
                   return {
                     번호: index + 1,
@@ -2488,7 +2454,7 @@ const Admin = () => {
           <button
             onClick={() => {
               requirePassword(() => {
-                handleAddPerformer()
+                void handleAddPerformer()
               })
             }}
             className="performer-add-button"
@@ -2506,11 +2472,12 @@ const Admin = () => {
                   <span className="performer-number">{index + 1}</span>
                   <span className="performer-name">{performer}</span>
                   <button
+                    type="button"
                     onClick={() => handleDeletePerformer(index)}
                     className="performer-delete-button"
-                    title="삭제"
+                    title={`${performer} 삭제`}
                   >
-                    ✕
+                    삭제
                   </button>
                 </div>
               ))}
@@ -2697,7 +2664,7 @@ const Admin = () => {
                     id="event-venue-address"
                     value={editedVenueAddress}
                     onChange={(e) => setEditedVenueAddress(e.target.value)}
-                    placeholder="예: 서울특별시 마포구 독막로7길 20 지하"
+                    placeholder={`예: ${DEFAULT_VENUE_ADDRESS}`}
                   />
                 </div>
                 {editedEvents.length > 0 && (
@@ -2846,6 +2813,10 @@ const Admin = () => {
                         
                         setUploadStatus('✅ 공연 정보가 저장되었습니다.')
                         setTimeout(() => setUploadStatus(''), 3000)
+                        void trackEvent('performance_info_saved', {
+                          section_count: editedEvents.length,
+                          section_titles: editedEvents.map((event) => event.title.trim()),
+                        })
                         setIsEditingPerformanceInfo(false)
                       } catch (error: any) {
                         const errorCode = error?.code || 'unknown'

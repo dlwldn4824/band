@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import './LEDBoard.css'
 import { useNavigate } from 'react-router-dom'
+import { trackEvent } from '../../analytics'
 
 
 interface LEDBoardProps {
@@ -30,6 +31,17 @@ const LEDBoard = ({ onBack }: LEDBoardProps = {}) => {
     { name: '파란색', value: '#0000FF' },
     { name: '분홍색', value: '#FF00FF' },
   ]
+
+  useEffect(() => {
+    void trackEvent('game_started', { game_type: 'ledboard' })
+    const mountTime = Date.now()
+    return () => {
+      void trackEvent('game_finished', {
+        game_type: 'ledboard',
+        duration_sec: Math.round((Date.now() - mountTime) / 1000),
+      })
+    }
+  }, [])
 
   useEffect(() => {
     const saved = localStorage.getItem('ledBoard')

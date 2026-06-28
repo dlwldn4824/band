@@ -1,5 +1,6 @@
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { trackFeatureDenied } from '../analytics'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
@@ -22,6 +23,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   // 로딩 완료 후 인증 상태 확인
   if (!isAuthenticated) {
+    trackFeatureDenied('not_logged_in')
     return <Navigate to="/login" replace />
   }
 

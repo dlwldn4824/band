@@ -4,6 +4,9 @@ import { db } from '../config/firebase'
 import { setFirestoreData } from '../services/firestoreService'
 import { FIRESTORE_PATHS, getGuestsStorageKey } from '../config/firestorePaths'
 import { normalizePhone } from '../utils/guestUtils'
+import { trackEvent } from '../analytics'
+import { hashGuestId } from '../analytics/hashUserId'
+import { getUtmProperties } from '../analytics/utm'
 
 export interface User {
   name: string
@@ -17,7 +20,7 @@ export interface User {
 
 interface AuthContextType {
   user: User | null
-  login: (name: string, phone: string, guests?: any[]) => boolean
+  login: (name: string, phone: string, guests?: any[], loginMethod?: 'name_phone' | 'token') => boolean
   logout: () => void
   updateUser: (userData: User) => void
   setNickname: (nickname: string) => Promise<void>
@@ -30,6 +33,48 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
+
+function getLoginRetryCount(): number {
+  const count = Number(sessionStorage.getItem('login_retry_count') || '0') + 1
+  sessionStorage.setItem('login_retry_count', String(count))
+  return count
+}
+
+function clearLoginRetryCount(): void {
+  sessionStorage.removeItem('login_retry_count')
+}
+
+function getLoginFailReason(
+  guestList: any[],
+  name: string,
+  phone: string
+): 'not_found' | 'phone_mismatch' | 'deleted' {
+  const normalizedInputPhone = phone.replace(/[-\s()]/g, '')
+  const normalizedInputName = name.trim()
+
+  const deletedMatch = guestList.find((guest: any) => {
+    if (guest.isDeleted !== true) return false
+    const guestName = (guest.name || guest['이름'] || guest.Name || '').trim()
+    const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '').replace(/[-\s()]/g, '')
+    return guestName === normalizedInputName && guestPhone === normalizedInputPhone
+  })
+  if (deletedMatch) return 'deleted'
+
+  const nameMatches = guestList.filter((guest: any) => {
+    if (guest.isDeleted === true) return false
+    const guestName = (guest.name || guest['이름'] || guest.Name || '').trim()
+    return guestName === normalizedInputName
+  })
+
+  const phoneMatches = guestList.filter((guest: any) => {
+    if (guest.isDeleted === true) return false
+    const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '').replace(/[-\s()]/g, '')
+    return guestPhone === normalizedInputPhone
+  })
+
+  if (nameMatches.length > 0 && phoneMatches.length === 0) return 'phone_mismatch'
+  return 'not_found'
+}
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
@@ -233,11 +278,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => clearInterval(interval)
   }, [user?.name, user?.phone]) // user 객체 전체가 아닌 name과 phone만 의존성으로 사용
 
-  const login = (name: string, phone: string, guests?: any[]): boolean => {
+  const login = (name: string, phone: string, guests?: any[], loginMethod: 'name_phone' | 'token' = 'name_phone'): boolean => {
+    void trackEvent('login_attempted', {
+      login_method: loginMethod,
+      has_token: loginMethod === 'token',
+      ...getUtmProperties(),
+    })
+
     // guests가 제공되지 않으면 localStorage에서 로드 (하위 호환성)
     const guestList = guests || JSON.parse(localStorage.getItem(getGuestsStorageKey()) || '[]')
     
     if (guestList.length === 0) {
+      void trackEvent('login_failed', { fail_reason: 'empty_guests', retry_count: getLoginRetryCount(), ...getUtmProperties() })
       return false
     }
 
@@ -278,6 +330,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // 입장번호가 없고 입금 확인되지 않은 게스트만 입장번호 할당
       let entryNumber = foundGuest.entryNumber
       const isPaymentConfirmed = foundGuest.paymentConfirmed === true
+      const didCheckInNow = !foundGuest.checkedIn && !entryNumber && !isPaymentConfirmed
       
       if (!entryNumber && !isPaymentConfirmed) {
         // 이미 입장번호가 있는 게스트들의 최대값 찾기
@@ -417,9 +470,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       loadNickname()
       
+      clearLoginRetryCount()
+      void trackEvent('login_succeeded', {
+        has_entry_number: !!entryNumber,
+        payment_confirmed: isPaymentConfirmed,
+        is_walk_in: false,
+        ...getUtmProperties(),
+      })
+      if (didCheckInNow) {
+        void hashGuestId(guestPhone).then((guestIdHash) => {
+          void trackEvent('checkin_completed', { guest_id_hash: guestIdHash, is_walk_in: false })
+        })
+      }
+      
       return true
     }
     
+    void trackEvent('login_failed', {
+      fail_reason: getLoginFailReason(guestList, name, phone),
+      retry_count: getLoginRetryCount(),
+      ...getUtmProperties(),
+    })
     return false
   }
 
@@ -545,6 +616,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Firestore 저장 실패해도 로컬스토리지는 이미 저장되었으므로 계속 진행
       // 서버 연결이 안 되어 있어도 로컬에서 작동하도록 에러를 던지지 않음
     }
+
+    void trackEvent('nickname_set', { nickname_length: trimmedNickname.length })
   }
 
   return (

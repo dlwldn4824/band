@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useData } from '../../contexts/DataContext'
 import './Game.css'
 import { useNavigate } from 'react-router-dom'
+import { trackEvent } from '../../analytics'
 
 interface DrawState {
   isDrawing: boolean
@@ -112,6 +113,8 @@ const EntryNumberDrawMirror = ({ onBack }: EntryNumberDrawMirrorProps = {}) => {
   // 운영진: 추첨 시작
   const draw = async () => {
     if (isDrawing || eligibleGuests.length === 0) return
+
+    void trackEvent('entry_draw_completed', { winner_count: 1 })
 
     // 랜덤으로 선택할 게스트
     const randomIndex = Math.floor(Math.random() * eligibleGuests.length)

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, Link, useParams, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useData } from '../contexts/DataContext'
@@ -11,6 +11,14 @@ import { validatePhoneNumber, formatPhoneDisplay } from '../utils/phoneFormat'
 import { getGuestsStorageKey, FIRESTORE_PATHS } from '../config/firestorePaths'
 import { normalizePhone, normalizeName, getGuestPhone } from '../utils/guestUtils'
 import { getFirestoreData } from '../services/firestoreService'
+import {
+  trackEvent,
+  trackFunnelAbandon,
+  markFunnelComplete,
+  getUtmProperties,
+} from '../analytics'
+import { captureUtmFromUrl } from '../analytics/utm'
+import { detectEntryType } from '../analytics/device'
 import './Login.css'
 
 const Login = () => {
@@ -40,6 +48,43 @@ const Login = () => {
   const location = useLocation()
   const { token } = useParams<{ token?: string }>()
   const [isProcessingAutoLogin, setIsProcessingAutoLogin] = useState(false)
+  const bookingFormStartedRef = useRef(false)
+  const cancelBookingAbandonRef = useRef<(() => void) | null>(null)
+
+  const trackBookingFormStarted = useCallback((field: 'name' | 'phone') => {
+    if (bookingFormStartedRef.current) return
+    bookingFormStartedRef.current = true
+    void trackEvent('booking_form_started', { field })
+    cancelBookingAbandonRef.current?.()
+    cancelBookingAbandonRef.current = trackFunnelAbandon('booking', 'booking_form_started')
+  }, [])
+
+  useEffect(() => {
+    captureUtmFromUrl(location.search)
+    if (showTicket || showBookingConfirmation || isProcessingAutoLogin) return
+
+    void trackEvent('booking_page_viewed', {
+      entry_type: detectEntryType(location.pathname),
+      ...getUtmProperties(),
+    })
+    cancelBookingAbandonRef.current = trackFunnelAbandon('booking', 'booking_page_viewed')
+
+    return () => {
+      cancelBookingAbandonRef.current?.()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!showBookingConfirmation) return
+
+    void trackEvent('booking_confirmation_viewed', {})
+    cancelBookingAbandonRef.current?.()
+    cancelBookingAbandonRef.current = trackFunnelAbandon('booking', 'booking_confirmation_viewed')
+
+    return () => {
+      cancelBookingAbandonRef.current?.()
+    }
+  }, [showBookingConfirmation])
 
   // URL 경로에서 자동 로그인 처리 (암호화된 토큰 기반)
   useEffect(() => {
@@ -160,7 +205,7 @@ const Login = () => {
           const guestName = normalizeName(foundGuest.name || foundGuest['이름'] || foundGuest.Name || decodedName || '')
           
           // 자동 로그인 시도
-          const loginSuccess = login(guestName, normalizedPhone, availableGuests)
+          const loginSuccess = login(guestName, normalizedPhone, availableGuests, 'token')
           console.log('[Login] 자동 로그인 결과:', loginSuccess)
           
           if (loginSuccess) {
@@ -580,8 +625,8 @@ const Login = () => {
         phone: bookingPhone.trim(),
         email: ''
       }))
-      
-      // 확인 화면 표시
+
+      markFunnelComplete('booking', 'booking_form_started')
       setBookingConfirmed(false)
       setBookingInfoConfirmed(false)
       setShowBookingConfirmation(true)
@@ -590,23 +635,20 @@ const Login = () => {
       setBookingError('예매 신청 처리 중 오류가 발생했습니다. 다시 시도해주세요.')
     }
   }
-  
-  // 전화번호 중복 확인 후 계속하기
+
   const handleContinueWithDuplicatePhone = () => {
     setShowPhoneDuplicateModal(false)
-    
-    // 정보 수정용 상태 설정
+
     setEditedName(bookingName.trim())
     setEditedPhone(bookingPhone.trim())
-    
-    // localStorage에 예매 정보 저장 (페이지 재접근 시 확인 화면 표시용)
+
     localStorage.setItem('pendingBooking', JSON.stringify({
       name: bookingName.trim(),
       phone: bookingPhone.trim(),
       email: ''
     }))
-    
-    // 확인 화면 표시
+
+    markFunnelComplete('booking', 'booking_form_started')
     setBookingConfirmed(false)
     setBookingInfoConfirmed(false)
     setShowBookingConfirmation(true)
@@ -1021,27 +1063,18 @@ const Login = () => {
                   
                   // 기존 게스트가 아닌 경우에만 명단에 추가
                   if (!existingGuest) {
-                    // Firestore에 예매 신청 정보 저장
-                    const userId = `${normalizedName}_${normalizedPhone}`
-                    const bookingRef = doc(db, 'bookings', userId)
-                    
-                    await setDoc(bookingRef, {
-                      name: normalizedName,
-                      phone: normalizedPhone,
-                      email: '',
-                      approved: false, // 관리자 승인 전까지 false
-                      createdAt: new Date(),
-                      updatedAt: new Date()
-                    }, { merge: true })
-
-                    // 사전 예약 등록 (입금 확인 대기 상태이므로 isWalkIn: false)
-                    // ✅ addWalkInGuest가 이미 state를 업데이트하므로 별도로 추가하지 않음
-                    const result = await addWalkInGuest(normalizedName, normalizedPhone, false, '')
+                    const result = await addWalkInGuest(normalizedName, normalizedPhone, false, '', {
+                      source: 'web_login',
+                    })
                     
                     if (!result.success) {
                       setBookingError(result.message || '등록에 실패했습니다.')
                       return
                     }
+
+                    markFunnelComplete('booking', 'booking_confirmation_viewed')
+                    markFunnelComplete('booking', 'booking_form_started')
+                    markFunnelComplete('booking', 'booking_page_viewed')
                     
                     // ✅ addWalkInGuest가 성공하면 state가 이미 업데이트되었으므로
                     // localStorage에서 최신 게스트 리스트를 가져와서 로그인
@@ -1205,7 +1238,10 @@ const Login = () => {
                 type="text"
                   id="bookingName"
                   value={bookingName}
-                  onChange={(e) => setBookingName(e.target.value)}
+                  onChange={(e) => {
+                    trackBookingFormStarted('name')
+                    setBookingName(e.target.value)
+                  }}
                   placeholder="예: 홍길동"
                 autoComplete="name"
               />
@@ -1217,11 +1253,18 @@ const Login = () => {
                 type="tel"
                   id="bookingPhone"
                   value={bookingPhone}
-                  onChange={(e) => setBookingPhone(e.target.value)}
+                  onChange={(e) => {
+                    trackBookingFormStarted('phone')
+                    const digits = e.target.value.replace(/\D/g, '').slice(0, 11)
+                    setBookingPhone(digits)
+                  }}
                   placeholder="예: 01012345678"
                 autoComplete="tel"
                   maxLength={13}
               />
+              <p className="field-hint" style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.25rem' }}>
+                숫자만 입력 (하이픈 없이). 엑셀 명단과 동일한 번호로 입력해주세요.
+              </p>
             </div>
 
               {bookingError && <div className="error-message">{bookingError}</div>}

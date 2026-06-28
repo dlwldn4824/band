@@ -16,6 +16,7 @@ export const FIRESTORE_PATHS = {
   PERFORMANCE_DATA: 'performanceData' as const,
   MESSAGES: 'messages' as const,
   CURRENT: 'current' as const,
+  ANALYTICS_EVENTS: 'analytics_events' as const,
 } as const
 
 // localStorage 키

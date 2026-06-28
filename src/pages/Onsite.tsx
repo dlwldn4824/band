@@ -96,7 +96,9 @@ const Onsite = () => {
         }
       } else {
         // 새로운 게스트 등록 (현장 예매이므로 isWalkIn: true)
-        const result = addWalkInGuest(normalizedName, normalizedPhone, true, '')
+        const result = addWalkInGuest(normalizedName, normalizedPhone, true, '', {
+          source: 'onsite',
+        })
         const addResult = await result
         if (!addResult.success) {
           alert(addResult.message || '게스트 등록에 실패했습니다.')
