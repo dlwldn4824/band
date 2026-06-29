@@ -18,7 +18,11 @@ import bassIcon from '../assets/배경/베이스.png'
 import keyboardIcon from '../assets/배경/키보드.png'
 import drumIcon from '../assets/배경/드럼.png'
 import './Performances.css'
-import { getOrderedPerformanceSections } from '../utils/performanceEvents'
+import {
+  filterSetlistForSection,
+  getDisplayPartForStoragePart,
+  getOrderedPerformanceSections,
+} from '../utils/performanceEvents'
 import { trackEvent, getDaysSinceSetlistUpload } from '../analytics'
 
 interface SongComment {
@@ -50,12 +54,13 @@ const Performances = () => {
   // 타임라인에서 클릭한 섹션으로 이동
   useEffect(() => {
     if (location.state && typeof (location.state as { part?: number }).part === 'number') {
-      const part = (location.state as { part: number }).part
-      if (performanceSections.some((section) => section.part === part)) {
-        setSelectedPart(part)
+      const storagePart = (location.state as { part: number }).part
+      const displayPart = getDisplayPartForStoragePart(storagePart, performanceData?.events)
+      if (performanceSections.some((section) => section.part === displayPart)) {
+        setSelectedPart(displayPart)
       }
     }
-  }, [location.state, performanceSections])
+  }, [location.state, performanceSections, performanceData?.events])
 
   useEffect(() => {
     if (
@@ -76,7 +81,7 @@ const Performances = () => {
     if (!performanceData?.setlist?.length) {
       void trackEvent('performances_empty_state_viewed', {})
     }
-  }, [])
+  }, [selectedPart, performanceSections, performanceData?.setlist?.length])
 
   // 선택된 곡의 응원 메시지 가져오기
   useEffect(() => {
@@ -276,25 +281,35 @@ const Performances = () => {
   }
 
   const sectionCount = Math.max(performanceSections.length, 2)
-  const songsWithoutPart = performanceData.setlist.filter(song => !song.part)
+  const songsWithoutPart = performanceData.setlist.filter((song) => !song.part)
   const hasPartData = songsWithoutPart.length !== performanceData.setlist.length
+
+  const selectedSection =
+    performanceSections.find((section) => section.part === selectedPart) ?? performanceSections[0]
 
   let displaySongs: SetlistItem[]
   let startIndex: number
 
-  if (!hasPartData) {
+  if (selectedSection && hasPartData) {
+    displaySongs = filterSetlistForSection(
+      performanceData.setlist,
+      selectedSection,
+      performanceData?.events
+    ) as SetlistItem[]
+    startIndex =
+      displaySongs.length > 0
+        ? performanceData.setlist.findIndex((song) => song === displaySongs[0])
+        : 0
+    if (startIndex < 0) startIndex = 0
+  } else {
+    const sectionIndex = performanceSections.findIndex((section) => section.part === selectedPart)
     const songsPerSection = Math.ceil(performanceData.setlist.length / sectionCount)
-    const sectionStart = (selectedPart - 1) * songsPerSection
+    const sectionStart = Math.max(0, sectionIndex) * songsPerSection
     displaySongs = performanceData.setlist.slice(sectionStart, sectionStart + songsPerSection)
     startIndex = sectionStart
-  } else {
-    displaySongs = performanceData.setlist.filter(song => song.part === selectedPart)
-    startIndex = performanceData.setlist.findIndex(song => song.part === selectedPart)
-    if (startIndex === -1) startIndex = 0
   }
 
-  const selectedSectionTitle =
-    performanceSections.find((section) => section.part === selectedPart)?.title || `${selectedPart}부`
+  const selectedSectionTitle = selectedSection?.title || `${selectedPart}부`
 
   return (
     <div className="performances-page">
@@ -309,7 +324,11 @@ const Performances = () => {
           ).map((section) => {
             const partNumber = section.part
             const sectionSongCount = hasPartData
-              ? (performanceData.setlist ?? []).filter(song => song.part === partNumber).length
+              ? filterSetlistForSection(
+                  performanceData.setlist ?? [],
+                  section,
+                  performanceData?.events
+                ).length
               : Math.ceil((performanceData.setlist ?? []).length / sectionCount)
 
             return (
@@ -317,7 +336,7 @@ const Performances = () => {
                 key={`${section.title}-${partNumber}`}
                 className={`part-button ${selectedPart === partNumber ? 'active' : ''}`}
                 onClick={() => setSelectedPart(partNumber)}
-                disabled={hasPartData && sectionSongCount === 0}
+                disabled={sectionSongCount === 0}
               >
                 {section.title}
               </button>
@@ -339,12 +358,7 @@ const Performances = () => {
               const prevItem = index > 0 ? displaySongs[index - 1] : null
               // 첫 번째 곡이거나 이전 곡과 팀이 다를 때 팀 구분선 표시
               const showTeamDivider = item.team && item.team.trim() !== '' && (index === 0 || !prevItem?.team || item.team !== prevItem.team)
-              
-              // 디버깅: 팀 구분선 표시 여부 확인
-              if (index < 3 || showTeamDivider) {
-                console.log(`[곡 ${index + 1}] "${item.songName}" - team: "${item.team || '(없음)'}", prevTeam: "${prevItem?.team || '(없음)'}", showDivider: ${showTeamDivider}`)
-              }
-              
+
               return (
                 <React.Fragment key={globalIndex}>
                   <div className={`timeline-row ${showTeamDivider ? 'has-team-row' : ''}`}>

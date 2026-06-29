@@ -60,11 +60,56 @@ export const getPerformanceSectionsWithParts = (events?: TimelineEvent[]): Perfo
   }))
 
 export const getOrderedPerformanceSections = (events?: TimelineEvent[]): PerformanceSection[] =>
-  [...getPerformanceSectionsWithParts(events)].sort((a, b) => {
-    const rankDiff = getSectionDisplayRank(a.title) - getSectionDisplayRank(b.title)
-    if (rankDiff !== 0) return rankDiff
-    return a.part - b.part
-  })
+  [...getPerformanceSectionsWithParts(events)]
+    .sort((a, b) => {
+      const rankDiff = getSectionDisplayRank(a.title) - getSectionDisplayRank(b.title)
+      if (rankDiff !== 0) return rankDiff
+      return a.part - b.part
+    })
+    .map((section, index) => ({
+      ...section,
+      part: index + 1,
+    }))
+
+export const getDisplayPartForStoragePart = (
+  storagePart: number,
+  events?: TimelineEvent[]
+): number => {
+  const storageSection = getPerformanceSectionsWithParts(events).find(
+    (section) => section.part === storagePart
+  )
+  if (!storageSection) return storagePart
+  const ordered = getOrderedPerformanceSections(events)
+  const displayIndex = ordered.findIndex((section) =>
+    sectionTitlesMatch(section.title, storageSection.title)
+  )
+  return displayIndex >= 0 ? displayIndex + 1 : storagePart
+}
+
+export interface SetlistFilterItem {
+  part?: number
+  team?: string
+}
+
+export const filterSetlistForSection = (
+  setlist: SetlistFilterItem[],
+  section: PerformanceSection,
+  events?: TimelineEvent[]
+): SetlistFilterItem[] => {
+  if (!setlist.length) return []
+
+  const storagePart = getStoragePartForSectionTitle(section.title, events)
+
+  const byTeam = setlist.filter(
+    (song) => song.team && sectionTitlesMatch(song.team, section.title)
+  )
+  if (byTeam.length > 0) return byTeam
+
+  const byPart = setlist.filter((song) => song.part === storagePart)
+  if (byPart.length > 0) return byPart
+
+  return []
+}
 
 export const getOrderedTimelineEvents = (events?: TimelineEvent[]): TimelineEvent[] => {
   if (!events || events.length === 0) return []
