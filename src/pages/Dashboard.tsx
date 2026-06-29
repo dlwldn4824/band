@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useData } from '../contexts/DataContext'
 import Events from '../components/Events'
 import VenueDirections from '../components/VenueDirections'
-import ticketImage from '../assets/배경/렉사_연합공연_티켓.png'
+import ticketImage from '../assets/background/glow-ticket.png'
 import editIcon from '../assets/배경/수정_아이콘.png'
 import { formatPhoneDisplay } from '../utils/phoneFormat'
 import { normalizePhone } from '../utils/guestUtils'
@@ -419,7 +419,7 @@ const Dashboard = () => {
             <div className="ticket-image-section">
               <img 
                 src={ticketImage} 
-                alt="티켓" 
+                alt="GLOW 공연 티켓" 
                 className="ticket-image"
                 loading="eager"
                 decoding="async"

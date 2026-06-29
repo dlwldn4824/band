@@ -9,16 +9,49 @@
 
 ## 2. 환경 변수 설정
 
-프로젝트 루트에 `.env` 파일을 생성하고 다음 내용을 추가하세요:
+프로젝트 루트에 `.env` 파일을 생성하세요. 템플릿은 `.env.example`을 복사해 사용합니다:
+
+```bash
+cp .env.example .env
+```
+
+`.env` 예시 (Firebase 콘솔 > 프로젝트 설정 > 일반 > 웹 앱 SDK에서 복사):
 
 ```env
 VITE_FIREBASE_API_KEY=your_api_key_here
-VITE_FIREBASE_AUTH_DOMAIN=band-info-58b2d.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=band-info-58b2d
-VITE_FIREBASE_STORAGE_BUCKET=band-info-58b2d.appspot.com
+VITE_FIREBASE_AUTH_DOMAIN=your-project-id.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your-project-id
+VITE_FIREBASE_STORAGE_BUCKET=your-project-id.appspot.com
 VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id_here
 VITE_FIREBASE_APP_ID=your_app_id_here
 ```
+
+선택 변수:
+
+```env
+VITE_GOOGLE_SHEETS_WEB_APP_URL=https://script.google.com/macros/s/.../exec
+VITE_GOOGLE_DRIVE_LINK=https://drive.google.com/drive/folders/...
+```
+
+### Vercel 배포 시 환경 변수
+
+[Vercel](https://vercel.com) → 프로젝트 → **Settings** → **Environment Variables**에 아래를 등록합니다.  
+**Production**, **Preview**, **Development** 모두 동일하게 넣는 것을 권장합니다.
+
+| 변수 이름 | 필수 | 설명 |
+|-----------|------|------|
+| `VITE_FIREBASE_API_KEY` | ✅ | Firebase API Key |
+| `VITE_FIREBASE_AUTH_DOMAIN` | ✅ | `{projectId}.firebaseapp.com` |
+| `VITE_FIREBASE_PROJECT_ID` | ✅ | Firebase 프로젝트 ID (예: Band-Info 콘솔의 projectId) |
+| `VITE_FIREBASE_STORAGE_BUCKET` | ✅ | `{projectId}.appspot.com` 또는 `*.firebasestorage.app` |
+| `VITE_FIREBASE_MESSAGING_SENDER_ID` | ✅ | 메시징 Sender ID |
+| `VITE_FIREBASE_APP_ID` | ✅ | 웹 앱 App ID |
+| `VITE_GOOGLE_SHEETS_WEB_APP_URL` | ⬜ | Google Sheets Apps Script URL |
+| `VITE_GOOGLE_DRIVE_LINK` | ⬜ | 채팅 사진첩 Google Drive 링크 |
+
+값을 바꾼 뒤 **Deployments**에서 **Redeploy**해야 반영됩니다.
+
+> 로컬 `firebase.ts`에 `band-info-58b2d` 기본값이 있으나, Vercel에서는 위 `VITE_*` 값이 우선 적용됩니다. 본인 Firebase(Band-Info)로 옮길 때는 반드시 Vercel 변수를 새 프로젝트 값으로 맞추세요.
 
 ## 3. Firestore 보안 규칙 설정
 

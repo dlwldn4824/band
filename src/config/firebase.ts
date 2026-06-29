@@ -10,7 +10,7 @@ const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "YOUR_API_KEY",
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "band-info-58b2d.firebaseapp.com",
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "band-info-58b2d",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "band-info-58b2d.appspot.com",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "band-info-58b2d.firebasestorage.app",
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "YOUR_MESSAGING_SENDER_ID",
   appId: import.meta.env.VITE_FIREBASE_APP_ID || "YOUR_APP_ID"
 }

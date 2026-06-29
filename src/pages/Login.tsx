@@ -6,7 +6,7 @@ import type { Guest } from '../contexts/DataContext'
 import { doc, setDoc, onSnapshot, getDoc } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import TicketTransition from '../components/TicketTransition'
-import ticketImage from '../assets/배경/렉사_연합공연_티켓.png'
+import ticketImage from '../assets/background/glow-ticket.png'
 import { validatePhoneNumber, formatPhoneDisplay } from '../utils/phoneFormat'
 import { getGuestsStorageKey, FIRESTORE_PATHS } from '../config/firestorePaths'
 import { normalizePhone, normalizeName, getGuestPhone } from '../utils/guestUtils'
@@ -1122,6 +1122,8 @@ const Login = () => {
       ) : showTicket ? (
         <TicketTransition
           ticketImageUrl={ticketImage}
+          tearDirection="vertical"
+          tearAtPercent={78.5}
           info={(() => {
             // bookingName이나 bookingPhone이 비어있으면 localStorage에서 user 정보 사용
             const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
