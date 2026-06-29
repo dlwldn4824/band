@@ -1,21 +1,11 @@
 import * as XLSX from 'xlsx'
 import type { SetlistItem } from '../contexts/DataContext'
-import { getPerformanceSections } from './performanceEvents'
+import {
+  getPerformanceSectionsWithParts,
+  resolveSectionForSetlistBlock,
+  sectionTitlesMatch,
+} from './performanceEvents'
 import { parseXlsxToGridFallback } from './xlsxRawParse'
-
-export const DEFAULT_SETLIST_TEAM_ORDER = ['멜로딕', '손아픔', '덴'] as const
-
-function resolveSectionForBlock(
-  blockIndex: number,
-  performanceSections: Array<{ title: string }>
-): { part: number; team: string } {
-  const part = blockIndex + 1
-  const team =
-    performanceSections[blockIndex]?.title?.trim() ||
-    DEFAULT_SETLIST_TEAM_ORDER[blockIndex] ||
-    `팀 ${part}`
-  return { part, team }
-}
 
 function isEmptyRow(row: string[]): boolean {
   return !row.some((cell) => String(cell ?? '').trim())
@@ -105,11 +95,11 @@ export function parseSetlistFromGrid(
 
   if (songIdx < 0) return []
 
-  const performanceSections = getPerformanceSections(performanceEvents)
+  const performanceSections = getPerformanceSectionsWithParts(performanceEvents)
   let teamBlockIndex = 0
-  let { part: currentPart, team: currentTeam } = resolveSectionForBlock(
+  let { part: currentPart, team: currentTeam } = resolveSectionForSetlistBlock(
     teamBlockIndex,
-    performanceSections
+    performanceEvents
   )
 
   const setlist: SetlistItem[] = []
@@ -119,7 +109,7 @@ export function parseSetlistFromGrid(
 
     if (isEmptyRow(row)) {
       teamBlockIndex += 1
-      const section = resolveSectionForBlock(teamBlockIndex, performanceSections)
+      const section = resolveSectionForSetlistBlock(teamBlockIndex, performanceEvents)
       currentPart = section.part
       currentTeam = section.team
       continue
@@ -128,9 +118,9 @@ export function parseSetlistFromGrid(
     const gubun = getCell(row, gubunIdx)
     if (gubun) {
       let matched = false
-      performanceSections.forEach((section, idx) => {
+      performanceSections.forEach((section) => {
         if (gubun === section.title || gubun.includes(section.title)) {
-          currentPart = idx + 1
+          currentPart = section.part
           currentTeam = section.title
           matched = true
         }
@@ -139,7 +129,10 @@ export function parseSetlistFromGrid(
         const partMatch = gubun.match(/(\d+)\s*부/)
         if (partMatch) currentPart = parseInt(partMatch[1], 10)
         else if (gubun.includes('연합곡')) {
-          currentPart = performanceSections.length > 0 ? performanceSections.length : 2
+          const thenSection = performanceSections.find((section) =>
+            sectionTitlesMatch(section.title, 'THEN,')
+          )
+          currentPart = thenSection?.part ?? (performanceSections.length > 0 ? performanceSections.length : 2)
         }
       }
     }

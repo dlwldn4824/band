@@ -1,6 +1,10 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { trackEvent } from '../analytics'
 import './Events.css'
+import {
+  getOrderedTimelineEvents,
+  getStoragePartForSectionTitle,
+} from '../utils/performanceEvents'
 import clockIcon from '../assets/배경/시계이미지.png'
 
 interface Event {
@@ -16,22 +20,24 @@ interface EventsProps {
 const Events = ({ events }: EventsProps) => {
   const navigate = useNavigate()
   const location = useLocation()
+  const orderedEvents = getOrderedTimelineEvents(events)
   
   const isAdminPage = location.pathname.startsWith('/admin')
   
-  const handleEventClick = (index: number) => {
-    if (index === 0) return
+  const handleEventClick = (displayIndex: number) => {
+    if (displayIndex === 0) return
 
-    const event = events[index]
+    const event = orderedEvents[displayIndex]
+    const storagePart = getStoragePartForSectionTitle(event?.title || '', events)
     void trackEvent('timeline_event_clicked', {
-      event_index: index,
+      event_index: displayIndex,
       event_title: event?.title || '',
-      target_part: String(index),
+      target_part: String(storagePart),
     })
     void trackEvent('cta_clicked', { cta_name: 'timeline_footer', source_page: location.pathname })
 
     const path = isAdminPage ? '/admin/performances' : '/performances'
-    navigate(path, { state: { part: index } })
+    navigate(path, { state: { part: storagePart } })
   }
 
   const handleSetlistClick = () => {
@@ -51,7 +57,7 @@ const Events = ({ events }: EventsProps) => {
             <div className="timeline-line"></div>
           </div>
           
-          {events.map((event, index) => {
+          {orderedEvents.map((event, index) => {
             const isGuestEntry = index === 0
             const isClickable = index > 0
             

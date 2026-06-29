@@ -1,0 +1,136 @@
+.analytics-dashboard {
+  margin-bottom: 3rem;
+}
+
+.analytics-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.analytics-range-tabs {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.analytics-range-tab {
+  padding: 0.45rem 0.85rem;
+  border: 1px solid #ddd;
+  border-radius: 999px;
+  background: #fff;
+  color: #555;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.analytics-range-tab.active {
+  background: #D88676;
+  border-color: #D88676;
+  color: #fff;
+  font-weight: 600;
+}
+
+.analytics-loading,
+.analytics-empty {
+  color: #777;
+  margin: 0.5rem 0 0;
+}
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.analytics-grid--wide {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.analytics-panel {
+  background: #fafafa;
+  border: 1px solid #ececec;
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+}
+
+.analytics-panel--full {
+  margin-top: 0.25rem;
+}
+
+.analytics-panel h3 {
+  margin: 0 0 0.85rem;
+  font-size: 1rem;
+  color: #333;
+}
+
+.analytics-funnel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.analytics-funnel-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.analytics-funnel-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.analytics-funnel-count {
+  color: #333;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.analytics-funnel-bar-track {
+  height: 8px;
+  background: #e8e8e8;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.analytics-funnel-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #D88676, #e9a497);
+  border-radius: 999px;
+}
+
+.analytics-kv-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.analytics-kv-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.analytics-kv-list strong {
+  color: #222;
+  font-weight: 700;
+}
+
+.analytics-table table {
+  font-size: 0.9rem;
+}
+
+@media (max-width: 1024px) {
+  .analytics-grid,
+  .analytics-grid--wide {
+    grid-template-columns: 1fr;
+  }
+}

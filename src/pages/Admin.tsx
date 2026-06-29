@@ -10,6 +10,7 @@ import GuestAddModal from '../components/admin/GuestAddModal'
 import GuestEditModal from '../components/admin/GuestEditModal'
 import PasswordModal from '../components/admin/PasswordModal'
 import DrinkOrdersSection from '../components/admin/DrinkOrdersSection'
+import AnalyticsDashboardSection from '../components/admin/AnalyticsDashboardSection'
 import { generatePersonalLoginLink, makeGuestKey } from '../utils/adminUtils'
 import { normalizePhone, normalizeName, normalizeKoreanMobile } from '../utils/guestUtils'
 import { DEFAULT_TIMELINE_EVENTS, createDefaultPerformanceSection, getPerformanceSections } from '../utils/performanceEvents'
@@ -3089,6 +3090,8 @@ const Admin = () => {
         </div>
 
       </div>
+
+      <AnalyticsDashboardSection />
 
       {/* 비밀번호 확인 모달 */}
       <PasswordModal

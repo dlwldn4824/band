@@ -78,10 +78,10 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
-    // 분석 이벤트 (클라이언트 append-only)
+    // 분석 이벤트 (클라이언트 append-only, 관리 페이지에서 조회)
     match /analytics_events/{eventId} {
-      allow create: if true;
-      allow read, update, delete: if false;
+      allow create, read: if true;
+      allow update, delete: if false;
     }
 
   }

@@ -18,7 +18,7 @@ import bassIcon from '../assets/배경/베이스.png'
 import keyboardIcon from '../assets/배경/키보드.png'
 import drumIcon from '../assets/배경/드럼.png'
 import './Performances.css'
-import { getPerformanceSections } from '../utils/performanceEvents'
+import { getOrderedPerformanceSections } from '../utils/performanceEvents'
 import { trackEvent, getDaysSinceSetlistUpload } from '../analytics'
 
 interface SongComment {
@@ -45,26 +45,29 @@ const Performances = () => {
   }, [location.pathname, location.state])
   const [selectedSongIndex, setSelectedSongIndex] = useState<number | null>(null)
   const [selectedPart, setSelectedPart] = useState(1)
-  const performanceSections = getPerformanceSections(performanceData?.events)
+  const performanceSections = getOrderedPerformanceSections(performanceData?.events)
 
   // 타임라인에서 클릭한 섹션으로 이동
   useEffect(() => {
     if (location.state && typeof (location.state as { part?: number }).part === 'number') {
       const part = (location.state as { part: number }).part
-      if (part >= 1 && part <= Math.max(performanceSections.length, 1)) {
+      if (performanceSections.some((section) => section.part === part)) {
         setSelectedPart(part)
       }
     }
-  }, [location.state, performanceSections.length])
+  }, [location.state, performanceSections])
 
   useEffect(() => {
-    if (performanceSections.length > 0 && selectedPart > performanceSections.length) {
-      setSelectedPart(1)
+    if (
+      performanceSections.length > 0 &&
+      !performanceSections.some((section) => section.part === selectedPart)
+    ) {
+      setSelectedPart(performanceSections[0].part)
     }
-  }, [performanceSections.length, selectedPart])
+  }, [performanceSections, selectedPart])
 
   useEffect(() => {
-    const section = performanceSections[selectedPart - 1]
+    const section = performanceSections.find((item) => item.part === selectedPart)
     void trackEvent('performances_viewed', {
       selected_part: String(selectedPart),
       section_title: section?.title,
@@ -290,7 +293,8 @@ const Performances = () => {
     if (startIndex === -1) startIndex = 0
   }
 
-  const selectedSectionTitle = performanceSections[selectedPart - 1]?.title || `${selectedPart}부`
+  const selectedSectionTitle =
+    performanceSections.find((section) => section.part === selectedPart)?.title || `${selectedPart}부`
 
   return (
     <div className="performances-page">
@@ -298,9 +302,12 @@ const Performances = () => {
         <div className="part-selector">
           {(performanceSections.length > 0
             ? performanceSections
-            : [{ title: '1부', description: '', time: '' }, { title: '2부', description: '', time: '' }]
-          ).map((section, index) => {
-            const partNumber = index + 1
+            : [
+                { title: '1부', description: '', time: '', part: 1 },
+                { title: '2부', description: '', time: '', part: 2 },
+              ]
+          ).map((section) => {
+            const partNumber = section.part
             const sectionSongCount = hasPartData
               ? (performanceData.setlist ?? []).filter(song => song.part === partNumber).length
               : Math.ceil((performanceData.setlist ?? []).length / sectionCount)

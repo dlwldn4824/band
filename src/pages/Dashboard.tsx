@@ -32,6 +32,7 @@ const Dashboard = () => {
   const [userNicknames, setUserNicknames] = useState<Record<string, string>>({}) // userId -> nickname 매핑
   const [adminList, setAdminList] = useState<Array<{ name: string; nickname: string }>>([])
   const [sortBy, setSortBy] = useState<'name' | null>(null)
+  const [guestListSearch, setGuestListSearch] = useState('')
   const location = useLocation()
   const navigate = useNavigate()
   const drinkBannerRef = useRef<HTMLDivElement>(null)
@@ -512,7 +513,10 @@ const Dashboard = () => {
         {isAdmin && showGuestList && (
           <div 
             className="guest-list-modal-overlay"
-            onClick={() => setShowGuestList(false)}
+            onClick={() => {
+              setShowGuestList(false)
+              setGuestListSearch('')
+            }}
           >
             <div 
               className="guest-list-modal"
@@ -522,7 +526,10 @@ const Dashboard = () => {
                 <h2>게스트 리스트</h2>
                 <button
                   className="guest-list-modal-close"
-                  onClick={() => setShowGuestList(false)}
+                  onClick={() => {
+                    setShowGuestList(false)
+                    setGuestListSearch('')
+                  }}
                 >
                   ✕
                 </button>
@@ -530,19 +537,17 @@ const Dashboard = () => {
               <div className="guest-list-modal-content">
                 {guests.filter(g => !g.isDeleted).length > 0 ? (
                   <>
-                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', justifyContent: 'flex-end' }}>
+                    <div className="guest-list-toolbar">
+                      <input
+                        type="search"
+                        className="guest-list-search"
+                        placeholder="이름, 닉네임, 전화번호 검색"
+                        value={guestListSearch}
+                        onChange={(e) => setGuestListSearch(e.target.value)}
+                      />
                       <button
                         onClick={() => setSortBy(sortBy === 'name' ? null : 'name')}
-                        style={{
-                          padding: '0.375rem 0.75rem',
-                          background: sortBy === 'name' ? '#FF4C4C' : '#f5f5f5',
-                          color: sortBy === 'name' ? '#ffffff' : '#333',
-                          border: '1px solid #ddd',
-                          borderRadius: '6px',
-                          fontSize: '0.75rem',
-                          cursor: 'pointer',
-                          fontWeight: sortBy === 'name' ? '600' : '400'
-                        }}
+                        className={`guest-list-sort-button ${sortBy === 'name' ? 'active' : ''}`}
                       >
                         이름 순
                       </button>
@@ -561,8 +566,27 @@ const Dashboard = () => {
                         </thead>
                         <tbody>
                           {(() => {
-                            // 삭제된 게스트는 필터링 (admin에서는 보이지 않음)
+                            const searchQuery = guestListSearch.trim().toLowerCase()
+                            const searchDigits = searchQuery.replace(/\D/g, '')
+
                             let sortedGuests = guests.filter(g => !g.isDeleted)
+
+                            if (searchQuery) {
+                              sortedGuests = sortedGuests.filter((guest) => {
+                                const guestName = (guest.name || guest['이름'] || guest.Name || '').trim()
+                                const guestPhoneRaw = String(guest.phone || guest['전화번호'] || guest.Phone || '')
+                                const userId = normalizePhone(guestPhoneRaw)
+                                const guestNickname = userNicknames[userId] || ''
+
+                                const nameMatch = guestName.toLowerCase().includes(searchQuery)
+                                const nicknameMatch = guestNickname.toLowerCase().includes(searchQuery)
+                                const phoneMatch =
+                                  searchDigits.length > 0 &&
+                                  guestPhoneRaw.replace(/\D/g, '').includes(searchDigits)
+
+                                return nameMatch || nicknameMatch || phoneMatch
+                              })
+                            }
                             
                             if (sortBy === 'name') {
                               sortedGuests.sort((a, b) => {
@@ -570,6 +594,16 @@ const Dashboard = () => {
                                 const nameB = (b.name || b['이름'] || b.Name || '').trim()
                                 return nameA.localeCompare(nameB, 'ko')
                               })
+                            }
+
+                            if (sortedGuests.length === 0) {
+                              return (
+                                <tr>
+                                  <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>
+                                    검색 결과가 없습니다.
+                                  </td>
+                                </tr>
+                              )
                             }
                             
                             return sortedGuests.map((guest, index) => {
@@ -602,8 +636,8 @@ const Dashboard = () => {
                             )
                           })
                         })()}
-                          {/* 운영진 정보 표시 (관리자일 때만, 항상 맨 아래) */}
-                          {isAdmin && adminList.map((admin, adminIndex) => (
+                          {/* 운영진 정보 표시 (검색 중이 아닐 때만) */}
+                          {isAdmin && !guestListSearch.trim() && adminList.map((admin, adminIndex) => (
                             <tr key={`admin-${adminIndex}`} style={{ backgroundColor: '#1a1a1a' }}>
                               <td style={{ color: '#ffffff' }}>운영</td>
                               <td style={{ color: '#ffffff' }}>{admin.name}</td>
