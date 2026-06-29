@@ -31,9 +31,9 @@
 }
 
 /* =========================
-   Timeline
+   Timeline (홈 이벤트 전용 — Performances 와 클래스명 겹침 방지)
    ========================= */
-.timeline {
+.events .timeline {
   position: relative;
   width: 100%;
   display: flex;
@@ -42,7 +42,7 @@
 }
 
 /* 레일(라인) */
-.timeline-rail {
+.events .timeline-rail {
   --rail-center-x: 27px; /* 레일 중앙 x 좌표 (width 54px / 2) */
   position: absolute;
   left: 0;
@@ -53,7 +53,7 @@
 }
 
 /* 세로 라인: 레일 중앙 */
-.timeline-line {
+.events .timeline-line {
   position: absolute;
   left: var(--rail-center-x);
   top: 0;
@@ -66,7 +66,7 @@
 }
 
 /* 각 행: dot + 카드 */
-.timeline-row {
+.events .timeline-row {
   display: flex;
   align-items: center;
   gap: 27px; /* rail과 카드 사이 간격 */
@@ -74,7 +74,7 @@
 }
 
 /* 레일 아이템: dot 컨테이너 */
-.timeline-rail-item {
+.events .timeline-rail-item {
   position: relative;
   width: 54px;
   flex-shrink: 0;
@@ -84,7 +84,7 @@
 }
 
 /* dot: 라인 위에 포개지게 */
-.timeline-dot {
+.events .timeline-dot {
   --rail-center-x: 27px; /* timeline-rail의 --rail-center-x와 동일 */
   width: 30px;
   height: 30px;
@@ -104,17 +104,17 @@
   transition: all 0.2s;
 }
 
-.timeline-dot:hover {
+.events .timeline-dot:hover {
   transform: translateX(-50%) scale(1.1);
   box-shadow: 0 2px 8px rgba(255, 76, 76, 0.4);
 }
 
-.timeline-dot.no-hover:hover {
+.events .timeline-dot.no-hover:hover {
   transform: translateX(-50%);
   box-shadow: none;
 }
 
-.timeline-item {
+.events .timeline-item {
   position: relative;
   width: 100%;
   display: flex;
@@ -123,18 +123,18 @@
   min-height: fit-content;
 }
 
-.timeline-content {
+.events .timeline-content {
   flex: 1;
   color: white;
   transition: opacity 0.2s, transform 0.2s;
 }
 
-.timeline-content:hover {
+.events .timeline-content:hover {
   opacity: 0.8;
   transform: translateX(4px);
 }
 
-.timeline-content.no-hover:hover {
+.events .timeline-content.no-hover:hover {
   opacity: 1;
   transform: none;
 }
@@ -221,7 +221,7 @@
     gap: 12px;
   }
 
-  .timeline-dot {
+  .events .timeline-dot {
     width: 28px;
     height: 28px;
     font-size: 0.8rem;
