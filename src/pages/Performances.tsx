@@ -416,8 +416,11 @@ const Performances = () => {
                   setSelectedSongIndex(null)
                 }}
                 aria-label="닫기"
+                type="button"
               >
-                ×
+                <svg className="song-icon" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+                  <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                </svg>
               </button>
 
               {selectedSong.image?.trim() && (
@@ -448,8 +451,11 @@ const Performances = () => {
                       }}
                       disabled={selectedSongIndex === 0}
                       aria-label="이전 곡"
+                      type="button"
                     >
-                      ‹
+                      <svg className="song-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                        <path d="M14 6l-6 6 6 6" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
                     </button>
 
                     <div className="song-info-content">
@@ -481,8 +487,11 @@ const Performances = () => {
                       }}
                       disabled={!performanceData.setlist || selectedSongIndex === performanceData.setlist.length - 1}
                       aria-label="다음 곡"
+                      type="button"
                     >
-                      ›
+                      <svg className="song-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                        <path d="M10 6l6 6-6 6" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
                     </button>
                   </div>
                 </div>
