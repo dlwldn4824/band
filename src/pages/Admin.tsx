@@ -15,6 +15,7 @@ import { generatePersonalLoginLink, makeGuestKey } from '../utils/adminUtils'
 import { normalizePhone, normalizeName, normalizeKoreanMobile } from '../utils/guestUtils'
 import { DEFAULT_TIMELINE_EVENTS, createDefaultPerformanceSection, getPerformanceSections } from '../utils/performanceEvents'
 import { DEFAULT_VENUE_NAME, DEFAULT_VENUE_ADDRESS } from '../utils/venueDefaults'
+import { verifyAdminCode } from '../services/adminAuthApi'
 import {
   parseBookedAtFromRow,
   parseBookedAt,
@@ -60,6 +61,7 @@ const Admin = () => {
   const [userNicknames, setUserNicknames] = useState<Record<string, string>>({}) // userId -> nickname 매핑
   const [adminList, setAdminList] = useState<Array<{ name: string; nickname: string }>>([])
   const [passwordError, setPasswordError] = useState('')
+  const [isVerifyingPassword, setIsVerifyingPassword] = useState(false)
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null)
   const [showGuestEditModal, setShowGuestEditModal] = useState(false)
   const [editingGuestIndex, setEditingGuestIndex] = useState<number | null>(null)
@@ -745,18 +747,24 @@ const Admin = () => {
   }
 
   // 비밀번호 확인 처리
-  const handlePasswordConfirm = () => {
-    if (passwordInput === '0627') {
-      setShowPasswordModal(false)
-      setPasswordInput('')
-      setPasswordError('')
-      if (pendingAction) {
-        pendingAction()
-        setPendingAction(null)
+  const handlePasswordConfirm = async () => {
+    setIsVerifyingPassword(true)
+    try {
+      const ok = await verifyAdminCode('action', passwordInput)
+      if (ok) {
+        setShowPasswordModal(false)
+        setPasswordInput('')
+        setPasswordError('')
+        if (pendingAction) {
+          pendingAction()
+          setPendingAction(null)
+        }
+      } else {
+        setPasswordError('비밀번호가 일치하지 않습니다.')
+        setPasswordInput('')
       }
-    } else {
-      setPasswordError('비밀번호가 일치하지 않습니다.')
-      setPasswordInput('')
+    } finally {
+      setIsVerifyingPassword(false)
     }
   }
 
@@ -3109,6 +3117,7 @@ const Admin = () => {
           setPasswordError('')
         }}
         onConfirm={handlePasswordConfirm}
+        isConfirming={isVerifyingPassword}
       />
 
       {/* 게스트 추가 모달 */}

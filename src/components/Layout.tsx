@@ -54,6 +54,30 @@ const Layout = ({ children }: LayoutProps) => {
     }
   }, [adminStatus, isAuthenticated]) // 헤더 내용이 변경될 수 있으므로 의존성 추가
 
+  // 페이지 이동 시 스크롤 위치 초기화 (홈 하단 타임라인 → 공연 정보 등)
+  useEffect(() => {
+    const scrollToTop = () => {
+      if (document.body.style.position === 'fixed') {
+        document.body.style.overflow = ''
+        document.body.style.position = ''
+        document.body.style.top = ''
+        document.body.style.width = ''
+      }
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior })
+      document.documentElement.scrollTop = 0
+      document.body.scrollTop = 0
+    }
+
+    scrollToTop()
+    const rafId = requestAnimationFrame(scrollToTop)
+    const timeoutId = setTimeout(scrollToTop, 50)
+
+    return () => {
+      cancelAnimationFrame(rafId)
+      clearTimeout(timeoutId)
+    }
+  }, [location.pathname, location.key])
+
   const isActive = (path: string) => {
     return location.pathname === path ? 'active' : ''
   }

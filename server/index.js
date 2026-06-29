@@ -4,6 +4,7 @@ import { Server } from 'socket.io'
 import nodemailer from 'nodemailer'
 import cors from 'cors'
 import dotenv from 'dotenv'
+import { handleVerifyAdminCodeRequest } from './lib/verifyAdminCode.js'
 
 dotenv.config()
 
@@ -31,6 +32,8 @@ const createTransporter = () => {
     }
   })
 }
+
+app.post('/api/verify-admin-code', handleVerifyAdminCodeRequest)
 
 // 이메일 전송 API
 app.post('/api/send-email', async (req, res) => {

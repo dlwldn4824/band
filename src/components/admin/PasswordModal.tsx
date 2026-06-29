@@ -4,6 +4,7 @@ interface PasswordModalProps {
   isOpen: boolean
   passwordInput: string
   passwordError: string
+  isConfirming?: boolean
   onClose: () => void
   onPasswordChange: (password: string) => void
   onConfirm: () => void
@@ -12,7 +13,8 @@ interface PasswordModalProps {
 const PasswordModal = ({ 
   isOpen, 
   passwordInput, 
-  passwordError, 
+  passwordError,
+  isConfirming = false,
   onClose, 
   onPasswordChange, 
   onConfirm 
@@ -52,9 +54,9 @@ const PasswordModal = ({
             type="button"
             onClick={onConfirm}
             className="login-button"
-            disabled={!passwordInput.trim()}
+            disabled={!passwordInput.trim() || isConfirming}
           >
-            확인
+            {isConfirming ? '확인 중...' : '확인'}
           </button>
         </div>
       </div>

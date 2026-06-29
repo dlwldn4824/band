@@ -127,28 +127,31 @@
   width: 54px;
   flex-shrink: 0;
   display: flex;
-  align-items: center;     /* dot을 세로 중앙 */
-  height: 100%;            /* timeline-item과 같은 높이 */
+  align-items: center;
+  justify-content: center;
+  height: 100%;
   }
   
   /* dot: 라인 위에 포개지게 */
   .timeline-dot {
-  --rail-center-x: 27px; /* timeline-rail의 --rail-center-x와 동일 */
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
   border-radius: 50%;
   background: #ff4c4c;
   color: #fff;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
+  line-height: 1;
+  padding: 0;
+  box-sizing: border-box;
   font-family: 'Pretendard', sans-serif;
+  font-variant-numeric: tabular-nums;
   z-index: 3;
   position: relative;
-  left: var(--rail-center-x);
-  transform: translateX(-50%); /* dot 중심이 라인 중심과 정확히 일치 */
+  flex-shrink: 0;
   }
   
   /* 각 카드 아이템 */
@@ -804,9 +807,10 @@
   }
   
   .timeline-dot {
-  width: 28px;
-  height: 28px;
-  font-size: 0.8rem;
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  font-size: 0.75rem;
   }
   
   .song-item {
@@ -873,9 +877,10 @@
   }
   
   .timeline-dot {
-  width: 26px;
-  height: 26px;
-  font-size: 0.75rem;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  font-size: 0.7rem;
   }
   
   .song-item {
