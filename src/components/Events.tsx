@@ -28,16 +28,17 @@ const Events = ({ events }: EventsProps) => {
     if (displayIndex === 0) return
 
     const event = orderedEvents[displayIndex]
-    const storagePart = getStoragePartForSectionTitle(event?.title || '', events)
+    const sectionTitle = event?.title || ''
+    const storagePart = getStoragePartForSectionTitle(sectionTitle, events)
     void trackEvent('timeline_event_clicked', {
       event_index: displayIndex,
-      event_title: event?.title || '',
+      event_title: sectionTitle,
       target_part: String(storagePart),
     })
     void trackEvent('cta_clicked', { cta_name: 'timeline_footer', source_page: location.pathname })
 
     const path = isAdminPage ? '/admin/performances' : '/performances'
-    navigate(path, { state: { part: storagePart } })
+    navigate(path, { state: { sectionTitle, part: storagePart } })
   }
 
   const handleSetlistClick = () => {

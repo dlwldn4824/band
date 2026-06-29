@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useData, SetlistItem } from '../contexts/DataContext'
 import { useAuth } from '../contexts/AuthContext'
@@ -20,6 +20,7 @@ import drumIcon from '../assets/배경/드럼.png'
 import './Performances.css'
 import {
   filterSetlistForSection,
+  getDisplayPartForSectionTitle,
   getDisplayPartForStoragePart,
   getOrderedPerformanceSections,
 } from '../utils/performanceEvents'
@@ -49,18 +50,29 @@ const Performances = () => {
   }, [location.pathname, location.state])
   const [selectedSongIndex, setSelectedSongIndex] = useState<number | null>(null)
   const [selectedPart, setSelectedPart] = useState(1)
+  const appliedTimelineNavKeyRef = useRef<string | null>(null)
   const performanceSections = getOrderedPerformanceSections(performanceData?.events)
 
-  // 타임라인에서 클릭한 섹션으로 이동
+  // 타임라인(홈)에서 클릭한 섹션으로 이동 — location.key당 1회만 적용
   useEffect(() => {
-    if (location.state && typeof (location.state as { part?: number }).part === 'number') {
-      const storagePart = (location.state as { part: number }).part
-      const displayPart = getDisplayPartForStoragePart(storagePart, performanceData?.events)
-      if (performanceSections.some((section) => section.part === displayPart)) {
-        setSelectedPart(displayPart)
-      }
+    const navState = location.state as { part?: number; sectionTitle?: string } | null
+    if (!navState) return
+
+    const navKey = location.key
+    if (appliedTimelineNavKeyRef.current === navKey) return
+
+    let displayPart: number | null = null
+    if (navState.sectionTitle) {
+      displayPart = getDisplayPartForSectionTitle(navState.sectionTitle, performanceData?.events)
+    } else if (typeof navState.part === 'number') {
+      displayPart = getDisplayPartForStoragePart(navState.part, performanceData?.events)
     }
-  }, [location.state, performanceSections, performanceData?.events])
+
+    if (displayPart !== null && performanceSections.some((section) => section.part === displayPart)) {
+      appliedTimelineNavKeyRef.current = navKey
+      setSelectedPart(displayPart)
+    }
+  }, [location.key, location.state, performanceSections, performanceData?.events])
 
   useEffect(() => {
     if (

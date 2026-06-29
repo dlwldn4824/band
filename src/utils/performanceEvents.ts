@@ -71,6 +71,15 @@ export const getOrderedPerformanceSections = (events?: TimelineEvent[]): Perform
       part: index + 1,
     }))
 
+export const getDisplayPartForSectionTitle = (
+  title: string,
+  events?: TimelineEvent[]
+): number => {
+  const ordered = getOrderedPerformanceSections(events)
+  const matched = ordered.find((section) => sectionTitlesMatch(section.title, title))
+  return matched?.part ?? 1
+}
+
 export const getDisplayPartForStoragePart = (
   storagePart: number,
   events?: TimelineEvent[]
