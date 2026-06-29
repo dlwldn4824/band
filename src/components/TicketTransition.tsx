@@ -144,7 +144,7 @@ const css = `
 }
 
 .tt_ticket--vertical{
-  aspect-ratio: 1024 / 486;
+  aspect-ratio: 1024 / 480;
 }
 
 .tt_ticket--horizontal{
