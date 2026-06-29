@@ -82,56 +82,50 @@
     Timeline
     ========================= */
   .timeline {
+  --timeline-rail-width: 54px;
+  --timeline-rail-gap: 27px;
   position: relative;
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 15px; /* 각 행 사이 간격 (카드와 카드, dot과 dot 사이 간격) */
+  gap: 15px;
   }
-  
-  /* 레일(라인) */
-  .timeline-rail {
-  --rail-center-x: 27px; /* 레일 중앙 x 좌표 (width 54px / 2) */
+
+  /* 세로 라인: dot 열 중앙에 고정 */
+  .timeline::before {
+  content: '';
   position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 54px;
-  pointer-events: none; /* 클릭 이벤트 방해하지 않도록 */
-  }
-  
-  /* 세로 라인: 레일 중앙 */
-  .timeline-line {
-  position: absolute;
-  left: var(--rail-center-x);
+  left: calc(var(--timeline-rail-width) / 2);
   top: 0;
   bottom: 0;
   width: 2px;
   background: rgba(255, 255, 255, 0.25);
   border-radius: 2px;
   transform: translateX(-50%);
+  pointer-events: none;
   z-index: 1;
   }
-  
-  /* 각 행: dot + 카드 */
+
+  /* 각 행: dot + 카드 (같은 grid 열 너비로 정렬 보장) */
   .timeline-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: var(--timeline-rail-width) minmax(0, 1fr);
+  column-gap: var(--timeline-rail-gap);
   align-items: center;
-  gap: 27px; /* rail과 카드 사이 간격 */
   position: relative;
   }
-  
-  /* 레일 아이템: dot 컨테이너 */
+
+  /* dot 컨테이너 */
   .timeline-rail-item {
-  position: relative;
-  width: 54px;
+  width: var(--timeline-rail-width);
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100%;
+  position: relative;
+  z-index: 2;
   }
-  
+
   /* dot: 라인 위에 포개지게 */
   .timeline-dot {
   width: 32px;
@@ -142,15 +136,15 @@
   color: #fff;
   font-size: 0.8rem;
   font-weight: 700;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   line-height: 1;
   padding: 0;
+  margin: 0;
   box-sizing: border-box;
   font-family: 'Pretendard', sans-serif;
   font-variant-numeric: tabular-nums;
-  z-index: 3;
-  position: relative;
   flex-shrink: 0;
   }
   
@@ -312,97 +306,58 @@
   
   .song-detail-close {
   position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
-  color: #000000;  
+  top: max(0.75rem, env(safe-area-inset-top, 0px));
+  right: max(0.75rem, env(safe-area-inset-right, 0px));
+  color: #000000;
   background-color: #d8d8d8;
   border: none;
   z-index: 10004;
   border-radius: 50%;
   width: 32px;
   height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
+  margin: 0;
   font-size: 1.5rem;
+  line-height: 1;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
+  transition: background 0.2s, transform 0.2s;
   flex-shrink: 0;
   }
-  
+
   .song-detail-close:hover {
   background: rgba(0, 0, 0, 0.2);
   transform: scale(1.1);
   }
-  
-  /* 곡 네비게이션 버튼 */
-  .song-navigation {
-  position: absolute;
-  top: calc(195px + 0.75rem + 0.5rem + 0.5rem);
-  left: 0;
-  right: 0;
-  display: flex;
-  justify-content: space-between;
-  padding: 0 0.5rem;
-  pointer-events: none;
-  z-index: 5;
-  }
-  
-  .song-nav-button {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.9);
-  border: 2px solid rgba(216, 134, 118, 0.3);
-  color: #d88676;
-  font-size: 1.5rem;
-  font-weight: 700;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: auto;
-  transition: all 0.2s;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  flex-shrink: 0;
-  }
-  
-  .song-nav-button:hover:not(:disabled) {
-  background: #d88676;
-  color: white;
-  border-color: #d88676;
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(216, 134, 118, 0.4);
-  }
-  
-  .song-nav-button:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-  pointer-events: none;
-  }
-  
-  .song-nav-prev {
-  margin-left: 0.5rem;
-  }
-  
-  .song-nav-next {
-  margin-right: 0.5rem;
-  }
-  
+
   /* 곡 정보 섹션 */
   .song-info-section {
   position: relative;
   background: #2a2a2a;
-  padding: 1.5rem 1rem 0.75rem 1rem;
+  padding: 3rem 0.5rem 0.75rem;
   border-radius: 0;
   box-sizing: border-box;
   flex-shrink: 0;
   }
-  
+
+  .song-info-nav-row {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 40px;
+  align-items: center;
+  column-gap: 0.5rem;
+  width: 100%;
+  }
+
   .song-info-content {
-  position: relative;
+  min-width: 0;
   width: 100%;
   text-align: center;
+  padding: 0 0.25rem;
+  box-sizing: border-box;
   }
   
   .song-info-header {
@@ -453,36 +408,33 @@
   }
   
   .song-nav-arrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
+  position: static;
+  transform: none;
   background: rgba(255, 255, 255, 0.1);
   border: none;
   border-radius: 50%;
   width: 36px;
   height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0;
+  margin: 0;
   font-size: 1.5rem;
+  line-height: 1;
   color: rgba(255, 255, 255, 0.6);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
+  transition: background 0.2s, color 0.2s;
+  justify-self: center;
   }
-  
-  .song-nav-prev {
-  left: 0;
-  }
-  
-  .song-nav-next {
-  right: 0;
-  }
-  
+
   .song-nav-arrow:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.2);
   color: rgba(255, 255, 255, 0.9);
   }
-  
+
   .song-nav-arrow:disabled {
   opacity: 0.3;
   cursor: not-allowed;
@@ -796,16 +748,7 @@
   font-size: 1.1rem;
   padding: 0.875rem 2rem;
   }
-  
-  .timeline-rail-item,
-  .timeline-item {
-  height: 84px;
-  }
-  
-  .timeline-content {
-  gap: 4px;
-  }
-  
+
   .timeline-dot {
   width: 30px;
   height: 30px;
@@ -841,12 +784,30 @@
   }
   
   .song-detail-close {
-  top: 0.5rem;
-  right: 0.5rem;
+  top: max(0.5rem, env(safe-area-inset-top, 0px));
+  right: max(0.5rem, env(safe-area-inset-right, 0px));
   width: 28px;
   height: 28px;
+  min-width: 28px;
+  min-height: 28px;
   font-size: 1.1rem;
   color: #3a3a3a;
+  }
+
+  .song-info-section {
+  padding-top: 2.75rem;
+  }
+
+  .song-info-nav-row {
+  grid-template-columns: 36px minmax(0, 1fr) 36px;
+  }
+
+  .song-nav-arrow {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  font-size: 1.25rem;
   }
   
   .song-image-container { border-radius: 12px 12px 0 0; }
@@ -870,12 +831,7 @@
   font-size: 1rem;
   padding: 0.75rem 1.75rem;
   }
-  
-  .timeline-rail-item,
-  .timeline-item {
-  height: 78px;
-  }
-  
+
   .timeline-dot {
   width: 28px;
   height: 28px;

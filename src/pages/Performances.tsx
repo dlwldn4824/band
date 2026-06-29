@@ -359,12 +359,6 @@ const Performances = () => {
         {/* 셋리스트 리스트 */}
         <div className="setlist-list-section">
           <div className="timeline">
-            {/* 타임라인 레일 (라인) */}
-            <div className="timeline-rail">
-              <div className="timeline-line" />
-            </div>
-
-            {/* 각 행: dot + 카드 */}
             {displaySongs.map((item, index) => {
               const globalIndex = startIndex + index
               const prevItem = index > 0 ? displaySongs[index - 1] : null
@@ -421,6 +415,7 @@ const Performances = () => {
                   setSelectedSong(null)
                   setSelectedSongIndex(null)
                 }}
+                aria-label="닫기"
               >
                 ×
               </button>
@@ -441,24 +436,7 @@ const Performances = () => {
               <div className="song-detail-scrollable">
                 {/* 곡 정보 섹션 */}
                 <div className="song-info-section">
-                  <div className="song-info-content">
-                    <div className="song-info-header">
-                      <button className="song-part-button">
-                        {(() => {
-                          const currentNumber = displaySongs.findIndex(song => song === selectedSong) + 1
-                          if (currentNumber <= 0) return selectedSectionTitle
-                          return `${selectedSectionTitle} ${currentNumber}번째 곡`
-                        })()}
-                      </button>
-                      <span className="song-number-display">
-                        {selectedSongIndex + 1}/{performanceData.setlist.length}
-                      </span>
-                    </div>
-
-                    <h2 className="song-title">{selectedSong.songName}</h2>
-                    {selectedSong.artist && <p className="song-artist">{selectedSong.artist}</p>}
-
-                    {/* 이전/다음 곡 버튼 */}
+                  <div className="song-info-nav-row">
                     <button
                       className="song-nav-arrow song-nav-prev"
                       onClick={() => {
@@ -469,9 +447,29 @@ const Performances = () => {
                         }
                       }}
                       disabled={selectedSongIndex === 0}
+                      aria-label="이전 곡"
                     >
                       ‹
                     </button>
+
+                    <div className="song-info-content">
+                      <div className="song-info-header">
+                        <button className="song-part-button">
+                          {(() => {
+                            const currentNumber = displaySongs.findIndex(song => song === selectedSong) + 1
+                            if (currentNumber <= 0) return selectedSectionTitle
+                            return `${selectedSectionTitle} ${currentNumber}번째 곡`
+                          })()}
+                        </button>
+                        <span className="song-number-display">
+                          {selectedSongIndex + 1}/{performanceData.setlist.length}
+                        </span>
+                      </div>
+
+                      <h2 className="song-title">{selectedSong.songName}</h2>
+                      {selectedSong.artist && <p className="song-artist">{selectedSong.artist}</p>}
+                    </div>
+
                     <button
                       className="song-nav-arrow song-nav-next"
                       onClick={() => {
@@ -482,6 +480,7 @@ const Performances = () => {
                         }
                       }}
                       disabled={!performanceData.setlist || selectedSongIndex === performanceData.setlist.length - 1}
+                      aria-label="다음 곡"
                     >
                       ›
                     </button>
