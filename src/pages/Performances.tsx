@@ -23,6 +23,7 @@ import {
   getDisplayPartForSectionTitle,
   getDisplayPartForStoragePart,
   getOrderedPerformanceSections,
+  getSetlistSongSectionMeta,
 } from '../utils/performanceEvents'
 import { trackEvent, getDaysSinceSetlistUpload } from '../analytics'
 
@@ -147,6 +148,23 @@ const Performances = () => {
 
     return () => unsubscribe()
   }, [selectedSong])
+
+  // 모달에서 곡 이동 시 해당 팀 탭과 동기화
+  useEffect(() => {
+    if (selectedSongIndex === null || !performanceData?.setlist?.length) return
+    const song = performanceData.setlist[selectedSongIndex]
+    if (!song) return
+
+    const meta = getSetlistSongSectionMeta(
+      song,
+      performanceData.setlist,
+      performanceData.events,
+      performanceSections
+    )
+    if (meta && performanceSections.some((section) => section.part === meta.displayPart)) {
+      setSelectedPart(meta.displayPart)
+    }
+  }, [selectedSongIndex, performanceData?.setlist, performanceData?.events, performanceSections])
 
   // 응원 메시지 추가
   const handleAddComment = async () => {
@@ -323,6 +341,16 @@ const Performances = () => {
 
   const selectedSectionTitle = selectedSection?.title || `${selectedPart}부`
 
+  const selectedSongMeta =
+    selectedSong && performanceData?.setlist
+      ? getSetlistSongSectionMeta(
+          selectedSong,
+          performanceData.setlist,
+          performanceData.events,
+          performanceSections
+        )
+      : null
+
   return (
     <div className="performances-page">
       <div className="performances-content">
@@ -461,14 +489,13 @@ const Performances = () => {
                     <div className="song-info-content">
                       <div className="song-info-header">
                         <button className="song-part-button">
-                          {(() => {
-                            const currentNumber = displaySongs.findIndex(song => song === selectedSong) + 1
-                            if (currentNumber <= 0) return selectedSectionTitle
-                            return `${selectedSectionTitle} ${currentNumber}번째 곡`
-                          })()}
+                          {selectedSongMeta && selectedSongMeta.numberInSection > 0
+                            ? `${selectedSongMeta.sectionTitle} ${selectedSongMeta.numberInSection}번째 곡`
+                            : selectedSongMeta?.sectionTitle ?? selectedSectionTitle}
                         </button>
                         <span className="song-number-display">
-                          {selectedSongIndex + 1}/{performanceData.setlist.length}
+                          {(selectedSongMeta?.globalIndex ?? selectedSongIndex ?? 0) + 1}/
+                          {performanceData.setlist.length}
                         </span>
                       </div>
 

@@ -159,3 +159,44 @@ export const createDefaultPerformanceSection = (sectionIndex: number): TimelineE
   description: '',
   time: '',
 })
+
+export interface SetlistSongSectionMeta {
+  sectionTitle: string
+  displayPart: number
+  numberInSection: number
+  globalIndex: number
+}
+
+/** 곡이 속한 공연 섹션(팀)과 섹션 내 순번 */
+export const getSetlistSongSectionMeta = (
+  song: SetlistFilterItem,
+  setlist: SetlistFilterItem[],
+  events?: TimelineEvent[],
+  orderedSections?: PerformanceSection[]
+): SetlistSongSectionMeta | null => {
+  const globalIndex = setlist.findIndex((item) => item === song)
+  if (globalIndex < 0) return null
+
+  const sections = orderedSections ?? getOrderedPerformanceSections(events)
+
+  for (const section of sections) {
+    const sectionSongs = filterSetlistForSection(setlist, section, events)
+    const numberInSection = sectionSongs.findIndex((item) => item === song) + 1
+    if (numberInSection > 0) {
+      return {
+        sectionTitle: section.title,
+        displayPart: section.part,
+        numberInSection,
+        globalIndex,
+      }
+    }
+  }
+
+  const fallbackTitle = (song.team ?? '').trim() || `${song.part ?? 1}부`
+  return {
+    sectionTitle: fallbackTitle,
+    displayPart: sections[0]?.part ?? 1,
+    numberInSection: 0,
+    globalIndex,
+  }
+}
