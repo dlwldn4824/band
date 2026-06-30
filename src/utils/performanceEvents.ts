@@ -98,6 +98,8 @@ export const getDisplayPartForStoragePart = (
 export interface SetlistFilterItem {
   part?: number
   team?: string
+  songName?: string
+  artist?: string
 }
 
 export const filterSetlistForSection = (
@@ -167,35 +169,135 @@ export interface SetlistSongSectionMeta {
   globalIndex: number
 }
 
+export const findSongIndexInSetlist = (
+  setlist: SetlistFilterItem[],
+  song: SetlistFilterItem
+): number => {
+  const byReference = setlist.findIndex((item) => item === song)
+  if (byReference >= 0) return byReference
+
+  return setlist.findIndex(
+    (item) =>
+      item.songName === song.songName &&
+      item.artist === song.artist &&
+      (item.team ?? '') === (song.team ?? '') &&
+      item.part === song.part
+  )
+}
+
+/** 섹션별로 겹치지 않게 곡 인덱스 배정 (탭 표시 순서와 동일) */
+export const buildSetlistSectionAssignments = (
+  setlist: SetlistFilterItem[],
+  events?: TimelineEvent[],
+  orderedSections?: PerformanceSection[]
+): Map<number, { section: PerformanceSection; numberInSection: number }> => {
+  const sections = orderedSections ?? getOrderedPerformanceSections(events)
+  const claimed = new Set<number>()
+  const assignments = new Map<number, { section: PerformanceSection; numberInSection: number }>()
+
+  for (const section of sections) {
+    const sectionSongs = filterSetlistForSection(setlist, section, events)
+    const indices = sectionSongs
+      .map((song) => findSongIndexInSetlist(setlist, song))
+      .filter((index) => index >= 0 && !claimed.has(index))
+      .sort((a, b) => a - b)
+
+    indices.forEach((globalIndex, orderIndex) => {
+      claimed.add(globalIndex)
+      assignments.set(globalIndex, {
+        section,
+        numberInSection: orderIndex + 1,
+      })
+    })
+  }
+
+  return assignments
+}
+
+/** team이 바뀌는 연속 블록을 공연 섹션 순서에 매핑 */
+export const getSetlistSongSectionMetaByTeamBlocks = (
+  globalIndex: number,
+  setlist: SetlistFilterItem[],
+  orderedSections?: PerformanceSection[],
+  events?: TimelineEvent[]
+): SetlistSongSectionMeta | null => {
+  if (globalIndex < 0 || globalIndex >= setlist.length) return null
+
+  const sections = orderedSections ?? getOrderedPerformanceSections(events)
+  if (!sections.length) return null
+
+  const blocks: Array<{ team: string; start: number; end: number }> = []
+  setlist.forEach((song, index) => {
+    const team = (song.team ?? '').trim() || `__part_${song.part ?? 0}__`
+    const last = blocks[blocks.length - 1]
+    if (last && last.team === team) {
+      last.end = index
+      return
+    }
+    blocks.push({ team, start: index, end: index })
+  })
+
+  const blockIndex = blocks.findIndex(
+    (block) => globalIndex >= block.start && globalIndex <= block.end
+  )
+  if (blockIndex < 0) return null
+
+  const block = blocks[blockIndex]
+  const section = sections[Math.min(blockIndex, sections.length - 1)]
+
+  return {
+    sectionTitle: section.title,
+    displayPart: section.part,
+    numberInSection: globalIndex - block.start + 1,
+    globalIndex,
+  }
+}
+
 /** 곡이 속한 공연 섹션(팀)과 섹션 내 순번 */
 export const getSetlistSongSectionMeta = (
   song: SetlistFilterItem,
   setlist: SetlistFilterItem[],
   events?: TimelineEvent[],
-  orderedSections?: PerformanceSection[]
+  orderedSections?: PerformanceSection[],
+  globalIndexHint?: number | null
 ): SetlistSongSectionMeta | null => {
-  const globalIndex = setlist.findIndex((item) => item === song)
-  if (globalIndex < 0) return null
+  const globalIndex =
+    globalIndexHint ?? findSongIndexInSetlist(setlist, song)
+  if (globalIndex < 0 || globalIndex >= setlist.length) return null
 
   const sections = orderedSections ?? getOrderedPerformanceSections(events)
+  const assignments = buildSetlistSectionAssignments(setlist, events, sections)
+  const assignment = assignments.get(globalIndex)
 
-  for (const section of sections) {
-    const sectionSongs = filterSetlistForSection(setlist, section, events)
-    const numberInSection = sectionSongs.findIndex((item) => item === song) + 1
-    if (numberInSection > 0) {
-      return {
-        sectionTitle: section.title,
-        displayPart: section.part,
-        numberInSection,
-        globalIndex,
-      }
+  if (assignment) {
+    return {
+      sectionTitle: assignment.section.title,
+      displayPart: assignment.section.part,
+      numberInSection: assignment.numberInSection,
+      globalIndex,
     }
   }
 
-  const fallbackTitle = (song.team ?? '').trim() || `${song.part ?? 1}부`
+  const byTeamBlocks = getSetlistSongSectionMetaByTeamBlocks(
+    globalIndex,
+    setlist,
+    sections,
+    events
+  )
+  if (byTeamBlocks) return byTeamBlocks
+
+  const resolvedSong = setlist[globalIndex]
+  const matchedSection = sections.find((section) =>
+    resolvedSong.team ? sectionTitlesMatch(resolvedSong.team!, section.title) : false
+  )
+  const fallbackTitle =
+    matchedSection?.title ||
+    (resolvedSong.team ?? '').trim() ||
+    `${resolvedSong.part ?? 1}부`
+
   return {
     sectionTitle: fallbackTitle,
-    displayPart: sections[0]?.part ?? 1,
+    displayPart: matchedSection?.part ?? sections[0]?.part ?? 1,
     numberInSection: 0,
     globalIndex,
   }

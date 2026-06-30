@@ -159,7 +159,8 @@ const Performances = () => {
       song,
       performanceData.setlist,
       performanceData.events,
-      performanceSections
+      performanceSections,
+      selectedSongIndex
     )
     if (meta && performanceSections.some((section) => section.part === meta.displayPart)) {
       setSelectedPart(meta.displayPart)
@@ -342,12 +343,13 @@ const Performances = () => {
   const selectedSectionTitle = selectedSection?.title || `${selectedPart}부`
 
   const selectedSongMeta =
-    selectedSong && performanceData?.setlist
+    selectedSong && performanceData?.setlist && selectedSongIndex !== null
       ? getSetlistSongSectionMeta(
           selectedSong,
           performanceData.setlist,
           performanceData.events,
-          performanceSections
+          performanceSections,
+          selectedSongIndex
         )
       : null
 
