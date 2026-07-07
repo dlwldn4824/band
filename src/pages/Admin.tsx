@@ -1605,14 +1605,17 @@ const Admin = () => {
   }
 
   return (
-    <div className="admin-page">
-      <h1>관리자 페이지</h1>
+    <div className="admin-page admin-page--unified">
+      <div className="admin-page-header">
+        <h1 className="admin-page-title">운영 관리</h1>
+        <p className="admin-page-subtitle">게스트·공연 정보·부가 기능·로그를 관리합니다.</p>
+      </div>
       
       {/* 예매 신청 승인 섹션 */}
       {pendingBookings.length > 0 && (
-        <div className="admin-section">
-          <h2>예매 신청 승인 대기</h2>
-          <p className="section-description">
+        <div className="admin-section ui-card">
+          <h2 className="admin-section-title">예매 신청 승인 대기</h2>
+          <p className="section-description ui-muted">
             승인 대기 중인 예매 신청 목록입니다. 승인하면 게스트 목록에 자동으로 추가됩니다.
           </p>
           <div className="booking-list">
@@ -1648,9 +1651,9 @@ const Admin = () => {
         </div>
       )}
       
-      <div className="admin-section">
-        <h2>부가 기능 관리</h2>
-        <p className="section-description">
+      <div className="admin-section ui-card">
+        <h2 className="admin-section-title">부가 기능 관리</h2>
+        <p className="section-description ui-muted">
           홈·이벤트 페이지에 표시할 부가 기능을 개별적으로 활성화하거나 비활성화합니다. 비활성화된 기능은 관객 및 운영진 화면에서 보이지 않습니다.
         </p>
         <div className="feature-toggle-list">
@@ -1724,11 +1727,11 @@ const Admin = () => {
       />
 
       {/* 게스트 리스트 섹션 */}
-      <div className="admin-section">
+      <div className="admin-section ui-card">
         <div className="section-header">
           <div>
-            <h2>게스트 리스트</h2>
-            <p className="section-description">
+            <h2 className="admin-section-title">게스트 리스트</h2>
+            <p className="section-description ui-muted">
               등록된 게스트 목록을 확인할 수 있습니다.
             </p>
           </div>
@@ -2046,7 +2049,7 @@ const Admin = () => {
 
 
       {/* 운영진 닉네임 리스트 섹션 */}
-      <div className="admin-section">
+      <div className="admin-section ui-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <h2 style={{ margin: 0 }}>운영진 닉네임</h2>
           <button
@@ -2120,7 +2123,7 @@ const Admin = () => {
             운영진 닉네임 초기화
           </button>
         </div>
-        <p className="section-description">
+        <p className="section-description ui-muted">
           등록된 운영진 목록과 닉네임을 확인할 수 있습니다.
         </p>
         {adminList.length > 0 ? (
@@ -2150,9 +2153,9 @@ const Admin = () => {
       </div>
 
       {/* Google Sheets 연동 섹션 */}
-      <div className="admin-section">
-        <h2>Google Sheets 연동</h2>
-        <p className="section-description">
+      <div className="admin-section ui-card">
+        <h2 className="admin-section-title">Google Sheets 연동</h2>
+        <p className="section-description ui-muted">
           버튼을 클릭하면 현재 게스트 리스트를 Google Sheets에 수동으로 업로드합니다.
         </p>
         
@@ -2184,9 +2187,9 @@ const Admin = () => {
         )}
       </div>
 
-      <div className="admin-section">
-        <h2>게스트 정보 업로드</h2>
-        <p className="section-description">
+      <div className="admin-section ui-card">
+        <h2 className="admin-section-title">게스트 정보 업로드</h2>
+        <p className="section-description ui-muted">
           엑셀 파일을 업로드하세요. 엑셀 파일에는 '이름'과 '전화번호' 컬럼이 있어야 합니다.
           게스트 리스트가 업데이트되면 Firebase Storage의 '게스트_목록.xlsx' 파일이 자동으로 업데이트됩니다.
         </p>
@@ -2440,9 +2443,9 @@ const Admin = () => {
 
 
       {/* 공연진 리스트 섹션 */}
-      <div className="admin-section">
-        <h2>공연진 리스트</h2>
-        <p className="section-description">
+      <div className="admin-section ui-card">
+        <h2 className="admin-section-title">공연진 리스트</h2>
+        <p className="section-description ui-muted">
           셋리스트에서 자동으로 추출된 공연진 목록입니다. 공연진을 추가하거나 삭제할 수 있습니다.
         </p>
         
@@ -2500,9 +2503,9 @@ const Admin = () => {
         )}
       </div>
 
-      <div className="admin-section">
-        <h2>셋리스트 업로드</h2>
-        <p className="section-description">
+      <div className="admin-section ui-card">
+        <h2 className="admin-section-title">셋리스트 업로드</h2>
+        <p className="section-description ui-muted">
           엑셀 파일로 셋리스트를 업로드하세요. 엑셀 파일에는 '곡명', '아티스트명' 컬럼이 필수이며, '보컬', '기타', '베이스', '키보드', '드럼', '이미지' 컬럼은 선택사항입니다.
         </p>
         {performanceData && performanceData.setlist && performanceData.setlist.length > 0 && (
@@ -2562,9 +2565,9 @@ const Admin = () => {
         </div>
       </div>
 
-      <div className="admin-section">
-        <h2>공연 정보 관리</h2>
-        <p className="section-description">
+      <div className="admin-section ui-card">
+        <h2 className="admin-section-title">공연 정보 관리</h2>
+        <p className="section-description ui-muted">
           공연 정보를 수정할 수 있습니다. 타임라인의 공연 섹션 제목을 수정하거나 섹션을 추가할 수 있으며, 공연진은 셋리스트 업로드 시 자동으로 반영됩니다.
         </p>
         {performanceData && (performanceData.events || performanceData.ticket) && (
@@ -2892,9 +2895,9 @@ const Admin = () => {
         )}
       </div>
 
-      <div className="admin-section">
-        <h2>응원하기 관리</h2>
-        <p className="section-description">
+      <div className="admin-section ui-card">
+        <h2 className="admin-section-title">응원하기 관리</h2>
+        <p className="section-description ui-muted">
           곡별 응원 메시지를 확인하고 관리할 수 있습니다. 전체 응원 메시지를 삭제하거나 엑셀로 내보낼 수 있습니다.
         </p>
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
@@ -2970,9 +2973,9 @@ const Admin = () => {
         </div>
       </div>
 
-      <div className="admin-section">
-        <h2>채팅 관리</h2>
-        <p className="section-description">
+      <div className="admin-section ui-card">
+        <h2 className="admin-section-title">채팅 관리</h2>
+        <p className="section-description ui-muted">
           저장된 모든 채팅 메시지를 삭제할 수 있습니다.
         </p>
         <button 
@@ -2995,9 +2998,9 @@ const Admin = () => {
         </button>
       </div>
 
-      <div className="admin-section">
-        <h2>예매 정보 관리</h2>
-        <p className="section-description">
+      <div className="admin-section ui-card">
+        <h2 className="admin-section-title">예매 정보 관리</h2>
+        <p className="section-description ui-muted">
           입금 계좌, 현장 예매 가격, 환불 정책, 안내 전화번호 등 예매 관련 정보를 관리하세요.
         </p>
         

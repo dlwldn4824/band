@@ -2,6 +2,39 @@
   animation: fadeIn 0.5s ease-in;
 }
 
+.admin-page--unified {
+  width: 100%;
+  min-height: 100vh;
+  background: var(--ui-bg);
+  color: var(--ui-text);
+}
+
+.admin-page-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0.25rem 0 1rem 0;
+  text-align: center;
+  align-items: center;
+}
+
+.admin-page-title {
+  margin: 0;
+  color: var(--ui-text);
+  font-family: 'HakgyoansimJayeonR', sans-serif;
+  font-weight: 500;
+  font-size: 1.25rem;
+  line-height: 1.25;
+}
+
+.admin-page-subtitle {
+  margin: 0;
+  color: var(--ui-muted);
+  font-family: 'Pretendard', sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
 .order-provided {
   background-color: rgba(40, 167, 69, 0.05) !important;
 }
@@ -19,29 +52,104 @@
 }
 
 .admin-page h1 {
-  font-size: 2.5rem;
-  margin-bottom: 2rem;
-  color: #333;
+  color: var(--ui-text);
 }
 
 .admin-section {
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  margin-bottom: 2rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
 }
 
-.admin-section h2 {
-  font-size: 1.5rem;
-  margin-bottom: 0.5rem;
-  color: #333;
+.admin-section-title {
+  font-size: 1.1rem;
+  margin: 0 0 0.25rem 0;
+  color: var(--ui-text);
+  font-family: 'HakgyoansimJayeonR', sans-serif;
+  font-weight: 500;
 }
 
 .section-description {
-  color: #666;
-  margin-bottom: 1.5rem;
+  color: var(--ui-muted);
+  margin-bottom: 0.9rem;
   line-height: 1.6;
+}
+
+/* Admin: 기본 텍스트/입력/카드 룩을 대시보드 톤으로 강제 */
+.admin-page--unified,
+.admin-page--unified p,
+.admin-page--unified span,
+.admin-page--unified label,
+.admin-page--unified h2,
+.admin-page--unified h3 {
+  color: var(--ui-text);
+}
+
+.admin-page--unified input,
+.admin-page--unified textarea,
+.admin-page--unified select {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--ui-border-2);
+  color: var(--ui-text);
+  border-radius: 12px;
+}
+
+.admin-page--unified input:focus,
+.admin-page--unified textarea:focus,
+.admin-page--unified select:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--ui-focus);
+  border-color: rgba(255, 76, 76, 0.35);
+}
+
+.admin-page--unified .status-message {
+  border-radius: 12px;
+  border: 1px solid var(--ui-border);
+}
+
+.admin-page--unified .status-message.success {
+  background: rgba(40, 167, 69, 0.12);
+  color: rgba(255, 255, 255, 0.92);
+  border-color: rgba(40, 167, 69, 0.3);
+}
+
+.admin-page--unified .status-message.error {
+  background: rgba(255, 68, 68, 0.12);
+  color: rgba(255, 255, 255, 0.92);
+  border-color: rgba(255, 68, 68, 0.35);
+}
+
+.admin-page--unified .file-label,
+.admin-page--unified .sample-button {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--ui-border-2);
+  color: var(--ui-text);
+}
+
+.admin-page--unified .file-label:hover,
+.admin-page--unified .sample-button:hover {
+  border-color: rgba(255, 76, 76, 0.5);
+}
+
+.admin-page--unified .download-qr-button,
+.admin-page--unified .generate-code-button,
+.admin-page--unified .regenerate-code-button,
+.admin-page--unified .save-booking-info-button {
+  background: var(--ui-primary);
+  border-radius: 12px;
+}
+
+.admin-page--unified .reset-button {
+  border-radius: 12px;
+}
+
+.admin-page--unified .performance-info-display,
+.admin-page--unified .qr-code-section,
+.admin-page--unified .qr-code-container,
+.admin-page--unified .booking-info-preview,
+.admin-page--unified .performer-item {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--ui-border);
+  box-shadow: none;
 }
 
 .upload-area {
@@ -74,20 +182,21 @@
 
 .upload-button,
 .config-button {
-  padding: 0.875rem 2rem;
-  background: #D88676;
-  color: white;
-  border-radius: 8px;
+  padding: 0.875rem 1.25rem;
+  background: var(--ui-primary);
+  color: #ffffff;
+  border-radius: 12px;
   font-weight: 600;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
   cursor: pointer;
   border: none;
 }
 
 .upload-button:hover:not(:disabled),
 .config-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(216, 134, 118, 0.4);
+  filter: brightness(0.95);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(255, 76, 76, 0.25);
 }
 
 .upload-button:disabled {
@@ -1153,13 +1262,71 @@
 }
 
 .modal-content {
-  background: white;
+  background: var(--ui-card);
+  color: var(--ui-text);
+  border: 1px solid var(--ui-border);
   padding: 2rem;
   border-radius: 12px;
   max-width: 500px;
   width: 90%;
   max-height: 90vh;
   overflow-y: auto;
+}
+
+/* Admin 모달은 Login.css(전역 .modal-*)와 충돌할 수 있어 우선순위 고정 */
+.admin-page--unified .modal-overlay {
+  z-index: 10001;
+  backdrop-filter: blur(4px);
+}
+
+.admin-page--unified .modal-content {
+  background: var(--ui-card) !important;
+  border: 1px solid var(--ui-border) !important;
+  border-radius: 20px;
+  box-shadow: var(--ui-shadow);
+}
+
+.admin-page--unified .modal-header h2 {
+  color: var(--ui-text);
+  font-family: 'HakgyoansimJayeonR', sans-serif;
+  font-weight: 500;
+}
+
+.admin-page--unified .modal-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s;
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0;
+}
+
+.admin-page--unified .modal-close::before,
+.admin-page--unified .modal-close::after {
+  content: '';
+  position: absolute;
+  width: 2px;
+  height: 18px;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 1px;
+  transition: background-color 0.2s;
+}
+
+.admin-page--unified .modal-close::before {
+  transform: rotate(45deg);
+}
+
+.admin-page--unified .modal-close::after {
+  transform: rotate(-45deg);
 }
 
 .modal-header {
@@ -1172,7 +1339,7 @@
 .modal-title {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #333;
+  color: var(--ui-text);
 }
 
 .modal-close-button {
@@ -1180,7 +1347,7 @@
   border: none;
   font-size: 1.5rem;
   cursor: pointer;
-  color: #666;
+  color: var(--ui-muted);
   padding: 0;
   width: 30px;
   height: 30px;
@@ -1192,7 +1359,7 @@
 }
 
 .modal-close-button:hover {
-  background: #f0f0f0;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 /* 모달 폼 */
@@ -1204,21 +1371,24 @@
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 600;
-  color: #333;
+  color: var(--ui-text);
 }
 
 .modal-form-input {
   width: 100%;
   padding: 0.75rem;
-  border: 2px solid #e0e0e0;
+  border: 1px solid var(--ui-border-2);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ui-text);
   border-radius: 8px;
   font-size: 1rem;
   transition: border-color 0.3s;
 }
 
 .modal-form-input:focus {
-  border-color: #D88676;
+  border-color: rgba(255, 76, 76, 0.35);
   outline: none;
+  box-shadow: 0 0 0 3px var(--ui-focus);
 }
 
 /* 통계 섹션 */
@@ -1233,21 +1403,21 @@
   flex: 1;
   min-width: 200px;
   padding: 1rem;
-  background: #f9f9f9;
+  background: rgba(255, 255, 255, 0.04);
   border-radius: 8px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--ui-border);
 }
 
 .stats-label {
   font-size: 0.9rem;
-  color: #666;
+  color: var(--ui-muted);
   margin-bottom: 0.5rem;
 }
 
 .stats-value {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #333;
+  color: var(--ui-text);
 }
 
 /* 반응형 */

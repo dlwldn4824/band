@@ -105,7 +105,16 @@ function AppRoutes() {
           } />
           <Route path="/login" element={<Login />} />
           <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/manage" element={<Admin />} />
+          <Route
+            path="/manage"
+            element={
+              <Layout>
+                <AdminProtectedRoute>
+                  <Admin />
+                </AdminProtectedRoute>
+              </Layout>
+            }
+          />
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route
             path="/dashboard"

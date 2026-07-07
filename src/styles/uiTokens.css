@@ -1,0 +1,55 @@
+:root {
+  --ui-bg: #000000;
+  --ui-card: #2a2a2a;
+  --ui-card-2: #222222;
+  --ui-text: #ffffff;
+  --ui-muted: rgba(255, 255, 255, 0.7);
+  --ui-muted-2: rgba(255, 255, 255, 0.55);
+  --ui-border: rgba(255, 255, 255, 0.12);
+  --ui-border-2: rgba(255, 255, 255, 0.18);
+  --ui-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  --ui-radius-lg: 16px;
+  --ui-radius-md: 12px;
+  --ui-radius-sm: 8px;
+
+  --ui-primary: #ff4c4c;
+  --ui-primary-2: #d88676;
+  --ui-danger: #ff4444;
+  --ui-focus: rgba(255, 76, 76, 0.35);
+}
+
+/* Common primitives */
+.ui-card {
+  background: var(--ui-card);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  box-shadow: var(--ui-shadow);
+}
+
+.ui-section-title {
+  color: var(--ui-text);
+  font-family: 'HakgyoansimJayeonR', sans-serif;
+  font-weight: 500;
+}
+
+.ui-muted {
+  color: var(--ui-muted);
+}
+
+.ui-btn-primary {
+  background: var(--ui-primary);
+  color: #ffffff;
+  border-radius: 12px;
+  font-weight: 700;
+}
+
+.ui-btn-primary:hover:not(:disabled) {
+  filter: brightness(0.95);
+}
+
+.ui-input {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--ui-border-2);
+  color: var(--ui-text);
+  border-radius: 12px;
+}
