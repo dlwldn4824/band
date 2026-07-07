@@ -1,12 +1,11 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react'
 import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore'
 import { db } from '../config/firebase'
-import { setFirestoreData } from '../services/firestoreService'
-import { FIRESTORE_PATHS, getGuestsStorageKey } from '../config/firestorePaths'
 import { normalizePhone } from '../utils/guestUtils'
 import { trackEvent } from '../analytics'
 import { hashGuestId } from '../analytics/hashUserId'
 import { getUtmProperties } from '../analytics/utm'
+import { guestLogin, getGuestStatus } from '../services/guestsApi'
 
 export interface User {
   name: string
@@ -16,17 +15,18 @@ export interface User {
   checkedIn?: boolean // 체크인 여부
   checkedInAt?: number // 체크인 시간 (timestamp)
   paymentConfirmed?: boolean // 입금 확인 여부
+  isWalkIn?: boolean // 현장 예매 여부
 }
 
 interface AuthContextType {
   user: User | null
-  login: (name: string, phone: string, guests?: any[], loginMethod?: 'name_phone' | 'token') => boolean
+  login: (name: string, phone: string, loginMethod?: 'name_phone' | 'token') => Promise<boolean>
   logout: () => void
   updateUser: (userData: User) => void
   setNickname: (nickname: string) => Promise<void>
   isAuthenticated: boolean
   isLoading: boolean
-  refreshUserStatus: (guests: any[]) => void
+  refreshUserStatus: () => Promise<void>
   isAdmin: boolean
   setAdmin: (isAdmin: boolean, adminName?: string) => void
   adminName: string | null
@@ -42,38 +42,6 @@ function getLoginRetryCount(): number {
 
 function clearLoginRetryCount(): void {
   sessionStorage.removeItem('login_retry_count')
-}
-
-function getLoginFailReason(
-  guestList: any[],
-  name: string,
-  phone: string
-): 'not_found' | 'phone_mismatch' | 'deleted' {
-  const normalizedInputPhone = phone.replace(/[-\s()]/g, '')
-  const normalizedInputName = name.trim()
-
-  const deletedMatch = guestList.find((guest: any) => {
-    if (guest.isDeleted !== true) return false
-    const guestName = (guest.name || guest['이름'] || guest.Name || '').trim()
-    const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '').replace(/[-\s()]/g, '')
-    return guestName === normalizedInputName && guestPhone === normalizedInputPhone
-  })
-  if (deletedMatch) return 'deleted'
-
-  const nameMatches = guestList.filter((guest: any) => {
-    if (guest.isDeleted === true) return false
-    const guestName = (guest.name || guest['이름'] || guest.Name || '').trim()
-    return guestName === normalizedInputName
-  })
-
-  const phoneMatches = guestList.filter((guest: any) => {
-    if (guest.isDeleted === true) return false
-    const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '').replace(/[-\s()]/g, '')
-    return guestPhone === normalizedInputPhone
-  })
-
-  if (nameMatches.length > 0 && phoneMatches.length === 0) return 'phone_mismatch'
-  return 'not_found'
 }
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -111,54 +79,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (savedUser) {
           const userData = JSON.parse(savedUser)
           
-          // guests 데이터에서 paymentConfirmed 상태 확인 및 업데이트
+          // 서버 API에서 paymentConfirmed 등 최신 상태 동기화
           if (userData.phone && userData.phone !== 'admin') {
             try {
-              // localStorage에서 guests 로드
-              const savedGuests = localStorage.getItem(getGuestsStorageKey())
-              if (savedGuests) {
-                const guests = JSON.parse(savedGuests)
-                if (Array.isArray(guests) && guests.length > 0) {
-                  const normalizedInputPhone = userData.phone.replace(/[-\s()]/g, '')
-                  const normalizedInputName = userData.name.trim()
-                  
-                  const foundGuest = guests.find((guest: any) => {
-                    // 삭제된 게스트는 제외
-                    if (guest.isDeleted === true) {
-                      return false
-                    }
-                    
-                    const guestName = guest.name || guest['이름'] || guest.Name || ''
-                    const nameMatch = guestName.trim() === normalizedInputName
-                    
-                    const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '')
-                    const normalizedGuestPhone = guestPhone.replace(/[-\s()]/g, '')
-                    const phoneMatch = normalizedGuestPhone === normalizedInputPhone
-                    
-                    return nameMatch && phoneMatch
-                  })
-                  
-                  if (foundGuest) {
-                    // paymentConfirmed 상태가 다르면 업데이트
-                    const paymentConfirmed = foundGuest.paymentConfirmed === true
-                    if (userData.paymentConfirmed !== paymentConfirmed) {
-                      userData.paymentConfirmed = paymentConfirmed
-                    }
-                    
-                    // checkedIn 상태도 업데이트
-                    if (userData.checkedIn !== foundGuest.checkedIn) {
-                      userData.checkedIn = foundGuest.checkedIn || false
-                    }
-                    if (userData.checkedInAt !== foundGuest.checkedInAt) {
-                      userData.checkedInAt = foundGuest.checkedInAt
-                    }
-                    if (userData.entryNumber !== foundGuest.entryNumber) {
-                      userData.entryNumber = foundGuest.entryNumber
-                    }
-                  }
-                }
+              const status = await getGuestStatus(normalizePhone(userData.phone))
+              if (status) {
+                userData.paymentConfirmed = status.paymentConfirmed
+                userData.checkedIn = status.checkedIn
+                userData.checkedInAt = status.checkedInAt ?? undefined
+                userData.entryNumber = status.entryNumber ?? undefined
+                userData.isWalkIn = status.isWalkIn
               }
-            } catch (error) {
+            } catch {
+              // API 실패 시 로컬 데이터 유지
             }
           }
           
@@ -204,329 +137,160 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     loadUser()
   }, [])
 
-  // guests 데이터 변경 시 사용자 상태 자동 갱신
+  const refreshUserStatus = useCallback(async () => {
+    if (!user || user.phone === 'admin') return
+
+    const status = await getGuestStatus(normalizePhone(user.phone))
+    if (!status) return
+
+    const hasChanges =
+      user.checkedIn !== status.checkedIn ||
+      user.checkedInAt !== (status.checkedInAt ?? undefined) ||
+      user.paymentConfirmed !== status.paymentConfirmed ||
+      user.entryNumber !== (status.entryNumber ?? undefined) ||
+      user.isWalkIn !== status.isWalkIn
+
+    if (hasChanges) {
+      const updatedUser = {
+        ...user,
+        checkedIn: status.checkedIn,
+        checkedInAt: status.checkedInAt ?? undefined,
+        paymentConfirmed: status.paymentConfirmed,
+        entryNumber: status.entryNumber ?? undefined,
+        isWalkIn: status.isWalkIn,
+      }
+      setUser(updatedUser)
+      localStorage.setItem('user', JSON.stringify(updatedUser))
+    }
+  }, [user])
+
+  // 로그인 사용자 상태 주기적 갱신 (서버 API)
   useEffect(() => {
     if (!user || user.phone === 'admin') return
 
-    const checkGuestsUpdate = () => {
-      try {
-        const savedGuests = localStorage.getItem('guests')
-        if (!savedGuests) return
-
-        const guests = JSON.parse(savedGuests)
-        if (!Array.isArray(guests) || guests.length === 0) return
-
-        // 현재 user 상태를 클로저로 캡처하여 사용
-        const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
-        if (!currentUser || !currentUser.name || !currentUser.phone) return
-
-        const normalizedInputPhone = currentUser.phone.replace(/[-\s()]/g, '')
-        const normalizedInputName = currentUser.name.trim()
-        
-        const foundGuest = guests.find((guest: any) => {
-          // 삭제된 게스트는 제외
-          if (guest.isDeleted === true) {
-            return false
-          }
-          
-          const guestName = guest.name || guest['이름'] || guest.Name || ''
-          const nameMatch = guestName.trim() === normalizedInputName
-          
-          const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '')
-          const normalizedGuestPhone = guestPhone.replace(/[-\s()]/g, '')
-          const phoneMatch = normalizedGuestPhone === normalizedInputPhone
-          
-          return nameMatch && phoneMatch
-        })
-        
-        if (foundGuest) {
-          // paymentConfirmed 상태가 다르면 업데이트
-          const paymentConfirmed = foundGuest.paymentConfirmed === true
-          const checkedIn = foundGuest.checkedIn || false
-          const checkedInAt = foundGuest.checkedInAt
-          const entryNumber = foundGuest.entryNumber
-          
-          // 실제로 변경된 것이 있는지 확인
-          const hasChanges = 
-            currentUser.paymentConfirmed !== paymentConfirmed ||
-            currentUser.checkedIn !== checkedIn ||
-            currentUser.checkedInAt !== checkedInAt ||
-            currentUser.entryNumber !== entryNumber
-          
-          if (hasChanges) {
-            const updatedUser = {
-              ...currentUser,
-              paymentConfirmed: paymentConfirmed,
-              checkedIn: checkedIn,
-              checkedInAt: checkedInAt,
-              entryNumber: entryNumber
-            }
-            setUser(updatedUser)
-            localStorage.setItem('user', JSON.stringify(updatedUser))
-          }
-        }
-      } catch (error) {
-      }
-    }
-
-    // 초기 확인
-    checkGuestsUpdate()
-
-    // localStorage 변경 감지 (storage 이벤트는 다른 탭에서만 발생하므로 polling 사용)
-    const interval = setInterval(checkGuestsUpdate, 2000) // 2초마다 확인
+    refreshUserStatus()
+    const interval = setInterval(() => {
+      void refreshUserStatus()
+    }, 5000)
 
     return () => clearInterval(interval)
-  }, [user?.name, user?.phone]) // user 객체 전체가 아닌 name과 phone만 의존성으로 사용
+  }, [user?.name, user?.phone, refreshUserStatus])
 
-  const login = (name: string, phone: string, guests?: any[], loginMethod: 'name_phone' | 'token' = 'name_phone'): boolean => {
+  const login = async (
+    name: string,
+    phone: string,
+    loginMethod: 'name_phone' | 'token' = 'name_phone'
+  ): Promise<boolean> => {
     void trackEvent('login_attempted', {
       login_method: loginMethod,
       has_token: loginMethod === 'token',
       ...getUtmProperties(),
     })
 
-    // guests가 제공되지 않으면 localStorage에서 로드 (하위 호환성)
-    const guestList = guests || JSON.parse(localStorage.getItem(getGuestsStorageKey()) || '[]')
-    
-    if (guestList.length === 0) {
-      void trackEvent('login_failed', { fail_reason: 'empty_guests', retry_count: getLoginRetryCount(), ...getUtmProperties() })
+    const normalizedInputPhone = normalizePhone(phone)
+    const normalizedInputName = name.trim()
+    const verifyName = loginMethod === 'name_phone' ? normalizedInputName : undefined
+
+    const result = await guestLogin(normalizedInputPhone, verifyName)
+
+    if (!result.ok || !result.guest) {
+      const failReason =
+        result.reason === 'name_mismatch'
+          ? 'phone_mismatch'
+          : (result.reason || 'not_found')
+      void trackEvent('login_failed', {
+        fail_reason: failReason as 'not_found' | 'phone_mismatch' | 'deleted' | 'empty_guests',
+        retry_count: getLoginRetryCount(),
+        ...getUtmProperties(),
+      })
       return false
     }
 
-    const normalizedInputPhone = phone.replace(/[-\s()]/g, '')
-    const normalizedInputName = name.trim()
-    
-    const foundGuestIndex = guestList.findIndex((guest: any) => {
-      // 삭제된 게스트는 제외
-      if (guest.isDeleted === true) {
-        return false
-      }
-      
-      // 이름 매칭 (한글 키 또는 영문 키 지원)
-      const guestName = guest.name || guest['이름'] || guest.Name || ''
-      const nameMatch = guestName.trim() === normalizedInputName
-      
-      // 전화번호 매칭 (한글 키 또는 영문 키 지원, 하이픈/공백 제거 후 비교)
-      const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '')
-      const normalizedGuestPhone = guestPhone.replace(/[-\s()]/g, '')
-      const phoneMatch = normalizedGuestPhone === normalizedInputPhone
-      
-      return nameMatch && phoneMatch
-    })
+    const g = result.guest
 
-    if (foundGuestIndex !== -1) {
-      const foundGuest = guestList[foundGuestIndex]
-      
-      // 일반 사용자 로그인 시 운영진 상태 초기화 (중요!)
-      setIsAdmin(false)
-      setAdminName(null)
-      localStorage.removeItem('isAdmin')
-      localStorage.removeItem('adminName')
-      
-      const guestName = foundGuest.name || foundGuest['이름'] || name
-      const guestPhone = foundGuest.phone || foundGuest['전화번호'] || phone
-      
-      // ✅ 입금 확인된 기존 게스트는 입장 번호를 할당하지 않음 (이미 등록된 게스트이므로)
-      // 입장번호가 없고 입금 확인되지 않은 게스트만 입장번호 할당
-      let entryNumber = foundGuest.entryNumber
-      const isPaymentConfirmed = foundGuest.paymentConfirmed === true
-      const didCheckInNow = !foundGuest.checkedIn && !entryNumber && !isPaymentConfirmed
-      
-      if (!entryNumber && !isPaymentConfirmed) {
-        // 이미 입장번호가 있는 게스트들의 최대값 찾기
-        const guestsWithEntryNumber = guestList.filter((g: any) => g.entryNumber !== undefined && g.entryNumber !== null)
-        const maxEntryNumber = guestsWithEntryNumber.length > 0
-          ? Math.max(...guestsWithEntryNumber.map((g: any) => g.entryNumber || 0))
-          : 0
-        entryNumber = maxEntryNumber + 1
-        
-        // 게스트 정보에 입장번호 할당
-        const updatedGuestList = [...guestList]
-        updatedGuestList[foundGuestIndex] = {
-          ...foundGuest,
-          entryNumber: entryNumber,
-          checkedIn: true,
-          checkedInAt: Date.now()
-        }
-        
-        // localStorage 업데이트
-        localStorage.setItem(getGuestsStorageKey(), JSON.stringify(updatedGuestList))
-        
-        // ✅ Firestore 업데이트 전에 초기화 마커 확인 (비동기)
-        ;(async () => {
-          try {
-            const { getFirestoreData } = await import('../services/firestoreService')
-            const currentData = await getFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, FIRESTORE_PATHS.GUESTS_DOC_ID)
-            const currentCleared = (currentData as any)?._cleared
-            const hasClearedMarker = currentCleared !== undefined && currentCleared !== null
-            
-            if (hasClearedMarker) {
-              return // 초기화 상태에서는 Firestore 업데이트하지 않음
-            }
-            
-            // ✅ Firestore 업데이트 시 초기화 마커 보존
-            const updatePayload: any = { guests: updatedGuestList }
-            if (currentCleared !== undefined && currentCleared !== null) {
-              // 초기화 마커가 있으면 보존 (하지만 이미 위에서 차단했으므로 여기까지 오지 않음)
-              updatePayload._cleared = currentCleared
-            }
-            // 초기화 마커가 없으면 _cleared 필드를 명시하지 않음 (기본 동작)
-            
-            setFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, updatePayload, FIRESTORE_PATHS.GUESTS_DOC_ID).catch(() => {})
-          } catch (checkError) {
-            // 오류 발생 시에도 초기화 마커 확인 후 업데이트
-            ;(async () => {
-              try {
-                const { getFirestoreData } = await import('../services/firestoreService')
-                const errorCheckData = await getFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, FIRESTORE_PATHS.GUESTS_DOC_ID)
-                const errorCheckCleared = (errorCheckData as any)?._cleared
-                
-                const updatePayload: any = { guests: updatedGuestList }
-                if (errorCheckCleared !== undefined && errorCheckCleared !== null) {
-                  updatePayload._cleared = errorCheckCleared
-                }
-                
-                setFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, updatePayload, FIRESTORE_PATHS.GUESTS_DOC_ID).catch(() => {})
-              } catch (nestedError) {
-              }
-            })()
-          }
-        })()
-      }
-      
-      // 입장번호가 항상 userData에 포함되도록 보장
-      if (!entryNumber) {
-        entryNumber = 1 // 기본값 (이론적으로는 발생하지 않아야 함)
-      }
-      
-      // Firestore의 최신 체크인 상태 사용 (서버 상태 기반)
-      const userData = { 
-        name: guestName, 
-        phone: guestPhone,
-        entryNumber: entryNumber,
-        checkedIn: foundGuest.checkedIn !== false,
-        checkedInAt: foundGuest.checkedInAt || Date.now(),
-        paymentConfirmed: foundGuest.paymentConfirmed === true
-      }
-      
-      // 디버깅용 콘솔 로그
-      
-      setUser(userData)
-      localStorage.setItem('user', JSON.stringify(userData))
-      
-      // Firestore에서 닉네임 로드 및 자동 설정 (비동기, 실패해도 계속 진행)
-      const loadNickname = async () => {
-        try {
-          // ✅ userId는 전화번호만 사용
-          const userId = normalizePhone(guestPhone)
-          const userProfileRef = doc(db, 'userProfiles', userId)
-          const userProfileSnap = await getDoc(userProfileRef)
-          
-          if (userProfileSnap.exists()) {
-            const profileData = userProfileSnap.data()
-            if (profileData.nickname && profileData.nickname.trim() !== '') {
-              // 기존 닉네임이 있으면 사용
-              const updatedUser = { ...userData, nickname: profileData.nickname }
-              setUser(updatedUser)
-              localStorage.setItem('user', JSON.stringify(updatedUser))
-            } else {
-              // 닉네임이 없으면 이름을 닉네임으로 자동 설정
-              const autoNickname = guestName
-              const updatedUser = { ...userData, nickname: autoNickname }
-              setUser(updatedUser)
-              localStorage.setItem('user', JSON.stringify(updatedUser))
-              
-              // Firestore에 저장
-              await setDoc(userProfileRef, {
-                name: guestName,
-                phone: guestPhone,
-                nickname: autoNickname,
-                updatedAt: new Date()
-              }, { merge: true })
-            }
+    setIsAdmin(false)
+    setAdminName(null)
+    localStorage.removeItem('isAdmin')
+    localStorage.removeItem('adminName')
+
+    const guestName = g.name || normalizedInputName
+    const guestPhone = normalizedInputPhone
+    const entryNumber = g.entryNumber ?? undefined
+    const isPaymentConfirmed = g.paymentConfirmed === true
+    const didCheckInNow = result.didCheckInNow === true
+
+    const userData: User = {
+      name: guestName,
+      phone: guestPhone,
+      entryNumber,
+      checkedIn: g.checkedIn,
+      checkedInAt: g.checkedInAt ?? undefined,
+      paymentConfirmed: isPaymentConfirmed,
+      isWalkIn: g.isWalkIn,
+    }
+
+    setUser(userData)
+    localStorage.setItem('user', JSON.stringify(userData))
+
+    const loadNickname = async () => {
+      try {
+        const userId = normalizePhone(guestPhone)
+        const userProfileRef = doc(db, 'userProfiles', userId)
+        const userProfileSnap = await getDoc(userProfileRef)
+
+        if (userProfileSnap.exists()) {
+          const profileData = userProfileSnap.data()
+          if (profileData.nickname && profileData.nickname.trim() !== '') {
+            const updatedUser = { ...userData, nickname: profileData.nickname }
+            setUser(updatedUser)
+            localStorage.setItem('user', JSON.stringify(updatedUser))
           } else {
-            // userProfile이 없으면 이름을 닉네임으로 자동 설정하고 생성
             const autoNickname = guestName
             const updatedUser = { ...userData, nickname: autoNickname }
             setUser(updatedUser)
             localStorage.setItem('user', JSON.stringify(updatedUser))
-            
-            // Firestore에 저장
             await setDoc(userProfileRef, {
               name: guestName,
               phone: guestPhone,
               nickname: autoNickname,
-              updatedAt: new Date()
+              updatedAt: new Date(),
             }, { merge: true })
           }
-        } catch (error) {
-          // Firestore 연결 실패 시에도 로컬에 이름을 닉네임으로 설정
-          console.warn('Firestore 닉네임 로드 실패, 로컬에 이름을 닉네임으로 설정:', error)
+        } else {
           const autoNickname = guestName
           const updatedUser = { ...userData, nickname: autoNickname }
           setUser(updatedUser)
           localStorage.setItem('user', JSON.stringify(updatedUser))
+          await setDoc(userProfileRef, {
+            name: guestName,
+            phone: guestPhone,
+            nickname: autoNickname,
+            updatedAt: new Date(),
+          }, { merge: true })
         }
+      } catch {
+        const autoNickname = guestName
+        const updatedUser = { ...userData, nickname: autoNickname }
+        setUser(updatedUser)
+        localStorage.setItem('user', JSON.stringify(updatedUser))
       }
-      loadNickname()
-      
-      clearLoginRetryCount()
-      void trackEvent('login_succeeded', {
-        has_entry_number: !!entryNumber,
-        payment_confirmed: isPaymentConfirmed,
-        is_walk_in: false,
-        ...getUtmProperties(),
-      })
-      if (didCheckInNow) {
-        void hashGuestId(guestPhone).then((guestIdHash) => {
-          void trackEvent('checkin_completed', { guest_id_hash: guestIdHash, is_walk_in: false })
-        })
-      }
-      
-      return true
     }
-    
-    void trackEvent('login_failed', {
-      fail_reason: getLoginFailReason(guestList, name, phone),
-      retry_count: getLoginRetryCount(),
+    void loadNickname()
+
+    clearLoginRetryCount()
+    void trackEvent('login_succeeded', {
+      has_entry_number: entryNumber !== undefined,
+      payment_confirmed: isPaymentConfirmed,
+      is_walk_in: g.isWalkIn,
       ...getUtmProperties(),
     })
-    return false
-  }
-
-  // Firestore의 guests 배열을 기반으로 사용자 상태 갱신
-  const refreshUserStatus = (guests: any[]) => {
-    if (!user) return
-
-    const normalizedInputPhone = user.phone.replace(/[-\s()]/g, '')
-    const normalizedInputName = user.name.trim()
-    
-    const foundGuest = guests.find((guest: any) => {
-      const guestName = guest.name || guest['이름'] || guest.Name || ''
-      const nameMatch = guestName.trim() === normalizedInputName
-      
-      const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '')
-      const normalizedGuestPhone = guestPhone.replace(/[-\s()]/g, '')
-      const phoneMatch = normalizedGuestPhone === normalizedInputPhone
-      
-      return nameMatch && phoneMatch
-    })
-
-    if (foundGuest) {
-      // 서버 상태와 다르면 업데이트
-      if (
-        user.checkedIn !== foundGuest.checkedIn ||
-        user.checkedInAt !== foundGuest.checkedInAt ||
-        user.paymentConfirmed !== (foundGuest.paymentConfirmed === true)
-      ) {
-        updateUser({
-          ...user,
-          checkedIn: foundGuest.checkedIn || false,
-          checkedInAt: foundGuest.checkedInAt,
-          paymentConfirmed: foundGuest.paymentConfirmed === true
-        })
-      }
+    if (didCheckInNow) {
+      void hashGuestId(guestPhone).then((guestIdHash) => {
+        void trackEvent('checkin_completed', { guest_id_hash: guestIdHash, is_walk_in: g.isWalkIn })
+      })
     }
+
+    return true
   }
 
   const logout = () => {

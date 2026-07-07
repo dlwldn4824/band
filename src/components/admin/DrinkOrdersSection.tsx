@@ -41,11 +41,11 @@ const DrinkOrdersSection = ({
   onDeleteOrder
 }: DrinkOrdersSectionProps) => {
   return (
-    <div className="admin-section">
+    <div className="admin-section ui-card">
       <div className="section-header">
         <div>
-          <h2>주류 구매 내역</h2>
-          <p className="section-description">
+          <h2 className="admin-section-title">주류 구매 내역</h2>
+          <p className="section-description ui-muted">
             주류 구매 내역을 확인할 수 있습니다.
           </p>
         </div>

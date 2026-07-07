@@ -2,15 +2,13 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, Link, useParams, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useData } from '../contexts/DataContext'
-import type { Guest } from '../contexts/DataContext'
 import { doc, setDoc, onSnapshot, getDoc } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import TicketTransition from '../components/TicketTransition'
 import ticketImage from '../assets/background/glow-ticket.png'
 import { validatePhoneNumber, formatPhoneDisplay } from '../utils/phoneFormat'
-import { getGuestsStorageKey, FIRESTORE_PATHS } from '../config/firestorePaths'
-import { normalizePhone, normalizeName, getGuestPhone } from '../utils/guestUtils'
-import { getFirestoreData } from '../services/firestoreService'
+import { normalizePhone, normalizeName } from '../utils/guestUtils'
+import { checkGuest } from '../services/guestsApi'
 import {
   trackEvent,
   trackFunnelAbandon,
@@ -43,7 +41,7 @@ const Login = () => {
   const [duplicateGuestName, setDuplicateGuestName] = useState('')
   
   const { login } = useAuth()
-  const { guests, addWalkInGuest, updateGuest, bookingInfo } = useData()
+  const { addWalkInGuest, bookingInfo } = useData()
   const navigate = useNavigate()
   const location = useLocation()
   const { token } = useParams<{ token?: string }>()
@@ -144,87 +142,18 @@ const Login = () => {
             navigate('/login', { replace: true })
             return
           }
-          
-          // guests가 로드될 때까지 대기 (최대 5초)
-          let attempts = 0
-          const maxAttempts = 50 // 5초 (100ms * 50)
-          
-          const waitForGuests = () => {
-            return new Promise<any[]>((resolve) => {
-              const checkGuests = () => {
-                attempts++
-                
-                // localStorage에서 guests 로드 시도
-                const savedGuests = localStorage.getItem(getGuestsStorageKey())
-                let guestList: any[] = []
-                
-                if (savedGuests) {
-                  try {
-                    guestList = JSON.parse(savedGuests)
-                  } catch (e) {
-                    console.warn('guests 파싱 실패:', e)
-                  }
-                }
-                
-                // guests가 있거나 최대 시도 횟수에 도달하면 종료
-                if (guests.length > 0 || guestList.length > 0 || attempts >= maxAttempts) {
-                  resolve(guests.length > 0 ? guests : guestList)
-                } else {
-                  setTimeout(checkGuests, 100)
-                }
-              }
-              checkGuests()
-            })
-          }
-          
-          const availableGuests = await waitForGuests()
-          console.log('[Login] 자동 로그인 - availableGuests:', availableGuests.length, '명')
-          
-          if (availableGuests.length === 0) {
-            console.error('[Login] 자동 로그인 실패 - guests가 없습니다')
-            navigate('/login', { replace: true })
-            return
-          }
-          
-          // ✅ 전화번호로 게스트 찾기 (이름은 DB에서 가져옴)
-          const foundGuest = availableGuests.find((g: any) => {
-            if (g.isDeleted === true) return false
-            const guestPhone = normalizePhone(g.phone || g['전화번호'] || g.Phone)
-            return guestPhone === normalizedPhone && guestPhone !== ''
-          })
-          
-          // 게스트를 찾지 못했으면 로그인 실패
-          if (!foundGuest) {
-            console.error('[Login] 자동 로그인 실패 - 게스트를 찾을 수 없습니다')
-            setIsProcessingAutoLogin(false)
-            navigate('/login', { replace: true })
-            return
-          }
-          
-          // ✅ 게스트 이름 사용 (토큰에 이름이 없을 수 있으므로)
-          const guestName = normalizeName(foundGuest.name || foundGuest['이름'] || foundGuest.Name || decodedName || '')
-          
-          // 자동 로그인 시도
-          const loginSuccess = login(guestName, normalizedPhone, availableGuests, 'token')
-          console.log('[Login] 자동 로그인 결과:', loginSuccess)
+
+          const guestName = decodedName ? normalizeName(decodedName) : ''
+          const loginSuccess = await login(guestName || '게스트', normalizedPhone, 'token')
           
           if (loginSuccess) {
-            // 로그인 성공 확인
-            const loggedInUser = JSON.parse(localStorage.getItem('user') || 'null')
-            console.log('[Login] 자동 로그인 성공 - user:', loggedInUser)
-            
-            // localStorage에서 예매 정보 삭제
             localStorage.removeItem('pendingBooking')
-            
-            // 로딩 상태 해제 후 티켓 애니메이션 표시
             setIsProcessingAutoLogin(false)
-            setBookingName(guestName)
-            // 전화번호 포맷팅
-            const formattedPhone = formatPhoneDisplay(normalizedPhone)
-            setBookingPhone(formattedPhone)
+            const loggedInUser = JSON.parse(localStorage.getItem('user') || 'null')
+            setBookingName(loggedInUser?.name || guestName)
+            setBookingPhone(formatPhoneDisplay(normalizedPhone))
             setShowTicket(true)
           } else {
-            console.error('[Login] 자동 로그인 실패 - 게스트를 찾을 수 없습니다')
             setIsProcessingAutoLogin(false)
             navigate('/login', { replace: true })
           }
@@ -237,7 +166,7 @@ const Login = () => {
       
       handleAutoLogin()
     }
-  }, [token, guests, login, navigate, isProcessingAutoLogin])
+  }, [token, login, navigate, isProcessingAutoLogin])
 
   useEffect(() => {
     // 세로 모드에서 스크롤 방지 (입력 필드와 버튼은 제외)
@@ -353,8 +282,7 @@ const Login = () => {
                 const bookingData = bookingSnap.data()
                 // 이미 승인되었다면 로그인 처리
                 if (bookingData.approved === true) {
-                  const updatedGuests = [...guests]
-                  const loginSuccess = login(booking.name, normalizedPhone, updatedGuests)
+                  const loginSuccess = await login(booking.name, normalizedPhone)
                   if (loginSuccess) {
                     localStorage.removeItem('pendingBooking')
                     // 티켓 애니메이션 표시
@@ -387,7 +315,7 @@ const Login = () => {
     }
     
     checkExistingBooking()
-  }, [guests, login])
+  }, [login])
 
   // 예매 신청 승인 상태 확인
   useEffect(() => {
@@ -400,24 +328,21 @@ const Login = () => {
       if (snapshot.exists()) {
         const bookingData = snapshot.data()
         if (bookingData.approved === true) {
-          // 승인 완료 시 로그인 처리
           const normalizedPhone = bookingPhone.replace(/\D/g, '')
-          const updatedGuests = [...guests]
-          const loginSuccess = login(bookingName, normalizedPhone, updatedGuests)
-          
-          if (loginSuccess) {
-            // localStorage에서 예매 정보 삭제
-            localStorage.removeItem('pendingBooking')
-            setShowBookingConfirmation(false)
-            // 티켓 애니메이션 표시
-            setShowTicket(true)
-          }
+          void (async () => {
+            const loginSuccess = await login(bookingName, normalizedPhone)
+            if (loginSuccess) {
+              localStorage.removeItem('pendingBooking')
+              setShowBookingConfirmation(false)
+              setShowTicket(true)
+            }
+          })()
         }
       }
     })
 
     return () => unsubscribe()
-  }, [showBookingConfirmation, bookingName, bookingPhone, guests, login])
+  }, [showBookingConfirmation, bookingName, bookingPhone, login])
 
   // 예매 신청하기 핸들러
   const handleBookingSubmit = async (e: React.FormEvent) => {
@@ -454,166 +379,42 @@ const Login = () => {
         return
       }
       
-      // 같은 전화번호로 다른 이름이 이미 등록되어 있는지 확인
-      const duplicateGuest = guests.find((guest) => {
-        // 삭제된 게스트는 제외
-        if (guest.isDeleted === true) {
-          return false
+      const check = await checkGuest(normalizedPhone)
+
+      if (check.exists && check.name) {
+        const existingName = normalizeName(check.name)
+        if (existingName !== normalizedName) {
+          setDuplicateGuestName(existingName)
+          setShowPhoneDuplicateModal(true)
+          return
         }
-        const guestPhone = normalizePhone(guest.phone || guest['전화번호'] || guest.Phone)
-        const guestName = normalizeName(guest.name || guest['이름'] || guest.Name)
-        // 전화번호는 같지만 이름이 다른 경우
-        return guestPhone === normalizedPhone && guestName !== normalizedName
-      })
-      
-      if (duplicateGuest) {
-        // 중복된 전화번호 발견 - 확인 모달 표시
-        const existingName = normalizeName(duplicateGuest.name || duplicateGuest['이름'] || duplicateGuest.Name)
-        setDuplicateGuestName(existingName)
-        setShowPhoneDuplicateModal(true)
-        return
       }
-      
-      // 이미 등록된 게스트(삭제되지 않은)인지 확인
-      // ✅ 엑셀로 업로드한 게스트도 포함해서 확인 (전화번호만으로 비교 - 이름은 변경 가능)
-      // ✅ addWalkInGuest와 동일한 로직: Firestore에서 직접 확인
-      let existingGuest: Guest | undefined = undefined
-      let resolvedGuests: Guest[] = [] // ✅ existingGuest를 찾을 때 사용한 배열 저장
-      
-      // 1. 먼저 Firestore에서 최신 데이터 확인 (엑셀 업로드 게스트 포함, 삭제된 게스트도 포함)
-      try {
-        const currentData = await getFirestoreData(FIRESTORE_PATHS.GUESTS_COLLECTION as any, FIRESTORE_PATHS.GUESTS_DOC_ID)
-        const firestoreGuests = (currentData as any)?.guests || []
-        if (Array.isArray(firestoreGuests) && firestoreGuests.length > 0) {
-          resolvedGuests = firestoreGuests // ✅ Firestore에서 찾은 배열 저장
-          
-          // ✅ 디버깅: 샘플 데이터 구조 확인
-          console.log('[Login] firestoreGuests sample keys:', firestoreGuests?.[0] ? Object.keys(firestoreGuests[0]) : null)
-          console.log('[Login] firestoreGuests sample:', firestoreGuests?.[0])
-          
-          // ✅ 디버깅: 첫 5개 게스트의 필드명과 전화번호 확인
-          const debug = firestoreGuests.slice(0, 5).map((g: any) => ({
-            keys: Object.keys(g),
-            name: g.name ?? g['이름'] ?? g.Name ?? g.username ?? g.nickname,
-            phoneRaw: getGuestPhone(g),
-            phoneNormalized: normalizePhone(getGuestPhone(g)),
-            phoneField: g.phone,
-            전화번호Field: g['전화번호'],
-            PhoneField: g.Phone
-          }))
-          console.log('[Login] debug first 5:', debug)
-          console.log('[Login] 입력한 전화번호 (normalized):', normalizedPhone)
-          
-          // ✅ 삭제된 게스트는 제외하고 활성 게스트만 검색
-          existingGuest = firestoreGuests.find((guest: Guest) => {
-            if (guest.isDeleted === true) return false
-            // ✅ 확장된 필드명 매칭 사용
-            const guestPhoneRaw = getGuestPhone(guest)
-            const guestPhone = normalizePhone(guestPhoneRaw)
-            const matches = guestPhone === normalizedPhone && guestPhone !== ''
-            
-            // ✅ 매칭 시도 로그 (처음 몇 개만)
-            if (firestoreGuests.indexOf(guest) < 3) {
-              console.log('[Login] 매칭 시도:', {
-                guestName: guest.name || guest['이름'] || guest.Name,
-                guestPhoneRaw,
-                guestPhone,
-                inputPhone: normalizedPhone,
-                matches
-              })
-            }
-            
-            return matches
-          })
-        }
-      } catch (error) {
-        console.warn('[Login] Firestore 확인 실패, 로컬 데이터 확인:', error)
-      }
-      
-      // 2. Firestore에서 찾지 못했으면 로컬 데이터 확인 (state + localStorage)
-      if (!existingGuest) {
-        const latestGuestsFromStorage = JSON.parse(localStorage.getItem(getGuestsStorageKey()) || '[]')
-        const latestGuests = latestGuestsFromStorage.length > 0 ? latestGuestsFromStorage : guests
-        
-        resolvedGuests = latestGuests // ✅ 로컬에서 찾은 배열 저장
-        
-        existingGuest = latestGuests.find((guest: Guest) => {
-          if (guest.isDeleted === true) return false
-          // ✅ 확장된 필드명 매칭 사용
-          const guestPhone = normalizePhone(getGuestPhone(guest))
-          return guestPhone === normalizedPhone && guestPhone !== ''
-        })
-      }
-      
-      // ✅ resolvedGuests가 비어있으면 기본값으로 guests 사용 (안전장치)
-      if (resolvedGuests.length === 0) {
-        resolvedGuests = guests
-      }
-      
-      console.log('[Login] 게스트 확인:', {
-        inputName: normalizedName,
-        inputPhone: normalizedPhone,
-        guestsStateCount: guests.length,
-        resolvedGuestsCount: resolvedGuests.length,
-        checkedFirestore: true,
-        foundGuest: existingGuest ? {
-          name: existingGuest.name || existingGuest['이름'] || existingGuest.Name,
-          phone: existingGuest.phone || existingGuest['전화번호'] || existingGuest.Phone,
-          paymentConfirmed: existingGuest.paymentConfirmed,
-          isWalkIn: existingGuest.isWalkIn
-        } : null
-      })
-      
-      // ✅ 확인완료된 게스트(paymentConfirmed: true)는 바로 로그인 후 홈으로 이동
-      if (existingGuest && existingGuest.paymentConfirmed === true) {
-        console.log('[Login] 확인완료 게스트 감지 → 바로 로그인')
-        // ✅ 기존 게스트의 이름 사용 (엑셀 업로드 시 정규화된 이름)
-        const existingName = normalizeName(existingGuest.name || existingGuest['이름'] || existingGuest.Name || normalizedName)
-        // ✅ existingGuest를 찾을 때 사용한 배열로 로그인 (guests state가 최신이 아닐 수 있음)
-        const loginSuccess = login(existingName, normalizedPhone, resolvedGuests)
+
+      if (check.exists && check.paymentConfirmed) {
+        const existingName = normalizeName(check.name || normalizedName)
+        const loginSuccess = await login(existingName, normalizedPhone)
         if (loginSuccess) {
-          // localStorage에서 pendingBooking 제거
           localStorage.removeItem('pendingBooking')
-          
-          // 티켓 애니메이션 표시를 위한 상태 설정 (기존 게스트의 이름 사용)
-          const nameToUse = existingName
-          const phoneToUse = bookingPhone.trim() || normalizedPhone
-          setBookingName(nameToUse)
-          const formattedPhone = formatPhoneDisplay(phoneToUse)
-          setBookingPhone(formattedPhone)
-          
-          // 티켓 애니메이션 표시 (확인 화면은 건너뜀)
+          setBookingName(existingName)
+          setBookingPhone(formatPhoneDisplay(bookingPhone.trim() || normalizedPhone))
           setShowTicket(true)
           return
         }
       }
-      
-      // ✅ 확인완료되지 않은 게스트도 이미 등록되어 있으면 바로 로그인 (기존 로직 유지)
-      if (existingGuest) {
-        console.log('[Login] 등록된 게스트 감지 (확인완료 아님) → 바로 로그인')
-        // ✅ 기존 게스트의 이름 사용 (엑셀 업로드 시 정규화된 이름)
-        const existingName = normalizeName(existingGuest.name || existingGuest['이름'] || existingGuest.Name || normalizedName)
-        // ✅ existingGuest를 찾을 때 사용한 배열로 로그인 (guests state가 최신이 아닐 수 있음)
-        const loginSuccess = login(existingName, normalizedPhone, resolvedGuests)
+
+      if (check.exists) {
+        const existingName = normalizeName(check.name || normalizedName)
+        const loginSuccess = await login(existingName, normalizedPhone)
         if (loginSuccess) {
-          // localStorage에서 pendingBooking 제거
           localStorage.removeItem('pendingBooking')
-          
-          // 티켓 애니메이션 표시를 위한 상태 설정 (기존 게스트의 이름 사용)
-          const nameToUse = existingName
-          const phoneToUse = bookingPhone.trim() || normalizedPhone
-          setBookingName(nameToUse)
-          const formattedPhone = formatPhoneDisplay(phoneToUse)
-          setBookingPhone(formattedPhone)
-          
-          // 티켓 애니메이션 표시 (확인 화면은 건너뜀)
+          setBookingName(existingName)
+          setBookingPhone(formatPhoneDisplay(bookingPhone.trim() || normalizedPhone))
           setShowTicket(true)
           return
         }
       }
-      
+
       // 새로운 게스트만 확인 화면 표시
-      // 명단 추가는 "확인하고 입장하기" 버튼을 눌렀을 때만 수행
       
       // 정보 수정용 상태 설정
       setEditedName(bookingName.trim())
@@ -736,29 +537,7 @@ const Login = () => {
         }, { merge: true })
       }
 
-      // 게스트 리스트에서 기존 게스트 찾기 (원래 이름과 전화번호로)
-      const guestIndex = guests.findIndex((guest) => {
-        const guestName = guest.name || guest['이름'] || guest.Name || ''
-        const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '').replace(/[-\s()]/g, '')
-        return guestName.trim() === originalName && guestPhone === originalNormalizedPhone
-      })
-
-      // 게스트 리스트 업데이트
-      if (guestIndex !== -1) {
-        const updatedGuest = {
-          ...guests[guestIndex],
-          name: updatedName,
-          phone: normalizedPhone,
-          '이름': updatedName,
-          '전화번호': normalizedPhone,
-          Name: updatedName,
-          Phone: normalizedPhone,
-          email: updatedEmail
-        }
-        updateGuest(guestIndex, updatedGuest)
-      }
-
-      // 상태 업데이트
+      // 게스트 명단은 서버 API에서만 관리 — 로컬 pendingBooking만 갱신
       setBookingName(updatedName)
       setBookingPhone(editedPhone.trim()) // 하이픈 포함된 형태 유지
       
@@ -1037,22 +816,12 @@ const Login = () => {
                 try {
                   const normalizedPhone = bookingPhone.replace(/\D/g, '')
                   const normalizedName = bookingName.trim()
-                  
-                  // 기존 게스트인지 확인 (삭제되지 않은 게스트만, 정규화된 값으로 비교)
-                  const existingGuest = guests.find((guest) => {
-                    // 삭제된 게스트는 제외
-                    if (guest.isDeleted === true) {
-                      return false
-                    }
-                    const guestPhone = normalizePhone(guest.phone || guest['전화번호'] || guest.Phone)
-                    const guestName = normalizeName(guest.name || guest['이름'] || guest.Name)
-                    return guestPhone === normalizedPhone && guestName === normalizedName
-                  })
 
-                  // ✅ 입금 확인된 기존 게스트는 바로 로그인 (명단에 추가하지 않음)
-                  if (existingGuest && existingGuest.paymentConfirmed === true) {
-                    console.log('[Login] 확인완료 기존 게스트 → 바로 로그인 (명단 추가 안 함)')
-                    const loginSuccess = login(normalizedName, normalizedPhone, guests)
+                  const check = await checkGuest(normalizedPhone)
+
+                  if (check.exists && check.paymentConfirmed) {
+                    const existingName = normalizeName(check.name || normalizedName)
+                    const loginSuccess = await login(existingName, normalizedPhone)
                     if (loginSuccess) {
                       localStorage.removeItem('pendingBooking')
                       setShowBookingConfirmation(false)
@@ -1060,13 +829,12 @@ const Login = () => {
                       return
                     }
                   }
-                  
-                  // 기존 게스트가 아닌 경우에만 명단에 추가
-                  if (!existingGuest) {
+
+                  if (!check.exists) {
                     const result = await addWalkInGuest(normalizedName, normalizedPhone, false, '', {
                       source: 'web_login',
                     })
-                    
+
                     if (!result.success) {
                       setBookingError(result.message || '등록에 실패했습니다.')
                       return
@@ -1075,37 +843,15 @@ const Login = () => {
                     markFunnelComplete('booking', 'booking_confirmation_viewed')
                     markFunnelComplete('booking', 'booking_form_started')
                     markFunnelComplete('booking', 'booking_page_viewed')
-                    
-                    // ✅ addWalkInGuest가 성공하면 state가 이미 업데이트되었으므로
-                    // localStorage에서 최신 게스트 리스트를 가져와서 로그인
-                    // 약간의 지연을 두어 state 업데이트를 기다림
-                    await new Promise(resolve => setTimeout(resolve, 100))
                   }
 
-                  // ✅ 최신 게스트 리스트를 가져와서 로그인 (addWalkInGuest로 추가된 게스트 포함)
-                  const latestGuests = JSON.parse(localStorage.getItem(getGuestsStorageKey()) || '[]')
-                  const loginSuccess = login(normalizedName, normalizedPhone, latestGuests)
-                  
+                  const loginSuccess = await login(normalizedName, normalizedPhone)
                   if (!loginSuccess) {
-                    // 로그인 실패 시 약간의 지연 후 재시도 (상태 업데이트 대기)
-                    setTimeout(() => {
-                      const retryGuests = JSON.parse(localStorage.getItem(getGuestsStorageKey()) || '[]')
-                      const retrySuccess = login(normalizedName, normalizedPhone, retryGuests)
-                      if (retrySuccess) {
-                        localStorage.removeItem('pendingBooking')
-                        setShowBookingConfirmation(false)
-                        setShowTicket(true)
-                      } else {
-                        setBookingError('로그인에 실패했습니다. 잠시 후 다시 시도해주세요.')
-                      }
-                    }, 500)
+                    setBookingError('로그인에 실패했습니다. 잠시 후 다시 시도해주세요.')
                     return
                   }
 
-                  // localStorage에서 pendingBooking 제거
                   localStorage.removeItem('pendingBooking')
-                  
-                  // 모든 게스트에게 티켓 애니메이션 표시
                   setShowBookingConfirmation(false)
                   setShowTicket(true)
                 } catch (error) {
@@ -1125,37 +871,15 @@ const Login = () => {
           tearDirection="vertical"
           tearAtPercent={78.5}
           info={(() => {
-            // bookingName이나 bookingPhone이 비어있으면 localStorage에서 user 정보 사용
             const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
             const nameToUse = bookingName || currentUser?.name || ''
-            const phoneToUse = bookingPhone.replace(/\D/g, '') || currentUser?.phone?.replace(/\D/g, '') || ''
-            
-            const normalizedPhone = normalizePhone(phoneToUse)
-            const normalizedName = normalizeName(nameToUse)
-            const existingGuest = guests.find((g) => {
-              // 삭제된 게스트는 제외
-              if (g.isDeleted === true) {
-                return false
-              }
-              const gPhone = normalizePhone(g.phone || g['전화번호'] || g.Phone)
-              const gName = normalizeName(g.name || g['이름'] || g.Name)
-              return gPhone === normalizedPhone && gName === normalizedName
-            })
-            console.log('[Login] TicketTransition - nameToUse:', nameToUse)
-            console.log('[Login] TicketTransition - phoneToUse:', phoneToUse)
-            console.log('[Login] TicketTransition - existingGuest:', existingGuest)
-            console.log('[Login] TicketTransition - entryNumber:', existingGuest?.entryNumber)
-            console.log('[Login] TicketTransition - paymentConfirmed:', existingGuest?.paymentConfirmed)
-            
-            // ✅ entryNumber 전달 (입금 확인 여부와 관계없이 표시)
-            // TicketTransition 컴포넌트에서 paymentConfirmed 상태에 따라 스탬프 표시 방식 결정
             return {
               name: nameToUse || '',
               date: new Date().toLocaleDateString(),
               seat: 'STANDING',
-              entryNumber: existingGuest?.entryNumber,
-              isWalkIn: existingGuest?.isWalkIn === true,
-              paymentConfirmed: existingGuest?.paymentConfirmed === true,
+              entryNumber: currentUser?.entryNumber,
+              isWalkIn: currentUser?.isWalkIn === true,
+              paymentConfirmed: currentUser?.paymentConfirmed === true,
             }
           })()}
           onDone={async () => {

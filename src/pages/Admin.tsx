@@ -1876,7 +1876,7 @@ const Admin = () => {
                             {guest.paymentConfirmed ? '확인완료' : '대기중'}
                           </button>
                           {guest.paymentConfirmed && guest.paymentConfirmedAt && (
-                            <span style={{ fontSize: '0.75rem', color: '#666' }}>
+                            <span className="admin-timestamp">
                               {new Date(guest.paymentConfirmedAt).toLocaleString('ko-KR', {
                                 year: 'numeric',
                                 month: '2-digit',
@@ -1909,7 +1909,7 @@ const Admin = () => {
                             {guest.ticketReceived ? '수령완료' : '미수령'}
                           </button>
                           {guest.ticketReceived && guest.ticketReceivedAt && (
-                            <span style={{ fontSize: '0.75rem', color: '#666' }}>
+                            <span className="admin-timestamp">
                               {new Date(guest.ticketReceivedAt).toLocaleString('ko-KR', {
                                 year: 'numeric',
                                 month: '2-digit',
@@ -1923,23 +1923,13 @@ const Admin = () => {
                       </td>
                       <td>
                         {guest.paymentConfirmed ? (
-                          <div style={{ display: 'flex', flexDirection: 'row', gap: '0.5rem', alignItems: 'center', justifyContent: 'center' }}>
+                          <div className="guest-login-link-row">
                             <input
                               type="text"
                               value={guestLoginLinks[userId] || generatePersonalLoginLink(guestName, guestPhoneRaw)}
                               readOnly
                               onClick={(e) => (e.target as HTMLInputElement).select()}
-                              style={{
-                                flex: 1,
-                                minWidth: '150px',
-                                maxWidth: '200px',
-                                padding: '0.25rem 0.5rem',
-                                fontSize: '0.7rem',
-                                border: '1px solid #ddd',
-                                borderRadius: '4px',
-                                fontFamily: 'monospace',
-                                cursor: 'text'
-                              }}
+                              className="guest-login-link-input"
                             />
                             <button
                               onClick={async () => {
@@ -1966,22 +1956,13 @@ const Admin = () => {
                                   document.body.removeChild(textArea)
                                 }
                               }}
-                              style={{
-                                padding: '0.25rem 0.5rem',
-                                fontSize: '0.7rem',
-                                background: '#4CAF50',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                whiteSpace: 'nowrap'
-                              }}
+                              className="guest-login-link-copy"
                             >
                               복사
                             </button>
                           </div>
                         ) : (
-                          <span style={{ color: '#999' }}>-</span>
+                          <span className="not-applicable">-</span>
                         )}
                       </td>
                       <td>
@@ -2050,8 +2031,8 @@ const Admin = () => {
 
       {/* 운영진 닉네임 리스트 섹션 */}
       <div className="admin-section ui-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h2 style={{ margin: 0 }}>운영진 닉네임</h2>
+        <div className="section-header">
+          <h2 className="admin-section-title">운영진 닉네임</h2>
           <button
             onClick={() => {
               requirePassword(async () => {
@@ -2108,17 +2089,7 @@ const Admin = () => {
                 }
               })
             }}
-            className="config-button"
-            style={{
-              padding: '0.5rem 1rem',
-              background: '#FF4C4C',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-              fontWeight: '600'
-            }}
+            className="config-button admin-primary-button"
           >
             운영진 닉네임 초기화
           </button>
@@ -2166,22 +2137,20 @@ const Admin = () => {
                 handleGoogleSheetsSync()
               })
             }}
-            className="sample-button"
-            style={{ background: '#28a745', color: 'white' }}
+            className="sample-button admin-sheets-upload-button"
           >
             📊 Google Sheets에 수동 업로드
           </button>
         </div>
         
         {googleSheetsSyncStatus && (
-          <div style={{ 
-            marginTop: '1rem', 
-            padding: '0.75rem', 
-            borderRadius: '8px',
-            background: googleSheetsSyncStatus.includes('✅') ? '#1a3a1a' : '#3a1a1a',
-            color: '#fff',
-            fontSize: '0.875rem'
-          }}>
+          <div
+            className={`google-sheets-status ${
+              googleSheetsSyncStatus.includes('✅')
+                ? 'google-sheets-status--success'
+                : 'google-sheets-status--error'
+            }`}
+          >
             {googleSheetsSyncStatus}
           </div>
         )}
@@ -2289,8 +2258,7 @@ const Admin = () => {
                 setTimeout(() => setUploadStatus(''), 5000)
               }
             }}
-            className="sample-button"
-            style={{ background: '#4C4CFF', color: 'white' }}
+            className="sample-button admin-btn-blue"
           >
             📥 최신 엑셀 파일 다운로드
           </button>
@@ -2599,20 +2567,20 @@ const Admin = () => {
                     <div className="info-item">
                       <strong>이벤트:</strong> {performanceData.events.length}개
                     </div>
-                    <div style={{ marginTop: '1.5rem' }}>
-                      <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem', fontWeight: '600' }}>타임라인 이벤트</h3>
+                    <div className="admin-timeline-section">
+                      <h3 className="admin-timeline-title">타임라인 이벤트</h3>
                       {performanceData.events.map((event, index) => (
-                        <div key={index} style={{ marginBottom: '1rem', padding: '1rem', background: '#f9f9f9', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
-                          <div style={{ marginBottom: '0.5rem', fontWeight: '600', color: '#333' }}>
+                        <div key={index} className="admin-timeline-card">
+                          <div className="admin-timeline-card-title">
                             {event.title}
                           </div>
                           {event.time && (
-                            <div style={{ marginBottom: '0.5rem', color: '#666', fontSize: '0.9rem' }}>
+                            <div className="admin-timeline-card-meta">
                               <strong>시간:</strong> {event.time}
                             </div>
                           )}
                           {event.description && (
-                            <div style={{ color: '#666', fontSize: '0.9rem' }}>
+                            <div className="admin-timeline-card-desc">
                               <strong>설명:</strong> {event.description}
                             </div>
                           )}
@@ -2621,7 +2589,7 @@ const Admin = () => {
                     </div>
                   </>
                 )}
-                <div style={{ marginTop: '1rem' }}>
+                <div className="admin-mt-1">
                   <button
                     onClick={() => {
                       setEditedEventName(performanceData.ticket?.eventName || '')
@@ -2680,9 +2648,9 @@ const Admin = () => {
                   />
                 </div>
                 {editedEvents.length > 0 && (
-                  <div style={{ marginTop: '1.5rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', gap: '1rem', flexWrap: 'wrap' }}>
-                      <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '600' }}>타임라인 이벤트</h3>
+                  <div className="admin-timeline-section">
+                    <div className="admin-timeline-header">
+                      <h3 className="admin-timeline-title">타임라인 이벤트</h3>
                       <button
                         type="button"
                         className="sample-button"
@@ -2698,9 +2666,9 @@ const Admin = () => {
                       </button>
                     </div>
                     {editedEvents.map((event, index) => (
-                      <div key={index} style={{ marginBottom: '1.5rem', padding: '1rem', background: '#f9f9f9', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem', gap: '0.75rem' }}>
-                          <div style={{ fontWeight: '600', color: '#666', fontSize: '0.9rem' }}>
+                      <div key={index} className="admin-timeline-card admin-timeline-card--edit">
+                        <div className="admin-timeline-header" style={{ marginBottom: '0.75rem' }}>
+                          <div className="admin-timeline-card-index">
                             {index === 0 ? '입장 (첫 번째 타임라인)' : `공연 섹션 ${index}`}
                           </div>
                           {index > 0 && (
@@ -2938,8 +2906,7 @@ const Admin = () => {
                 setUploadStatus('❌ 응원 메시지 내보내기 중 오류가 발생했습니다.')
               }
             }}
-            className="reset-button"
-            style={{ background: '#4C4CFF', color: 'white' }}
+            className="sample-button admin-btn-blue"
           >
             📊 전체 응원 메시지 엑셀 다운로드
           </button>

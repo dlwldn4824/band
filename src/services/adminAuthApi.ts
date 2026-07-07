@@ -1,3 +1,5 @@
+import { setAdminApiToken } from './guestsApi'
+
 export type AdminCodeType = 'login' | 'action'
 
 export async function verifyAdminCode(type: AdminCodeType, code: string): Promise<boolean> {
@@ -10,7 +12,11 @@ export async function verifyAdminCode(type: AdminCodeType, code: string): Promis
 
     if (!res.ok) return false
 
-    const data = (await res.json()) as { ok?: boolean }
+    const data = (await res.json()) as { ok?: boolean; token?: string }
+    if (data.ok === true && data.token) {
+      // 관리자 게스트 API 호출용 토큰 저장
+      setAdminApiToken(data.token)
+    }
     return data.ok === true
   } catch {
     return false

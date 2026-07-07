@@ -6,6 +6,7 @@ import { AnalyticsProvider } from './analytics'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminProtectedRoute from './components/AdminProtectedRoute'
+import ManageProtectedRoute from './components/ManageProtectedRoute'
 import ErrorBoundary from './components/ErrorBoundary'
 import Login from './pages/Login'
 import AdminLogin from './pages/AdminLogin'
@@ -108,13 +109,12 @@ function AppRoutes() {
           <Route
             path="/manage"
             element={
-              <Layout>
-                <AdminProtectedRoute>
-                  <Admin />
-                </AdminProtectedRoute>
-              </Layout>
+              <ManageProtectedRoute>
+                <Admin />
+              </ManageProtectedRoute>
             }
           />
+          <Route path="/admin/manage" element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route
             path="/dashboard"

@@ -16,6 +16,7 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "firebase": "^12.7.0",
+    "firebase-admin": "^14.1.0",
     "html5-qrcode": "^2.3.8",
     "nodemailer": "^9.0.1",
     "qrcode.react": "^4.2.0",

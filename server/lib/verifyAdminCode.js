@@ -1,4 +1,5 @@
 import crypto from 'crypto'
+import { issueAdminToken } from './adminToken.js'
 
 /**
  * @param {'login' | 'action'} type
@@ -39,5 +40,11 @@ export function handleVerifyAdminCodeRequest(req, res) {
     return res.status(result.status).json({ ok: false })
   }
 
-  return res.status(200).json({ ok: result.ok })
+  if (result.ok) {
+    // 운영진 코드 검증 성공 시 관리자용 API 토큰 발급
+    const token = issueAdminToken()
+    return res.status(200).json({ ok: true, ...(token ? { token } : {}) })
+  }
+
+  return res.status(200).json({ ok: false })
 }

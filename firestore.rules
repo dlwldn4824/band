@@ -3,33 +3,47 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // 공개 데이터 - 누구나 읽기 가능
+    // 공개 읽기 허용 (쓰기는 서버 Admin SDK만)
     match /current/{document=**} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if false;
     }
 
     match /entries/{document=**} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if false;
     }
 
+    match /performanceData/{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /bookingInfo/{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // 게스트·예매 — 클라이언트 접근 전면 차단 (서버 API 전용)
+    match /guests/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /guests_v2/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /bookings/{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // 채팅·이벤트 (추후 서버 검증 권장 — 당장은 읽기만 허용)
     match /chat/{document=**} {
       allow read, write: if true;
     }
 
     match /onlineUsers/{document=**} {
-      allow read, write: if true;
-    }
-
-    match /guests/{document=**} {
-      allow read, write: if true;
-    }
-
-    // V2: 새 guests 컬렉션 (기존 데이터와 분리)
-    match /guests_v2/{document=**} {
-      allow read, write: if true;
-    }
-
-    match /performanceData/{document=**} {
       allow read, write: if true;
     }
 
@@ -53,32 +67,18 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
-    // 예약 정보 컬렉션 추가
-    match /bookingInfo/{document=**} {
-      allow read, write: if true;
-    }
-
-    // 예매 신청 컬렉션 추가
-    match /bookings/{document=**} {
-      allow read, write: if true;
-    }
-
-    // 응원 메시지 컬렉션 추가
     match /songComments/{document=**} {
       allow read, write: if true;
     }
 
-    // 로그인 토큰 컬렉션 추가
     match /loginTokens/{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
 
-    // 주류 구매 주문 컬렉션 추가
     match /drinkOrders/{document=**} {
       allow read, write: if true;
     }
 
-    // 분석 이벤트 (클라이언트 append-only, 관리 페이지에서 조회)
     match /analytics_events/{eventId} {
       allow create, read: if true;
       allow update, delete: if false;
@@ -86,4 +86,3 @@ service cloud.firestore {
 
   }
 }
-

@@ -267,11 +267,11 @@ const AnalyticsDashboardSection = () => {
     summary?.sessionTimeSource === 'page_dwell' ? ' (체류 기반 추정)' : ''
 
   return (
-    <div className="admin-section analytics-dashboard">
+    <div className="admin-section ui-card analytics-dashboard">
       <div className="section-header">
         <div>
-          <h2>데이터 분석 대시보드</h2>
-          <p className="section-description">
+          <h2 className="admin-section-title">데이터 분석 대시보드</h2>
+          <p className="section-description ui-muted">
             수집 중인 이용 데이터를 요약해서 보여줍니다. 최근 {summary?.fetchedEvents.toLocaleString() ?? '-'}건 기준
             {summary?.truncated ? ' (상한 도달 — 더 오래된 이벤트는 제외됨)' : ''}.
           </p>

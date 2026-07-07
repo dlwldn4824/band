@@ -53,7 +53,7 @@ const PasswordModal = ({
           <button
             type="button"
             onClick={onConfirm}
-            className="login-button"
+            className="login-button admin-primary-button"
             disabled={!passwordInput.trim() || isConfirming}
           >
             {isConfirming ? '확인 중...' : '확인'}

@@ -41,12 +41,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (!user || isAdmin || paymentBannerTrackedRef.current) return
-    const guestInfo = guests.find((g) => {
-      const guestPhone = String(g.phone || g['전화번호'] || g.Phone || '').replace(/[-\s()]/g, '')
-      const userPhone = String(user.phone || '').replace(/[-\s()]/g, '')
-      return guestPhone === userPhone && guestPhone !== ''
-    })
-    const isPaymentConfirmed = guestInfo?.paymentConfirmed === true || user.paymentConfirmed === true
+    const isPaymentConfirmed = user.paymentConfirmed === true
     if (!isPaymentConfirmed && bookingInfo?.accountNumber) {
       paymentBannerTrackedRef.current = true
       void trackEvent('banner_impression', {
@@ -54,7 +49,7 @@ const Dashboard = () => {
         placement: 'dashboard',
       })
     }
-  }, [user, isAdmin, guests, bookingInfo?.accountNumber])
+  }, [user, isAdmin, bookingInfo?.accountNumber])
   
   // localStorage에서 user를 확인하여 로그인 상태 체크 (상태 업데이트 지연 대응)
   const savedUser = localStorage.getItem('user')
@@ -285,14 +280,7 @@ const Dashboard = () => {
               {(() => {
                 if (isAdmin) return null
                 // 입금 미확인 상태 확인
-                const guestInfo = guests.find((g) => {
-                  const guestName = g.name || g['이름'] || g.Name || ''
-                  const guestPhone = String(g.phone || g['전화번호'] || g.Phone || '').replace(/[-\s()]/g, '')
-                  const userName = user?.name || ''
-                  const userPhone = String(user?.phone || '').replace(/[-\s()]/g, '')
-                  return guestName === userName && guestPhone === userPhone
-                })
-                const isPaymentConfirmed = guestInfo?.paymentConfirmed === true || user?.paymentConfirmed === true
+                const isPaymentConfirmed = user?.paymentConfirmed === true
                 
                 // 입금 미확인 상태이고 bookingInfo가 있으면 계좌 정보 표시
                 if (!isPaymentConfirmed && bookingInfo && bookingInfo.accountNumber) {
@@ -425,15 +413,8 @@ const Dashboard = () => {
                 decoding="async"
               />
               {user?.entryNumber && (() => {
-                const guestInfo = guests.find((g) => {
-                  const guestName = g.name || g['이름'] || g.Name || ''
-                  const guestPhone = String(g.phone || g['전화번호'] || g.Phone || '').replace(/[-\s()]/g, '')
-                  const userName = user.name || ''
-                  const userPhone = String(user.phone || '').replace(/[-\s()]/g, '')
-                  return guestName === userName && guestPhone === userPhone
-                })
-                const isWalkIn = guestInfo?.isWalkIn === true
-                const paymentConfirmed = guestInfo?.paymentConfirmed === true || user.paymentConfirmed === true
+                const isWalkIn = user.isWalkIn === true
+                const paymentConfirmed = user.paymentConfirmed === true
                 
                 // 현장 예매는 항상 표시, 사전 예매는 입금 확인 여부에 따라 표시
                 if (isWalkIn) {

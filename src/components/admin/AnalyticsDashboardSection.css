@@ -1,5 +1,5 @@
 .analytics-dashboard {
-  margin-bottom: 3rem;
+  margin-bottom: 0;
 }
 
 .analytics-toolbar {
@@ -17,31 +17,37 @@
 
 .analytics-range-tab {
   padding: 0.45rem 0.85rem;
-  border: 1px solid #ddd;
+  border: 1px solid var(--ui-border-2);
   border-radius: 999px;
-  background: #fff;
-  color: #555;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ui-muted);
   font-size: 0.85rem;
   cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.analytics-range-tab:hover {
+  border-color: rgba(255, 76, 76, 0.35);
+  color: var(--ui-text);
 }
 
 .analytics-range-tab.active {
-  background: #D88676;
-  border-color: #D88676;
+  background: var(--ui-primary);
+  border-color: var(--ui-primary);
   color: #fff;
   font-weight: 600;
 }
 
 .analytics-loading,
 .analytics-empty {
-  color: #777;
+  color: var(--ui-muted);
   margin: 0.5rem 0 0;
 }
 
 .analytics-insights {
-  background: linear-gradient(135deg, #fff8f6, #fff);
-  border: 1px solid #f0d4cc;
-  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-md);
   padding: 1rem 1.15rem;
   margin-bottom: 1rem;
 }
@@ -49,7 +55,7 @@
 .analytics-insight-line {
   margin: 0;
   font-size: 0.92rem;
-  color: #444;
+  color: var(--ui-muted);
   line-height: 1.55;
 }
 
@@ -69,9 +75,9 @@
 }
 
 .analytics-panel {
-  background: #fafafa;
-  border: 1px solid #ececec;
-  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-md);
   padding: 1rem 1.1rem;
 }
 
@@ -82,7 +88,9 @@
 .analytics-panel h3 {
   margin: 0 0 0.85rem;
   font-size: 1rem;
-  color: #333;
+  color: var(--ui-text);
+  font-family: 'HakgyoansimJayeonR', sans-serif;
+  font-weight: 500;
 }
 
 .analytics-guest-kpi .analytics-guest-stats {
@@ -106,11 +114,11 @@
   justify-content: space-between;
   gap: 0.75rem;
   font-size: 0.85rem;
-  color: #555;
+  color: var(--ui-muted);
 }
 
 .analytics-funnel-count {
-  color: #333;
+  color: var(--ui-text);
   font-weight: 600;
   white-space: nowrap;
   font-size: 0.8rem;
@@ -119,14 +127,14 @@
 
 .analytics-funnel-bar-track {
   height: 8px;
-  background: #e8e8e8;
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 999px;
   overflow: hidden;
 }
 
 .analytics-funnel-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #D88676, #e9a497);
+  background: linear-gradient(90deg, var(--ui-primary-2), var(--ui-primary));
   border-radius: 999px;
 }
 
@@ -141,11 +149,11 @@
   justify-content: space-between;
   gap: 1rem;
   font-size: 0.9rem;
-  color: #555;
+  color: var(--ui-muted);
 }
 
 .analytics-kv-list strong {
-  color: #222;
+  color: var(--ui-text);
   font-weight: 700;
 }
 
@@ -159,55 +167,48 @@
   gap: 0.5rem;
   min-height: 140px;
   padding-top: 0.5rem;
-  overflow-x: auto;
 }
 
 .analytics-daily-bar-col {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.25rem;
-  min-width: 42px;
-  flex: 1;
 }
 
 .analytics-daily-bar-track {
   width: 100%;
-  max-width: 36px;
   height: 100px;
-  background: #ececec;
-  border-radius: 6px 6px 2px 2px;
   display: flex;
   align-items: flex-end;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 6px 6px 0 0;
   overflow: hidden;
 }
 
 .analytics-daily-bar-fill {
   width: 100%;
-  background: linear-gradient(180deg, #e9a497, #D88676);
-  border-radius: 4px 4px 0 0;
-  min-height: 2px;
+  background: linear-gradient(180deg, var(--ui-primary), var(--ui-primary-2));
+  border-radius: 6px 6px 0 0;
+  min-height: 4px;
 }
 
 .analytics-daily-label {
-  font-size: 0.72rem;
-  color: #777;
+  font-size: 0.7rem;
+  color: var(--ui-muted-2);
 }
 
 .analytics-daily-count {
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: #333;
+  font-size: 0.75rem;
+  color: var(--ui-text);
+  font-weight: 600;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 900px) {
   .analytics-grid,
   .analytics-grid--wide {
     grid-template-columns: 1fr;
-  }
-
-  .analytics-funnel-count {
-    white-space: normal;
-    max-width: 55%;
   }
 }
