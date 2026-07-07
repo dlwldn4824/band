@@ -17,6 +17,10 @@ dist-ssr
 .env.local
 .env.production
 
+# Firebase Admin SDK service account keys (절대 커밋 금지)
+*firebase-adminsdk*.json
+firebase-adminsdk*.json
+
 # Lock files (using npm)
 pnpm-lock.yaml
 yarn.lock

@@ -22,8 +22,22 @@ export function clearAdminApiToken() {
   localStorage.removeItem(ADMIN_TOKEN_KEY)
 }
 
+export function hasAdminApiToken(): boolean {
+  return !!localStorage.getItem(ADMIN_TOKEN_KEY)
+}
+
 function getAdminApiToken(): string | null {
   return localStorage.getItem(ADMIN_TOKEN_KEY)
+}
+
+function getAdminApiErrorMessage(error?: string): string {
+  if (error === 'server_not_configured') {
+    return '서버 API가 설정되지 않았습니다. Vercel에 FIREBASE_SERVICE_ACCOUNT를 추가한 뒤 재배포해주세요.'
+  }
+  if (error === 'unauthorized' || !hasAdminApiToken()) {
+    return '인증이 만료되었습니다. /manage를 새로고침하고 운영 관리 비밀번호를 다시 입력해주세요.'
+  }
+  return '게스트 업로드에 실패했습니다. 잠시 후 다시 시도해주세요.'
 }
 
 async function callGuestsApi<T>(action: string, body: Record<string, unknown> = {}, admin = false): Promise<T | null> {
@@ -133,7 +147,8 @@ export async function adminListGuests(): Promise<Guest[] | null> {
 
 export async function adminUploadGuests(guests: Guest[]): Promise<Guest[] | null> {
   const result = await callGuestsApi<AdminGuestsResponse>('upload', { guests }, true)
-  return result?.ok && Array.isArray(result.guests) ? result.guests : null
+  if (result?.ok && Array.isArray(result.guests)) return result.guests
+  throw new Error(getAdminApiErrorMessage(result?.error))
 }
 
 export async function adminTogglePayment(phone: string): Promise<Guest[] | null> {

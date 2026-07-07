@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { verifyAdminCode } from '../services/adminAuthApi'
+import { hasAdminApiToken } from '../services/guestsApi'
 import { isManageSessionActive, setManageSession } from '../utils/manageSession'
 import '../pages/Admin.css'
 
@@ -15,6 +16,14 @@ const ManageProtectedRoute = ({ children }: ManageProtectedRouteProps) => {
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [sessionActive, setSessionActive] = useState(isManageSessionActive)
+
+  // 세션만 남고 API 토큰이 없으면(만료·localStorage 삭제) 다시 입장 화면으로
+  useEffect(() => {
+    if (isManageSessionActive() && !hasAdminApiToken()) {
+      setManageSession(false)
+      setSessionActive(false)
+    }
+  }, [])
 
   if (authLoading) {
     return null
@@ -39,6 +48,10 @@ const ManageProtectedRoute = ({ children }: ManageProtectedRouteProps) => {
       const ok = await verifyAdminCode('action', password)
       if (!ok) {
         setError('올바른 비밀번호를 입력해주세요.')
+        return
+      }
+      if (!hasAdminApiToken()) {
+        setError('서버 API 설정이 필요합니다. Vercel에 FIREBASE_SERVICE_ACCOUNT를 추가한 뒤 재배포해주세요.')
         return
       }
       setManageSession(true)

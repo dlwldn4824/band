@@ -529,9 +529,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
   const uploadGuests = async (newGuests: Guest[]) => {
     const updated = await adminUploadGuests(newGuests)
-    if (!updated) {
-      throw new Error('게스트 업로드에 실패했습니다. 관리자 로그인 상태를 확인해주세요.')
-    }
     applyGuestList(updated)
   }
 
