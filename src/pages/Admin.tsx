@@ -18,8 +18,6 @@ import { DEFAULT_VENUE_NAME, DEFAULT_VENUE_ADDRESS } from '../utils/venueDefault
 import { verifyAdminCode } from '../services/adminAuthApi'
 import {
   adminListBookings,
-  adminListPendingBookings,
-  adminApproveBooking,
   adminDeleteBooking,
 } from '../services/bookingsApi'
 import {
@@ -79,7 +77,6 @@ const Admin = () => {
   const [editedVenue, setEditedVenue] = useState('')
   const [editedVenueAddress, setEditedVenueAddress] = useState('')
   const [editedEvents, setEditedEvents] = useState<Array<{ title: string; description: string; time?: string }>>([])
-  const [pendingBookings, setPendingBookings] = useState<Array<{ id: string; name: string; phone: string; email: string; createdAt: number | null }>>([])
   const [guestLoginLinks, setGuestLoginLinks] = useState<Record<string, string>>({}) // 게스트 ID (name_phone) -> 로그인 링크
   const [guestBookingDates, setGuestBookingDates] = useState<Record<string, any>>({}) // 게스트 ID (name_phone) -> 예매 일시
   const [googleSheetsSyncStatus, setGoogleSheetsSyncStatus] = useState<string>('')
@@ -87,7 +84,7 @@ const Admin = () => {
   const [passwordInput, setPasswordInput] = useState('')
 
   const [drinkOrders, setDrinkOrders] = useState<Array<{ id: string; name: string; phone: string; beerQuantity: number; mojitoQuantity: number; totalAmount: number; createdAt: any; paymentConfirmed?: boolean; paymentConfirmedAt?: any; provided?: boolean; providedAt?: any; orderHistory?: Array<{ beerQuantity: number; mojitoQuantity: number; unitPrice?: number; createdAt: any; provided?: boolean; providedAt?: any }> }>>([])
-  const { uploadGuests, setPerformanceData, guests, guestsLoadError, refreshGuests, restoreGuestsFromLocalCache, performanceData, clearGuests, deleteGuest, clearSetlist, bookingInfo, setBookingInfo, clearChatMessages, toggleGuestPayment, toggleGuestTicketReceived, addWalkInGuest, deduplicateGuests, fixGuestPhones, eventsFeatures, setEventsFeature } = useData()
+  const { uploadGuests, setPerformanceData, guests, guestsLoadError, refreshGuests, restoreGuestsFromLocalCache, performanceData, clearGuests, deleteGuest, clearSetlist, bookingInfo, setBookingInfo, clearChatMessages, toggleGuestPayment, toggleGuestTicketReceived, deduplicateGuests, fixGuestPhones, eventsFeatures, setEventsFeature } = useData()
   
   // 예매 정보 폼 상태
   const [bookingForm, setBookingForm] = useState<BookingInfo>({
@@ -230,31 +227,6 @@ const Admin = () => {
 
     loadBookingDates()
   }, [guests])
-
-  // 승인 대기 예매 목록
-  useEffect(() => {
-    const loadPendingBookings = async () => {
-      try {
-        const bookings = await adminListPendingBookings()
-        if (!bookings) return
-        setPendingBookings(
-          bookings.map((b) => ({
-            id: b.id,
-            name: b.name,
-            phone: b.phone,
-            email: b.email,
-            createdAt: b.createdAt,
-          }))
-        )
-      } catch {
-        // ignore
-      }
-    }
-
-    loadPendingBookings()
-    const interval = setInterval(loadPendingBookings, 15000)
-    return () => clearInterval(interval)
-  }, [])
 
   // 공연 정보 기본값 설정 (events가 비어 있을 때만)
   const hasInitializedEvents = useRef(false)
@@ -1593,90 +1565,12 @@ const Admin = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [guests])
 
-  // 예매 신청 승인 핸들러
-  const handleApproveBooking = async (bookingId: string, name: string, phone: string) => {
-    requirePassword(async () => {
-      try {
-        const approved = await adminApproveBooking({ id: bookingId, phone, name })
-        if (!approved) {
-          setUploadStatus('❌ 예매 신청 승인에 실패했습니다.')
-          return
-        }
-
-        const normalizedPhone = phone.replace(/\D/g, '')
-        const existingGuest = guests.find((guest) => {
-          const guestName = guest.name || guest['이름'] || guest.Name || ''
-          const guestPhone = String(guest.phone || guest['전화번호'] || guest.Phone || '').replace(/[-\s()]/g, '')
-          return guestName.trim() === name.trim() && guestPhone === normalizedPhone
-        })
-
-        if (!existingGuest) {
-          const result = await addWalkInGuest(name.trim(), normalizedPhone, false, '', {
-            source: 'admin_approve',
-          })
-          if (result.success) {
-            setUploadStatus(`✅ "${name}" 예매 신청이 승인되었고 게스트 목록에 추가되었습니다.`)
-          } else {
-            setUploadStatus(`⚠️ 예매 신청은 승인되었지만 게스트 추가에 실패했습니다: ${result.message || '알 수 없는 오류'}`)
-          }
-        } else {
-          setUploadStatus(`✅ "${name}" 예매 신청이 승인되었습니다. (이미 게스트 목록에 존재)`)
-        }
-
-        setPendingBookings((prev) => prev.filter((b) => b.id !== bookingId))
-      } catch (error) {
-        console.error('예매 신청 승인 오류:', error)
-        setUploadStatus(`❌ 예매 신청 승인에 실패했습니다: ${error}`)
-      }
-    })
-  }
-
   return (
     <div className="admin-page admin-page--unified">
       <div className="admin-page-header">
         <h1 className="admin-page-title">운영 관리</h1>
         <p className="admin-page-subtitle">게스트·공연 정보·부가 기능·로그를 관리합니다.</p>
       </div>
-      
-      {/* 예매 신청 승인 섹션 */}
-      {pendingBookings.length > 0 && (
-        <div className="admin-section ui-card">
-          <h2 className="admin-section-title">예매 신청 승인 대기</h2>
-          <p className="section-description ui-muted">
-            승인 대기 중인 예매 신청 목록입니다. 승인하면 게스트 목록에 자동으로 추가됩니다.
-          </p>
-          <div className="booking-list">
-            {pendingBookings.map((booking) => (
-              <div key={booking.id} className="booking-item">
-                <div className="booking-info">
-                  <div className="booking-info-row">
-                    <span className="booking-label">이름:</span>
-                    <span className="booking-value">{booking.name}</span>
-                  </div>
-                  <div className="booking-info-row">
-                    <span className="booking-label">연락처:</span>
-                    <span className="booking-value">{formatPhoneDisplay(booking.phone)}</span>
-                  </div>
-                  {booking.createdAt && (
-                    <div className="booking-info-row">
-                      <span className="booking-label">신청 시간:</span>
-                      <span className="booking-value">
-                        {new Date(booking.createdAt).toLocaleString('ko-KR')}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <button
-                  onClick={() => handleApproveBooking(booking.id, booking.name, booking.phone)}
-                  className="approve-booking-button"
-                >
-                  승인
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
       
       <div className="admin-section ui-card">
         <h2 className="admin-section-title">부가 기능 관리</h2>

@@ -747,6 +747,7 @@
   flex-direction: column;
   animation: slideUp 0.3s ease-out;
   overflow: hidden;
+  color: #222;
 }
 
 .guest-list-modal-header {
@@ -864,6 +865,21 @@
   padding: 8px 6px;
   border-bottom: 1px solid #f0f0f0;
   font-size: 0.75rem;
+  color: #222;
+}
+
+/* Dashboard 모달 — Admin.css 전역 규칙 덮어쓰기 방지 */
+.guest-list-modal .guest-list-table th {
+  color: #333;
+  background: #f5f5f5;
+}
+
+.guest-list-modal .guest-list-table td {
+  color: #222;
+}
+
+.guest-list-modal .guest-list-table tr:hover {
+  background: #f9f9f9;
 }
 
 .guest-list-table th:nth-child(1),

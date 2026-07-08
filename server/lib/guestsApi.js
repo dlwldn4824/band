@@ -265,6 +265,7 @@ async function handleRegister(db, body) {
           createdAt: new Date(bookedAt),
           updatedAt: new Date(),
           source,
+          approved: true,
         },
         { merge: true }
       )
@@ -303,6 +304,7 @@ async function handleOnsitePayment(db, body) {
           bookedAt: Date.now(),
           updatedAt: new Date(),
           source: 'onsite',
+          approved: true,
         },
         { merge: true }
       )

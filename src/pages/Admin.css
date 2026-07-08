@@ -661,13 +661,13 @@
   }
 }
 
-/* 게스트 리스트 테이블 */
-.guest-list-table {
+/* 게스트 리스트 테이블 (admin 페이지 전용 — Dashboard 모달과 클래스 공유) */
+.admin-page .guest-list-table {
   margin-top: 1rem;
   overflow-x: auto;
 }
 
-.guest-list-table table {
+.admin-page .guest-list-table table {
   width: 100%;
   border-collapse: collapse;
   background: rgba(255, 255, 255, 0.03);
@@ -677,7 +677,7 @@
   box-shadow: none;
 }
 
-.guest-list-table th {
+.admin-page .guest-list-table th {
   background: rgba(255, 255, 255, 0.06);
   padding: 12px;
   text-align: left;
@@ -687,24 +687,24 @@
   color: var(--ui-text);
 }
 
-.guest-list-table td {
+.admin-page .guest-list-table td {
   padding: 12px;
   border-bottom: 1px solid var(--ui-border);
   font-size: 0.9rem;
   color: var(--ui-text);
 }
 
-.guest-list-table th:nth-child(2),
-.guest-list-table td:nth-child(2) {
+.admin-page .guest-list-table th:nth-child(2),
+.admin-page .guest-list-table td:nth-child(2) {
   min-width: 60px;
   white-space: nowrap;
 }
 
-.guest-list-table tr:hover {
+.admin-page .guest-list-table tr:hover {
   background: rgba(255, 255, 255, 0.04);
 }
 
-.guest-list-table tr:last-child td {
+.admin-page .guest-list-table tr:last-child td {
   border-bottom: none;
 }
 
@@ -1054,12 +1054,12 @@
 }
 
 @media (max-width: 768px) {
-  .guest-list-table {
+  .admin-page .guest-list-table {
     font-size: 0.85rem;
   }
   
-  .guest-list-table th,
-  .guest-list-table td {
+  .admin-page .guest-list-table th,
+  .admin-page .guest-list-table td {
     padding: 8px;
     font-size: 0.8rem;
   }
