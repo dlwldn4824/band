@@ -7,6 +7,7 @@ import dotenv from 'dotenv'
 import { handleVerifyAdminCodeRequest } from './lib/verifyAdminCode.js'
 import { handleGuestsRequest } from './lib/guestsApi.js'
 import { handleBookingInfoRequest } from './lib/bookingInfoApi.js'
+import { handleBookingsRequest } from './lib/bookingsApi.js'
 
 dotenv.config()
 
@@ -38,6 +39,7 @@ const createTransporter = () => {
 app.post('/api/verify-admin-code', handleVerifyAdminCodeRequest)
 app.post('/api/guests', handleGuestsRequest)
 app.post('/api/booking-info', handleBookingInfoRequest)
+app.post('/api/bookings', handleBookingsRequest)
 
 // 이메일 전송 API
 app.post('/api/send-email', async (req, res) => {

@@ -34,8 +34,7 @@ service cloud.firestore {
     }
 
     match /bookings/{document=**} {
-      allow read: if true;
-      allow write: if false;
+      allow read, write: if false;
     }
 
     // 채팅·이벤트 (추후 서버 검증 권장 — 당장은 읽기만 허용)

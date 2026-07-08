@@ -23,9 +23,15 @@ import {
   adminDeduplicateGuests,
   adminFixGuestPhones,
   registerGuest,
+  hasAdminApiToken,
+  getGuestsLoadErrorMessage,
 } from '../services/guestsApi'
 import { saveBookingInfo } from '../services/bookingInfoApi'
 import { isManageSessionActive } from '../utils/manageSession'
+import {
+  loadGuestsFromLocalCache,
+  saveGuestsToLocalCache,
+} from '../utils/guestsLocalCache'
 
 export interface Guest {
   name: string
@@ -167,6 +173,9 @@ export const hasAnyEventsFeature = (features: EventsFeatureSettings): boolean =>
 
 interface DataContextType {
   guests: Guest[]
+  guestsLoadError: string | null
+  refreshGuests: () => Promise<void>
+  restoreGuestsFromLocalCache: () => Promise<{ success: boolean; message: string }>
   performanceData: PerformanceData | null
   guestbookMessages: GuestbookMessage[]
   bookingInfo: BookingInfo | null
@@ -204,8 +213,9 @@ interface DataContextType {
 const DataContext = createContext<DataContextType | undefined>(undefined)
 
 export const DataProvider = ({ children }: { children: ReactNode }) => {
-  const { isAdmin } = useAuth()
+  const { isAdmin, isLoading: authLoading } = useAuth()
   const [guests, setGuests] = useState<Guest[]>([])
+  const [guestsLoadError, setGuestsLoadError] = useState<string | null>(null)
   const [performanceData, setPerformanceDataState] = useState<PerformanceData | null>(null)
   const [guestbookMessages, setGuestbookMessages] = useState<GuestbookMessage[]>([])
   const [bookingInfo, setBookingInfoState] = useState<BookingInfo | null>(null)
@@ -217,14 +227,73 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   }, [])
 
   const refreshGuests = useCallback(async () => {
+    if (authLoading) return
+
     const canLoadGuests = isAdmin || isManageSessionActive()
     if (!canLoadGuests) {
       applyGuestList([])
+      setGuestsLoadError(null)
       return
     }
-    const list = await adminListGuests()
-    applyGuestList(list)
-  }, [isAdmin, applyGuestList])
+
+    if (!hasAdminApiToken()) {
+      setGuestsLoadError(getGuestsLoadErrorMessage('unauthorized'))
+      return
+    }
+
+    const result = await adminListGuests()
+    if (result.guests === null) {
+      const cached = loadGuestsFromLocalCache()
+      if (cached && cached.length > 0) {
+        applyGuestList(cached)
+        setGuestsLoadError(
+          `${getGuestsLoadErrorMessage(result.error)} (브라우저 백업 ${cached.length}명 임시 표시)`
+        )
+        return
+      }
+      setGuestsLoadError(getGuestsLoadErrorMessage(result.error))
+      return
+    }
+
+    setGuestsLoadError(null)
+    saveGuestsToLocalCache(result.guests)
+    applyGuestList(result.guests)
+  }, [authLoading, isAdmin, applyGuestList])
+
+  const restoreGuestsFromLocalCache = useCallback(async (): Promise<{ success: boolean; message: string }> => {
+    const cached = loadGuestsFromLocalCache()
+    if (!cached || cached.length === 0) {
+      return { success: false, message: '브라우저에 저장된 게스트 백업이 없습니다.' }
+    }
+
+    applyGuestList(cached)
+
+    if (!hasAdminApiToken()) {
+      return {
+        success: true,
+        message: `브라우저 백업 ${cached.length}명을 화면에 불러왔습니다. /manage 비밀번호 입력 후 서버 동기화를 시도하세요.`,
+      }
+    }
+
+    try {
+      const uploaded = await adminUploadGuests(cached)
+      if (!uploaded) {
+        return {
+          success: false,
+          message: `서버 업로드에 실패했습니다. 브라우저 백업 ${cached.length}명은 화면에 표시 중입니다. Firebase 할당량이 풀리면 다시 시도하세요.`,
+        }
+      }
+      saveGuestsToLocalCache(uploaded)
+      applyGuestList(uploaded)
+      setGuestsLoadError(null)
+      return { success: true, message: `✅ ${uploaded.length}명을 서버에 복원했습니다.` }
+    } catch {
+      return {
+        success: false,
+        message: `서버 업로드에 실패했습니다. 브라우저 백업 ${cached.length}명은 화면에 표시 중입니다.`,
+      }
+    }
+  }, [applyGuestList])
 
   useEffect(() => {
     void refreshGuests()
@@ -232,7 +301,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     if (!canPoll) return
     const interval = setInterval(() => {
       void refreshGuests()
-    }, 10000)
+    }, 30000)
     const onManageSessionChanged = () => {
       void refreshGuests()
     }
@@ -529,7 +598,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
   const uploadGuests = async (newGuests: Guest[]) => {
     const updated = await adminUploadGuests(newGuests)
-    applyGuestList(updated)
+    if (updated) applyGuestList(updated)
   }
 
   const addWalkInGuest = async (
@@ -792,7 +861,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <DataContext.Provider value={{ 
-      guests, 
+      guests,
+      guestsLoadError,
+      refreshGuests,
+      restoreGuestsFromLocalCache,
       performanceData, 
       guestbookMessages,
       bookingInfo,

@@ -1,4 +1,4 @@
-import { getAdminDb } from './firebaseAdmin.js'
+import { getAdminDb, mapFirestoreError } from './firebaseAdmin.js'
 import {
   normalizePhone,
   normalizeName,
@@ -591,6 +591,8 @@ export async function handleGuestsRequest(req, res) {
     return res.status(result.status).json(result.json)
   } catch (error) {
     console.error('[guestsApi] error:', error)
-    return res.status(500).json({ ok: false, error: 'internal_error' })
+    const mapped = mapFirestoreError(error)
+    const status = mapped === 'internal_error' ? 500 : 503
+    return res.status(status).json({ ok: false, error: mapped })
   }
 }

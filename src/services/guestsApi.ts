@@ -34,10 +34,26 @@ function getAdminApiErrorMessage(error?: string): string {
   if (error === 'server_not_configured') {
     return '서버 API가 설정되지 않았습니다. Vercel에 FIREBASE_SERVICE_ACCOUNT를 추가한 뒤 재배포해주세요.'
   }
+  if (error === 'firestore_quota_exceeded') {
+    return 'Firebase 읽기/쓰기 할당량이 초과되었습니다. Firebase 콘솔에서 사용량을 확인하거나 잠시 후 다시 시도해주세요.'
+  }
   if (error === 'unauthorized' || !hasAdminApiToken()) {
     return '인증이 만료되었습니다. /manage를 새로고침하고 운영 관리 비밀번호를 다시 입력해주세요.'
   }
   return '게스트 업로드에 실패했습니다. 잠시 후 다시 시도해주세요.'
+}
+
+export function getGuestsLoadErrorMessage(error?: string): string {
+  if (error === 'firestore_quota_exceeded') {
+    return 'Firebase 할당량 초과로 게스트 목록을 불러오지 못했습니다. 데이터가 삭제된 것은 아닙니다. Firebase 콘솔 → Usage에서 확인해주세요.'
+  }
+  if (error === 'server_not_configured') {
+    return '서버 API가 설정되지 않았습니다. Vercel에 FIREBASE_SERVICE_ACCOUNT를 추가한 뒤 재배포해주세요.'
+  }
+  if (error === 'unauthorized') {
+    return '인증이 만료되었습니다. 운영진 로그인 또는 /manage 비밀번호를 다시 입력해주세요.'
+  }
+  return '게스트 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.'
 }
 
 async function callGuestsApi<T>(action: string, body: Record<string, unknown> = {}, admin = false): Promise<T | null> {
@@ -140,9 +156,17 @@ interface AdminGuestsResponse {
   error?: string
 }
 
-export async function adminListGuests(): Promise<Guest[] | null> {
+export interface AdminListGuestsResult {
+  guests: Guest[] | null
+  error?: string
+}
+
+export async function adminListGuests(): Promise<AdminListGuestsResult> {
   const result = await callGuestsApi<AdminGuestsResponse>('list', {}, true)
-  return result?.ok && Array.isArray(result.guests) ? result.guests : null
+  if (result?.ok && Array.isArray(result.guests)) {
+    return { guests: result.guests }
+  }
+  return { guests: null, error: result?.error ?? 'unknown' }
 }
 
 export async function adminUploadGuests(guests: Guest[]): Promise<Guest[] | null> {

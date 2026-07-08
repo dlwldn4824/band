@@ -17,8 +17,13 @@ import { DEFAULT_TIMELINE_EVENTS, createDefaultPerformanceSection, getPerformanc
 import { DEFAULT_VENUE_NAME, DEFAULT_VENUE_ADDRESS } from '../utils/venueDefaults'
 import { verifyAdminCode } from '../services/adminAuthApi'
 import {
+  adminListBookings,
+  adminListPendingBookings,
+  adminApproveBooking,
+  adminDeleteBooking,
+} from '../services/bookingsApi'
+import {
   parseBookedAtFromRow,
-  parseBookedAt,
   getBookingDocId,
   getBookingLeadTimeMetrics,
 } from '../utils/bookingTime'
@@ -30,6 +35,7 @@ import {
 } from '../utils/setlistExcel'
 import { trackEvent, recordSetlistUploadAt } from '../analytics'
 import { hashGuestId } from '../analytics/hashUserId'
+import { describeLocalGuestsBackup } from '../utils/guestsLocalCache'
 import './Admin.css'
 
 const Admin = () => {
@@ -73,7 +79,7 @@ const Admin = () => {
   const [editedVenue, setEditedVenue] = useState('')
   const [editedVenueAddress, setEditedVenueAddress] = useState('')
   const [editedEvents, setEditedEvents] = useState<Array<{ title: string; description: string; time?: string }>>([])
-  const [pendingBookings] = useState<Array<{ id: string; name: string; phone: string; email: string; createdAt: any }>>([])
+  const [pendingBookings, setPendingBookings] = useState<Array<{ id: string; name: string; phone: string; email: string; createdAt: number | null }>>([])
   const [guestLoginLinks, setGuestLoginLinks] = useState<Record<string, string>>({}) // 게스트 ID (name_phone) -> 로그인 링크
   const [guestBookingDates, setGuestBookingDates] = useState<Record<string, any>>({}) // 게스트 ID (name_phone) -> 예매 일시
   const [googleSheetsSyncStatus, setGoogleSheetsSyncStatus] = useState<string>('')
@@ -81,7 +87,7 @@ const Admin = () => {
   const [passwordInput, setPasswordInput] = useState('')
 
   const [drinkOrders, setDrinkOrders] = useState<Array<{ id: string; name: string; phone: string; beerQuantity: number; mojitoQuantity: number; totalAmount: number; createdAt: any; paymentConfirmed?: boolean; paymentConfirmedAt?: any; provided?: boolean; providedAt?: any; orderHistory?: Array<{ beerQuantity: number; mojitoQuantity: number; unitPrice?: number; createdAt: any; provided?: boolean; providedAt?: any }> }>>([])
-  const { uploadGuests, setPerformanceData, guests, performanceData, clearGuests, deleteGuest, clearSetlist, bookingInfo, setBookingInfo, clearChatMessages, toggleGuestPayment, toggleGuestTicketReceived, addWalkInGuest, deduplicateGuests, fixGuestPhones, eventsFeatures, setEventsFeature } = useData()
+  const { uploadGuests, setPerformanceData, guests, guestsLoadError, refreshGuests, restoreGuestsFromLocalCache, performanceData, clearGuests, deleteGuest, clearSetlist, bookingInfo, setBookingInfo, clearChatMessages, toggleGuestPayment, toggleGuestTicketReceived, addWalkInGuest, deduplicateGuests, fixGuestPhones, eventsFeatures, setEventsFeature } = useData()
   
   // 예매 정보 폼 상태
   const [bookingForm, setBookingForm] = useState<BookingInfo>({
@@ -179,24 +185,22 @@ const Admin = () => {
     loadDrinkOrders()
   }, [])
 
-  // 예매 일시 불러오기 (bookings 컬렉션 + guests.bookedAt 병합)
+  // 예매 일시 불러오기 (bookings API + guests.bookedAt 병합)
   useEffect(() => {
     const loadBookingDates = async () => {
       try {
-        const bookingsRef = collection(db, 'bookings')
-        const snapshot = await getDocs(bookingsRef)
+        const bookings = await adminListBookings()
+        if (!bookings) return
 
         const bookingDatesMap: Record<string, unknown> = {}
 
-        snapshot.forEach((bookingDoc) => {
-          const data = bookingDoc.data()
-          const bookingName = data.name || ''
-          const bookingPhone = String(data.phone || '')
-          const timestamp = data.bookedAt ?? data.createdAt
-          const parsed = parseBookedAt(timestamp)
+        bookings.forEach((booking) => {
+          const bookingName = booking.name || ''
+          const bookingPhone = String(booking.phone || '')
+          const parsed = booking.bookedAt ?? booking.createdAt
 
           if (parsed) {
-            const phoneKey = getBookingDocId(bookingPhone || bookingDoc.id)
+            const phoneKey = getBookingDocId(bookingPhone || booking.id)
             if (phoneKey) {
               bookingDatesMap[phoneKey] = parsed
             }
@@ -226,6 +230,31 @@ const Admin = () => {
 
     loadBookingDates()
   }, [guests])
+
+  // 승인 대기 예매 목록
+  useEffect(() => {
+    const loadPendingBookings = async () => {
+      try {
+        const bookings = await adminListPendingBookings()
+        if (!bookings) return
+        setPendingBookings(
+          bookings.map((b) => ({
+            id: b.id,
+            name: b.name,
+            phone: b.phone,
+            email: b.email,
+            createdAt: b.createdAt,
+          }))
+        )
+      } catch {
+        // ignore
+      }
+    }
+
+    loadPendingBookings()
+    const interval = setInterval(loadPendingBookings, 15000)
+    return () => clearInterval(interval)
+  }, [])
 
   // 공연 정보 기본값 설정 (events가 비어 있을 때만)
   const hasInitializedEvents = useRef(false)
@@ -1568,15 +1597,12 @@ const Admin = () => {
   const handleApproveBooking = async (bookingId: string, name: string, phone: string) => {
     requirePassword(async () => {
       try {
-        // 예매 신청 승인 처리
-        const bookingRef = doc(db, 'bookings', bookingId)
-        await updateDoc(bookingRef, {
-          approved: true,
-          approvedAt: new Date(),
-          updatedAt: new Date()
-        })
+        const approved = await adminApproveBooking({ id: bookingId, phone, name })
+        if (!approved) {
+          setUploadStatus('❌ 예매 신청 승인에 실패했습니다.')
+          return
+        }
 
-        // 게스트 목록에 추가 (이미 있으면 스킵)
         const normalizedPhone = phone.replace(/\D/g, '')
         const existingGuest = guests.find((guest) => {
           const guestName = guest.name || guest['이름'] || guest.Name || ''
@@ -1585,7 +1611,6 @@ const Admin = () => {
         })
 
         if (!existingGuest) {
-          // 게스트가 없으면 추가
           const result = await addWalkInGuest(name.trim(), normalizedPhone, false, '', {
             source: 'admin_approve',
           })
@@ -1597,6 +1622,8 @@ const Admin = () => {
         } else {
           setUploadStatus(`✅ "${name}" 예매 신청이 승인되었습니다. (이미 게스트 목록에 존재)`)
         }
+
+        setPendingBookings((prev) => prev.filter((b) => b.id !== bookingId))
       } catch (error) {
         console.error('예매 신청 승인 오류:', error)
         setUploadStatus(`❌ 예매 신청 승인에 실패했습니다: ${error}`)
@@ -1634,7 +1661,7 @@ const Admin = () => {
                     <div className="booking-info-row">
                       <span className="booking-label">신청 시간:</span>
                       <span className="booking-value">
-                        {booking.createdAt.toDate ? booking.createdAt.toDate().toLocaleString('ko-KR') : new Date(booking.createdAt).toLocaleString('ko-KR')}
+                        {new Date(booking.createdAt).toLocaleString('ko-KR')}
                       </span>
                     </div>
                   )}
@@ -1987,14 +2014,10 @@ const Admin = () => {
                                 if (window.confirm(`"${guestName}" 게스트를 삭제하시겠습니까?`)) {
                                   // 게스트 삭제
                                   deleteGuest(originalIndex >= 0 ? originalIndex : sortedIndex)
-                                  
-                                  // 해당 게스트의 booking 정보도 삭제
+
                                   const bookingId = makeGuestKey(guestName, guestPhoneRaw)
-                                  const bookingRef = doc(db, 'bookings', bookingId)
-                                  
-                                  deleteDoc(bookingRef).catch((error) => {
+                                  void adminDeleteBooking({ id: bookingId, phone: guestPhoneRaw, name: guestName }).catch((error) => {
                                     console.error('예매 정보 삭제 오류:', error)
-                                    // 예매 정보 삭제 실패해도 게스트 삭제는 계속 진행
                                   })
                                   
                                   // guestBookingDates에서도 제거
@@ -2023,7 +2046,39 @@ const Admin = () => {
             </table>
           </div>
         ) : (
-          <p>등록된 게스트가 없습니다.</p>
+          <div>
+            {guestsLoadError ? (
+              <div className="error-message" style={{ marginBottom: '1rem' }}>
+                {guestsLoadError}
+                <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="admin-secondary-button"
+                    onClick={() => void refreshGuests()}
+                  >
+                    다시 불러오기
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-secondary-button"
+                    onClick={() => {
+                      void restoreGuestsFromLocalCache().then((result) => {
+                        setUploadStatus(result.message)
+                      })
+                    }}
+                  >
+                    브라우저 백업 복원
+                  </button>
+                </div>
+                {describeLocalGuestsBackup() ? (
+                  <p className="ui-muted" style={{ marginTop: '0.5rem', marginBottom: 0 }}>
+                    로컬 백업: {describeLocalGuestsBackup()!.count}명 ({describeLocalGuestsBackup()!.key})
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+            <p>등록된 게스트가 없습니다.</p>
+          </div>
         )}
       </div>
 

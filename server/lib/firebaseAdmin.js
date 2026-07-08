@@ -35,3 +35,12 @@ export function getAdminDb() {
   cachedDb = getFirestore()
   return cachedDb
 }
+
+export function mapFirestoreError(error) {
+  if (error?.code === 'not_configured') return 'server_not_configured'
+  const message = String(error?.message || error?.details || '')
+  if (error?.code === 8 || message.includes('Quota exceeded') || message.includes('RESOURCE_EXHAUSTED')) {
+    return 'firestore_quota_exceeded'
+  }
+  return 'internal_error'
+}

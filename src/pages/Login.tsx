@@ -2,13 +2,14 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, Link, useParams, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useData } from '../contexts/DataContext'
-import { doc, setDoc, onSnapshot, getDoc } from 'firebase/firestore'
+import { doc, setDoc } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import TicketTransition from '../components/TicketTransition'
 import ticketImage from '../assets/background/glow-ticket.png'
 import { validatePhoneNumber, formatPhoneDisplay } from '../utils/phoneFormat'
 import { normalizePhone, normalizeName } from '../utils/guestUtils'
 import { checkGuest } from '../services/guestsApi'
+import { getBookingStatus, updateBooking } from '../services/bookingsApi'
 import {
   trackEvent,
   trackFunnelAbandon,
@@ -270,33 +271,23 @@ const Login = () => {
       if (savedBooking) {
         try {
           const booking = JSON.parse(savedBooking)
-          if (booking.name && booking.phone && booking.email) {
-            // Firestore에서 승인 상태 확인
-            const normalizedPhone = booking.phone.replace(/\D/g, '')
-            const userId = `${booking.name}_${normalizedPhone}`
-            const bookingRef = doc(db, 'bookings', userId)
-            
+          if (booking.name && booking.phone) {
+            const normalizedPhone = normalizePhone(booking.phone)
+
             try {
-              const bookingSnap = await getDoc(bookingRef)
-              if (bookingSnap.exists()) {
-                const bookingData = bookingSnap.data()
-                // 이미 승인되었다면 로그인 처리
-                if (bookingData.approved === true) {
-                  const loginSuccess = await login(booking.name, normalizedPhone)
-                  if (loginSuccess) {
-                    localStorage.removeItem('pendingBooking')
-                    // 티켓 애니메이션 표시
-                    setBookingName(booking.name)
-                    // 전화번호 포맷팅
-                    const formattedPhone = formatPhoneDisplay(booking.phone)
-                    setBookingPhone(formattedPhone)
-                    setShowTicket(true)
-                    return
-                  }
+              const status = await getBookingStatus(normalizedPhone, booking.name)
+              if (status.exists && status.booking?.approved) {
+                const loginSuccess = await login(booking.name, normalizedPhone)
+                if (loginSuccess) {
+                  localStorage.removeItem('pendingBooking')
+                  setBookingName(booking.name)
+                  setBookingPhone(formatPhoneDisplay(booking.phone))
+                  setShowTicket(true)
+                  return
                 }
               }
             } catch (error) {
-              console.error('Firestore 예매 정보 확인 실패:', error)
+              console.error('예매 정보 확인 실패:', error)
             }
             
             // 승인되지 않았거나 예매 정보가 없는 경우 확인 화면 표시
@@ -317,31 +308,30 @@ const Login = () => {
     checkExistingBooking()
   }, [login])
 
-  // 예매 신청 승인 상태 확인
+  // 예매 신청 승인 상태 확인 (폴링)
   useEffect(() => {
     if (!showBookingConfirmation || !bookingName || !bookingPhone) return
 
-    const userId = `${bookingName}_${bookingPhone.replace(/\D/g, '')}`
-    const bookingRef = doc(db, 'bookings', userId)
+    const normalizedPhone = normalizePhone(bookingPhone)
 
-    const unsubscribe = onSnapshot(bookingRef, (snapshot) => {
-      if (snapshot.exists()) {
-        const bookingData = snapshot.data()
-        if (bookingData.approved === true) {
-          const normalizedPhone = bookingPhone.replace(/\D/g, '')
-          void (async () => {
-            const loginSuccess = await login(bookingName, normalizedPhone)
-            if (loginSuccess) {
-              localStorage.removeItem('pendingBooking')
-              setShowBookingConfirmation(false)
-              setShowTicket(true)
-            }
-          })()
+    const checkApproval = async () => {
+      const status = await getBookingStatus(normalizedPhone, bookingName)
+      if (status.exists && status.booking?.approved) {
+        const loginSuccess = await login(bookingName, normalizedPhone)
+        if (loginSuccess) {
+          localStorage.removeItem('pendingBooking')
+          setShowBookingConfirmation(false)
+          setShowTicket(true)
         }
       }
-    })
+    }
 
-    return () => unsubscribe()
+    void checkApproval()
+    const interval = setInterval(() => {
+      void checkApproval()
+    }, 5000)
+
+    return () => clearInterval(interval)
   }, [showBookingConfirmation, bookingName, bookingPhone, login])
 
   // 예매 신청하기 핸들러
@@ -475,66 +465,23 @@ const Login = () => {
     setBookingError('')
 
     try {
-      const normalizedPhone = editedPhone.trim().replace(/\D/g, '')
-      const updatedName = editedName.trim()
+      const normalizedPhone = normalizePhone(editedPhone.trim())
+      const updatedName = normalizeName(editedName.trim())
       const updatedEmail = ''
-      
-      // 원래 이름과 전화번호 (게스트 찾기용)
-      const originalNormalizedPhone = bookingPhone.trim().replace(/\D/g, '').replace(/[-\s()]/g, '')
-      const originalName = bookingName.trim()
-      
-      // Firestore bookings 업데이트 (새로운 userId로)
-      const newUserId = `${updatedName}_${normalizedPhone}`
-      const bookingRef = doc(db, 'bookings', newUserId)
-      
-      // 기존 booking이 있으면 삭제하고 새로 생성 (이름이나 전화번호가 변경된 경우)
-      if (originalName !== updatedName || originalNormalizedPhone !== normalizedPhone) {
-        const oldUserId = `${originalName}_${originalNormalizedPhone}`
-        const oldBookingRef = doc(db, 'bookings', oldUserId)
-        try {
-          const oldBookingSnap = await getDoc(oldBookingRef)
-          if (oldBookingSnap.exists()) {
-            // 기존 booking 데이터 가져오기
-            const oldBookingData = oldBookingSnap.data()
-            // 새 booking에 기존 데이터 병합
-            await setDoc(bookingRef, {
-              ...oldBookingData,
-              name: updatedName,
-              phone: normalizedPhone,
-              email: updatedEmail,
-              updatedAt: new Date()
-            }, { merge: true })
-            // 기존 booking 삭제
-            await setDoc(oldBookingRef, { deleted: true }, { merge: true })
-          } else {
-            // 기존 booking이 없으면 새로 생성
-            await setDoc(bookingRef, {
-              name: updatedName,
-              phone: normalizedPhone,
-              email: updatedEmail,
-              approved: false,
-              createdAt: new Date(),
-              updatedAt: new Date()
-            }, { merge: true })
-          }
-        } catch (error) {
-          console.warn('기존 booking 처리 오류:', error)
-          // 오류가 나도 새 booking은 생성
-          await setDoc(bookingRef, {
-            name: updatedName,
-            phone: normalizedPhone,
-            email: updatedEmail,
-            updatedAt: new Date()
-          }, { merge: true })
-        }
-    } else {
-        // 이름과 전화번호가 같으면 그냥 업데이트
-        await setDoc(bookingRef, {
-          name: updatedName,
-          phone: normalizedPhone,
-          email: updatedEmail,
-          updatedAt: new Date()
-        }, { merge: true })
+      const originalNormalizedPhone = normalizePhone(bookingPhone.trim())
+      const originalName = normalizeName(bookingName.trim())
+
+      const result = await updateBooking({
+        phone: originalNormalizedPhone,
+        newPhone: normalizedPhone,
+        name: updatedName,
+        originalName,
+        email: updatedEmail,
+      })
+
+      if (!result.ok) {
+        setBookingError('정보 수정에 실패했습니다. 다시 시도해주세요.')
+        return
       }
 
       // 게스트 명단은 서버 API에서만 관리 — 로컬 pendingBooking만 갱신
