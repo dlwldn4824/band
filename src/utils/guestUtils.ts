@@ -118,21 +118,20 @@ export const dedupeGuests = (guests: Array<{ name?: string; phone?: string; isDe
   const guestMap = new Map<string, any>()
   
   for (const guest of guests) {
-    // ✅ 전화번호만 키로 사용 (이름은 무시)
     const guestPhone = normalizePhone(guest.phone || guest['전화번호'] || guest.Phone)
-    if (!guestPhone) {
+    const guestName = normalizeName(guest.name || guest['이름'] || guest.Name)
+    const key = makeGuestKey(guestName, guestPhone)
+    if (!key) {
       continue
     }
     
-    // 정규화된 값으로 저장 (일관성 유지)
     const normalizedGuest = {
       ...guest,
       phone: guestPhone,
-      name: normalizeName(guest.name || guest['이름'] || guest.Name)
+      name: guestName,
     }
     
-    // ✅ 같은 전화번호면 "나중 값"으로 덮어쓰기 (삭제 플래그도 포함하여 저장됨)
-    guestMap.set(guestPhone, normalizedGuest)
+    guestMap.set(key, normalizedGuest)
   }
   
   return Array.from(guestMap.values())

@@ -108,9 +108,8 @@ async function handleLogin(db, body) {
     let resultGuest = active
 
     const hasEntryNumber = active.entryNumber !== undefined && active.entryNumber !== null
-    const isPaymentConfirmed = active.paymentConfirmed === true
 
-    if (!hasEntryNumber && !isPaymentConfirmed) {
+    if (!hasEntryNumber) {
       const maxEntryNumber = guests.reduce((max, g) => {
         const n = typeof g.entryNumber === 'number' ? g.entryNumber : 0
         return n > max ? n : max
@@ -276,6 +275,11 @@ async function upsertGuestByPhone(db, { name, phone, email, isWalkIn, bookedAt, 
       })
       entry = updatedGuests.find((g) => isSameGuestIdentity(g, name, phone) && g.isDeleted !== true)
     } else {
+      const maxEntryNumber = guests.reduce((max, g) => {
+        const n = typeof g.entryNumber === 'number' ? g.entryNumber : 0
+        return n > max ? n : max
+      }, 0)
+
       entry = {
         name,
         phone,
@@ -283,7 +287,12 @@ async function upsertGuestByPhone(db, { name, phone, email, isWalkIn, bookedAt, 
         checkedIn: false,
         isWalkIn,
         paymentConfirmed: paymentConfirmed === true,
-        ...(paymentConfirmed ? { paymentConfirmedAt: now } : {}),
+        ...(paymentConfirmed
+          ? {
+              paymentConfirmedAt: now,
+              entryNumber: maxEntryNumber + 1,
+            }
+          : {}),
         bookedAt,
       }
       updatedGuests = [...guests, entry]
@@ -404,16 +413,16 @@ async function handleAdminUpload(db, body) {
 
     const guestMap = new Map()
     existingGuests.forEach((g) => {
-      const key = normalizePhone(getGuestPhone(g))
+      const key = makeGuestKey(getGuestName(g), getGuestPhone(g))
       if (key) guestMap.set(key, g)
     })
 
     newGuests.forEach((g) => {
-      const key = normalizePhone(getGuestPhone(g))
+      const key = makeGuestKey(getGuestName(g), getGuestPhone(g))
       if (!key) return
       guestMap.set(key, {
         ...g,
-        phone: key,
+        phone: normalizePhone(getGuestPhone(g)),
         name: getGuestName(g),
         isWalkIn: g.isWalkIn !== undefined ? g.isWalkIn : false,
         paymentConfirmed: g.paymentConfirmed !== undefined ? g.paymentConfirmed : false,
@@ -429,19 +438,19 @@ async function handleAdminUpload(db, body) {
   })
 }
 
-async function mutateGuestsByPhone(db, phone, writeSource, mutate) {
+async function mutateGuestByIdentity(db, name, phone, writeSource, mutate) {
   return db.runTransaction(async (tx) => {
     const snap = await tx.get(guestsDocRef(db))
     const { guests, cleared } = parseGuestsSnapshot(snap)
 
-    const matches = findByPhone(guests, phone)
-    if (matches.length === 0) {
+    const target = guests.find((g) => isSameGuestIdentity(g, name, phone))
+    if (!target) {
       return { status: 404, json: { ok: false, message: '게스트를 찾을 수 없습니다.' } }
     }
 
     const updatedGuests = guests.map((g) => {
-      if (normalizePhone(getGuestPhone(g)) !== phone) return g
-      return mutate(g, matches)
+      if (!isSameGuestIdentity(g, name, phone)) return g
+      return mutate(g)
     })
 
     tx.set(guestsDocRef(db), buildDocPayload(updatedGuests, cleared, writeSource))
@@ -451,39 +460,34 @@ async function mutateGuestsByPhone(db, phone, writeSource, mutate) {
 
 async function handleAdminTogglePayment(db, body) {
   const phone = normalizePhone(body.phone)
-  if (!phone) return { status: 400, json: { ok: false } }
+  const name = normalizeName(body.name)
+  if (!phone || !name) return { status: 400, json: { ok: false } }
 
-  return mutateGuestsByPhone(db, phone, 'api_toggle_payment', (g, matches) => {
-    const current = matches.some((m) => m.paymentConfirmed === true)
-    const next = !current
-    return {
-      ...g,
-      paymentConfirmed: next,
-      paymentConfirmedAt: next ? Date.now() : null,
-    }
-  })
+  return mutateGuestByIdentity(db, name, phone, 'api_toggle_payment', (g) => ({
+    ...g,
+    paymentConfirmed: !(g.paymentConfirmed === true),
+    paymentConfirmedAt: g.paymentConfirmed === true ? null : Date.now(),
+  }))
 }
 
 async function handleAdminToggleTicket(db, body) {
   const phone = normalizePhone(body.phone)
-  if (!phone) return { status: 400, json: { ok: false } }
+  const name = normalizeName(body.name)
+  if (!phone || !name) return { status: 400, json: { ok: false } }
 
-  return mutateGuestsByPhone(db, phone, 'api_toggle_ticket', (g, matches) => {
-    const current = matches.some((m) => m.ticketReceived === true)
-    const next = !current
-    return {
-      ...g,
-      ticketReceived: next,
-      ticketReceivedAt: next ? Date.now() : null,
-    }
-  })
+  return mutateGuestByIdentity(db, name, phone, 'api_toggle_ticket', (g) => ({
+    ...g,
+    ticketReceived: !(g.ticketReceived === true),
+    ticketReceivedAt: g.ticketReceived === true ? null : Date.now(),
+  }))
 }
 
 async function handleAdminDelete(db, body) {
   const phone = normalizePhone(body.phone)
-  if (!phone) return { status: 400, json: { ok: false } }
+  const name = normalizeName(body.name)
+  if (!phone || !name) return { status: 400, json: { ok: false } }
 
-  return mutateGuestsByPhone(db, phone, 'api_delete_guest', (g) => ({
+  return mutateGuestByIdentity(db, name, phone, 'api_delete_guest', (g) => ({
     ...g,
     isDeleted: true,
     deletedAt: Date.now(),
@@ -492,8 +496,9 @@ async function handleAdminDelete(db, body) {
 
 async function handleAdminUpdate(db, body) {
   const phone = normalizePhone(body.phone)
+  const name = normalizeName(body.name)
   const updates = body.guest
-  if (!phone || !updates || typeof updates !== 'object') {
+  if (!phone || !name || !updates || typeof updates !== 'object') {
     return { status: 400, json: { ok: false } }
   }
 
@@ -502,7 +507,7 @@ async function handleAdminUpdate(db, body) {
     const { guests, cleared } = parseGuestsSnapshot(snap)
 
     const index = guests.findIndex(
-      (g) => normalizePhone(getGuestPhone(g)) === phone && g.isDeleted !== true
+      (g) => g.isDeleted !== true && isSameGuestIdentity(g, name, phone)
     )
     if (index === -1) {
       return { status: 404, json: { ok: false, message: '게스트를 찾을 수 없습니다.' } }

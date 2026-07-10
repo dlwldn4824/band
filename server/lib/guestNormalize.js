@@ -69,11 +69,13 @@ export const dedupeGuests = (guests) => {
   const guestMap = new Map()
   for (const guest of guests) {
     const phone = normalizePhone(getGuestPhone(guest))
-    if (!phone) continue
-    guestMap.set(phone, {
+    const name = getGuestName(guest)
+    const key = makeGuestKey(name, phone)
+    if (!key) continue
+    guestMap.set(key, {
       ...guest,
       phone,
-      name: getGuestName(guest),
+      name,
     })
   }
   return Array.from(guestMap.values())

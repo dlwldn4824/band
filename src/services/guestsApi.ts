@@ -181,23 +181,23 @@ export async function adminUploadGuests(guests: Guest[]): Promise<Guest[] | null
   throw new Error(getAdminApiErrorMessage(result?.error))
 }
 
-export async function adminTogglePayment(phone: string): Promise<Guest[] | null> {
-  const result = await callGuestsApi<AdminGuestsResponse>('toggle-payment', { phone }, true)
+export async function adminTogglePayment(phone: string, name: string): Promise<Guest[] | null> {
+  const result = await callGuestsApi<AdminGuestsResponse>('toggle-payment', { phone, name }, true)
   return result?.ok && Array.isArray(result.guests) ? result.guests : null
 }
 
-export async function adminToggleTicket(phone: string): Promise<Guest[] | null> {
-  const result = await callGuestsApi<AdminGuestsResponse>('toggle-ticket', { phone }, true)
+export async function adminToggleTicket(phone: string, name: string): Promise<Guest[] | null> {
+  const result = await callGuestsApi<AdminGuestsResponse>('toggle-ticket', { phone, name }, true)
   return result?.ok && Array.isArray(result.guests) ? result.guests : null
 }
 
-export async function adminDeleteGuest(phone: string): Promise<Guest[] | null> {
-  const result = await callGuestsApi<AdminGuestsResponse>('delete', { phone }, true)
+export async function adminDeleteGuest(phone: string, name: string): Promise<Guest[] | null> {
+  const result = await callGuestsApi<AdminGuestsResponse>('delete', { phone, name }, true)
   return result?.ok && Array.isArray(result.guests) ? result.guests : null
 }
 
-export async function adminUpdateGuest(phone: string, guest: Guest): Promise<Guest[] | null> {
-  const result = await callGuestsApi<AdminGuestsResponse>('update', { phone, guest }, true)
+export async function adminUpdateGuest(phone: string, name: string, guest: Guest): Promise<Guest[] | null> {
+  const result = await callGuestsApi<AdminGuestsResponse>('update', { phone, name, guest }, true)
   return result?.ok && Array.isArray(result.guests) ? result.guests : null
 }
 

@@ -315,6 +315,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
   const getGuestPhoneKey = (guest: Guest): string =>
     normalizePhone(guest.phone || guest['전화번호'] || guest.Phone || '')
+
+  const getGuestNameKey = (guest: Guest): string =>
+    normalizeName(guest.name || guest['이름'] || guest.Name || '')
   
   useEffect(() => {
     // Firestore에서 데이터 로드
@@ -669,8 +672,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const guest = guests[index]
     if (!guest) return
     const phone = getGuestPhoneKey(guest)
-    if (!phone) return
-    const updated = await adminTogglePayment(phone)
+    const name = getGuestNameKey(guest)
+    if (!phone || !name) return
+    const updated = await adminTogglePayment(phone, name)
     if (updated) applyGuestList(updated)
   }
 
@@ -678,8 +682,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const guest = guests[index]
     if (!guest) return
     const phone = getGuestPhoneKey(guest)
-    if (!phone) return
-    const updated = await adminToggleTicket(phone)
+    const name = getGuestNameKey(guest)
+    if (!phone || !name) return
+    const updated = await adminToggleTicket(phone, name)
     if (updated) applyGuestList(updated)
   }
 
@@ -737,8 +742,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const guest = guests[index]
     if (!guest) return
     const phone = getGuestPhoneKey(guest)
-    if (!phone) return
-    const updated = await adminDeleteGuest(phone)
+    const name = getGuestNameKey(guest)
+    if (!phone || !name) return
+    const updated = await adminDeleteGuest(phone, name)
     if (updated) applyGuestList(updated)
   }
 
@@ -746,8 +752,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const guest = guests[index]
     if (!guest) return
     const phone = getGuestPhoneKey(guest)
-    if (!phone) return
-    const updated = await adminUpdateGuest(phone, updatedGuest)
+    const name = getGuestNameKey(guest)
+    if (!phone || !name) return
+    const updated = await adminUpdateGuest(phone, name, updatedGuest)
     if (updated) applyGuestList(updated)
   }
 

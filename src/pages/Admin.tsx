@@ -338,25 +338,19 @@ const Admin = () => {
         existingGuests = guests.filter(guest => guest.isDeleted !== true)
       }
       
-      // ✅ 엑셀 파일 내부 중복 제거 (같은 전화번호가 엑셀에 여러 번 있으면 하나만 사용)
+      // ✅ 엑셀 파일 내부 중복 제거 (이름+전화번호 기준)
       const excelGuestMap = new Map<string, any>()
       newGuestsFromFile.forEach((guest: any) => {
-        // 이미 정규화된 name과 phone 사용
         const guestName = guest.name || ''
         const guestPhone = guest.phone || ''
         
-        // 이름과 전화번호가 모두 있어야 함
         if (!guestName || !guestPhone) {
           return
         }
         
-        // ✅ 전화번호만 키로 사용 (이름은 무시)
-        const key = normalizePhone(guestPhone)
-        if (key) {
-          // 엑셀 내부 중복: 같은 키(전화번호)가 있으면 나중 것을 사용 (또는 먼저 것을 유지)
-          if (!excelGuestMap.has(key)) {
-            excelGuestMap.set(key, guest)
-          }
+        const key = makeGuestKey(guestName, guestPhone)
+        if (key && !excelGuestMap.has(key)) {
+          excelGuestMap.set(key, guest)
         }
       })
       
@@ -377,14 +371,13 @@ const Admin = () => {
           return
         }
         
-        // ✅ 기존 게스트와 중복 체크 (전화번호만 비교, 이름은 무시)
-        const guestKey = normalizePhone(guestPhone)
+        // ✅ 기존 게스트와 중복 체크 (이름+전화번호)
+        const guestKey = makeGuestKey(guestName, guestPhone)
         const duplicateGuest = existingGuests.find((existing) => {
-          // 삭제된 게스트는 제외 (이중 체크)
           if (existing.isDeleted === true) return false
+          const existingName = normalizeName(existing.name || existing['이름'] || existing.Name || '')
           const existingPhone = normalizePhone(existing.phone || existing['전화번호'] || existing.Phone || '')
-          // ✅ 전화번호만 비교 (이름은 무시)
-          return guestKey === existingPhone && guestKey !== ''
+          return guestKey === makeGuestKey(existingName, existingPhone) && guestKey !== ''
         })
         
         if (!duplicateGuest) {
@@ -447,10 +440,8 @@ const Admin = () => {
       allGuests.forEach(guest => {
         const guestName = normalizeName(guest.name || '')
         const guestPhone = normalizePhone(guest.phone || '')
-        // ✅ 전화번호만 키로 사용 (이름은 무시)
-        const key = guestPhone
+        const key = makeGuestKey(guestName, guestPhone)
         if (key) {
-          // 정규화된 값으로 저장
           updatedGuestsMap.set(key, {
             ...guest,
             name: guestName,
@@ -463,8 +454,7 @@ const Admin = () => {
       guestsToUpdate.forEach(({ guest, existingGuest }) => {
         const existingName = normalizeName(existingGuest.name || '')
         const existingPhone = normalizePhone(existingGuest.phone || '')
-        // ✅ 전화번호만 키로 사용 (이름은 무시)
-        const key = existingPhone
+        const key = makeGuestKey(existingName, existingPhone)
         if (key) {
           const updatedGuest = { 
             ...existingGuest,
@@ -492,7 +482,7 @@ const Admin = () => {
       guestsToAdd.forEach(guest => {
         const guestName = guest.name || ''
         const guestPhone = guest.phone || ''
-        const key = guestPhone
+        const key = makeGuestKey(guestName, guestPhone)
         if (key) {
           const bookedAt = guest.bookedAt ?? Date.now()
           if (guest.bookedAt) {
