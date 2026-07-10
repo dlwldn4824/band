@@ -8,6 +8,7 @@ import TicketTransition from '../components/TicketTransition'
 import ticketImage from '../assets/background/glow-ticket.png'
 import { validatePhoneNumber, formatPhoneDisplay } from '../utils/phoneFormat'
 import { normalizePhone, normalizeName } from '../utils/guestUtils'
+import { encodePersonalLoginToken } from '../utils/adminUtils'
 import { checkGuest } from '../services/guestsApi'
 import { getBookingStatus, updateBooking } from '../services/bookingsApi'
 import {
@@ -145,7 +146,11 @@ const Login = () => {
           }
 
           const guestName = decodedName ? normalizeName(decodedName) : ''
-          const loginSuccess = await login(guestName || '게스트', normalizedPhone, 'token')
+          const loginSuccess = await login(
+            guestName || '게스트',
+            normalizedPhone,
+            guestName ? 'name_phone' : 'token'
+          )
           
           if (loginSuccess) {
             localStorage.removeItem('pendingBooking')
@@ -220,15 +225,6 @@ const Login = () => {
     }
   }, [])
 
-  // 개인 로그인 링크 생성 함수 (phone-only)
-  const generatePersonalLoginLink = (_name: string, phone: string): string => {
-    // ✅ 전화번호만 사용 (이름은 무시)
-    const normalizedPhone = normalizePhone(phone)
-    const base64Token = btoa(encodeURIComponent(normalizedPhone))
-    const urlSafeToken = base64Token.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
-    return urlSafeToken
-  }
-
   // 네비게이션 로직 (닉네임 확인 없이 바로 대시보드로)
   const checkNicknameAndNavigate = async () => {
     console.log('[Login] checkNicknameAndNavigate - token:', token, 'location.pathname:', location.pathname)
@@ -247,7 +243,7 @@ const Login = () => {
       // 일반 로그인: 개인 링크 토큰을 생성하여 쿼리 스트링으로 추가
       const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
       if (currentUser && currentUser.name && currentUser.phone && currentUser.phone !== 'admin') {
-        const personalToken = generatePersonalLoginLink(currentUser.name, currentUser.phone)
+        const personalToken = encodePersonalLoginToken(currentUser.name, currentUser.phone)
         const url = `/dashboard?token=${encodeURIComponent(personalToken)}`
         console.log('[Login] checkNicknameAndNavigate - navigating to:', url)
         navigate(url, { replace: true })

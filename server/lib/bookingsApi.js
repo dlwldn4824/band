@@ -1,5 +1,5 @@
 import { getAdminDb, mapFirestoreError } from './firebaseAdmin.js'
-import { normalizePhone, normalizeName } from './guestNormalize.js'
+import { normalizePhone, normalizeName, makeGuestKey } from './guestNormalize.js'
 import { verifyAdminToken, getBearerToken } from './adminToken.js'
 
 const BOOKINGS_COLLECTION = 'bookings'
@@ -62,10 +62,19 @@ async function findBookingDoc(db, { phone, name, id }) {
   const normalizedPhone = normalizePhone(phone || id)
   if (!normalizedPhone && !id) return null
 
-  if (normalizedPhone) {
-    const snap = await db.collection(BOOKINGS_COLLECTION).doc(normalizedPhone).get()
-    if (snap.exists && snap.data().deleted !== true) {
-      return { ref: snap.ref, data: snap.data(), id: snap.id }
+  const normalizedName = name ? normalizeName(name) : ''
+
+  if (normalizedName && normalizedPhone) {
+    const compositeId = makeGuestKey(normalizedName, normalizedPhone)
+    const compositeSnap = await db.collection(BOOKINGS_COLLECTION).doc(compositeId).get()
+    if (compositeSnap.exists && compositeSnap.data().deleted !== true) {
+      return { ref: compositeSnap.ref, data: compositeSnap.data(), id: compositeSnap.id }
+    }
+
+    const legacyId = `${normalizedName}_${normalizedPhone}`
+    const legacySnap = await db.collection(BOOKINGS_COLLECTION).doc(legacyId).get()
+    if (legacySnap.exists && legacySnap.data().deleted !== true) {
+      return { ref: legacySnap.ref, data: legacySnap.data(), id: legacySnap.id }
     }
   }
 
@@ -76,9 +85,8 @@ async function findBookingDoc(db, { phone, name, id }) {
     }
   }
 
-  if (name && normalizedPhone) {
-    const legacyId = `${normalizeName(name)}_${normalizedPhone}`
-    const snap = await db.collection(BOOKINGS_COLLECTION).doc(legacyId).get()
+  if (normalizedPhone && !normalizedName) {
+    const snap = await db.collection(BOOKINGS_COLLECTION).doc(normalizedPhone).get()
     if (snap.exists && snap.data().deleted !== true) {
       return { ref: snap.ref, data: snap.data(), id: snap.id }
     }
@@ -120,7 +128,7 @@ async function handlePublicUpdate(db, body) {
 
   const found = await findBookingDoc(db, {
     phone: originalPhone,
-    name: body.originalName,
+    name: body.originalName || name,
     id: body.id,
   })
 
@@ -136,19 +144,15 @@ async function handlePublicUpdate(db, body) {
     ...(baseData.createdAt ? {} : { createdAt: now }),
   }
 
-  if (newPhone !== originalPhone || (found && found.id !== newPhone)) {
-    await db.collection(BOOKINGS_COLLECTION).doc(newPhone).set(payload, { merge: true })
+  const newDocId = makeGuestKey(name, newPhone)
+  await db.collection(BOOKINGS_COLLECTION).doc(newDocId).set(payload, { merge: true })
 
-    const oldId = found?.id || originalPhone
-    if (oldId && oldId !== newPhone) {
-      await db.collection(BOOKINGS_COLLECTION).doc(oldId).set(
-        { deleted: true, updatedAt: now },
-        { merge: true }
-      )
-    }
-  } else {
-    const docId = found?.id || newPhone
-    await db.collection(BOOKINGS_COLLECTION).doc(docId).set(payload, { merge: true })
+  const oldId = found?.id
+  if (oldId && oldId !== newDocId) {
+    await db.collection(BOOKINGS_COLLECTION).doc(oldId).set(
+      { deleted: true, updatedAt: now },
+      { merge: true }
+    )
   }
 
   return {

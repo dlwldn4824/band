@@ -103,8 +103,10 @@ export async function guestLogin(phone: string, name?: string): Promise<GuestLog
   return result ?? { ok: false, reason: 'not_found' }
 }
 
-export async function getGuestStatus(phone: string): Promise<PublicGuest | null> {
-  const result = await callGuestsApi<{ ok: boolean; guest?: PublicGuest }>('status', { phone })
+export async function getGuestStatus(phone: string, name?: string): Promise<PublicGuest | null> {
+  const body: Record<string, unknown> = { phone }
+  if (name) body.name = name
+  const result = await callGuestsApi<{ ok: boolean; guest?: PublicGuest }>('status', body)
   return result?.ok && result.guest ? result.guest : null
 }
 

@@ -98,6 +98,9 @@ async function handleLogin(db, body) {
         return { status: 200, json: { ok: false, reason: 'name_mismatch' } }
       }
     } else {
+      if (matches.length > 1) {
+        return { status: 200, json: { ok: false, reason: 'name_mismatch' } }
+      }
       active = matches[0]
     }
 
@@ -140,11 +143,22 @@ async function handleLogin(db, body) {
 
 async function handleStatus(db, body) {
   const phone = normalizePhone(body.phone)
+  const inputName = body.name ? normalizeName(body.name) : null
   if (!phone) return { status: 400, json: { ok: false } }
 
   const snap = await guestsDocRef(db).get()
   const { guests } = parseGuestsSnapshot(snap)
-  const active = findByPhone(guests, phone).find((g) => g.isDeleted !== true)
+
+  let active
+  if (inputName) {
+    active = findActiveByNameAndPhone(guests, inputName, phone)
+  } else {
+    const matches = findByPhone(guests, phone).filter((g) => g.isDeleted !== true)
+    if (matches.length > 1) {
+      return { status: 200, json: { ok: false, reason: 'name_required' } }
+    }
+    active = matches[0]
+  }
 
   if (!active) return { status: 200, json: { ok: false } }
   return { status: 200, json: { ok: true, guest: toPublicGuest(active) } }

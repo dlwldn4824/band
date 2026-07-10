@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react'
 import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore'
 import { db } from '../config/firebase'
-import { normalizePhone } from '../utils/guestUtils'
+import { normalizePhone, makeGuestKey } from '../utils/guestUtils'
 import { trackEvent } from '../analytics'
 import { hashGuestId } from '../analytics/hashUserId'
 import { getUtmProperties } from '../analytics/utm'
@@ -82,7 +82,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // 서버 API에서 paymentConfirmed 등 최신 상태 동기화
           if (userData.phone && userData.phone !== 'admin') {
             try {
-              const status = await getGuestStatus(normalizePhone(userData.phone))
+              const status = await getGuestStatus(normalizePhone(userData.phone), userData.name)
               if (status) {
                 userData.paymentConfirmed = status.paymentConfirmed
                 userData.checkedIn = status.checkedIn
@@ -102,7 +102,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (userData.phone && userData.phone !== 'admin') {
             try {
               // ✅ userId는 전화번호만 사용
-              const userId = normalizePhone(userData.phone)
+              const userId = makeGuestKey(userData.name, userData.phone)
               const userProfileRef = doc(db, 'userProfiles', userId)
               const userProfileSnap = await getDoc(userProfileRef)
               
@@ -140,7 +140,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const refreshUserStatus = useCallback(async () => {
     if (!user || user.phone === 'admin') return
 
-    const status = await getGuestStatus(normalizePhone(user.phone))
+    const status = await getGuestStatus(normalizePhone(user.phone), user.name)
     if (!status) return
 
     const hasChanges =
@@ -189,7 +189,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const normalizedInputPhone = normalizePhone(phone)
     const normalizedInputName = name.trim()
-    const verifyName = loginMethod === 'name_phone' ? normalizedInputName : undefined
+    const verifyName =
+      normalizedInputName && normalizedInputName !== '게스트' ? normalizedInputName : undefined
 
     const result = await guestLogin(normalizedInputPhone, verifyName)
 
@@ -234,7 +235,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const loadNickname = async () => {
       try {
-        const userId = normalizePhone(guestPhone)
+        const userId = makeGuestKey(guestName, guestPhone)
         const userProfileRef = doc(db, 'userProfiles', userId)
         const userProfileSnap = await getDoc(userProfileRef)
 
@@ -332,7 +333,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const userProfilesRef = collection(db, 'userProfiles')
       const querySnapshot = await getDocs(userProfilesRef)
       
-      const currentUserId = `${user.name}_${user.phone}`
+      const currentUserId = makeGuestKey(user.name, user.phone)
       
       // 현재 사용자의 기존 닉네임과 동일하면 중복 체크 통과
       const isSameAsCurrent = user.nickname && user.nickname.trim() === trimmedNickname
@@ -367,7 +368,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Firestore에 저장 시도 (실패해도 계속 진행)
     try {
       // ✅ userId는 전화번호만 사용
-      const userId = normalizePhone(user.phone || '')
+      const userId = makeGuestKey(user.name, user.phone)
       const userProfileRef = doc(db, 'userProfiles', userId)
       
       await setDoc(userProfileRef, {

@@ -84,6 +84,14 @@ export const getGuestKey = (_name: string | undefined | null, phone: string | un
   return normalizedPhone
 }
 
+/** 이름+전화번호 복합 키 (동일 전화번호·다른 이름은 별도 게스트) */
+export const makeGuestKey = (name: string | undefined | null, phone: string | undefined | null): string => {
+  const n = normalizeName(name)
+  const p = normalizePhone(phone)
+  if (!n || !p) return p
+  return `${n}|${p}`
+}
+
 /**
  * 게스트 중복 체크 (전화번호만 비교)
  */
