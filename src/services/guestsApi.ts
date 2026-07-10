@@ -133,6 +133,7 @@ export async function registerGuest(params: {
   email?: string
   source?: string
   bookedAt?: number
+  confirmPayment?: boolean
 }): Promise<RegisterGuestResult> {
   const result = await callGuestsApi<RegisterGuestResult>('register', { ...params })
   return result ?? { success: false, message: '등록에 실패했습니다. 다시 시도해주세요.' }

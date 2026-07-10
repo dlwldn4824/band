@@ -191,6 +191,7 @@ interface DataContextType {
       source?: BookingSource
       bookedAt?: number
       skipAnalytics?: boolean
+      confirmPayment?: boolean
     }
   ) => Promise<{ success: boolean; message?: string }>
   toggleGuestPayment: (index: number) => Promise<void>
@@ -610,6 +611,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       source?: BookingSource
       bookedAt?: number
       skipAnalytics?: boolean
+      confirmPayment?: boolean
     }
   ): Promise<{ success: boolean; message?: string }> => {
     const normalizedName = normalizeName(name)
@@ -630,6 +632,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       email,
       source: bookingSource,
       bookedAt,
+      confirmPayment: options?.confirmPayment === true,
     })
 
     if (!result.success) {

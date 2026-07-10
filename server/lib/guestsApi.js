@@ -240,6 +240,7 @@ async function handleRegister(db, body) {
   }
 
   const isWalkIn = body.isWalkIn === true
+  const confirmPayment = body.confirmPayment === true
   const bookedAt = typeof body.bookedAt === 'number' ? body.bookedAt : Date.now()
 
   const result = await upsertGuestByPhone(db, {
@@ -248,8 +249,8 @@ async function handleRegister(db, body) {
     email: body.email,
     isWalkIn,
     bookedAt,
-    paymentConfirmed: false,
-    writeSource: 'api_register',
+    paymentConfirmed: confirmPayment,
+    writeSource: confirmPayment ? 'api_register_confirm' : 'api_register',
   })
 
   if (result.json.success) {

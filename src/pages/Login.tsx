@@ -306,7 +306,8 @@ const Login = () => {
     }
     
     checkExistingBooking()
-  }, [login])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // 예매 신청 승인 상태 확인 (폴링)
   useEffect(() => {
@@ -390,21 +391,11 @@ const Login = () => {
           setShowTicket(true)
           return
         }
+        setBookingError('로그인에 실패했습니다. 이름과 전화번호를 확인해주세요.')
+        return
       }
 
-      if (check.exists) {
-        const existingName = normalizeName(check.name || normalizedName)
-        const loginSuccess = await login(existingName, normalizedPhone)
-        if (loginSuccess) {
-          localStorage.removeItem('pendingBooking')
-          setBookingName(existingName)
-          setBookingPhone(formatPhoneDisplay(bookingPhone.trim() || normalizedPhone))
-          setShowTicket(true)
-          return
-        }
-      }
-
-      // 새로운 게스트만 확인 화면 표시
+      // 새 게스트 또는 입금 대기 게스트 → 확인 화면
       
       // 정보 수정용 상태 설정
       setEditedName(bookingName.trim())
@@ -757,12 +748,18 @@ const Login = () => {
           </div>
 
           <button
+            type="button"
             className="booking-confirm-button"
             disabled={!bookingConfirmed || !bookingInfoConfirmed}
             onClick={async () => {
                 try {
-                  const normalizedPhone = bookingPhone.replace(/\D/g, '')
-                  const normalizedName = bookingName.trim()
+                  const normalizedPhone = normalizePhone(bookingPhone)
+                  const normalizedName = normalizeName(bookingName.trim())
+
+                  if (!normalizedPhone || !normalizedName) {
+                    setBookingError('이름과 전화번호를 확인해주세요.')
+                    return
+                  }
 
                   const check = await checkGuest(normalizedPhone)
 
@@ -775,22 +772,23 @@ const Login = () => {
                       setShowTicket(true)
                       return
                     }
+                    setBookingError('로그인에 실패했습니다. 잠시 후 다시 시도해주세요.')
+                    return
                   }
 
-                  if (!check.exists) {
-                    const result = await addWalkInGuest(normalizedName, normalizedPhone, false, '', {
-                      source: 'web_login',
-                    })
+                  const result = await addWalkInGuest(normalizedName, normalizedPhone, false, '', {
+                    source: 'web_login',
+                    confirmPayment: true,
+                  })
 
-                    if (!result.success) {
-                      setBookingError(result.message || '등록에 실패했습니다.')
-                      return
-                    }
-
-                    markFunnelComplete('booking', 'booking_confirmation_viewed')
-                    markFunnelComplete('booking', 'booking_form_started')
-                    markFunnelComplete('booking', 'booking_page_viewed')
+                  if (!result.success) {
+                    setBookingError(result.message || '등록에 실패했습니다.')
+                    return
                   }
+
+                  markFunnelComplete('booking', 'booking_confirmation_viewed')
+                  markFunnelComplete('booking', 'booking_form_started')
+                  markFunnelComplete('booking', 'booking_page_viewed')
 
                   const loginSuccess = await login(normalizedName, normalizedPhone)
                   if (!loginSuccess) {
@@ -802,11 +800,11 @@ const Login = () => {
                   setShowBookingConfirmation(false)
                   setShowTicket(true)
                 } catch (error) {
-                  console.error('링크 생성 실패:', error)
-                  setBookingError('링크 생성에 실패했습니다. 다시 시도해주세요.')
+                  console.error('입장 확인 처리 오류:', error)
+                  setBookingError('처리 중 오류가 발생했습니다. 다시 시도해주세요.')
                 }
               }}
-            >
+          >
               확인하고 입장하기
             </button>
 
@@ -830,71 +828,43 @@ const Login = () => {
             }
           })()}
           onDone={async () => {
-            // 포커스 해제 및 스크롤 초기화
             const el = document.activeElement as HTMLElement | null
             el?.blur?.()
             window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior })
-            
-            // 티켓 애니메이션 숨기기
-            setShowTicket(false)
-            
-            // 로그인 상태 확인
-            const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
-            console.log('[Login] TicketTransition onDone - currentUser:', currentUser)
-            console.log('[Login] TicketTransition onDone - bookingName:', bookingName)
-            console.log('[Login] TicketTransition onDone - bookingPhone:', bookingPhone)
-            
-            // 이미 로그인된 상태이거나 로그인 성공 시 대시보드로 이동
-            if (currentUser && currentUser.name && currentUser.phone) {
-              console.log('[Login] TicketTransition onDone - 이미 로그인됨, 대시보드로 이동')
-              localStorage.removeItem('pendingBooking')
-              
-              // Firestore에 티켓 애니메이션을 본 기록 저장
-              try {
-                // ✅ userId는 전화번호만 사용
-                const userId = normalizePhone(currentUser.phone || '')
-                const userProfileRef = doc(db, 'userProfiles', userId)
-                await setDoc(userProfileRef, {
-                  name: currentUser.name,
-                  phone: currentUser.phone,
-                  ticketShown: true,
-                  updatedAt: new Date()
-                }, { merge: true })
-              } catch (error) {
-                console.warn('Firestore 티켓 기록 저장 실패:', error)
+
+            let currentUser = JSON.parse(localStorage.getItem('user') || 'null')
+            if (!currentUser?.name || !currentUser?.phone) {
+              const normalizedPhone = normalizePhone(bookingPhone)
+              const normalizedName = normalizeName(bookingName.trim())
+              const retryLogin = await login(normalizedName, normalizedPhone)
+              if (retryLogin) {
+                currentUser = JSON.parse(localStorage.getItem('user') || 'null')
               }
-              
-              // 대시보드로 이동 (상태 업데이트를 위해 약간의 지연)
-              setTimeout(() => {
-                // 현재 토큰 확인
-                const currentToken = token || new URLSearchParams(window.location.search).get('token')
-                
-                if (currentToken) {
-                  // 개인 링크가 있으면 해당 경로로 이동
-                  const targetPath = `/t/${currentToken}`
-                  const currentPath = location.pathname
-                  
-                  if (currentPath !== targetPath) {
-                    console.log('[Login] TicketTransition onDone - navigating to:', targetPath)
-                    // React Router의 navigate 사용 (페이지 리로드 없이)
-                    navigate(targetPath, { replace: true })
-                  } else {
-                    // 이미 올바른 경로에 있으면 상태만 업데이트하여 Dashboard가 렌더링되도록
-                    console.log('[Login] TicketTransition onDone - already on target path, forcing re-render')
-                    // showTicket을 false로 설정하고 약간의 지연 후 navigate로 상태 업데이트
-                    navigate(targetPath, { replace: true, state: { refresh: Date.now() } })
-                  }
-                } else {
-                  // 일반 로그인: Dashboard로 이동
-                  console.log('[Login] TicketTransition onDone - navigating to dashboard')
-                  checkNicknameAndNavigate()
-                }
-              }, 300)
-            } else {
-              console.error('[Login] TicketTransition onDone - 로그인되지 않음, 다시 로그인 시도')
-              // 로그인되지 않은 경우 다시 로그인 페이지로
-              navigate('/login', { replace: true })
             }
+
+            if (!currentUser?.name || !currentUser?.phone) {
+              setShowTicket(false)
+              setShowBookingConfirmation(true)
+              setBookingError('로그인에 실패했습니다. 다시 시도해주세요.')
+              return
+            }
+
+            localStorage.removeItem('pendingBooking')
+
+            try {
+              const userId = normalizePhone(currentUser.phone || '')
+              const userProfileRef = doc(db, 'userProfiles', userId)
+              await setDoc(userProfileRef, {
+                name: currentUser.name,
+                phone: currentUser.phone,
+                ticketShown: true,
+                updatedAt: new Date()
+              }, { merge: true })
+            } catch (error) {
+              console.warn('Firestore 티켓 기록 저장 실패:', error)
+            }
+
+            checkNicknameAndNavigate()
           }}
         />
       ) : (
