@@ -27,8 +27,8 @@ const Onsite = () => {
     const normalizedPhone = normalizePhone(phone)
     const normalizedName = normalizeName(name)
 
-    const check = await checkGuest(normalizedPhone)
-    if (check.exists && check.name) {
+    const check = await checkGuest(normalizedPhone, normalizedName)
+    if (check.exists && check.exactMatch === false && check.name) {
       const existingName = normalizeName(check.name)
       if (existingName !== normalizedName) {
         setDuplicateGuestName(existingName)

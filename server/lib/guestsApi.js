@@ -7,6 +7,8 @@ import {
   getGuestName,
   dedupeGuests,
   toPublicGuest,
+  makeGuestKey,
+  isSameGuestIdentity,
 } from './guestNormalize.js'
 import { verifyAdminToken, getBearerToken } from './adminToken.js'
 
@@ -55,6 +57,14 @@ function findByPhone(guests, phone) {
   return guests.filter((g) => normalizePhone(getGuestPhone(g)) === phone && phone !== '')
 }
 
+function findActiveByNameAndPhone(guests, name, phone) {
+  return guests.find((g) => g.isDeleted !== true && isSameGuestIdentity(g, name, phone)) || null
+}
+
+function findDeletedByNameAndPhone(guests, name, phone) {
+  return guests.find((g) => g.isDeleted === true && isSameGuestIdentity(g, name, phone)) || null
+}
+
 function activeGuests(guests) {
   return guests.filter((g) => g.isDeleted !== true)
 }
@@ -76,18 +86,19 @@ async function handleLogin(db, body) {
       return { status: 200, json: { ok: false, reason: 'empty_guests' } }
     }
 
-    const matches = findByPhone(guests, phone)
+    const matches = findByPhone(guests, phone).filter((g) => g.isDeleted !== true)
     if (matches.length === 0) {
       return { status: 200, json: { ok: false, reason: 'not_found' } }
     }
 
-    const active = matches.find((g) => g.isDeleted !== true)
-    if (!active) {
-      return { status: 200, json: { ok: false, reason: 'deleted' } }
-    }
-
-    if (inputName && getGuestName(active) !== inputName) {
-      return { status: 200, json: { ok: false, reason: 'name_mismatch' } }
+    let active
+    if (inputName) {
+      active = matches.find((g) => getGuestName(g) === inputName)
+      if (!active) {
+        return { status: 200, json: { ok: false, reason: 'name_mismatch' } }
+      }
+    } else {
+      active = matches[0]
     }
 
     let didCheckInNow = false
@@ -103,7 +114,7 @@ async function handleLogin(db, body) {
       }, 0)
 
       const updatedGuests = guests.map((g) => {
-        if (normalizePhone(getGuestPhone(g)) !== phone || g.isDeleted === true) return g
+        if (!isSameGuestIdentity(g, getGuestName(active), phone) || g.isDeleted === true) return g
         return {
           ...g,
           entryNumber: maxEntryNumber + 1,
@@ -113,7 +124,7 @@ async function handleLogin(db, body) {
       })
 
       resultGuest = updatedGuests.find(
-        (g) => normalizePhone(getGuestPhone(g)) === phone && g.isDeleted !== true
+        (g) => isSameGuestIdentity(g, getGuestName(active), phone) && g.isDeleted !== true
       )
       didCheckInNow = true
 
@@ -141,10 +152,49 @@ async function handleStatus(db, body) {
 
 async function handleCheck(db, body) {
   const phone = normalizePhone(body.phone)
+  const inputName = body.name ? normalizeName(body.name) : null
   if (!phone) return { status: 400, json: { exists: false } }
 
   const snap = await guestsDocRef(db).get()
   const { guests } = parseGuestsSnapshot(snap)
+
+  if (inputName) {
+    const exact = findActiveByNameAndPhone(guests, inputName, phone)
+    if (exact) {
+      return {
+        status: 200,
+        json: {
+          exists: true,
+          exactMatch: true,
+          isDeleted: false,
+          name: getGuestName(exact),
+          paymentConfirmed: exact.paymentConfirmed === true,
+        },
+      }
+    }
+
+    const phoneMatch = findByPhone(guests, phone).find((g) => g.isDeleted !== true)
+    if (phoneMatch) {
+      return {
+        status: 200,
+        json: {
+          exists: true,
+          exactMatch: false,
+          isDeleted: false,
+          name: getGuestName(phoneMatch),
+          paymentConfirmed: phoneMatch.paymentConfirmed === true,
+        },
+      }
+    }
+
+    const deletedExact = findDeletedByNameAndPhone(guests, inputName, phone)
+    if (deletedExact) {
+      return { status: 200, json: { exists: false, exactMatch: false, isDeleted: true } }
+    }
+
+    return { status: 200, json: { exists: false, exactMatch: false, isDeleted: false } }
+  }
+
   const matches = findByPhone(guests, phone)
   const active = matches.find((g) => g.isDeleted !== true)
 
@@ -172,9 +222,8 @@ async function upsertGuestByPhone(db, { name, phone, email, isWalkIn, bookedAt, 
     const snap = await tx.get(guestsDocRef(db))
     const { guests } = parseGuestsSnapshot(snap)
 
-    const matches = findByPhone(guests, phone)
-    const existingActive = matches.find((g) => g.isDeleted !== true)
-    const existingDeleted = matches.find((g) => g.isDeleted === true)
+    const existingActive = findActiveByNameAndPhone(guests, name, phone)
+    const existingDeleted = findDeletedByNameAndPhone(guests, name, phone)
 
     if (existingActive && !paymentConfirmed) {
       return {
@@ -184,31 +233,34 @@ async function upsertGuestByPhone(db, { name, phone, email, isWalkIn, bookedAt, 
     }
 
     const now = Date.now()
-    const guestMap = new Map()
-    guests.forEach((g) => {
-      const key = normalizePhone(getGuestPhone(g))
-      if (key) guestMap.set(key, g)
-    })
-
     let entry
-    if (existingActive) {
-      // onsite-payment: 기존 게스트 입금 확인 처리
-      entry = {
-        ...existingActive,
-        paymentConfirmed: true,
-        paymentConfirmedAt: now,
-      }
+    let updatedGuests
+
+    if (existingActive && paymentConfirmed) {
+      updatedGuests = guests.map((g) => {
+        if (!isSameGuestIdentity(g, name, phone) || g.isDeleted === true) return g
+        return {
+          ...g,
+          paymentConfirmed: true,
+          paymentConfirmedAt: now,
+        }
+      })
+      entry = updatedGuests.find((g) => isSameGuestIdentity(g, name, phone) && g.isDeleted !== true)
     } else if (existingDeleted) {
-      entry = {
-        ...existingDeleted,
-        isDeleted: false,
-        deletedAt: null,
-        name,
-        phone,
-        isWalkIn,
-        bookedAt: existingDeleted.bookedAt ?? bookedAt,
-        ...(paymentConfirmed ? { paymentConfirmed: true, paymentConfirmedAt: now } : {}),
-      }
+      updatedGuests = guests.map((g) => {
+        if (!isSameGuestIdentity(g, name, phone) || g.isDeleted !== true) return g
+        return {
+          ...g,
+          isDeleted: false,
+          deletedAt: null,
+          name,
+          phone,
+          isWalkIn,
+          bookedAt: existingDeleted.bookedAt ?? bookedAt,
+          ...(paymentConfirmed ? { paymentConfirmed: true, paymentConfirmedAt: now } : {}),
+        }
+      })
+      entry = updatedGuests.find((g) => isSameGuestIdentity(g, name, phone) && g.isDeleted !== true)
     } else {
       entry = {
         name,
@@ -220,12 +272,9 @@ async function upsertGuestByPhone(db, { name, phone, email, isWalkIn, bookedAt, 
         ...(paymentConfirmed ? { paymentConfirmedAt: now } : {}),
         bookedAt,
       }
+      updatedGuests = [...guests, entry]
     }
 
-    guestMap.set(phone, entry)
-    const updatedGuests = Array.from(guestMap.values())
-
-    // 예매 등록은 초기화 마커 해제 (_cleared: null)
     tx.set(guestsDocRef(db), buildDocPayload(updatedGuests, null, writeSource))
 
     return { status: 200, json: { success: true, guest: toPublicGuest(entry) } }
@@ -255,8 +304,9 @@ async function handleRegister(db, body) {
 
   if (result.json.success) {
     const source = typeof body.source === 'string' ? body.source : isWalkIn ? 'onsite' : 'web_login'
+    const bookingId = makeGuestKey(name, phone)
     try {
-      await db.collection(BOOKINGS_COLLECTION).doc(phone).set(
+      await db.collection(BOOKINGS_COLLECTION).doc(bookingId).set(
         {
           name,
           phone,
@@ -296,8 +346,9 @@ async function handleOnsitePayment(db, body) {
   })
 
   if (result.json.success) {
+    const bookingId = makeGuestKey(name, phone)
     try {
-      await db.collection(BOOKINGS_COLLECTION).doc(phone).set(
+      await db.collection(BOOKINGS_COLLECTION).doc(bookingId).set(
         {
           name,
           phone,

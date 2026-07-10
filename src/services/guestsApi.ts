@@ -111,12 +111,15 @@ export async function getGuestStatus(phone: string): Promise<PublicGuest | null>
 export interface GuestCheckResult {
   exists: boolean
   isDeleted: boolean
+  exactMatch?: boolean
   name?: string
   paymentConfirmed?: boolean
 }
 
-export async function checkGuest(phone: string): Promise<GuestCheckResult> {
-  const result = await callGuestsApi<GuestCheckResult>('check', { phone })
+export async function checkGuest(phone: string, name?: string): Promise<GuestCheckResult> {
+  const body: Record<string, unknown> = { phone }
+  if (name) body.name = name
+  const result = await callGuestsApi<GuestCheckResult>('check', body)
   return result ?? { exists: false, isDeleted: false }
 }
 

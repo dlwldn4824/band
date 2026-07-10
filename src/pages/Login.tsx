@@ -370,9 +370,9 @@ const Login = () => {
         return
       }
       
-      const check = await checkGuest(normalizedPhone)
+      const check = await checkGuest(normalizedPhone, normalizedName)
 
-      if (check.exists && check.name) {
+      if (check.exists && check.exactMatch === false && check.name) {
         const existingName = normalizeName(check.name)
         if (existingName !== normalizedName) {
           setDuplicateGuestName(existingName)
@@ -381,7 +381,7 @@ const Login = () => {
         }
       }
 
-      if (check.exists && check.paymentConfirmed) {
+      if (check.exactMatch && check.paymentConfirmed) {
         const existingName = normalizeName(check.name || normalizedName)
         const loginSuccess = await login(existingName, normalizedPhone)
         if (loginSuccess) {
@@ -761,9 +761,9 @@ const Login = () => {
                     return
                   }
 
-                  const check = await checkGuest(normalizedPhone)
+                  const check = await checkGuest(normalizedPhone, normalizedName)
 
-                  if (check.exists && check.paymentConfirmed) {
+                  if (check.exactMatch && check.paymentConfirmed) {
                     const existingName = normalizeName(check.name || normalizedName)
                     const loginSuccess = await login(existingName, normalizedPhone)
                     if (loginSuccess) {

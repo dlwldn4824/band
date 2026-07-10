@@ -46,6 +46,22 @@ export const getGuestName = (guest) => {
   return normalizeName(guest.name || guest['이름'] || guest.Name || '')
 }
 
+/** 이름+전화번호 복합 키 (동일 전화번호·다른 이름은 별도 게스트) */
+export const makeGuestKey = (name, phone) => {
+  const n = normalizeName(name)
+  const p = normalizePhone(phone)
+  if (!n || !p) return ''
+  return `${n}|${p}`
+}
+
+export const isSameGuestIdentity = (guest, name, phone) => {
+  if (!guest || typeof guest !== 'object') return false
+  return (
+    normalizeName(getGuestName(guest)) === normalizeName(name) &&
+    normalizePhone(getGuestPhone(guest)) === normalizePhone(phone)
+  )
+}
+
 /**
  * 전화번호 기준 중복 제거 (나중 값 우선, 삭제된 게스트 포함)
  */
