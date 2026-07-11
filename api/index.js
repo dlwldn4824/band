@@ -14,30 +14,30 @@ import { handleAnalyticsRequest } from '../server/lib/analyticsApi.js'
 import { handleLoginTokensRequest } from '../server/lib/loginTokensApi.js'
 
 /**
- * Hobby 플랜 서버리스 함수 12개 제한 대응 — /api/* 단일 라우터
+ * Hobby 플랜 함수 개수 제한 대응 — /api/* → 이 단일 함수로 rewrite
  */
 export default async function handler(req, res) {
-  const pathParam = req.query.path
-  const segments = Array.isArray(pathParam)
-    ? pathParam
-    : typeof pathParam === 'string'
-      ? pathParam.split('/').filter(Boolean)
-      : []
+  let route = ''
 
-  // URL fallback (일부 런타임에서 query.path 미설정)
-  if (segments.length === 0 && typeof req.url === 'string') {
-    const pathname = req.url.split('?')[0].replace(/^\/api\/?/, '')
-    if (pathname) segments.push(...pathname.split('/').filter(Boolean))
+  const pathQuery = req.query?.path
+  if (typeof pathQuery === 'string' && pathQuery.length > 0) {
+    route = pathQuery.replace(/^\/+|\/+$/g, '')
+  } else if (Array.isArray(pathQuery) && pathQuery.length > 0) {
+    route = pathQuery.filter(Boolean).join('/')
+  } else if (typeof req.url === 'string') {
+    // fallback: /api/guests → guests
+    const pathname = req.url.split('?')[0]
+    route = pathname.replace(/^\/api\/?/, '').replace(/^\/+|\/+$/g, '')
   }
 
-  const route = segments.join('/')
+  const segments = route ? route.split('/').filter(Boolean) : []
 
   // 봇 스캔: /api/verify-admin-code/1234 → 404
   if (segments[0] === 'verify-admin-code' && segments.length > 1) {
     return res.status(404).json({ ok: false })
   }
 
-  switch (route) {
+  switch (segments.join('/')) {
     case 'verify-admin-code':
       return handleVerifyAdminCodeRequest(req, res)
     case 'guests':
@@ -67,6 +67,6 @@ export default async function handler(req, res) {
     case 'login-tokens':
       return handleLoginTokensRequest(req, res)
     default:
-      return res.status(404).json({ ok: false, error: 'not_found' })
+      return res.status(404).json({ ok: false, error: 'not_found', route: segments.join('/') })
   }
 }
