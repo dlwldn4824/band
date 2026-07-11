@@ -5,12 +5,23 @@ import { detectEntryType, getReferrer } from './device'
 import { captureUtmFromUrl, getUtmProperties } from './utm'
 import { incrementPagesVisited } from './session'
 
+/** API·봇 스캔 URL은 페이지뷰에서 제외 (예: /api/verify-admin-code/1234) */
+function shouldTrackPagePath(pathname: string): boolean {
+  if (!pathname || pathname === '/') return true
+  if (pathname.startsWith('/api/')) return false
+  return true
+}
+
 export function usePageTracking(): void {
   const location = useLocation()
   const enterTimeRef = useRef<number>(Date.now())
   const prevPathRef = useRef<string>(location.pathname)
 
   useEffect(() => {
+    if (!shouldTrackPagePath(location.pathname)) {
+      return
+    }
+
     const prevPath = prevPathRef.current
     const now = Date.now()
     const dwellSec = Math.round((now - enterTimeRef.current) / 1000)

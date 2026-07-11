@@ -4,7 +4,6 @@ import { useData, PerformanceData, BookingInfo } from '../contexts/DataContext'
 import { formatPhoneDisplay } from '../utils/phoneFormat'
 import { collection, getDocs, deleteDoc, doc, query, orderBy, getDoc, updateDoc, setDoc, Timestamp } from 'firebase/firestore'
 import { db, storage } from '../config/firebase'
-import { setFirestoreData } from '../services/firestoreService'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import GuestAddModal from '../components/admin/GuestAddModal'
 import GuestEditModal from '../components/admin/GuestEditModal'
@@ -15,6 +14,7 @@ import { generatePersonalLoginLink, makeGuestKey } from '../utils/adminUtils'
 import { normalizePhone, normalizeName, normalizeKoreanMobile } from '../utils/guestUtils'
 import { DEFAULT_TIMELINE_EVENTS, createDefaultPerformanceSection, getPerformanceSections } from '../utils/performanceEvents'
 import { DEFAULT_VENUE_NAME, DEFAULT_VENUE_ADDRESS } from '../utils/venueDefaults'
+import { savePerformanceData } from '../services/performanceDataApi'
 import { verifyAdminCode } from '../services/adminAuthApi'
 import {
   adminListBookings,
@@ -637,7 +637,11 @@ const Admin = () => {
       
       // 업로드한 셋리스트를 Firestore에 즉시 저장하여 고정
       try {
-        await setFirestoreData('performanceData' as any, updatedPerformanceData, 'main')
+        const saved = await savePerformanceData(updatedPerformanceData)
+        if (!saved) {
+          setUploadStatus('❌ 셋리스트 저장에 실패했습니다. /manage 비밀번호를 다시 입력해주세요.')
+          return
+        }
       } catch (err) {
         // 저장 실패해도 계속 진행
       }
@@ -991,9 +995,9 @@ const Admin = () => {
     }
 
     try {
-      const saved = await setFirestoreData('performanceData' as any, updatedPerformanceData, 'main')
-      if (saved === false) {
-        setUploadStatus('❌ 공연진 추가 저장에 실패했습니다. 다시 시도해주세요.')
+      const saved = await savePerformanceData(updatedPerformanceData)
+      if (!saved) {
+        setUploadStatus('❌ 공연진 추가 저장에 실패했습니다. /manage 비밀번호를 다시 입력해주세요.')
         return
       }
 
@@ -1026,9 +1030,9 @@ const Admin = () => {
         }
 
         try {
-          const saved = await setFirestoreData('performanceData' as any, updatedPerformanceData, 'main')
-          if (saved === false) {
-            setUploadStatus('❌ 공연진 삭제 저장에 실패했습니다. 다시 시도해주세요.')
+          const saved = await savePerformanceData(updatedPerformanceData)
+          if (!saved) {
+            setUploadStatus('❌ 공연진 삭제 저장에 실패했습니다. /manage 비밀번호를 다시 입력해주세요.')
             return
           }
 
@@ -2728,13 +2732,14 @@ const Admin = () => {
                       setPerformanceData(updatedPerformanceData)
                       
                       try {
-                        // 직접 Firestore에 저장 (더 확실한 방법)
-                        const performanceDataRef = doc(db, 'performanceData', 'main')
-                        await setDoc(performanceDataRef, {
-                          ...updatedPerformanceData,
-                          updatedAt: Timestamp.now()
-                        }, { merge: true })
-                        
+                        const saved = await savePerformanceData(updatedPerformanceData)
+                        if (!saved) {
+                          setUploadStatus('❌ 공연 정보 저장에 실패했습니다. /manage 비밀번호를 다시 입력해주세요.')
+                          setTimeout(() => setUploadStatus(''), 5000)
+                          setIsEditingPerformanceInfo(false)
+                          return
+                        }
+
                         setUploadStatus('✅ 공연 정보가 저장되었습니다.')
                         setTimeout(() => setUploadStatus(''), 3000)
                         void trackEvent('performance_info_saved', {

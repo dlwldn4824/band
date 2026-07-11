@@ -186,6 +186,7 @@ function normalizePagePathForDwell(path: string): string {
 function aggregatePagePaths(pagePathCounts: Record<string, number>): Record<string, number> {
   const merged: Record<string, number> = {}
   for (const [path, count] of Object.entries(pagePathCounts)) {
+    if (path.startsWith('/api/')) continue
     const label = path.startsWith('/t/') ? '/t/*' : path
     inc(merged, label, count)
   }
@@ -420,9 +421,13 @@ export function summarizeAnalytics(
     const props = event.properties || {}
 
     switch (event.eventName) {
-      case 'page_view':
-        inc(pagePathCounts, String(props.page_path || event.pagePath || '/'))
+      case 'page_view': {
+        const pagePath = String(props.page_path || event.pagePath || '/')
+        if (!pagePath.startsWith('/api/')) {
+          inc(pagePathCounts, pagePath)
+        }
         break
+      }
       case 'login_attempted':
         loginAttempted += 1
         break

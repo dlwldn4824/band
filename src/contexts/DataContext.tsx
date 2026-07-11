@@ -27,6 +27,7 @@ import {
   getGuestsLoadErrorMessage,
 } from '../services/guestsApi'
 import { saveBookingInfo } from '../services/bookingInfoApi'
+import { savePerformanceData } from '../services/performanceDataApi'
 import { isManageSessionActive } from '../utils/manageSession'
 import {
   loadGuestsFromLocalCache,
@@ -702,8 +703,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     
     setPerformanceDataState(mergedData)
     localStorage.setItem('performanceData', JSON.stringify(mergedData))
-    // Firestore에 저장 (비동기로 처리, merge 옵션으로 안전하게)
-    setFirestoreData('performanceData' as any, mergedData, 'main').catch(() => {})
+    void savePerformanceData(mergedData)
   }
 
   const setBookingInfo = async (info: BookingInfo) => {
@@ -768,7 +768,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }
     setPerformanceDataState(updatedData)
     localStorage.setItem('performanceData', JSON.stringify(updatedData))
-    setFirestoreData('performanceData' as any, updatedData, 'main').catch(() => {})
+    void savePerformanceData(updatedData)
   }
 
   const persistEventsFeatures = (features: EventsFeatureSettings) => {
