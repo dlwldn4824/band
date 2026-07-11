@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useData } from '../contexts/DataContext'
 import { useAuth } from '../contexts/AuthContext'
 import { trackEvent } from '../analytics'
-import { verifyAdminCode } from '../services/adminAuthApi'
+import { verifyAdminCodeDetailed, verifyAdminCodeErrorMessage } from '../services/adminAuthApi'
 import './Login.css'
 
 const AdminLogin = () => {
@@ -31,9 +31,13 @@ const AdminLogin = () => {
 
     setIsSubmitting(true)
     try {
-      const codeValid = await verifyAdminCode('login', password)
-      if (!codeValid) {
-        setError('올바른 운영진 코드를 입력해주세요.')
+      const result = await verifyAdminCodeDetailed('login', password)
+      if (!result.ok) {
+        setError(
+          result.reason === 'invalid'
+            ? '올바른 운영진 코드를 입력해주세요.'
+            : verifyAdminCodeErrorMessage(result.reason)
+        )
         return
       }
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { verifyAdminCode } from '../services/adminAuthApi'
+import { verifyAdminCodeDetailed, verifyAdminCodeErrorMessage } from '../services/adminAuthApi'
 import { hasAdminApiToken } from '../services/guestsApi'
 import { isManageSessionActive, setManageSession } from '../utils/manageSession'
 import '../pages/Admin.css'
@@ -45,9 +45,13 @@ const ManageProtectedRoute = ({ children }: ManageProtectedRouteProps) => {
 
     setIsSubmitting(true)
     try {
-      const ok = await verifyAdminCode('action', password)
-      if (!ok) {
-        setError('올바른 비밀번호를 입력해주세요.')
+      const result = await verifyAdminCodeDetailed('action', password)
+      if (!result.ok) {
+        setError(
+          result.reason === 'invalid'
+            ? '올바른 비밀번호를 입력해주세요.'
+            : verifyAdminCodeErrorMessage(result.reason)
+        )
         return
       }
       if (!hasAdminApiToken()) {
