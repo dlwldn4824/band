@@ -241,7 +241,7 @@ async function upsertGuestByPhone(db, { name, phone, email, isWalkIn, bookedAt, 
     if (existingActive && !paymentConfirmed) {
       return {
         status: 200,
-        json: { success: false, message: '이미 등록된 게스트입니다.', guest: toPublicGuest(existingActive) },
+        json: { success: true, guest: toPublicGuest(existingActive) },
       }
     }
 
@@ -339,7 +339,8 @@ async function handleRegister(db, body) {
           createdAt: new Date(bookedAt),
           updatedAt: new Date(),
           source,
-          approved: true,
+          approved: confirmPayment,
+          ...(confirmPayment ? { approvedAt: new Date() } : {}),
         },
         { merge: true }
       )
@@ -463,11 +464,63 @@ async function handleAdminTogglePayment(db, body) {
   const name = normalizeName(body.name)
   if (!phone || !name) return { status: 400, json: { ok: false } }
 
-  return mutateGuestByIdentity(db, name, phone, 'api_toggle_payment', (g) => ({
-    ...g,
-    paymentConfirmed: !(g.paymentConfirmed === true),
-    paymentConfirmedAt: g.paymentConfirmed === true ? null : Date.now(),
-  }))
+  const txResult = await db.runTransaction(async (tx) => {
+    const snap = await tx.get(guestsDocRef(db))
+    const { guests, cleared } = parseGuestsSnapshot(snap)
+
+    const index = guests.findIndex(
+      (g) => g.isDeleted !== true && isSameGuestIdentity(g, name, phone)
+    )
+    if (index === -1) {
+      return { ok: false }
+    }
+
+    const g = guests[index]
+    const nextConfirmed = !(g.paymentConfirmed === true)
+    let updated = {
+      ...g,
+      paymentConfirmed: nextConfirmed,
+      paymentConfirmedAt: nextConfirmed ? Date.now() : null,
+    }
+
+    if (nextConfirmed) {
+      const hasEntry = updated.entryNumber !== undefined && updated.entryNumber !== null
+      if (!hasEntry) {
+        const maxEntry = guests.reduce((max, guest) => {
+          const n = typeof guest.entryNumber === 'number' ? guest.entryNumber : 0
+          return n > max ? n : max
+        }, 0)
+        updated = { ...updated, entryNumber: maxEntry + 1 }
+      }
+    }
+
+    const updatedGuests = guests.map((guest, i) => (i === index ? updated : guest))
+    tx.set(guestsDocRef(db), buildDocPayload(updatedGuests, cleared, 'api_toggle_payment'))
+
+    return { ok: true, guests: activeGuests(updatedGuests), paymentConfirmed: nextConfirmed }
+  })
+
+  if (!txResult.ok) {
+    return { status: 404, json: { ok: false, message: '게스트를 찾을 수 없습니다.' } }
+  }
+
+  const bookingId = makeGuestKey(name, phone)
+  try {
+    await db.collection(BOOKINGS_COLLECTION).doc(bookingId).set(
+      {
+        name,
+        phone,
+        approved: txResult.paymentConfirmed === true,
+        approvedAt: txResult.paymentConfirmed ? new Date() : null,
+        updatedAt: new Date(),
+      },
+      { merge: true }
+    )
+  } catch {
+    // bookings 동기화 실패는 입금 확인을 막지 않음
+  }
+
+  return { status: 200, json: { ok: true, guests: txResult.guests } }
 }
 
 async function handleAdminToggleTicket(db, body) {

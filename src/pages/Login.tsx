@@ -10,7 +10,7 @@ import { validatePhoneNumber, formatPhoneDisplay } from '../utils/phoneFormat'
 import { normalizePhone, normalizeName } from '../utils/guestUtils'
 import { encodePersonalLoginToken } from '../utils/adminUtils'
 import { checkGuest } from '../services/guestsApi'
-import { getBookingStatus, updateBooking } from '../services/bookingsApi'
+import { updateBooking } from '../services/bookingsApi'
 import {
   trackEvent,
   trackFunnelAbandon,
@@ -31,6 +31,7 @@ const Login = () => {
   const [bookingError, setBookingError] = useState('')
   const [bookingConfirmed, setBookingConfirmed] = useState(false)
   const [bookingInfoConfirmed, setBookingInfoConfirmed] = useState(false)
+  const [bookingSubmitted, setBookingSubmitted] = useState(false)
   
   // 정보 수정 모드
   const [isEditingInfo, setIsEditingInfo] = useState(false)
@@ -271,8 +272,8 @@ const Login = () => {
             const normalizedPhone = normalizePhone(booking.phone)
 
             try {
-              const status = await getBookingStatus(normalizedPhone, booking.name)
-              if (status.exists && status.booking?.approved) {
+              const guestCheck = await checkGuest(normalizedPhone, booking.name)
+              if (guestCheck.exactMatch && guestCheck.paymentConfirmed) {
                 const loginSuccess = await login(booking.name, normalizedPhone)
                 if (loginSuccess) {
                   localStorage.removeItem('pendingBooking')
@@ -281,6 +282,9 @@ const Login = () => {
                   setShowTicket(true)
                   return
                 }
+              }
+              if (guestCheck.exactMatch) {
+                setBookingSubmitted(true)
               }
             } catch (error) {
               console.error('예매 정보 확인 실패:', error)
@@ -312,12 +316,13 @@ const Login = () => {
     const normalizedPhone = normalizePhone(bookingPhone)
 
     const checkApproval = async () => {
-      const status = await getBookingStatus(normalizedPhone, bookingName)
-      if (status.exists && status.booking?.approved) {
+      const guestCheck = await checkGuest(normalizedPhone, bookingName)
+      if (guestCheck.exactMatch && guestCheck.paymentConfirmed) {
         const loginSuccess = await login(bookingName, normalizedPhone)
         if (loginSuccess) {
           localStorage.removeItem('pendingBooking')
           setShowBookingConfirmation(false)
+          setBookingSubmitted(false)
           setShowTicket(true)
         }
       }
@@ -713,12 +718,26 @@ const Login = () => {
 
           {/* 안내 문구 */}
           <div className="instructions">
-            <p>위 계좌로 10분 이내에 입금해 주세요.</p>
-            <p className="important-notice">
-              반드시 신청하신 "{bookingName}" 입금자명으로 입금해 주세요.
-            </p>
+            {bookingSubmitted ? (
+              <>
+                <p>예매 신청이 완료되었습니다.</p>
+                <p className="important-notice">
+                  운영진이 입금을 확인하면 자동으로 입장 안내가 표시됩니다.<br/>
+                  이 화면을 닫지 말고 잠시 기다려 주세요.
+                </p>
+              </>
+            ) : (
+              <>
+                <p>위 계좌로 10분 이내에 입금해 주세요.</p>
+                <p className="important-notice">
+                  반드시 신청하신 "{bookingName}" 입금자명으로 입금해 주세요.
+                </p>
+              </>
+            )}
           </div>
 
+          {!bookingSubmitted && (
+            <>
           <div className="booking-confirm-wrapper">
             <label className="booking-confirm-checkbox-label">
               <input
@@ -765,6 +784,7 @@ const Login = () => {
                     if (loginSuccess) {
                       localStorage.removeItem('pendingBooking')
                       setShowBookingConfirmation(false)
+                      setBookingSubmitted(false)
                       setShowTicket(true)
                       return
                     }
@@ -772,9 +792,15 @@ const Login = () => {
                     return
                   }
 
+                  if (check.exactMatch) {
+                    setBookingSubmitted(true)
+                    setBookingError('')
+                    markFunnelComplete('booking', 'booking_confirmation_viewed')
+                    return
+                  }
+
                   const result = await addWalkInGuest(normalizedName, normalizedPhone, false, '', {
                     source: 'web_login',
-                    confirmPayment: true,
                   })
 
                   if (!result.success) {
@@ -786,23 +812,24 @@ const Login = () => {
                   markFunnelComplete('booking', 'booking_form_started')
                   markFunnelComplete('booking', 'booking_page_viewed')
 
-                  const loginSuccess = await login(normalizedName, normalizedPhone)
-                  if (!loginSuccess) {
-                    setBookingError('로그인에 실패했습니다. 잠시 후 다시 시도해주세요.')
-                    return
-                  }
-
-                  localStorage.removeItem('pendingBooking')
-                  setShowBookingConfirmation(false)
-                  setShowTicket(true)
+                  setBookingSubmitted(true)
+                  setBookingError('')
                 } catch (error) {
                   console.error('입장 확인 처리 오류:', error)
                   setBookingError('처리 중 오류가 발생했습니다. 다시 시도해주세요.')
                 }
               }}
           >
-              확인하고 입장하기
+              예매 신청하기
             </button>
+            </>
+          )}
+
+          {bookingSubmitted && (
+            <div className="info-box" style={{ textAlign: 'center', marginTop: '1rem' }}>
+              <p style={{ color: '#fff', margin: 0 }}>입금 확인 대기 중...</p>
+            </div>
+          )}
 
           {bookingError && <div className="error-message">{bookingError}</div>}
         </div>

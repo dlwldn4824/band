@@ -1149,6 +1149,11 @@ const Admin = () => {
         return
       }
 
+      // 입금 확인된 게스트만 입장 번호 부여
+      if (guest.paymentConfirmed !== true) {
+        return
+      }
+
       // 다음 사용 가능한 번호 찾기
       while (assignedNumbers.has(nextEntryNumber)) {
         nextEntryNumber++
@@ -1485,10 +1490,10 @@ const Admin = () => {
 
   // 입금 확인이 완료된 게스트에 대해 입장 번호 자동 부여
   useEffect(() => {
-    // 입금 확인이 완료되었지만 입장 번호가 없는 게스트가 있는지 확인
-    // 모든 게스트 중 입장번호가 없는 게스트가 있으면 입장번호 할당
     const needsEntryNumber = guests.some(
-      guest => guest.entryNumber === undefined || guest.entryNumber === null
+      (guest) =>
+        guest.paymentConfirmed === true &&
+        (guest.entryNumber === undefined || guest.entryNumber === null)
     )
     
     if (needsEntryNumber) {
