@@ -1,5 +1,6 @@
 import crypto from 'crypto'
 import { issueAdminToken } from './adminToken.js'
+import { getClientIp, checkRateLimit, recordRateLimitFailure, resetRateLimit } from './rateLimit.js'
 
 /**
  * @param {'login' | 'action'} type
@@ -24,9 +25,15 @@ export function verifyAdminCode(type, code) {
   return { ok, status: 200 }
 }
 
-export function handleVerifyAdminCodeRequest(req, res) {
+export async function handleVerifyAdminCodeRequest(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ ok: false })
+  }
+
+  const clientIp = getClientIp(req)
+  const rateCheck = await checkRateLimit('verify-admin-code', clientIp)
+  if (!rateCheck.allowed) {
+    return res.status(429).json({ ok: false, error: 'too_many_attempts' })
   }
 
   const { type, code } = req.body || {}
@@ -41,10 +48,11 @@ export function handleVerifyAdminCodeRequest(req, res) {
   }
 
   if (result.ok) {
-    // 운영진 코드 검증 성공 시 관리자용 API 토큰 발급
+    await resetRateLimit('verify-admin-code', clientIp)
     const token = issueAdminToken()
     return res.status(200).json({ ok: true, ...(token ? { token } : {}) })
   }
 
+  await recordRateLimitFailure('verify-admin-code', clientIp)
   return res.status(200).json({ ok: false })
 }

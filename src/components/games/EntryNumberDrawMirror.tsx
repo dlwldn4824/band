@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
-import { doc, setDoc, onSnapshot, serverTimestamp } from 'firebase/firestore'
+import { doc, onSnapshot } from 'firebase/firestore'
 import { db } from '../../config/firebase'
 import { useAuth } from '../../contexts/AuthContext'
+import { adminDrawEntry } from '../../services/gamesApi'
 import { useData } from '../../contexts/DataContext'
 import './Game.css'
 import { useNavigate } from 'react-router-dom'
@@ -126,22 +127,22 @@ const EntryNumberDrawMirror = ({ onBack }: EntryNumberDrawMirrorProps = {}) => {
     const duration = minDuration + Math.random() * (maxDuration - minDuration)
 
     // Firestore에 상태 저장
-    await setDoc(gameRef, {
+    await adminDrawEntry({
       isDrawing: true,
       currentNumber: null,
       selectedGuest: null,
-      startTime: serverTimestamp(),
-      eligibleGuests: eligibleGuests
+      startTime: Date.now(),
+      eligibleGuests,
     })
 
-    // 애니메이션 종료 후 결과 저장
     setTimeout(async () => {
-      await setDoc(gameRef, {
+      await adminDrawEntry({
         isDrawing: false,
         currentNumber: winner.entryNumber,
         selectedGuest: winner,
-        eligibleGuests: eligibleGuests
-      }, { merge: true })
+        eligibleGuests,
+        merge: true,
+      })
     }, duration)
   }
 

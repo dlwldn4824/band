@@ -4,14 +4,13 @@ import { useData, SetlistItem } from '../contexts/DataContext'
 import { useAuth } from '../contexts/AuthContext'
 import { 
   collection, 
-  addDoc, 
   query, 
   orderBy, 
   limit,
   onSnapshot,
-  serverTimestamp
 } from 'firebase/firestore'
 import { db } from '../config/firebase'
+import { addSongComment } from '../services/songCommentsApi'
 import vocalIcon from '../assets/배경/마이크.png'
 import guitarIcon from '../assets/배경/기타.png'
 import bassIcon from '../assets/배경/베이스.png'
@@ -182,25 +181,23 @@ const Performances = () => {
     }
 
     try {
-      const commentData = {
+      const ok = await addSongComment({
+        name: user.name || '익명',
+        phone: user.phone || '',
         songName: selectedSong.songName,
-        userName: user.name || '익명',
-        userNickname: user.nickname || undefined,
         message: commentInput.trim(),
-        timestamp: serverTimestamp()
+        nickname: user.nickname,
+      })
+
+      if (!ok) {
+        alert('응원 메시지 등록에 실패했습니다. 다시 시도해주세요.')
+        return
       }
-      
-      console.log('[Performances] 응원 메시지 추가 시도:', commentData)
-      console.log('[Performances] Firestore collection 경로:', 'songComments')
-      console.log('[Performances] 사용자 정보:', { name: user.name, nickname: user.nickname, phone: user.phone })
-      
-      const docRef = await addDoc(collection(db, 'songComments'), commentData)
+
       void trackEvent('song_comment_posted', {
         song_name: selectedSong.songName,
         message_length: commentInput.trim().length,
       })
-      
-      console.log('[Performances] 응원 메시지 추가 성공, 문서 ID:', docRef.id)
       setCommentInput('')
       setShowCommentInput(false)
     } catch (error: any) {

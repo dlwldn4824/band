@@ -7,17 +7,13 @@ import sendIconActive from '../assets/배경/전송_활성화.png'
 import sendIconInactive from '../assets/배경/전송_비활성화.png'
 import { 
   collection, 
-  addDoc, 
   query, 
   orderBy, 
   limit,
   onSnapshot,
-  serverTimestamp,
-  doc,
-  setDoc,
-  deleteDoc
 } from 'firebase/firestore'
 import { db } from '../config/firebase'
+import { removeChatPresence, sendChatMessage, upsertChatPresence } from '../services/chatApi'
 import { trackEvent, trackFeatureDenied, setSessionLastFeature } from '../analytics'
 import './Chat.css'
 
@@ -120,27 +116,28 @@ const Chat = () => {
       // ✅ userId는 전화번호만 사용
       const userId = normalizePhone(user.phone || '')
       onlineUserRef.current = userId
-      const userRef = doc(db, 'onlineUsers', userId)
-      
       const displayName = user.nickname || user.name
-      await setDoc(userRef, {
+      await upsertChatPresence({
         name: user.name,
         phone: user.phone,
+        userId,
         nickname: displayName,
-        lastSeen: serverTimestamp()
-      }, { merge: true })
+        isAdmin,
+      })
 
-      // 주기적으로 lastSeen 업데이트 (30초마다)
       const heartbeatInterval = setInterval(() => {
-        setDoc(userRef, {
-          lastSeen: serverTimestamp()
-        }, { merge: true }).catch(console.error)
+        void upsertChatPresence({
+          name: user.name,
+          phone: user.phone,
+          userId,
+          nickname: displayName,
+          isAdmin,
+        })
       }, 30000)
 
       return () => {
         clearInterval(heartbeatInterval)
-        // 사용자 오프라인 처리
-        deleteDoc(userRef).catch(console.error)
+        void removeChatPresence(userId)
       }
     }
 
@@ -229,8 +226,7 @@ const Chat = () => {
       if (cleanup) cleanup()
       // 사용자 오프라인 처리 (테스트 모드가 아닐 때만)
       if (!isTestMode && onlineUserRef.current) {
-        const userRef = doc(db, 'onlineUsers', onlineUserRef.current)
-        deleteDoc(userRef).catch(console.error)
+        void removeChatPresence(onlineUserRef.current)
       }
     }
   }, [user, isTestMode])
@@ -366,11 +362,18 @@ const Chat = () => {
     }
 
     try {
-      await addDoc(collection(db, 'chat'), {
-        user: user.nickname || user.name,
+      const ok = await sendChatMessage({
+        name: user.name,
+        phone: user.phone,
         message: inputMessage.trim(),
-        timestamp: serverTimestamp()
-    })
+        user: user.nickname || user.name,
+        nickname: user.nickname,
+        isAdmin,
+      })
+      if (!ok) {
+        alert('메시지 전송에 실패했습니다.')
+        return
+      }
     void trackEvent('chat_message_sent', { message_length: inputMessage.trim().length })
     setSessionLastFeature('chat')
     setInputMessage('')

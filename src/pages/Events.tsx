@@ -2,9 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useData } from '../contexts/DataContext'
-import { doc, setDoc, getDoc, Timestamp } from 'firebase/firestore'
-import { db } from '../config/firebase'
 import { normalizePhone } from '../utils/guestUtils'
+import { getDrinkOrder, submitDrinkOrder } from '../services/drinkOrdersApi'
 import RouletteMirror from '../components/games/RouletteMirror'
 import EntryNumberDrawMirror from '../components/games/EntryNumberDrawMirror'
 import LEDBoard from '../components/games/LEDBoard'
@@ -152,12 +151,20 @@ const Events = () => {
           return
         }
         
-        const orderRef = doc(db, 'drinkOrders', userId)
-        const orderSnap = await getDoc(orderRef)
+        const orderId = isAdmin && user.phone === 'admin'
+          ? `admin_${user.name || 'admin'}`.replace(/\s+/g, '_')
+          : normalizePhone(user.phone || '')
 
-        if (orderSnap.exists()) {
-          const orderData = orderSnap.data()
-          if (orderData.confirmed) {
+        if (!orderId) {
+          setPurchasedBeerQuantity(0)
+          setPurchasedMojitoQuantity(0)
+          setPurchaseHistory([])
+          return
+        }
+
+        const orderData = await getDrinkOrder(user.name, user.phone, orderId)
+
+        if (orderData?.confirmed) {
             setPurchasedBeerQuantity(orderData.beerQuantity || 0)
             setPurchasedMojitoQuantity(orderData.mojitoQuantity || 0)
             
@@ -166,11 +173,11 @@ const Events = () => {
               setPurchaseHistory(orderData.orderHistory)
             } else {
               // 기존 데이터가 있으면 이력 생성
-              if (orderData.beerQuantity > 0 || orderData.mojitoQuantity > 0) {
+              if ((orderData.beerQuantity || 0) > 0 || (orderData.mojitoQuantity || 0) > 0) {
                 setPurchaseHistory([{
                   beerQuantity: orderData.beerQuantity || 0,
                   mojitoQuantity: orderData.mojitoQuantity || 0,
-                  createdAt: orderData.createdAt || orderData.updatedAt || Timestamp.now(),
+                  createdAt: orderData.createdAt || orderData.updatedAt || new Date(),
                   provided: orderData.provided || false,
                   providedAt: orderData.providedAt
                 }])
@@ -178,11 +185,6 @@ const Events = () => {
                 setPurchaseHistory([])
               }
             }
-          } else {
-            setPurchasedBeerQuantity(0)
-            setPurchasedMojitoQuantity(0)
-            setPurchaseHistory([])
-          }
         } else {
           setPurchasedBeerQuantity(0)
           setPurchasedMojitoQuantity(0)
@@ -718,97 +720,58 @@ const Events = () => {
                   if (!user || (!isAdmin && !paymentConfirmed)) return
 
                   try {
-                    // 사용자 ID 생성
-                    // ✅ 운영진은 'admin' 또는 이름 기반, 일반 사용자는 전화번호만 사용
-                    const userId = isAdmin && user.phone === 'admin' 
+                    const userId = isAdmin && user.phone === 'admin'
                       ? `admin_${user.name || 'admin'}`.replace(/\s+/g, '_')
                       : normalizePhone(user.phone || '')
-                    
+
                     if (!userId) {
                       alert('사용자 정보를 확인할 수 없습니다.')
                       return
                     }
-                    
-                    const orderRef = doc(db, 'drinkOrders', userId)
-                    
-                    // 기존 주문 내역 가져오기
-                    const orderSnap = await getDoc(orderRef)
-                    let existingBeerQuantity = 0
-                    let existingMojitoQuantity = 0
-                    
-                    // 기존 구매 이력 가져오기
-                    let existingHistory: Array<{
-                      beerQuantity: number
-                      mojitoQuantity: number
-                      unitPrice?: number
-                      createdAt: any
-                      provided?: boolean
-                      providedAt?: any
-                    }> = []
-                    
-                    if (orderSnap.exists()) {
-                      const orderData = orderSnap.data()
-                      existingBeerQuantity = orderData.beerQuantity || 0
-                      existingMojitoQuantity = orderData.mojitoQuantity || 0
-                      
-                      if (orderData.orderHistory && Array.isArray(orderData.orderHistory)) {
-                        existingHistory = orderData.orderHistory
-                      }
-                    }
-                    
-                    // 기존 수량에 새로 주문한 수량 추가
+
+                    const existingOrder = await getDrinkOrder(user.name, user.phone, userId)
+                    const existingBeerQuantity = existingOrder?.beerQuantity || 0
+                    const existingMojitoQuantity = existingOrder?.mojitoQuantity || 0
                     const totalBeerQuantity = existingBeerQuantity + beerQuantity
                     const totalMojitoQuantity = existingMojitoQuantity + mojitoQuantity
-                    
-                    // 새 구매 이력 추가 (가격 정보 포함)
-                    const newHistoryItem = {
-                      beerQuantity: beerQuantity,
-                      mojitoQuantity: mojitoQuantity,
-                      unitPrice: currentPrice, // 주문 시점의 단가 저장
-                      createdAt: Timestamp.now(),
-                      provided: false,
-                      providedAt: null
-                    }
-                    
-                    const updatedHistory = [...existingHistory, newHistoryItem]
-                    
-                    // orderHistory를 기반으로 totalAmount 재계산 (각 주문의 실제 가격 반영)
+
                     let totalAmount = 0
+                    const existingHistory = existingOrder?.orderHistory || []
+                    const updatedHistory = [
+                      ...existingHistory,
+                      {
+                        beerQuantity,
+                        mojitoQuantity,
+                        unitPrice: currentPrice,
+                        createdAt: new Date(),
+                        provided: false,
+                        providedAt: null,
+                      },
+                    ]
                     updatedHistory.forEach((historyItem) => {
-                      // unitPrice가 없으면 전화번호를 확인하여 가격 결정
                       let itemPrice = historyItem.unitPrice
                       if (!itemPrice) {
-                        // 전화번호가 'admin'이면 운영진 가격, 아니면 기본 가격
-                        itemPrice = (user.phone === 'admin') ? ADMIN_PRICE : ORIGINAL_PRICE
+                        itemPrice = user.phone === 'admin' ? ADMIN_PRICE : ORIGINAL_PRICE
                       }
-                      const itemTotal = (historyItem.beerQuantity * itemPrice) + (historyItem.mojitoQuantity * itemPrice)
-                      totalAmount += itemTotal
+                      totalAmount +=
+                        (historyItem.beerQuantity * itemPrice) +
+                        (historyItem.mojitoQuantity * itemPrice)
                     })
-                    
-                    // 디버깅: 현재 가격과 총액 확인
-                    console.log('[Events] 주문 저장:', {
-                      isAdmin,
-                      currentPrice,
-                      beerQuantity,
-                      mojitoQuantity,
-                      newOrderAmount: (beerQuantity * currentPrice) + (mojitoQuantity * currentPrice),
-                      totalAmount,
-                      historyCount: updatedHistory.length
-                    })
-                    
-                    // Firestore에 주문 정보 저장 (기존 수량에 추가)
-                    await setDoc(orderRef, {
-                      userId,
+
+                    const saved = await submitDrinkOrder({
                       name: user.name,
                       phone: user.phone,
-                      beerQuantity: totalBeerQuantity,
-                      mojitoQuantity: totalMojitoQuantity,
+                      orderId: userId,
+                      beerQuantity,
+                      mojitoQuantity,
+                      unitPrice: currentPrice,
                       totalAmount,
-                      confirmed: true,
-                      createdAt: orderSnap.exists() ? orderSnap.data().createdAt : Timestamp.now(),
-                      updatedAt: Timestamp.now(),
-                      orderHistory: updatedHistory
-                    }, { merge: true })
+                    })
+
+                    if (!saved) {
+                      alert('주문 저장에 실패했습니다. 다시 시도해주세요.')
+                      return
+                    }
 
                     markFunnelComplete('drink_order', 'drink_modal_opened')
                     const performanceDate = performanceData?.ticket?.date ?? null
@@ -826,7 +789,6 @@ const Events = () => {
                       days_before_performance: getDaysBeforePerformance(performanceDate, now) ?? undefined,
                     })
 
-                    // 구매 정보 업데이트
                     setPurchasedBeerQuantity(totalBeerQuantity)
                     setPurchasedMojitoQuantity(totalMojitoQuantity)
                   } catch (error) {

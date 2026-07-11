@@ -1,11 +1,11 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react'
-import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore'
-import { db } from '../config/firebase'
-import { normalizePhone, makeGuestKey } from '../utils/guestUtils'
+import { normalizePhone } from '../utils/guestUtils'
 import { trackEvent } from '../analytics'
 import { hashGuestId } from '../analytics/hashUserId'
 import { getUtmProperties } from '../analytics/utm'
-import { guestLogin, getGuestStatus } from '../services/guestsApi'
+import { guestLogin, getGuestStatus, clearAdminApiToken } from '../services/guestsApi'
+import { setManageSession } from '../utils/manageSession'
+import { getUserProfile, upsertUserProfile, checkNicknameAvailable } from '../services/userProfilesApi'
 
 export interface User {
   name: string
@@ -101,22 +101,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // Firestore에서 nickname 로드 시도 (실패해도 로컬 데이터로 계속 진행)
           if (userData.phone && userData.phone !== 'admin') {
             try {
-              // ✅ userId는 전화번호만 사용
-              const userId = makeGuestKey(userData.name, userData.phone)
-              const userProfileRef = doc(db, 'userProfiles', userId)
-              const userProfileSnap = await getDoc(userProfileRef)
-              
-              if (userProfileSnap.exists()) {
-                const profileData = userProfileSnap.data()
-                // Firestore에 닉네임이 있고, 로컬에 없거나 다르면 업데이트
-                if (profileData.nickname && (!userData.nickname || profileData.nickname !== userData.nickname)) {
-                  const updatedUser = { ...userData, nickname: profileData.nickname }
-                  setUser(updatedUser)
-                  localStorage.setItem('user', JSON.stringify(updatedUser))
-                }
+              const profile = await getUserProfile(userData.name, userData.phone)
+              if (profile?.nickname && (!userData.nickname || profile.nickname !== userData.nickname)) {
+                const updatedUser = { ...userData, nickname: profile.nickname }
+                setUser(updatedUser)
+                localStorage.setItem('user', JSON.stringify(updatedUser))
               }
-            } catch (error) {
-              // Firestore 연결 실패해도 로컬 데이터로 계속 진행
+            } catch {
+              // API 실패해도 로컬 데이터로 계속 진행
             }
           }
         }
@@ -235,39 +227,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const loadNickname = async () => {
       try {
-        const userId = makeGuestKey(guestName, guestPhone)
-        const userProfileRef = doc(db, 'userProfiles', userId)
-        const userProfileSnap = await getDoc(userProfileRef)
-
-        if (userProfileSnap.exists()) {
-          const profileData = userProfileSnap.data()
-          if (profileData.nickname && profileData.nickname.trim() !== '') {
-            const updatedUser = { ...userData, nickname: profileData.nickname }
-            setUser(updatedUser)
-            localStorage.setItem('user', JSON.stringify(updatedUser))
-          } else {
-            const autoNickname = guestName
-            const updatedUser = { ...userData, nickname: autoNickname }
-            setUser(updatedUser)
-            localStorage.setItem('user', JSON.stringify(updatedUser))
-            await setDoc(userProfileRef, {
-              name: guestName,
-              phone: guestPhone,
-              nickname: autoNickname,
-              updatedAt: new Date(),
-            }, { merge: true })
-          }
+        const profile = await getUserProfile(guestName, guestPhone)
+        if (profile?.nickname && profile.nickname.trim() !== '') {
+          const updatedUser = { ...userData, nickname: profile.nickname }
+          setUser(updatedUser)
+          localStorage.setItem('user', JSON.stringify(updatedUser))
         } else {
           const autoNickname = guestName
           const updatedUser = { ...userData, nickname: autoNickname }
           setUser(updatedUser)
           localStorage.setItem('user', JSON.stringify(updatedUser))
-          await setDoc(userProfileRef, {
+          await upsertUserProfile({
             name: guestName,
             phone: guestPhone,
             nickname: autoNickname,
-            updatedAt: new Date(),
-          }, { merge: true })
+          })
         }
       } catch {
         const autoNickname = guestName
@@ -301,6 +275,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem('user')
     localStorage.removeItem('isAdmin')
     localStorage.removeItem('adminName')
+    clearAdminApiToken()
+    setManageSession(false)
   }
 
   const setAdmin = (admin: boolean, name?: string) => {
@@ -330,33 +306,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     // 중복 닉네임 체크
     try {
-      const userProfilesRef = collection(db, 'userProfiles')
-      const querySnapshot = await getDocs(userProfilesRef)
-      
-      const currentUserId = makeGuestKey(user.name, user.phone)
-      
-      // 현재 사용자의 기존 닉네임과 동일하면 중복 체크 통과
+      const available = await checkNicknameAvailable(trimmedNickname, user.name, user.phone)
       const isSameAsCurrent = user.nickname && user.nickname.trim() === trimmedNickname
-      
-      if (!isSameAsCurrent) {
-        // 다른 사용자가 같은 닉네임을 사용하는지 확인
-        const duplicateNickname = querySnapshot.docs.find((docSnapshot) => {
-          const data = docSnapshot.data()
-          const docUserId = docSnapshot.id
-          // 현재 사용자가 아니고, 닉네임이 동일한 경우
-          return docUserId !== currentUserId && data.nickname && data.nickname.trim() === trimmedNickname
-        })
-        
-        if (duplicateNickname) {
-          throw new Error('이미 사용 중인 닉네임입니다. 다른 닉네임을 선택해주세요.')
-        }
+      if (!isSameAsCurrent && !available) {
+        throw new Error('이미 사용 중인 닉네임입니다. 다른 닉네임을 선택해주세요.')
       }
-    } catch (error: any) {
-      // 네트워크 오류가 아닌 중복 오류인 경우에만 에러 던지기
-      if (error.message && error.message.includes('이미 사용 중인 닉네임')) {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.message.includes('이미 사용 중인 닉네임')) {
         throw error
       }
-      // 네트워크 오류 등은 경고만 출력하고 계속 진행 (오프라인 환경 대응)
     }
     
     const updatedUser = { ...user, nickname: trimmedNickname }
@@ -367,19 +325,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     // Firestore에 저장 시도 (실패해도 계속 진행)
     try {
-      // ✅ userId는 전화번호만 사용
-      const userId = makeGuestKey(user.name, user.phone)
-      const userProfileRef = doc(db, 'userProfiles', userId)
-      
-      await setDoc(userProfileRef, {
+      await upsertUserProfile({
         name: user.name,
         phone: user.phone,
         nickname: trimmedNickname,
-        updatedAt: new Date()
-      }, { merge: true })
-    } catch (error: any) {
-      // Firestore 저장 실패해도 로컬스토리지는 이미 저장되었으므로 계속 진행
-      // 서버 연결이 안 되어 있어도 로컬에서 작동하도록 에러를 던지지 않음
+      })
+    } catch {
+      // API 저장 실패해도 로컬스토리지는 이미 저장됨
     }
 
     void trackEvent('nickname_set', { nickname_length: trimmedNickname.length })

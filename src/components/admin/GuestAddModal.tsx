@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { collection, getDocs, doc, getDoc, deleteDoc } from 'firebase/firestore'
-import { db } from '../../config/firebase'
+import { adminDeleteUserProfile, adminListUserProfiles } from '../../services/userProfilesApi'
+import { makeGuestKey } from '../../utils/adminUtils'
 import { useData } from '../../contexts/DataContext'
 import '../../pages/Admin.css'
 
@@ -58,13 +58,8 @@ const GuestAddModal = ({ isOpen, onClose, onSuccess, onNicknamesUpdate }: GuestA
     
     // 기존 userProfile 삭제 (깨끗한 상태로 시작)
     try {
-      const userId = `${normalizedName}_${normalizedPhone}`
-      const userProfileRef = doc(db, 'userProfiles', userId)
-      const userProfileSnap = await getDoc(userProfileRef)
-      if (userProfileSnap.exists()) {
-        await deleteDoc(userProfileRef)
-        console.log(`기존 userProfile 삭제: ${userId}`)
-      }
+      const userId = makeGuestKey(normalizedName, normalizedPhone)
+      await adminDeleteUserProfile(userId)
     } catch (error) {
       console.error('userProfile 삭제 오류:', error)
     }
@@ -78,13 +73,11 @@ const GuestAddModal = ({ isOpen, onClose, onSuccess, onNicknamesUpdate }: GuestA
     onClose()
     
     // 닉네임 리스트 다시 로드
-    const userProfilesRef = collection(db, 'userProfiles')
-    const snapshot = await getDocs(userProfilesRef)
+    const profiles = await adminListUserProfiles()
     const nicknameMap: Record<string, string> = {}
-    snapshot.forEach((doc) => {
-      const data = doc.data()
-      if (data.nickname && data.nickname.trim() !== '') {
-        nicknameMap[doc.id] = data.nickname
+    profiles?.forEach((profile) => {
+      if (profile.nickname && profile.nickname.trim() !== '') {
+        nicknameMap[profile.id] = profile.nickname
       }
     })
     onNicknamesUpdate(nicknameMap)

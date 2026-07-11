@@ -1,10 +1,6 @@
-import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore'
-import { db } from '../config/firebase'
-import { FIRESTORE_PATHS } from '../config/firestorePaths'
 import type { AnalyticsEventDoc, AnalyticsEventName } from '../analytics/types'
 import type { Guest } from '../contexts/DataContext'
-
-const MAX_EVENTS = 5000
+import { adminListAnalyticsEvents } from '../services/analyticsApi'
 
 export type AnalyticsDateRange = 'today' | '7d' | '30d' | 'all'
 
@@ -286,25 +282,12 @@ export async function fetchAnalyticsEvents(): Promise<{
   events: RawAnalyticsEvent[]
   truncated: boolean
 }> {
-  try {
-    const q = query(
-      collection(db, FIRESTORE_PATHS.ANALYTICS_EVENTS),
-      orderBy('createdAtClient', 'desc'),
-      limit(MAX_EVENTS)
-    )
-    const snap = await getDocs(q)
-    return {
-      events: snap.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }) as RawAnalyticsEvent),
-      truncated: snap.size >= MAX_EVENTS,
-    }
-  } catch {
-    const snap = await getDocs(collection(db, FIRESTORE_PATHS.ANALYTICS_EVENTS))
-    const events = snap.docs
-      .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }) as RawAnalyticsEvent)
-      .sort((a, b) => getEventTime(b) - getEventTime(a))
-      .slice(0, MAX_EVENTS)
-    return { events, truncated: snap.size > MAX_EVENTS }
+  const res = await adminListAnalyticsEvents()
+  if (!res?.ok || !res.events) {
+    return { events: [], truncated: false }
   }
+  const events = [...res.events].sort((a, b) => getEventTime(b) - getEventTime(a)) as RawAnalyticsEvent[]
+  return { events, truncated: res.truncated === true }
 }
 
 export function summarizeGuestKpis(

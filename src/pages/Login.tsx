@@ -2,8 +2,6 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, Link, useParams, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useData } from '../contexts/DataContext'
-import { doc, setDoc } from 'firebase/firestore'
-import { db } from '../config/firebase'
 import TicketTransition from '../components/TicketTransition'
 import ticketImage from '../assets/background/glow-ticket.png'
 import { validatePhoneNumber, formatPhoneDisplay } from '../utils/phoneFormat'
@@ -11,6 +9,7 @@ import { normalizePhone, normalizeName } from '../utils/guestUtils'
 import { encodePersonalLoginToken } from '../utils/adminUtils'
 import { checkGuest } from '../services/guestsApi'
 import { updateBooking } from '../services/bookingsApi'
+import { upsertUserProfile } from '../services/userProfilesApi'
 import {
   trackEvent,
   trackFunnelAbandon,
@@ -875,16 +874,13 @@ const Login = () => {
             localStorage.removeItem('pendingBooking')
 
             try {
-              const userId = normalizePhone(currentUser.phone || '')
-              const userProfileRef = doc(db, 'userProfiles', userId)
-              await setDoc(userProfileRef, {
+              await upsertUserProfile({
                 name: currentUser.name,
                 phone: currentUser.phone,
                 ticketShown: true,
-                updatedAt: new Date()
-              }, { merge: true })
+              })
             } catch (error) {
-              console.warn('Firestore 티켓 기록 저장 실패:', error)
+              console.warn('티켓 기록 저장 실패:', error)
             }
 
             checkNicknameAndNavigate()

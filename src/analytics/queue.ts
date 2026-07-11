@@ -1,7 +1,5 @@
-import { collection, writeBatch, serverTimestamp, doc } from 'firebase/firestore'
-import { db } from '../config/firebase'
-import { FIRESTORE_PATHS } from '../config/firestorePaths'
 import type { AnalyticsEventDoc } from './types'
+import { trackAnalyticsEvents } from '../services/analyticsApi'
 
 const FLUSH_INTERVAL_MS = 3000
 const MAX_BATCH_SIZE = 20
@@ -17,15 +15,7 @@ async function flushQueue(): Promise<void> {
   const batchItems = queue.splice(0, MAX_BATCH_SIZE)
 
   try {
-    const batch = writeBatch(db)
-    for (const item of batchItems) {
-      const ref = doc(collection(db, FIRESTORE_PATHS.ANALYTICS_EVENTS))
-      batch.set(ref, {
-        ...item,
-        timestamp: serverTimestamp(),
-      })
-    }
-    await batch.commit()
+    await trackAnalyticsEvents(batchItems)
   } catch (error) {
     if (import.meta.env.DEV) {
       console.debug('[analytics] flush failed', error)

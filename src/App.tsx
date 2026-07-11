@@ -140,7 +140,9 @@ function AppRoutes() {
             path="/admin/performances"
             element={
               <Layout>
-                <Performances />
+                <AdminProtectedRoute>
+                  <Performances />
+                </AdminProtectedRoute>
               </Layout>
             }
           />
@@ -148,7 +150,9 @@ function AppRoutes() {
             path="/admin/events"
             element={
               <Layout>
-                <Events />
+                <AdminProtectedRoute>
+                  <Events />
+                </AdminProtectedRoute>
               </Layout>
             }
           />
@@ -156,7 +160,9 @@ function AppRoutes() {
             path="/admin/chat"
             element={
               <Layout>
-                <Chat />
+                <AdminProtectedRoute>
+                  <Chat />
+                </AdminProtectedRoute>
               </Layout>
             }
           />
@@ -164,7 +170,9 @@ function AppRoutes() {
             path="/admin/guestbook"
             element={
               <Layout>
-                <Guestbook />
+                <AdminProtectedRoute>
+                  <Guestbook />
+                </AdminProtectedRoute>
               </Layout>
             }
           />

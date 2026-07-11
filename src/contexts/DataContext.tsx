@@ -3,8 +3,10 @@ import {
   getFirestoreData, 
   setFirestoreData
 } from '../services/firestoreService'
-import { collection, getDocs, deleteDoc, doc, onSnapshot } from 'firebase/firestore'
+import { doc, onSnapshot } from 'firebase/firestore'
 import { db } from '../config/firebase'
+import { addGuestbookMessage as apiAddGuestbookMessage, adminClearGuestbook } from '../services/guestbookApi'
+import { adminClearChat } from '../services/chatApi'
 import { normalizePhone, normalizeName } from '../utils/guestUtils'
 import { DEFAULT_TIMELINE_EVENTS } from '../utils/performanceEvents'
 import { DEFAULT_VENUE_NAME, DEFAULT_VENUE_ADDRESS } from '../utils/venueDefaults'
@@ -724,8 +726,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const newMessages = [...guestbookMessages, message]
     setGuestbookMessages(newMessages)
     localStorage.setItem('guestbookMessages', JSON.stringify(newMessages))
-    // Firestore에 저장 (비동기로 처리)
-    setFirestoreData('messages' as any, message, message.id).catch(() => {})
+    void apiAddGuestbookMessage(message as unknown as Record<string, unknown>)
   }
 
 
@@ -806,35 +807,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const clearGuestbookMessages = async () => {
     setGuestbookMessages([])
     localStorage.removeItem('guestbookMessages')
-    
-    // Firestore에서 모든 메시지 삭제
-    try {
-      const messagesRef = collection(db, 'messages')
-      const querySnapshot = await getDocs(messagesRef)
-      
-      const deletePromises = querySnapshot.docs.map((docSnapshot) => 
-        deleteDoc(doc(db, 'messages', docSnapshot.id))
-      )
-      
-      await Promise.all(deletePromises)
-    } catch (error) {
-    }
+    await adminClearGuestbook()
   }
 
   const clearChatMessages = async () => {
-    // Firestore에서 모든 채팅 메시지 삭제
-    try {
-      const chatRef = collection(db, 'chat')
-      const querySnapshot = await getDocs(chatRef)
-      
-      const deletePromises = querySnapshot.docs.map((docSnapshot) => 
-        deleteDoc(doc(db, 'chat', docSnapshot.id))
-      )
-      
-      await Promise.all(deletePromises)
-    } catch (error) {
-      throw error
-    }
+    const ok = await adminClearChat()
+    if (!ok) throw new Error('clear_chat_failed')
   }
 
   const deduplicateGuests = async (): Promise<{ success: boolean; message: string; removedCount?: number }> => {

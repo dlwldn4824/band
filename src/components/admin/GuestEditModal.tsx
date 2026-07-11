@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { collection, getDocs, doc, getDoc, deleteDoc } from 'firebase/firestore'
-import { db } from '../../config/firebase'
 import { useData } from '../../contexts/DataContext'
+import { adminDeleteUserProfile, adminListUserProfiles } from '../../services/userProfilesApi'
+import { makeGuestKey } from '../../utils/adminUtils'
 import '../../pages/Admin.css'
 
 interface GuestEditModalProps {
@@ -39,38 +39,13 @@ const GuestEditModal = ({ isOpen, guestIndex, onClose, onSuccess, onNicknamesUpd
     const newName = editingGuest.name.trim()
     const newPhone = editingGuest.phone.trim().replace(/[-\s()]/g, '')
     
-    // 이름이나 전화번호가 변경된 경우 기존 userProfile 삭제
-    if (oldName !== newName || oldPhone !== newPhone) {
-      try {
-        if (oldName && oldPhone) {
-          const oldUserId = `${oldName}_${oldPhone}`
-          const oldUserProfileRef = doc(db, 'userProfiles', oldUserId)
-          const oldUserProfileSnap = await getDoc(oldUserProfileRef)
-          if (oldUserProfileSnap.exists()) {
-            await deleteDoc(oldUserProfileRef)
-          }
-        }
-        const newUserId = `${newName}_${newPhone}`
-        const newUserProfileRef = doc(db, 'userProfiles', newUserId)
-        const newUserProfileSnap = await getDoc(newUserProfileRef)
-        if (newUserProfileSnap.exists()) {
-          await deleteDoc(newUserProfileRef)
-        }
-      } catch (error) {
-        console.error('userProfile 삭제 오류:', error)
+    try {
+      if (oldName && oldPhone) {
+        await adminDeleteUserProfile(makeGuestKey(oldName, oldPhone))
       }
-    } else {
-      // 이름과 전화번호가 같아도 userProfile 삭제 (깨끗한 상태로)
-      try {
-        const userId = `${newName}_${newPhone}`
-        const userProfileRef = doc(db, 'userProfiles', userId)
-        const userProfileSnap = await getDoc(userProfileRef)
-        if (userProfileSnap.exists()) {
-          await deleteDoc(userProfileRef)
-        }
-      } catch (error) {
-        console.error('userProfile 삭제 오류:', error)
-      }
+      await adminDeleteUserProfile(makeGuestKey(newName, newPhone))
+    } catch (error) {
+      console.error('userProfile 삭제 오류:', error)
     }
     
     const updatedGuest: any = {
@@ -86,14 +61,11 @@ const GuestEditModal = ({ isOpen, guestIndex, onClose, onSuccess, onNicknamesUpd
     onSuccess('✅ 게스트 정보가 수정되었습니다.')
     handleClose()
     
-    // 닉네임 리스트 다시 로드
-    const userProfilesRef = collection(db, 'userProfiles')
-    const snapshot = await getDocs(userProfilesRef)
+    const profiles = await adminListUserProfiles()
     const nicknameMap: Record<string, string> = {}
-    snapshot.forEach((doc) => {
-      const data = doc.data()
-      if (data.nickname && data.nickname.trim() !== '') {
-        nicknameMap[doc.id] = data.nickname
+    profiles?.forEach((profile) => {
+      if (profile.nickname && profile.nickname.trim() !== '') {
+        nicknameMap[profile.id] = profile.nickname
       }
     })
     onNicknamesUpdate(nicknameMap)
@@ -151,5 +123,3 @@ const GuestEditModal = ({ isOpen, guestIndex, onClose, onSuccess, onNicknamesUpd
 }
 
 export default GuestEditModal
-
-

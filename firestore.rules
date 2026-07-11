@@ -37,50 +37,60 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // 채팅·이벤트 (추후 서버 검증 권장 — 당장은 읽기만 허용)
+    // 실시간 UX용 read-only (쓰기는 서버 API)
     match /chat/{document=**} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if false;
     }
 
     match /onlineUsers/{document=**} {
-      allow read, write: if true;
-    }
-
-    match /messages/{document=**} {
-      allow read, write: if true;
-    }
-
-    match /userProfiles/{document=**} {
-      allow read, write: if true;
-    }
-
-    match /rpsTournament/{document=**} {
-      allow read, write: if true;
-    }
-
-    match /roulette/{document=**} {
-      allow read, write: if true;
-    }
-
-    match /entryDraw/{document=**} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if false;
     }
 
     match /songComments/{document=**} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if false;
     }
 
-    match /loginTokens/{document=**} {
+    match /messages/{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /roulette/{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /entryDraw/{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // 민감 데이터 — read/write 모두 차단 (서버 API 전용)
+    match /userProfiles/{document=**} {
       allow read, write: if false;
     }
 
     match /drinkOrders/{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
 
-    match /analytics_events/{eventId} {
-      allow create, read: if true;
-      allow update, delete: if false;
+    match /analytics_events/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /rpsTournament/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /rateLimits/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /loginTokens/{document=**} {
+      allow read, write: if false;
     }
 
   }

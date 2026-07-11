@@ -2,8 +2,24 @@ import { useState, useEffect, useRef } from 'react'
 import * as XLSX from 'xlsx'
 import { useData, PerformanceData, BookingInfo } from '../contexts/DataContext'
 import { formatPhoneDisplay } from '../utils/phoneFormat'
-import { collection, getDocs, deleteDoc, doc, query, orderBy, getDoc, updateDoc, setDoc, Timestamp } from 'firebase/firestore'
+import { doc, setDoc } from 'firebase/firestore'
 import { db, storage } from '../config/firebase'
+import {
+  adminListUserProfiles,
+  adminDeleteUserProfile,
+  adminBulkDeleteNonAdminProfiles,
+  adminSyncAdminProfiles,
+  adminResetAdminNicknames,
+} from '../services/userProfilesApi'
+import {
+  adminListDrinkOrders,
+  adminToggleDrinkPayment,
+  adminToggleDrinkProvided,
+  adminDeleteDrinkOrder,
+  adminDeleteDrinkOrderHistory,
+  adminDeleteAllDrinkOrders,
+} from '../services/drinkOrdersApi'
+import { adminListSongComments, adminClearSongComments } from '../services/songCommentsApi'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import GuestAddModal from '../components/admin/GuestAddModal'
 import GuestEditModal from '../components/admin/GuestEditModal'
@@ -103,79 +119,48 @@ const Admin = () => {
     }
   }, [bookingInfo])
 
+  const applyProfilesToState = (profiles: Array<{ id: string; nickname?: string; phone?: string; name?: string }>) => {
+    const nicknameMap: Record<string, string> = {}
+    const admins: Array<{ name: string; nickname: string }> = []
+    profiles.forEach((profile) => {
+      if (profile.nickname && profile.nickname.trim() !== '') {
+        nicknameMap[profile.id] = profile.nickname
+      }
+      if (profile.phone === 'admin' && profile.name) {
+        const adminName = profile.name
+        const adminNickname = profile.nickname || ''
+        if (adminNickname && adminNickname.trim() !== '' && adminNickname !== adminName) {
+          admins.push({ name: adminName, nickname: adminNickname })
+        }
+      }
+    })
+    setUserNicknames(nicknameMap)
+    setAdminList(admins)
+  }
+
   // userProfiles에서 닉네임 로드
   useEffect(() => {
     const loadNicknames = async () => {
       try {
-        const userProfilesRef = collection(db, 'userProfiles')
-        const snapshot = await getDocs(userProfilesRef)
-        
-        const nicknameMap: Record<string, string> = {}
-        const admins: Array<{ name: string; nickname: string }> = []
-        
-        snapshot.forEach((doc) => {
-          const data = doc.data()
-          if (data.nickname && data.nickname.trim() !== '') {
-            nicknameMap[doc.id] = data.nickname
-          }
-          
-          // 운영진 정보 수집 (phone이 'admin'인 경우)
-          // 닉네임이 이름과 다르고 비어있지 않은 경우만 리스트에 추가
-          if (data.phone === 'admin' && data.name) {
-            const adminName = data.name
-            const adminNickname = data.nickname || ''
-            // 닉네임이 이름과 다르고 비어있지 않은 경우만 추가
-            if (adminNickname && adminNickname.trim() !== '' && adminNickname !== adminName) {
-              admins.push({
-                name: adminName,
-                nickname: adminNickname
-              })
-            }
-          }
-        })
-        
-        setUserNicknames(nicknameMap)
-        setAdminList(admins)
-      } catch (error) {
+        const profiles = await adminListUserProfiles()
+        if (profiles) applyProfilesToState(profiles)
+      } catch {
+        // ignore
       }
     }
-    
+
     loadNicknames()
   }, [])
   
 
 
-  // 주류 구매 내역 불러오기
   useEffect(() => {
     const loadDrinkOrders = async () => {
       try {
-        const ordersRef = collection(db, 'drinkOrders')
-        const snapshot = await getDocs(query(ordersRef, orderBy('createdAt', 'desc')))
-        
-        const orders: Array<{ id: string; name: string; phone: string; beerQuantity: number; mojitoQuantity: number; totalAmount: number; createdAt: any; paymentConfirmed?: boolean; paymentConfirmedAt?: any; provided?: boolean; providedAt?: any; orderHistory?: Array<{ beerQuantity: number; mojitoQuantity: number; unitPrice?: number; createdAt: any; provided?: boolean; providedAt?: any }> }> = []
-        
-        snapshot.forEach((doc) => {
-          const data = doc.data()
-          if (data.confirmed) {
-            orders.push({
-              id: doc.id,
-              name: data.name || '',
-              phone: data.phone || '',
-              beerQuantity: data.beerQuantity || 0,
-              mojitoQuantity: data.mojitoQuantity || 0,
-              totalAmount: data.totalAmount || 0,
-              createdAt: data.createdAt,
-              paymentConfirmed: data.paymentConfirmed || false,
-              paymentConfirmedAt: data.paymentConfirmedAt,
-              provided: data.provided || false,
-              providedAt: data.providedAt,
-              orderHistory: data.orderHistory || []
-            })
-          }
-        })
-        
-        setDrinkOrders(orders)
+        const orders = await adminListDrinkOrders()
+        if (orders) setDrinkOrders(orders as typeof drinkOrders)
       } catch (error) {
+        console.error('주류 구매 내역 불러오기 실패:', error)
       }
     }
 
@@ -413,16 +398,11 @@ const Admin = () => {
       // 업로드되는 게스트의 기존 userProfile 삭제 (깨끗한 상태로 시작)
       try {
         const deletePromises = guestsToAdd.map(async (guest: any) => {
-          // 이미 정규화된 name과 phone 사용
           const guestName = guest.name || ''
           const guestPhone = guest.phone || ''
           if (guestName && guestPhone) {
             const userId = makeGuestKey(guestName, guestPhone)
-            const userProfileRef = doc(db, 'userProfiles', userId)
-            const userProfileSnap = await getDoc(userProfileRef)
-            if (userProfileSnap.exists()) {
-              await deleteDoc(userProfileRef)
-            }
+            await adminDeleteUserProfile(userId)
           }
         })
         await Promise.all(deletePromises)
@@ -557,16 +537,16 @@ const Admin = () => {
       }
       
       // 닉네임 리스트 다시 로드
-      const userProfilesRef = collection(db, 'userProfiles')
-      const snapshot = await getDocs(userProfilesRef)
-      const nicknameMap: Record<string, string> = {}
-      snapshot.forEach((doc) => {
-        const data = doc.data()
-        if (data.nickname && data.nickname.trim() !== '') {
-          nicknameMap[doc.id] = data.nickname
-        }
-      })
-      setUserNicknames(nicknameMap)
+      const profiles = await adminListUserProfiles()
+      if (profiles) {
+        const nicknameMap: Record<string, string> = {}
+        profiles.forEach((profile) => {
+          if (profile.nickname && profile.nickname.trim() !== '') {
+            nicknameMap[profile.id] = profile.nickname
+          }
+        })
+        setUserNicknames(nicknameMap)
+      }
     } catch (error) {
       setUploadStatus('파일 읽기 중 오류가 발생했습니다.')
     }
@@ -648,57 +628,10 @@ const Admin = () => {
       
       // 셋리스트 업로드 후 운영진 닉네임 자동 리셋 및 이전 운영진 삭제
       try {
-        const userProfilesRef = collection(db, 'userProfiles')
-        const userProfilesSnapshot = await getDocs(userProfilesRef)
-        const resetPromises: Promise<void>[] = []
-        const deletePromises: Promise<void>[] = []
-        
-        // 현재 공연진 목록을 Set으로 변환 (빠른 조회를 위해)
-        const currentPerformersSet = new Set(uniquePerformers.map(p => p.trim()))
-        
-        userProfilesSnapshot.forEach((docSnapshot) => {
-          const data = docSnapshot.data()
-          // 운영진(phone === 'admin')인 경우
-          if (data.phone === 'admin' && data.name) {
-            const adminName = data.name.trim()
-            
-            // 현재 공연진 목록에 있는 운영진: 닉네임만 리셋
-            if (currentPerformersSet.has(adminName)) {
-              const resetPromise = updateDoc(doc(db, 'userProfiles', docSnapshot.id), {
-                nickname: adminName, // 이름으로 닉네임 리셋
-                updatedAt: Timestamp.now()
-              })
-              resetPromises.push(resetPromise)
-            } else {
-              // 현재 공연진 목록에 없는 이전 운영진: userProfile 삭제
-              const deletePromise = deleteDoc(doc(db, 'userProfiles', docSnapshot.id))
-              deletePromises.push(deletePromise)
-            }
-          }
-        })
-        
-        await Promise.all([...resetPromises, ...deletePromises])
-        
-        // 닉네임 리스트 다시 로드 (삭제 후 최신 데이터)
-        const updatedSnapshot = await getDocs(userProfilesRef)
-        const nicknameMap: Record<string, string> = {}
-        const admins: Array<{ name: string; nickname: string }> = []
-        updatedSnapshot.forEach((docSnapshot) => {
-          const data = docSnapshot.data()
-          if (data.nickname && data.nickname.trim() !== '') {
-            nicknameMap[docSnapshot.id] = data.nickname
-          }
-          // 운영진 정보 수집 (phone이 'admin'인 경우)
-          if (data.phone === 'admin') {
-            admins.push({
-              name: data.name || '-',
-              nickname: data.nickname || '-'
-            })
-          }
-        })
-        setUserNicknames(nicknameMap)
-        setAdminList(admins)
-      } catch (err) {
+        await adminSyncAdminProfiles(uniquePerformers)
+        const profiles = await adminListUserProfiles()
+        if (profiles) applyProfilesToState(profiles)
+      } catch {
         // 실패해도 계속 진행
       }
       
@@ -951,18 +884,12 @@ const Admin = () => {
 
   // 운영진 userProfile 삭제 (phone === 'admin')
   const deleteAdminUserProfile = async (performerName: string) => {
-    const userProfilesRef = collection(db, 'userProfiles')
-    const snapshot = await getDocs(userProfilesRef)
-
-    const deletePromises: Promise<void>[] = []
-    snapshot.forEach((docSnapshot) => {
-      const data = docSnapshot.data()
-      if (data.phone === 'admin' && data.name?.trim() === performerName.trim()) {
-        deletePromises.push(deleteDoc(doc(db, 'userProfiles', docSnapshot.id)))
-      }
-    })
-
-    await Promise.all(deletePromises)
+    const profiles = await adminListUserProfiles()
+    if (!profiles) return
+    const targets = profiles.filter(
+      (profile) => profile.phone === 'admin' && profile.name?.trim() === performerName.trim()
+    )
+    await Promise.all(targets.map((profile) => adminDeleteUserProfile(profile.id)))
   }
 
   // 공연진 추가 함수
@@ -1241,41 +1168,31 @@ const Admin = () => {
   // 주류 주문 입금 확인 핸들러
   const handleDrinkOrderPaymentConfirm = async (orderId: string) => {
     try {
-      const orderRef = doc(db, 'drinkOrders', orderId)
-      const orderSnap = await getDoc(orderRef)
-      
-      if (!orderSnap.exists()) {
+      const current = drinkOrders.find((order) => order.id === orderId)
+      const willBeConfirmed = !current?.paymentConfirmed
+      const updated = await adminToggleDrinkPayment(orderId, willBeConfirmed)
+
+      if (!updated) {
         setUploadStatus('❌ 주문을 찾을 수 없습니다.')
         setTimeout(() => setUploadStatus(''), 3000)
         return
       }
-      
-      const currentData = orderSnap.data()
-      const willBeConfirmed = !currentData.paymentConfirmed
-      
-      await updateDoc(orderRef, {
-        paymentConfirmed: willBeConfirmed,
-        paymentConfirmedAt: willBeConfirmed ? Timestamp.now() : null
-      })
-      
-      // 로컬 상태 업데이트
-      setDrinkOrders(prev => prev.map(order => 
-        order.id === orderId 
-          ? { 
-              ...order, 
-              paymentConfirmed: willBeConfirmed,
-              paymentConfirmedAt: willBeConfirmed ? Timestamp.now() : null
-            }
-          : order
-      ))
-      
+
+      setDrinkOrders((prev) =>
+        prev.map((order) => (order.id === orderId ? { ...order, ...updated } : order))
+      )
+
       setUploadStatus(willBeConfirmed ? '✅ 입금 확인이 완료되었습니다.' : '✅ 입금 확인이 해제되었습니다.')
       setTimeout(() => setUploadStatus(''), 3000)
 
       if (willBeConfirmed) {
-        const createdAt = currentData.createdAt?.toDate?.() ?? currentData.createdAt
-        const confirmLatencyHours = createdAt
-          ? Math.round((Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60))
+        const createdAt = updated.createdAt as { toDate?: () => Date } | Date | undefined
+        const createdDate =
+          createdAt && typeof createdAt === 'object' && 'toDate' in createdAt && createdAt.toDate
+            ? createdAt.toDate()
+            : createdAt
+        const confirmLatencyHours = createdDate
+          ? Math.round((Date.now() - new Date(createdDate as Date).getTime()) / (1000 * 60 * 60))
           : undefined
         void trackEvent('drink_payment_confirmed', {
           order_id: orderId,
@@ -1292,79 +1209,28 @@ const Admin = () => {
   // 주류 주문 제공완료 핸들러 (전체 주문 또는 특정 이력 항목)
   const handleDrinkOrderProvide = async (orderId: string, historyIndex?: number) => {
     try {
-      const orderRef = doc(db, 'drinkOrders', orderId)
-      const orderSnap = await getDoc(orderRef)
-      
-      if (!orderSnap.exists()) {
+      const updated = await adminToggleDrinkProvided(orderId, historyIndex)
+      if (!updated) {
         setUploadStatus('❌ 주문을 찾을 수 없습니다.')
         setTimeout(() => setUploadStatus(''), 3000)
         return
       }
-      
-      const currentData = orderSnap.data()
-      const hasOrderHistory = currentData.orderHistory && Array.isArray(currentData.orderHistory) && currentData.orderHistory.length > 0
-      
-      if (hasOrderHistory && historyIndex !== undefined) {
-        // 특정 이력 항목의 제공완료 상태 토글
-        const updatedHistory = [...currentData.orderHistory]
-        const historyItem = updatedHistory[historyIndex]
-        const willBeProvided = !historyItem.provided
-        
-        updatedHistory[historyIndex] = {
-          ...historyItem,
-          provided: willBeProvided,
-          providedAt: willBeProvided ? Timestamp.now() : null
-        }
-        
-        // 모든 이력이 제공완료되었는지 확인
-        const allProvided = updatedHistory.every((h: any) => h.provided === true)
-        
-        await updateDoc(orderRef, {
-          orderHistory: updatedHistory,
-          provided: allProvided,
-          providedAt: allProvided ? Timestamp.now() : null
-        })
-        
-        // 로컬 상태 업데이트
-        setDrinkOrders(prev => prev.map(order => 
-          order.id === orderId 
-            ? { 
-                ...order, 
-                orderHistory: updatedHistory,
-                provided: allProvided,
-                providedAt: allProvided ? Timestamp.now() : null
-              }
-            : order
-        ))
-      } else {
-        // 전체 주문의 제공완료 상태 토글 (기존 방식, orderHistory가 없는 경우)
-        const willBeProvided = !currentData.provided
-        
-        await updateDoc(orderRef, {
-          provided: willBeProvided,
-          providedAt: willBeProvided ? Timestamp.now() : null
-        })
-        
-        // 로컬 상태 업데이트
-        setDrinkOrders(prev => prev.map(order => 
-          order.id === orderId 
-            ? { 
-                ...order, 
-                provided: willBeProvided,
-                providedAt: willBeProvided ? Timestamp.now() : null
-              }
-            : order
-        ))
-      }
-      
+
+      setDrinkOrders((prev) =>
+        prev.map((order) => (order.id === orderId ? { ...order, ...updated } : order))
+      )
+
       setUploadStatus('✅ 제공완료 상태가 업데이트되었습니다.')
       setTimeout(() => setUploadStatus(''), 3000)
 
-      const latestOrder = (await getDoc(orderRef)).data()
-      if (latestOrder?.provided) {
-        const createdAt = latestOrder.createdAt?.toDate?.() ?? latestOrder.createdAt
-        const provideLatencyMin = createdAt
-          ? Math.round((Date.now() - new Date(createdAt).getTime()) / (1000 * 60))
+      if (updated.provided) {
+        const createdAt = updated.createdAt as { toDate?: () => Date } | Date | undefined
+        const createdDate =
+          createdAt && typeof createdAt === 'object' && 'toDate' in createdAt && createdAt.toDate
+            ? createdAt.toDate()
+            : createdAt
+        const provideLatencyMin = createdDate
+          ? Math.round((Date.now() - new Date(createdDate as Date).getTime()) / (1000 * 60))
           : undefined
         void trackEvent('drink_order_provided', {
           order_id: orderId,
@@ -1382,60 +1248,23 @@ const Admin = () => {
   const handleDeleteDrinkOrderHistory = (orderId: string, historyIndex: number) => {
     requirePassword(async () => {
       try {
-      const orderRef = doc(db, 'drinkOrders', orderId)
-      const orderSnap = await getDoc(orderRef)
-      
-      if (!orderSnap.exists()) {
-        setUploadStatus('❌ 주문을 찾을 수 없습니다.')
-        setTimeout(() => setUploadStatus(''), 3000)
-        return
-      }
-      
-      const currentData = orderSnap.data()
-      const orderHistory = currentData.orderHistory || []
-      
-      if (orderHistory.length <= 1) {
-        // 이력이 하나만 있으면 전체 주문 삭제
-        await deleteDoc(orderRef)
-        setDrinkOrders(prev => prev.filter(order => order.id !== orderId))
-        setUploadStatus('✅ 주문이 삭제되었습니다.')
-      } else {
-        // 해당 이력만 삭제하고 총액 재계산
-        const updatedHistory = orderHistory.filter((_: any, idx: number) => idx !== historyIndex)
-        
-        // 총액 재계산
-        let totalBeerQuantity = 0
-        let totalMojitoQuantity = 0
-        updatedHistory.forEach((h: any) => {
-          totalBeerQuantity += h.beerQuantity || 0
-          totalMojitoQuantity += h.mojitoQuantity || 0
-        })
-        const totalAmount = (totalBeerQuantity * 3500) + (totalMojitoQuantity * 3500)
-        
-        await updateDoc(orderRef, {
-          orderHistory: updatedHistory,
-          beerQuantity: totalBeerQuantity,
-          mojitoQuantity: totalMojitoQuantity,
-          totalAmount: totalAmount,
-          updatedAt: Timestamp.now()
-        })
-        
-        // 로컬 상태 업데이트
-        setDrinkOrders(prev => prev.map(order => 
-          order.id === orderId 
-            ? { 
-                ...order, 
-                orderHistory: updatedHistory,
-                beerQuantity: totalBeerQuantity,
-                mojitoQuantity: totalMojitoQuantity,
-                totalAmount: totalAmount
-              }
-            : order
-        ))
-        
-        setUploadStatus('✅ 주문 항목이 삭제되었습니다.')
-      }
-      
+        const result = await adminDeleteDrinkOrderHistory(orderId, historyIndex)
+        if (!result?.ok) {
+          setUploadStatus('❌ 주문을 찾을 수 없습니다.')
+          setTimeout(() => setUploadStatus(''), 3000)
+          return
+        }
+
+        if (result.deleted) {
+          setDrinkOrders((prev) => prev.filter((order) => order.id !== orderId))
+          setUploadStatus('✅ 주문이 삭제되었습니다.')
+        } else if (result.order) {
+          setDrinkOrders((prev) =>
+            prev.map((order) => (order.id === orderId ? { ...order, ...result.order! } : order))
+          )
+          setUploadStatus('✅ 주문 항목이 삭제되었습니다.')
+        }
+
         setTimeout(() => setUploadStatus(''), 3000)
       } catch (error) {
         console.error('주문 항목 삭제 실패:', error)
@@ -1445,16 +1274,16 @@ const Admin = () => {
     })
   }
 
-  // 주류 주문 삭제 핸들러 (전체 주문 삭제, 비밀번호 확인 포함)
   const handleDeleteDrinkOrder = (orderId: string) => {
     requirePassword(async () => {
       try {
-      const orderRef = doc(db, 'drinkOrders', orderId)
-      await deleteDoc(orderRef)
-      
-      // 로컬 상태 업데이트
-      setDrinkOrders(prev => prev.filter(order => order.id !== orderId))
-      
+        const ok = await adminDeleteDrinkOrder(orderId)
+        if (!ok) {
+          setUploadStatus('❌ 주문 삭제에 실패했습니다.')
+          setTimeout(() => setUploadStatus(''), 3000)
+          return
+        }
+        setDrinkOrders((prev) => prev.filter((order) => order.id !== orderId))
         setUploadStatus('✅ 주문이 삭제되었습니다.')
         setTimeout(() => setUploadStatus(''), 3000)
       } catch (error) {
@@ -1465,24 +1294,22 @@ const Admin = () => {
     })
   }
 
-  // 주류 주문 전체 삭제 핸들러
   const handleDeleteAllDrinkOrders = () => {
     requirePassword(async () => {
       if (!window.confirm('정말로 모든 주류 구매 내역을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
         return
       }
-      
+
       try {
         setUploadStatus('주류 구매 내역을 삭제하는 중...')
-        
-        const ordersRef = collection(db, 'drinkOrders')
-        const snapshot = await getDocs(ordersRef)
-        
-        const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref))
-        await Promise.all(deletePromises)
-        
+        const deletedCount = await adminDeleteAllDrinkOrders()
+        if (deletedCount === null) {
+          setUploadStatus('❌ 주류 구매 내역 삭제 중 오류가 발생했습니다.')
+          setTimeout(() => setUploadStatus(''), 3000)
+          return
+        }
         setDrinkOrders([])
-        setUploadStatus(`✅ 모든 주류 구매 내역(${snapshot.docs.length}개)이 삭제되었습니다.`)
+        setUploadStatus(`✅ 모든 주류 구매 내역(${deletedCount}개)이 삭제되었습니다.`)
         setTimeout(() => setUploadStatus(''), 3000)
       } catch (error) {
         console.error('주류 구매 내역 전체 삭제 오류:', error)
@@ -1986,50 +1813,10 @@ const Admin = () => {
               requirePassword(async () => {
                 if (window.confirm('모든 운영진의 닉네임을 이름으로 초기화하시겠습니까?')) {
                   try {
-                    const userProfilesRef = collection(db, 'userProfiles')
-                    const userProfilesSnapshot = await getDocs(userProfilesRef)
-                    const resetPromises: Promise<void>[] = []
-                    
-                    userProfilesSnapshot.forEach((docSnapshot) => {
-                      const data = docSnapshot.data()
-                      // 운영진(phone === 'admin')인 경우 닉네임을 이름으로 리셋
-                      if (data.phone === 'admin' && data.name) {
-                        const resetPromise = updateDoc(doc(db, 'userProfiles', docSnapshot.id), {
-                          nickname: data.name, // 이름으로 닉네임 리셋
-                          updatedAt: Timestamp.now()
-                        })
-                        resetPromises.push(resetPromise)
-                      }
-                    })
-                    
-                    await Promise.all(resetPromises)
-                    setUploadStatus(`✅ ${resetPromises.length}명의 운영진 닉네임이 초기화되었습니다.`)
-                    
-                    // 닉네임 리스트 다시 로드
-                    const updatedSnapshot = await getDocs(userProfilesRef)
-                    const nicknameMap: Record<string, string> = {}
-                    const admins: Array<{ name: string; nickname: string }> = []
-                    updatedSnapshot.forEach((docSnapshot) => {
-                      const data = docSnapshot.data()
-                      if (data.nickname && data.nickname.trim() !== '') {
-                        nicknameMap[docSnapshot.id] = data.nickname
-                      }
-                      // 운영진 정보 수집 (phone이 'admin'인 경우)
-                      // 닉네임이 이름과 다르고 비어있지 않은 경우만 리스트에 추가
-                      if (data.phone === 'admin' && data.name) {
-                        const adminName = data.name
-                        const adminNickname = data.nickname || ''
-                        // 닉네임이 이름과 다르고 비어있지 않은 경우만 추가
-                        if (adminNickname && adminNickname.trim() !== '' && adminNickname !== adminName) {
-                          admins.push({
-                            name: adminName,
-                            nickname: adminNickname
-                          })
-                        }
-                      }
-                    })
-                    setUserNicknames(nicknameMap)
-                    setAdminList(admins)
+                    const resetCount = await adminResetAdminNicknames()
+                    setUploadStatus(`✅ ${resetCount ?? 0}명의 운영진 닉네임이 초기화되었습니다.`)
+                    const profiles = await adminListUserProfiles()
+                    if (profiles) applyProfilesToState(profiles)
                   } catch (err) {
                     console.error('운영진 닉네임 초기화 오류:', err)
                     setUploadStatus('❌ 운영진 닉네임 초기화에 실패했습니다.')
@@ -2227,40 +2014,26 @@ const Admin = () => {
                     setUploadStatus('🔄 게스트 리스트 초기화 중...')
                     
                     try {
-                      // 모든 userProfiles 삭제 (운영진 제외)
-                      const userProfilesRef = collection(db, 'userProfiles')
-                      const snapshot = await getDocs(userProfilesRef)
-                      
-                      const deletePromises = snapshot.docs
-                        .filter(docSnapshot => {
-                          const data = docSnapshot.data()
-                          // 운영진(phone === 'admin')은 제외
-                          return data.phone !== 'admin'
-                        })
-                        .map(docSnapshot => deleteDoc(doc(db, 'userProfiles', docSnapshot.id)))
-                      
-                      await Promise.all(deletePromises)
+                      await adminBulkDeleteNonAdminProfiles()
                     } catch (error) {
                       console.error('userProfile 삭제 오류:', error)
-                      // 오류가 발생해도 게스트 초기화는 계속 진행
                     }
-                    
+
                     try {
                       await clearGuests()
-                      
+
                       setUploadStatus('✅ 게스트 정보와 로그인 기록이 초기화되었습니다.')
-                      
-                      // 닉네임 리스트 다시 로드
-                      const userProfilesRef = collection(db, 'userProfiles')
-                      const snapshot = await getDocs(userProfilesRef)
-                      const nicknameMap: Record<string, string> = {}
-                      snapshot.forEach((doc) => {
-                        const data = doc.data()
-                        if (data.nickname && data.nickname.trim() !== '') {
-                          nicknameMap[doc.id] = data.nickname
-                        }
-                      })
-                      setUserNicknames(nicknameMap)
+
+                      const profiles = await adminListUserProfiles()
+                      if (profiles) {
+                        const nicknameMap: Record<string, string> = {}
+                        profiles.forEach((profile) => {
+                          if (profile.nickname && profile.nickname.trim() !== '') {
+                            nicknameMap[profile.id] = profile.nickname
+                          }
+                        })
+                        setUserNicknames(nicknameMap)
+                      }
                     } catch (error: any) {
                       console.error('게스트 초기화 오류:', error)
                       if (error?.message?.includes('QUOTA_EXCEEDED') || error?.code === 'resource-exhausted') {
@@ -2822,21 +2595,19 @@ const Admin = () => {
             onClick={async () => {
               try {
                 setUploadStatus('응원 메시지를 불러오는 중...')
-                const commentsRef = collection(db, 'songComments')
-                const commentsQuery = query(commentsRef, orderBy('timestamp', 'desc'))
-                const snapshot = await getDocs(commentsQuery)
-                
-                const comments: any[] = []
-                snapshot.forEach((doc) => {
-                  const data = doc.data()
-                  comments.push({
-                    곡명: data.songName || '',
-                    사용자명: data.userName || '',
-                    닉네임: data.userNickname || '',
-                    응원메시지: data.message || '',
-                    작성시간: data.timestamp?.toDate ? new Date(data.timestamp.toDate()).toLocaleString('ko-KR') : '-'
-                  })
-                })
+                const rawComments = await adminListSongComments()
+                const comments = (rawComments || []).map((data) => ({
+                  곡명: String(data.songName || ''),
+                  사용자명: String(data.userName || ''),
+                  닉네임: String(data.userNickname || ''),
+                  응원메시지: String(data.message || ''),
+                  작성시간:
+                    data.timestamp && typeof data.timestamp === 'object' && 'toDate' in (data.timestamp as object)
+                      ? new Date((data.timestamp as { toDate: () => Date }).toDate()).toLocaleString('ko-KR')
+                      : data.timestamp
+                        ? new Date(data.timestamp as string | number).toLocaleString('ko-KR')
+                        : '-',
+                }))
                 
                 if (comments.length === 0) {
                   setUploadStatus('응원 메시지가 없습니다.')
@@ -2865,15 +2636,8 @@ const Admin = () => {
                 if (window.confirm('정말로 모든 응원 메시지를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
                   try {
                     setUploadStatus('응원 메시지를 삭제하는 중...')
-                    const commentsRef = collection(db, 'songComments')
-                    const snapshot = await getDocs(commentsRef)
-                    
-                    const deletePromises = snapshot.docs.map((docSnapshot) => 
-                      deleteDoc(doc(db, 'songComments', docSnapshot.id))
-                    )
-                    
-                    await Promise.all(deletePromises)
-                    setUploadStatus(`✅ 모든 응원 메시지(${snapshot.docs.length}개)가 삭제되었습니다.`)
+                    const ok = await adminClearSongComments()
+                    setUploadStatus(ok ? '✅ 모든 응원 메시지가 삭제되었습니다.' : '❌ 응원 메시지 삭제 중 오류가 발생했습니다.')
                   } catch (error) {
                     console.error('응원 메시지 삭제 오류:', error)
                     setUploadStatus('❌ 응원 메시지 삭제 중 오류가 발생했습니다.')

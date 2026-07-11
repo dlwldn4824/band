@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
-import { doc, setDoc, onSnapshot, serverTimestamp } from 'firebase/firestore'
+import { doc, onSnapshot } from 'firebase/firestore'
 import { db } from '../../config/firebase'
 import { useAuth } from '../../contexts/AuthContext'
+import { adminSpinRoulette } from '../../services/gamesApi'
 import './Game.css'
 import { useNavigate } from 'react-router-dom'
 import pointerIcon from '../../assets/배경/포인터.png'
@@ -128,27 +129,27 @@ const RouletteMirror = ({ onBack }: RouletteMirrorProps = {}) => {
     const finalRotation = totalRotation
 
     // Firestore에 상태 저장
-    await setDoc(gameRef, {
+    await adminSpinRoulette({
       isSpinning: true,
       rotation: finalRotation,
       result: '',
-      items: items,
-      startTime: serverTimestamp()
+      items,
+      startTime: Date.now(),
     })
 
-    // 회전이 끝난 후 결과 계산
     setTimeout(async () => {
       const normalizedAngle = (360 - (finalRotation % 360)) % 360
       const itemIndex = Math.floor((normalizedAngle / 360) * items.length)
       const selectedItem = items[itemIndex]
-      
-      await setDoc(gameRef, {
+
+      await adminSpinRoulette({
         isSpinning: false,
         rotation: finalRotation,
         result: selectedItem,
-        items: items
-      }, { merge: true })
-    }, 3000) // 3초 회전 애니메이션
+        items,
+        merge: true,
+      })
+    }, 3000)
   }
 
   const itemAngle = 360 / items.length

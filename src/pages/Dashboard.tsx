@@ -8,8 +8,7 @@ import ticketImage from '../assets/background/glow-ticket.png'
 import editIcon from '../assets/배경/수정_아이콘.png'
 import { formatPhoneDisplay } from '../utils/phoneFormat'
 import { normalizePhone } from '../utils/guestUtils'
-import { collection, getDocs } from 'firebase/firestore'
-import { db } from '../config/firebase'
+import { adminListUserProfiles } from '../services/userProfilesApi'
 import posterImage from '../assets/background/glow-poster.png'
 import Login from './Login'
 import './Dashboard.css'
@@ -119,26 +118,23 @@ const Dashboard = () => {
 
     const loadNicknames = async () => {
       try {
-        const userProfilesRef = collection(db, 'userProfiles')
-        const snapshot = await getDocs(userProfilesRef)
+        const profiles = await adminListUserProfiles()
+        if (!profiles) return
         const nicknameMap: Record<string, string> = {}
         const admins: Array<{ name: string; nickname: string }> = []
-        
-        snapshot.forEach((doc) => {
-          const data = doc.data()
-          if (data.nickname && data.nickname.trim() !== '') {
-            nicknameMap[doc.id] = data.nickname
+
+        profiles.forEach((profile) => {
+          if (profile.nickname && profile.nickname.trim() !== '') {
+            nicknameMap[profile.id] = profile.nickname
           }
-          
-          // 운영진 정보 수집 (phone이 'admin'인 경우)
-          if (data.phone === 'admin' && data.name) {
+          if (profile.phone === 'admin' && profile.name) {
             admins.push({
-              name: data.name,
-              nickname: data.nickname || '-'
+              name: profile.name,
+              nickname: profile.nickname || '-',
             })
           }
         })
-        
+
         setUserNicknames(nicknameMap)
         setAdminList(admins)
       } catch (error) {
