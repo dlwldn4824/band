@@ -16,6 +16,7 @@ import { handleGuestbookRequest } from './lib/guestbookApi.js'
 import { handleSongCommentsRequest } from './lib/songCommentsApi.js'
 import { handleGamesRequest } from './lib/gamesApi.js'
 import { handleAnalyticsRequest } from './lib/analyticsApi.js'
+import { handleLoginTokensRequest } from './lib/loginTokensApi.js'
 
 dotenv.config()
 
@@ -46,6 +47,7 @@ app.post('/api/guestbook', handleGuestbookRequest)
 app.post('/api/song-comments', handleSongCommentsRequest)
 app.post('/api/games', handleGamesRequest)
 app.post('/api/analytics', handleAnalyticsRequest)
+app.post('/api/login-tokens', handleLoginTokensRequest)
 
 const httpServer = createServer(app)
 const io = new Server(httpServer, {

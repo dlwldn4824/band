@@ -1,6 +1,7 @@
 import type { AnalyticsContext } from './types'
 import { getClientId, getOrCreateSessionId } from './session'
 import { getDeviceType, isEventDay } from './device'
+import { sanitizePagePath } from './sanitizePath'
 
 type ContextGetter = () => Partial<AnalyticsContext> & {
   userPhone?: string | null
@@ -38,7 +39,7 @@ export function getAnalyticsContext(pagePath?: string): AnalyticsContext {
   return {
     userId: resolvedUserId ?? extra.userId ?? null,
     userRole: extra.userRole ?? userRole,
-    pagePath: pagePath ?? extra.pagePath ?? window.location.pathname,
+    pagePath: sanitizePagePath(pagePath ?? extra.pagePath ?? window.location.pathname),
     performanceId: extra.performanceId ?? null,
     isEventDay: extra.isEventDay ?? isEventDay(extra.performanceDate),
     clientId: getClientId(),

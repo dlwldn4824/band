@@ -4,6 +4,7 @@ import { trackPageView } from './trackEvent'
 import { detectEntryType, getReferrer } from './device'
 import { captureUtmFromUrl, getUtmProperties } from './utm'
 import { incrementPagesVisited } from './session'
+import { sanitizePagePath } from './sanitizePath'
 
 /** API·봇 스캔 URL은 페이지뷰에서 제외 (예: /api/verify-admin-code/1234) */
 function shouldTrackPagePath(pathname: string): boolean {
@@ -29,7 +30,7 @@ export function usePageTracking(): void {
     if (prevPath !== location.pathname && dwellSec > 0) {
       import('./trackEvent').then(({ trackEvent }) => {
         void trackEvent('page_dwell_time', {
-          page_path: prevPath,
+          page_path: sanitizePagePath(prevPath),
           duration_sec: dwellSec,
         })
       })
@@ -41,9 +42,10 @@ export function usePageTracking(): void {
 
     const entryType = detectEntryType(location.pathname)
     captureUtmFromUrl(location.search)
+    const safePath = sanitizePagePath(location.pathname)
 
     trackPageView({
-      page_path: location.pathname,
+      page_path: safePath,
       referrer: getReferrer(),
       entry_type: entryType,
       token_present: location.pathname.startsWith('/t/'),
@@ -54,7 +56,7 @@ export function usePageTracking(): void {
       import('./trackEvent').then(({ trackEvent }) => {
         void trackEvent('entry_source_detected', {
           entry_type: entryType,
-          page_path: location.pathname,
+          page_path: safePath,
         })
       })
     }

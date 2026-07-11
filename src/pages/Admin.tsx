@@ -2,8 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import * as XLSX from 'xlsx'
 import { useData, PerformanceData, BookingInfo } from '../contexts/DataContext'
 import { formatPhoneDisplay } from '../utils/phoneFormat'
-import { doc, setDoc } from 'firebase/firestore'
-import { db, storage } from '../config/firebase'
+import { storage } from '../config/firebase'
 import {
   adminListUserProfiles,
   adminDeleteUserProfile,
@@ -26,7 +25,11 @@ import GuestEditModal from '../components/admin/GuestEditModal'
 import PasswordModal from '../components/admin/PasswordModal'
 import DrinkOrdersSection from '../components/admin/DrinkOrdersSection'
 import AnalyticsDashboardSection from '../components/admin/AnalyticsDashboardSection'
-import { generatePersonalLoginLink, makeGuestKey } from '../utils/adminUtils'
+import { makeGuestKey } from '../utils/adminUtils'
+import {
+  adminCreateLoginToken,
+  buildPersonalLoginLink,
+} from '../services/loginTokensApi'
 import { normalizePhone, normalizeName, normalizeKoreanMobile } from '../utils/guestUtils'
 import { DEFAULT_TIMELINE_EVENTS, createDefaultPerformanceSection, getPerformanceSections } from '../utils/performanceEvents'
 import { DEFAULT_VENUE_NAME, DEFAULT_VENUE_ADDRESS } from '../utils/venueDefaults'
@@ -974,36 +977,13 @@ const Admin = () => {
     })
   }
 
-  // 랜덤 토큰 생성 함수
-  const generateToken = (): string => {
-    const array = new Uint8Array(32)
-    crypto.getRandomValues(array)
-    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('')
-  }
-
-  // 개별 로그인 링크 생성 함수 (토큰 기반)
+  // 개별 로그인 링크 생성 (불투명 토큰 — 서버 API)
   const generateLoginLink = async (name: string, phone: string): Promise<string> => {
-    const baseUrl = window.location.origin
-    const normalizedPhone = phone.replace(/\D/g, '')
-    
-    // 랜덤 토큰 생성
-    const token = generateToken()
-    
-    // Firestore에 토큰과 게스트 정보 매핑 저장
-    try {
-      const tokenRef = doc(db, 'loginTokens', token)
-      await setDoc(tokenRef, {
-        name: name,
-        phone: normalizedPhone,
-        createdAt: new Date(),
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30일 후 만료
-      })
-    } catch (error) {
-      console.error('토큰 저장 실패:', error)
-      throw error
+    const token = await adminCreateLoginToken(name, phone)
+    if (!token) {
+      throw new Error('로그인 토큰 생성에 실패했습니다.')
     }
-    
-    return `${baseUrl}/login?token=${token}`
+    return buildPersonalLoginLink(token)
   }
 
   // 이메일 전송 함수 (Gmail SMTP 사용) - 현재 사용하지 않음
@@ -1673,43 +1653,54 @@ const Admin = () => {
                           <div className="guest-login-link-row">
                             <input
                               type="text"
-                              value={guestLoginLinks[userId] || generatePersonalLoginLink(guestName, guestPhoneRaw)}
+                              value={guestLoginLinks[userId] || ''}
+                              placeholder="링크 생성 버튼을 눌러주세요"
                               readOnly
                               onClick={(e) => (e.target as HTMLInputElement).select()}
                               className="guest-login-link-input"
                             />
                             <button
                               onClick={async () => {
-                                const loginLink = guestLoginLinks[userId] || generatePersonalLoginLink(guestName, guestPhoneRaw)
                                 try {
+                                  let loginLink = guestLoginLinks[userId]
+                                  if (!loginLink) {
+                                    loginLink = await generateLoginLink(guestName, guestPhoneRaw)
+                                    setGuestLoginLinks((prev) => ({ ...prev, [userId]: loginLink! }))
+                                  }
                                   await navigator.clipboard.writeText(loginLink)
                                   setUploadStatus(`✅ "${guestName}" 게스트의 접속 링크가 복사되었습니다.`)
                                   setTimeout(() => setUploadStatus(''), 3000)
                                 } catch (err) {
-                                  const textArea = document.createElement('textarea')
-                                  textArea.value = loginLink
-                                  textArea.style.position = 'fixed'
-                                  textArea.style.opacity = '0'
-                                  document.body.appendChild(textArea)
-                                  textArea.select()
                                   try {
+                                    let loginLink = guestLoginLinks[userId]
+                                    if (!loginLink) {
+                                      loginLink = await generateLoginLink(guestName, guestPhoneRaw)
+                                      setGuestLoginLinks((prev) => ({ ...prev, [userId]: loginLink! }))
+                                    }
+                                    const textArea = document.createElement('textarea')
+                                    textArea.value = loginLink
+                                    textArea.style.position = 'fixed'
+                                    textArea.style.opacity = '0'
+                                    document.body.appendChild(textArea)
+                                    textArea.select()
                                     document.execCommand('copy')
+                                    document.body.removeChild(textArea)
                                     setUploadStatus(`✅ "${guestName}" 게스트의 접속 링크가 복사되었습니다.`)
                                     setTimeout(() => setUploadStatus(''), 3000)
                                   } catch (e) {
-                                    setUploadStatus('❌ 링크 복사에 실패했습니다.')
+                                    setUploadStatus('❌ 링크 생성/복사에 실패했습니다.')
                                     setTimeout(() => setUploadStatus(''), 3000)
                                   }
-                                  document.body.removeChild(textArea)
                                 }
                               }}
-                              className="guest-login-link-copy"
+                              className="admin-btn-blue"
+                              style={{ whiteSpace: 'nowrap' }}
                             >
-                              복사
+                              {guestLoginLinks[userId] ? '복사' : '생성·복사'}
                             </button>
                           </div>
                         ) : (
-                          <span className="not-applicable">-</span>
+                          <span className="ui-muted">입금 확인 후 생성</span>
                         )}
                       </td>
                       <td>

@@ -3,6 +3,7 @@ import { getAnalyticsContext, getDeviceTypeForEvent } from './context'
 import { enqueueEvent } from './queue'
 import { touchSession } from './session'
 import { CORE_FEATURES, type CoreFeature } from './events'
+import { sanitizePagePath } from './sanitizePath'
 
 const CORE_FEATURE_KEY = 'analytics_core_features'
 const CORE_FEATURE_USED_KEY = 'analytics_core_feature_used'
@@ -41,14 +42,27 @@ export async function trackEvent<E extends AnalyticsEventName>(
   try {
     touchSession()
     const ctx = getAnalyticsContext(options?.pagePath)
+    const safePagePath = sanitizePagePath(ctx.pagePath)
+
+    const rawProperties = (properties ?? {}) as Record<string, unknown>
+    const sanitizedProperties: Record<string, unknown> = { ...rawProperties }
+    if (typeof sanitizedProperties.page_path === 'string') {
+      sanitizedProperties.page_path = sanitizePagePath(sanitizedProperties.page_path)
+    }
+    if (typeof sanitizedProperties.from_page === 'string') {
+      sanitizedProperties.from_page = sanitizePagePath(sanitizedProperties.from_page)
+    }
+    if (typeof sanitizedProperties.to_page === 'string') {
+      sanitizedProperties.to_page = sanitizePagePath(sanitizedProperties.to_page)
+    }
 
     const doc: AnalyticsEventDoc = {
       eventName,
-      properties: (properties ?? {}) as Record<string, unknown>,
+      properties: sanitizedProperties,
       userId: ctx.userId,
       sessionId: ctx.sessionId,
       userRole: ctx.userRole,
-      pagePath: ctx.pagePath,
+      pagePath: safePagePath,
       deviceType: getDeviceTypeForEvent(),
       performanceId: ctx.performanceId,
       isEventDay: ctx.isEventDay,
@@ -78,7 +92,7 @@ export function trackPageView(overrides?: {
   token_present?: boolean
 }): void {
   void trackEvent('page_view', {
-    page_path: overrides?.page_path ?? window.location.pathname,
+    page_path: sanitizePagePath(overrides?.page_path ?? window.location.pathname),
     referrer: overrides?.referrer ?? document.referrer,
     entry_type: overrides?.entry_type,
     token_present: overrides?.token_present,

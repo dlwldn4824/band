@@ -4,6 +4,7 @@ import { QRCodeSVG } from 'qrcode.react'
 import { formatPhoneDisplay } from '../utils/phoneFormat'
 import { normalizePhone, normalizeName } from '../utils/guestUtils'
 import { checkGuest, onsitePayment } from '../services/guestsApi'
+import { createLoginToken, buildPersonalLoginLink } from '../services/loginTokensApi'
 import './Login.css'
 import './Onsite.css'
 
@@ -63,10 +64,12 @@ const Onsite = () => {
         return
       }
 
-      const combinedData = `${normalizedName}|${normalizedPhone}`
-      const base64Token = btoa(encodeURIComponent(combinedData))
-      const urlSafeToken = base64Token.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
-      const loginLink = `${window.location.origin}/t/${urlSafeToken}`
+      const token = await createLoginToken(normalizedName, normalizedPhone)
+      if (!token) {
+        alert('로그인 링크 생성에 실패했습니다. 다시 시도해주세요.')
+        return
+      }
+      const loginLink = buildPersonalLoginLink(token)
 
       setPersonalLoginLink(loginLink)
       setShowQR(true)

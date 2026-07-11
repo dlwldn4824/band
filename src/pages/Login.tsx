@@ -6,10 +6,14 @@ import TicketTransition from '../components/TicketTransition'
 import ticketImage from '../assets/background/glow-ticket.png'
 import { validatePhoneNumber, formatPhoneDisplay } from '../utils/phoneFormat'
 import { normalizePhone, normalizeName } from '../utils/guestUtils'
-import { encodePersonalLoginToken } from '../utils/adminUtils'
 import { checkGuest } from '../services/guestsApi'
 import { updateBooking } from '../services/bookingsApi'
 import { upsertUserProfile } from '../services/userProfilesApi'
+import {
+  resolveLoginToken,
+  createLoginToken,
+  buildPersonalLoginPath,
+} from '../services/loginTokensApi'
 import {
   trackEvent,
   trackFunnelAbandon,
@@ -86,72 +90,26 @@ const Login = () => {
     }
   }, [showBookingConfirmation])
 
-  // URL 경로에서 자동 로그인 처리 (암호화된 토큰 기반)
+  // URL 경로에서 자동 로그인 처리 (불투명 토큰)
   useEffect(() => {
-    // 경로 파라미터에서 토큰 가져오기 (/t/토큰 형식)
     const tokenParam = token
 
     if (tokenParam && !isProcessingAutoLogin) {
-      // base64 디코딩
       const handleAutoLogin = async () => {
         setIsProcessingAutoLogin(true)
-        
+
         try {
-          let decodedData: string | null = null
-          
-          // 안전한 base64 디코딩
-          try {
-            // URL-safe base64 디코딩 (+ -> -, / -> _, = 제거)
-            const urlSafeToken = tokenParam.replace(/-/g, '+').replace(/_/g, '/')
-            // 패딩 추가
-            const paddedToken = urlSafeToken + '='.repeat((4 - urlSafeToken.length % 4) % 4)
-            const base64Decoded = atob(paddedToken)
-            decodedData = decodeURIComponent(base64Decoded)
-          } catch (e) {
-            console.warn('URL 파라미터 디코딩 실패:', e)
-            navigate('/login', { replace: true })
-            return
-          }
-          
-          if (!decodedData) {
-            console.warn('디코딩된 데이터가 없습니다')
-            navigate('/login', { replace: true })
-            return
-          }
-          
-          // ✅ 토큰 형식: 전화번호만 (phone-only)
-          // 이전 형식 "이름|전화번호"도 호환성을 위해 지원
-          let normalizedPhone: string
-          let decodedName: string | null = null
-          
-          if (decodedData.includes('|')) {
-            // 이전 형식: "이름|전화번호" (하위 호환성)
-            const parts = decodedData.split('|')
-            if (parts.length !== 2 || !parts[1]) {
-              console.warn('잘못된 토큰 형식')
-              navigate('/login', { replace: true })
-              return
-            }
-            decodedName = parts[0]
-            normalizedPhone = normalizePhone(parts[1])
-          } else {
-            // 새 형식: 전화번호만
-            normalizedPhone = normalizePhone(decodedData)
-          }
-          
-          if (!normalizedPhone) {
-            console.warn('전화번호가 유효하지 않습니다')
+          const resolved = await resolveLoginToken(tokenParam)
+          if (!resolved.ok) {
+            console.warn('토큰 해석 실패:', resolved.error)
             navigate('/login', { replace: true })
             return
           }
 
-          const guestName = decodedName ? normalizeName(decodedName) : ''
-          const loginSuccess = await login(
-            guestName || '게스트',
-            normalizedPhone,
-            guestName ? 'name_phone' : 'token'
-          )
-          
+          const guestName = normalizeName(resolved.name)
+          const normalizedPhone = normalizePhone(resolved.phone)
+          const loginSuccess = await login(guestName, normalizedPhone, 'token')
+
           if (loginSuccess) {
             localStorage.removeItem('pendingBooking')
             setIsProcessingAutoLogin(false)
@@ -169,7 +127,7 @@ const Login = () => {
           navigate('/login', { replace: true })
         }
       }
-      
+
       handleAutoLogin()
     }
   }, [token, login, navigate, isProcessingAutoLogin])
@@ -225,36 +183,23 @@ const Login = () => {
     }
   }, [])
 
-  // 네비게이션 로직 (닉네임 확인 없이 바로 대시보드로)
   const checkNicknameAndNavigate = async () => {
-    console.log('[Login] checkNicknameAndNavigate - token:', token, 'location.pathname:', location.pathname)
-    // 개인 링크 토큰이 있으면 개인 링크 URL 유지
     if (token) {
-      // 이미 개인 링크 경로에 있으면 navigate 호출하지 않음 (URL 유지)
-      const targetPath = `/t/${token}`
-      console.log('[Login] checkNicknameAndNavigate - targetPath:', targetPath, 'current:', location.pathname)
+      const targetPath = buildPersonalLoginPath(token)
       if (location.pathname !== targetPath) {
-        console.log('[Login] checkNicknameAndNavigate - navigating to:', targetPath)
         navigate(targetPath, { replace: true })
-      } else {
-        console.log('[Login] checkNicknameAndNavigate - already on target path, skipping navigate')
       }
     } else {
-      // 일반 로그인: 개인 링크 토큰을 생성하여 쿼리 스트링으로 추가
       const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
       if (currentUser && currentUser.name && currentUser.phone && currentUser.phone !== 'admin') {
-        const personalToken = encodePersonalLoginToken(currentUser.name, currentUser.phone)
-        const url = `/dashboard?token=${encodeURIComponent(personalToken)}`
-        console.log('[Login] checkNicknameAndNavigate - navigating to:', url)
-        navigate(url, { replace: true })
-      } else {
-        // 토큰이 없고 현재 경로가 /dashboard가 아니면 이동
-        if (location.pathname !== '/dashboard') {
-          console.log('[Login] checkNicknameAndNavigate - navigating to /dashboard')
+        const personalToken = await createLoginToken(currentUser.name, currentUser.phone)
+        if (personalToken) {
+          navigate(`/dashboard?token=${encodeURIComponent(personalToken)}`, { replace: true })
+        } else if (location.pathname !== '/dashboard') {
           navigate('/dashboard')
-        } else {
-          console.log('[Login] checkNicknameAndNavigate - already on /dashboard, skipping navigate')
         }
+      } else if (location.pathname !== '/dashboard') {
+        navigate('/dashboard')
       }
     }
   }

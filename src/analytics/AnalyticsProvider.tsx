@@ -32,7 +32,7 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
     const performanceDate = performanceData?.ticket?.date ?? null
 
     setAnalyticsContextGetter(() => ({
-      pagePath: location.pathname,
+      pagePath: location.pathname.startsWith('/t/') ? '/t/*' : location.pathname,
       performanceId,
       performanceDate,
       isEventDay: isEventDay(performanceDate),

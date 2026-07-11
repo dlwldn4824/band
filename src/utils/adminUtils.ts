@@ -1,4 +1,5 @@
 import { normalizePhone, normalizeName, makeGuestKey } from './guestUtils'
+import { adminCreateLoginToken, buildPersonalLoginLink } from '../services/loginTokensApi'
 
 /**
  * 게스트 키 생성 (이름+전화번호)
@@ -12,21 +13,15 @@ export const makeUserIdByPhone = (name: string, phone: string): string => {
   return makeGuestKey(name, phone)
 }
 
-/** 이름|전화번호 → URL-safe base64 토큰 */
-export const encodePersonalLoginToken = (name: string, phone: string): string => {
-  const normalizedName = normalizeName(name)
-  const normalizedPhone = normalizePhone(phone)
-  const combinedData = `${normalizedName}|${normalizedPhone}`
-  const base64Token = btoa(encodeURIComponent(combinedData))
-  return base64Token.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
-}
-
 /**
- * 개인 로그인 링크 생성 (이름|전화번호 토큰)
+ * 개인 로그인 링크 생성 (불투명 토큰 — 서버 API)
+ * 관리자 토큰이 있을 때 사용. 실패 시 null.
  */
-export const generatePersonalLoginLink = (name: string, phone: string): string => {
-  const urlSafeToken = encodePersonalLoginToken(name, phone)
-  const baseUrl = window.location.origin
-  return `${baseUrl}/t/${urlSafeToken}`
+export const generatePersonalLoginLink = async (
+  name: string,
+  phone: string
+): Promise<string | null> => {
+  const token = await adminCreateLoginToken(normalizeName(name), normalizePhone(phone))
+  if (!token) return null
+  return buildPersonalLoginLink(token)
 }
-
