@@ -64,7 +64,7 @@ export interface SetlistItem {
   keyboard?: string
   drum?: string
   part?: number // 공연 섹션 번호 (1부터 시작, 타임라인의 공연 섹션 순서와 대응)
-  team?: string // 팀명 (멜로딕, 노을, 렉사 등)
+  team?: string // 팀명 (밴드A, 밴드B 등)
 }
 
 export interface PerformanceData {
@@ -371,8 +371,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             const defaultPerformanceData: PerformanceData = {
               events: DEFAULT_TIMELINE_EVENTS,
               ticket: {
-                eventName: '2025 멜로딕 단독 공연',
-                date: '2025년 12월 27일 (토)',
+                eventName: 'Summer Night Live',
+                date: '2026년 8월 15일 (토)',
                 venue: DEFAULT_VENUE_NAME,
                 venueAddress: DEFAULT_VENUE_ADDRESS,
                 seat: '자유석',

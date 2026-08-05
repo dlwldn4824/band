@@ -143,7 +143,7 @@ const Layout = ({ children }: LayoutProps) => {
           <div className="header-top">
             <h1 className="logo">
               <button onClick={handleLogoClick} className="logo-button">
-                {performanceData?.ticket?.eventName || '2025 멜로딕 단독 공연'}
+                {performanceData?.ticket?.eventName || 'Summer Night Live'}
               </button>
             </h1>
             {((adminStatus !== null ? adminStatus : isAdmin) || isAuthenticated) && (

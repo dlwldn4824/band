@@ -223,8 +223,8 @@ const Admin = () => {
 
     if (!performanceData.events || performanceData.events.length === 0) {
       const defaultTicket = {
-        eventName: '2025 멜로딕 단독 공연',
-        date: '2025년 12월 27일 (토)',
+        eventName: 'Summer Night Live',
+        date: '2026년 8월 15일 (토)',
         venue: DEFAULT_VENUE_NAME,
         venueAddress: DEFAULT_VENUE_ADDRESS,
         seat: '자유석',
@@ -600,8 +600,8 @@ const Admin = () => {
         : DEFAULT_TIMELINE_EVENTS
 
       const defaultTicket = {
-        eventName: '2025 멜로딕 단독 공연',
-        date: '2025년 12월 27일 (토)',
+        eventName: 'Summer Night Live',
+        date: '2026년 8월 15일 (토)',
         venue: DEFAULT_VENUE_NAME,
         venueAddress: DEFAULT_VENUE_ADDRESS,
         seat: '자유석',
@@ -2340,7 +2340,7 @@ const Admin = () => {
                     id="event-date"
                     value={editedDate}
                     onChange={(e) => setEditedDate(e.target.value)}
-                    placeholder="예: 2025년 12월 27일 (토)"
+                    placeholder="예: 2026년 8월 15일 (토)"
                   />
                 </div>
                 <div className="form-group">

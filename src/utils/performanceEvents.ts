@@ -9,28 +9,28 @@ export interface PerformanceSection extends TimelineEvent {
 }
 
 /** 공연 순서 (셋리스트 블록·탭·타임라인 표시 기준) */
-export const PERFORMANCE_SECTION_DISPLAY_ORDER = ['멜로딕', '손아픔', 'THEN,'] as const
+export const PERFORMANCE_SECTION_DISPLAY_ORDER = ['밴드A', '밴드B', '밴드C'] as const
 
 export const DEFAULT_TIMELINE_EVENTS: TimelineEvent[] = [
   {
     title: '관객 입장',
     description: '관객 입장 시간입니다.',
-    time: '18:30-19:00',
+    time: '16:30-17:00',
   },
   {
-    title: '멜로딕',
-    description: '멜로딕의 2번째 단독공연이 시작됩니다.',
+    title: '밴드A',
+    description: '밴드A 공연이 시작됩니다.',
+    time: '17:00-18:00',
+  },
+  {
+    title: '밴드B',
+    description: '',
+    time: '18:00-19:00',
+  },
+  {
+    title: '밴드C',
+    description: '',
     time: '19:00-20:00',
-  },
-  {
-    title: '손아픔',
-    description: '',
-    time: '20:10-20:40',
-  },
-  {
-    title: 'THEN,',
-    description: '',
-    time: '20:50-21:30',
   },
 ]
 

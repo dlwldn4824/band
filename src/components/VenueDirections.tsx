@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useData } from '../contexts/DataContext'
-import directionsImage from '../assets/background/monghyang-map.jpg'
+import directionsImage from '../assets/background/venue-map-placeholder.jpg'
 import { DEFAULT_VENUE_NAME, DEFAULT_VENUE_ADDRESS } from '../utils/venueDefaults'
 import { trackEvent, trackModal } from '../analytics'
 import './VenueDirections.css'
@@ -78,7 +78,7 @@ const VenueDirections = () => {
               <div className="directions-image-container">
                 <img
                   src={directionsImage}
-                  alt="복합문화공간 몽향 위치"
+                  alt="공연장 위치"
                   className="directions-image"
                   loading="lazy"
                   decoding="async"

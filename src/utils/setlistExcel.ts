@@ -129,10 +129,10 @@ export function parseSetlistFromGrid(
         const partMatch = gubun.match(/(\d+)\s*부/)
         if (partMatch) currentPart = parseInt(partMatch[1], 10)
         else if (gubun.includes('연합곡')) {
-          const thenSection = performanceSections.find((section) =>
-            sectionTitlesMatch(section.title, 'THEN,')
-          )
-          currentPart = thenSection?.part ?? (performanceSections.length > 0 ? performanceSections.length : 2)
+          currentPart =
+            performanceSections.length > 0
+              ? performanceSections[performanceSections.length - 1].part
+              : 2
         }
       }
     }

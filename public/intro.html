@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>밴드 공연 관리 · 사업소개서</title>
+  <style>
+    @font-face {
+      font-family: 'HakgyoansimJayeonR';
+      src: url('/assets/font/Hakgyoansim_JayeonR.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'Pretendard';
+      src: url('/assets/font/Pretendard-Regular.otf') format('opentype');
+      font-weight: 400;
+    }
+    @font-face {
+      font-family: 'Pretendard';
+      src: url('/assets/font/Pretendard-Medium.otf') format('opentype');
+      font-weight: 500;
+    }
+    @font-face {
+      font-family: 'Pretendard';
+      src: url('/assets/font/Pretendard-SemiBold.otf') format('opentype');
+      font-weight: 600;
+    }
+    @font-face {
+      font-family: 'Pretendard';
+      src: url('/assets/font/Pretendard-Bold.otf') format('opentype');
+      font-weight: 700;
+    }
+    @font-face {
+      font-family: 'DNFBitBitv2';
+      src: url('/assets/font/DNFBitBitv2.ttf') format('truetype');
+    }
+
+    :root {
+      --bg: #000000;
+      --card: #333333;
+      --panel: #2A2A2A;
+      --cta: #FF4C4C;
+      --cta-hover: #E63E3E;
+      --ok: #91D752;
+      --admin: #D88676;
+      --link: #4A90E2;
+      --muted: #BDBDBD;
+      --dim: #757575;
+      --white: #ffffff;
+      --font-display: 'HakgyoansimJayeonR', sans-serif;
+      --font-ui: 'Pretendard', -apple-system, sans-serif;
+      --font-stamp: 'DNFBitBitv2', sans-serif;
+      --radius: 16px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--white);
+      font-family: var(--font-ui);
+      overflow: hidden;
+    }
+
+    .deck {
+      height: 100dvh;
+      width: 100%;
+      position: relative;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      padding: clamp(1.25rem, 3vw, 2.5rem) clamp(1.5rem, 4vw, 3.5rem);
+      opacity: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% 0%, rgba(255, 76, 76, 0.08), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 90% 100%, rgba(216, 134, 118, 0.06), transparent 50%),
+        var(--bg);
+    }
+
+    .slide.active {
+      display: flex;
+      animation: slideIn 0.45s ease-out forwards;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* —— chrome —— */
+    .eyebrow {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: clamp(0.75rem, 2vw, 1.25rem);
+      flex-shrink: 0;
+    }
+
+    .logo {
+      font-family: var(--font-display);
+      font-size: clamp(0.95rem, 1.6vw, 1.15rem);
+      letter-spacing: -0.02em;
+    }
+
+    .logo span { color: var(--cta); }
+
+    .page-num {
+      font-size: 0.85rem;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .tape {
+      display: inline-block;
+      background: var(--cta);
+      color: var(--white);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      padding: 0.28rem 0.7rem;
+      border-radius: 4px;
+      margin-bottom: 0.65rem;
+      text-transform: uppercase;
+    }
+
+    .title {
+      font-family: var(--font-display);
+      font-size: clamp(1.55rem, 3.2vw, 2.35rem);
+      line-height: 1.25;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.85rem;
+      max-width: 18em;
+    }
+
+    .lead {
+      color: var(--muted);
+      font-size: clamp(0.88rem, 1.35vw, 1.05rem);
+      line-height: 1.65;
+      max-width: 38em;
+      margin-bottom: clamp(1.25rem, 2.5vw, 2rem);
+      font-weight: 500;
+    }
+
+    .lead strong { color: var(--white); font-weight: 600; }
+
+    .body {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      align-items: stretch;
+    }
+
+    /* —— nav —— */
+    .nav {
+      position: fixed;
+      bottom: 1.25rem;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      z-index: 50;
+      background: rgba(42, 42, 42, 0.92);
+      backdrop-filter: blur(8px);
+      padding: 0.45rem 0.75rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .nav button {
+      width: 32px;
+      height: 32px;
+      border: none;
+      border-radius: 50%;
+      background: var(--panel);
+      color: var(--white);
+      cursor: pointer;
+      font-size: 0.9rem;
+      display: grid;
+      place-items: center;
+      transition: background 0.2s;
+    }
+
+    .nav button:hover { background: var(--cta); }
+
+    .dots { display: flex; gap: 0.4rem; }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #555;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      transition: background 0.2s, transform 0.2s;
+    }
+
+    .dot.active {
+      background: var(--cta);
+      transform: scale(1.25);
+    }
+
+    .hint-key {
+      position: fixed;
+      bottom: 1.4rem;
+      right: 1.5rem;
+      font-size: 0.7rem;
+      color: var(--dim);
+      z-index: 50;
+    }
+
+    /* ========== COVER ========== */
+    .cover {
+      justify-content: center;
+      padding-top: clamp(1rem, 3vh, 2rem);
+      padding-bottom: 4.5rem;
+    }
+
+    .cover-grid {
+      display: grid;
+      grid-template-columns: 1.05fr 0.9fr 1.15fr;
+      gap: clamp(1rem, 2.5vw, 2rem);
+      align-items: center;
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+      max-width: 1180px;
+      margin: 0 auto;
+    }
+
+    .scene-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 1.1rem 1rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.35);
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+    }
+
+    .scene-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--cta);
+      letter-spacing: 0.04em;
+      margin-bottom: 0.15rem;
+    }
+
+    .bubble {
+      max-width: 92%;
+      padding: 0.55rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.78rem;
+      line-height: 1.45;
+      font-weight: 500;
+    }
+
+    .bubble.them {
+      background: #3d3d3d;
+      color: var(--muted);
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+    }
+
+    .bubble.me {
+      background: #FEE500;
+      color: #191919;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+    }
+
+    .bubble.warn {
+      background: rgba(255, 76, 76, 0.15);
+      color: #ffb4b4;
+      border: 1px solid rgba(255, 76, 76, 0.35);
+      align-self: flex-start;
+    }
+
+    .product-visual {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .ticket-frame {
+      width: min(100%, 220px);
+      aspect-ratio: 2 / 3.2;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+      border: 2px solid rgba(255,255,255,0.12);
+      background: var(--panel);
+      position: relative;
+    }
+
+    .ticket-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .ticket-stamp {
+      position: absolute;
+      bottom: 12%;
+      right: 8%;
+      font-family: var(--font-stamp);
+      font-size: 0.7rem;
+      color: var(--admin);
+      border: 2px solid var(--admin);
+      padding: 0.25rem 0.4rem;
+      transform: rotate(-12deg);
+      background: rgba(0,0,0,0.45);
+      letter-spacing: 0.05em;
+    }
+
+    .product-caption {
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .answer-block {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 1.35rem 1.4rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.35);
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .sigh {
+      font-size: clamp(0.95rem, 1.5vw, 1.15rem);
+      color: var(--muted);
+      line-height: 1.5;
+      font-weight: 500;
+    }
+
+    .sigh em {
+      font-style: normal;
+      color: var(--white);
+    }
+
+    .verbs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      font-size: 0.78rem;
+      color: var(--dim);
+      font-weight: 600;
+    }
+
+    .verbs i {
+      font-style: normal;
+      color: var(--muted);
+    }
+
+    .highlight {
+      font-family: var(--font-display);
+      font-size: clamp(1.2rem, 2.2vw, 1.65rem);
+      line-height: 1.35;
+      background: linear-gradient(transparent 62%, rgba(255, 76, 76, 0.45) 62%);
+      display: inline;
+      padding: 0 0.1em;
+    }
+
+    .category {
+      font-size: 0.8rem;
+      color: var(--dim);
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .brand-mark {
+      font-family: var(--font-display);
+      font-size: clamp(1.4rem, 2.5vw, 1.85rem);
+      color: var(--cta);
+      margin-top: 0.15rem;
+    }
+
+    .cover-hint {
+      text-align: center;
+      margin-top: 1.25rem;
+      font-size: 0.78rem;
+      color: var(--dim);
+      max-width: 36em;
+      margin-left: auto;
+      margin-right: auto;
+      line-height: 1.5;
+    }
+
+    /* ========== LOOP (1/4) ========== */
+    .loop-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
+      width: 100%;
+      align-self: center;
+    }
+
+    .loop-card {
+      background: var(--card);
+      border-radius: 14px;
+      padding: 1.15rem 1rem;
+      position: relative;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+      min-height: 160px;
+    }
+
+    .loop-card::after {
+      content: '→';
+      position: absolute;
+      right: -0.85rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--cta);
+      font-size: 1.1rem;
+      font-weight: 700;
+      z-index: 2;
+    }
+
+    .loop-card:last-child::after { display: none; }
+
+    .loop-step {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--cta);
+      letter-spacing: 0.06em;
+    }
+
+    .loop-title {
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      line-height: 1.3;
+    }
+
+    .loop-desc {
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.5;
+      font-weight: 500;
+    }
+
+    .loop-footer {
+      margin-top: auto;
+      padding-top: 0.75rem;
+      border-top: 1px dashed #555;
+      font-size: 0.75rem;
+      color: #ff9a9a;
+      font-weight: 600;
+    }
+
+    /* ========== PIPE (2/4) ========== */
+    .pipe {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
+      width: 100%;
+      align-self: center;
+    }
+
+    .pipe-card {
+      background: var(--card);
+      border-radius: 14px;
+      padding: 1.2rem 1rem 1.1rem;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      border-top: 3px solid var(--cta);
+    }
+
+    .pipe-card::after {
+      content: '';
+      position: absolute;
+      right: -0.65rem;
+      top: 42%;
+      width: 0.55rem;
+      height: 0.55rem;
+      border-top: 2px solid var(--cta);
+      border-right: 2px solid var(--cta);
+      transform: rotate(45deg);
+      z-index: 2;
+    }
+
+    .pipe-card:last-child::after { display: none; }
+
+    .pipe-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--cta);
+      display: grid;
+      place-items: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+
+    .pipe-title {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+    }
+
+    .pipe-desc {
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.5;
+      font-weight: 500;
+    }
+
+    .pipe-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem;
+      margin-top: auto;
+      padding-top: 0.65rem;
+    }
+
+    .pipe-tags span {
+      font-size: 0.68rem;
+      background: var(--panel);
+      color: var(--muted);
+      padding: 0.22rem 0.45rem;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    /* ========== PROTO (3/4) ========== */
+    .proto-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: clamp(0.85rem, 2vw, 1.5rem);
+      width: 100%;
+      align-items: end;
+      justify-items: center;
+    }
+
+    .phone {
+      width: 100%;
+      max-width: 240px;
+      background: #1a1a1a;
+      border-radius: 22px;
+      padding: 0.55rem;
+      box-shadow: 0 16px 36px rgba(0,0,0,0.45);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .phone-screen {
+      background: var(--bg);
+      border-radius: 16px;
+      overflow: hidden;
+      min-height: 320px;
+      position: relative;
+      background-image: url('/assets/배경/밴드_밤_배경.png');
+      background-size: cover;
+      background-position: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.85rem;
+    }
+
+    .phone-screen.dark {
+      background-image: none;
+      background: #000;
+      align-items: stretch;
+      justify-content: flex-start;
+      padding: 0;
+      flex-direction: column;
+    }
+
+    .mock-card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 1rem 0.9rem;
+      width: 100%;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.35);
+    }
+
+    .mock-h1 {
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      text-align: center;
+      margin-bottom: 0.85rem;
+    }
+
+    .mock-field {
+      margin-bottom: 0.55rem;
+    }
+
+    .mock-field label {
+      display: block;
+      font-size: 0.65rem;
+      color: var(--muted);
+      margin-bottom: 0.2rem;
+      font-weight: 600;
+    }
+
+    .mock-field .box {
+      background: var(--panel);
+      border-radius: 8px;
+      height: 28px;
+      color: var(--muted);
+      font-size: 0.7rem;
+      display: flex;
+      align-items: center;
+      padding: 0 0.55rem;
+    }
+
+    .mock-btn {
+      width: 100%;
+      background: var(--cta);
+      border: none;
+      color: white;
+      border-radius: 8px;
+      padding: 0.55rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-top: 0.35rem;
+      font-family: var(--font-ui);
+    }
+
+    .mock-account {
+      margin-top: 0.5rem;
+      padding: 0.55rem;
+      border: 1.5px dashed #666;
+      border-radius: 8px;
+    }
+
+    .mock-account .lbl {
+      font-size: 0.65rem;
+      color: var(--link);
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+
+    .mock-account .num {
+      font-size: 0.72rem;
+      color: var(--link);
+      font-weight: 600;
+      line-height: 1.4;
+    }
+
+    .mock-amount {
+      font-size: 0.7rem;
+      color: #EC3E33;
+      font-weight: 700;
+      margin-top: 0.4rem;
+    }
+
+    .dash-top {
+      padding: 1rem 0.85rem 0.5rem;
+    }
+
+    .dash-top h3 {
+      font-family: var(--font-display);
+      font-size: 0.95rem;
+    }
+
+    .dash-top p {
+      font-size: 0.68rem;
+      color: var(--muted);
+      margin-top: 0.2rem;
+    }
+
+    .dash-ticket {
+      margin: 0.5rem 0.85rem;
+      border-radius: 10px;
+      overflow: hidden;
+      aspect-ratio: 16/10;
+      background: var(--panel);
+      position: relative;
+    }
+
+    .dash-ticket img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .dash-nav {
+      margin-top: auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border-top: 1px solid #333;
+      padding: 0.45rem 0;
+      background: #111;
+    }
+
+    .dash-nav span {
+      text-align: center;
+      font-size: 0.55rem;
+      color: var(--dim);
+      font-weight: 600;
+    }
+
+    .dash-nav span.on { color: var(--cta); }
+
+    .qr-box {
+      width: 110px;
+      height: 110px;
+      background: white;
+      border-radius: 8px;
+      margin: 0.5rem auto;
+      display: grid;
+      place-items: center;
+      background-image:
+        repeating-linear-gradient(0deg, #111 0 2px, transparent 2px 6px),
+        repeating-linear-gradient(90deg, #111 0 2px, transparent 2px 6px);
+      background-size: 100% 100%;
+      background-color: #fff;
+      position: relative;
+    }
+
+    .qr-box::after {
+      content: 'QR';
+      position: absolute;
+      font-family: var(--font-stamp);
+      font-size: 0.85rem;
+      color: #111;
+      background: #fff;
+      padding: 0.15rem 0.3rem;
+    }
+
+    .proto-cap {
+      text-align: center;
+      margin-top: 0.75rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .proto-cap strong {
+      display: block;
+      color: var(--white);
+      font-family: var(--font-display);
+      font-size: 0.95rem;
+      margin-bottom: 0.2rem;
+      font-weight: normal;
+    }
+
+    /* ========== RESULT (4/4) ========== */
+    .result-layout {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: clamp(1rem, 2.5vw, 2rem);
+      width: 100%;
+      align-items: stretch;
+    }
+
+    .result-hero {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 1.75rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 1rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.35);
+      border-left: 4px solid var(--cta);
+    }
+
+    .result-line {
+      font-family: var(--font-display);
+      font-size: clamp(1.35rem, 2.6vw, 1.9rem);
+      line-height: 1.35;
+    }
+
+    .result-line mark {
+      background: linear-gradient(transparent 60%, rgba(255, 76, 76, 0.5) 60%);
+      color: inherit;
+    }
+
+    .result-sub {
+      font-size: 0.92rem;
+      color: var(--muted);
+      line-height: 1.6;
+      font-weight: 500;
+    }
+
+    .scope {
+      display: grid;
+      grid-template-rows: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    .scope-card {
+      background: var(--card);
+      border-radius: 14px;
+      padding: 1.15rem 1.2rem;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    }
+
+    .scope-card h4 {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.65rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .scope-card.yes h4 { color: var(--ok); }
+    .scope-card.no h4 { color: #ff9a9a; }
+
+    .scope-card ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .scope-card li {
+      font-size: 0.82rem;
+      color: var(--muted);
+      font-weight: 500;
+      padding-left: 0.9rem;
+      position: relative;
+      line-height: 1.4;
+    }
+
+    .scope-card.yes li::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: var(--ok);
+      font-weight: 700;
+    }
+
+    .scope-card.no li::before {
+      content: '–';
+      position: absolute;
+      left: 0;
+      color: #ff9a9a;
+      font-weight: 700;
+    }
+
+    /* ========== responsive ========== */
+    @media (max-width: 900px) {
+      .cover-grid {
+        grid-template-columns: 1fr;
+        overflow-y: auto;
+        gap: 1rem;
+      }
+      .product-visual { order: -1; }
+      .ticket-frame { width: 140px; }
+      .loop-row, .pipe { grid-template-columns: 1fr 1fr; }
+      .loop-card:nth-child(2)::after { display: none; }
+      .pipe-card:nth-child(2)::after { display: none; }
+      .proto-grid { grid-template-columns: 1fr; overflow-y: auto; }
+      .phone { max-width: 280px; }
+      .result-layout { grid-template-columns: 1fr; overflow-y: auto; }
+      .hint-key { display: none; }
+      .slide { overflow-y: auto; padding-bottom: 5rem; }
+    }
+
+    @media print {
+      .nav, .hint-key { display: none !important; }
+      .slide {
+        position: relative;
+        display: flex !important;
+        opacity: 1 !important;
+        page-break-after: always;
+        height: 100vh;
+        animation: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="deck" id="deck">
+
+    <!-- ========== 표지 ========== -->
+    <section class="slide cover active" data-i="0">
+      <div class="cover-grid">
+        <!-- 장면 -->
+        <div class="scene-card">
+          <div class="scene-label">SCENE · 공연 전날 밤</div>
+          <div class="bubble them">입금했어요! 명단에 들어갔나요?</div>
+          <div class="bubble me">엑셀 보고 확인할게요 🙏</div>
+          <div class="bubble them">현장 손님 링크 다시 보내주세요</div>
+          <div class="bubble me">개인 링크가… 어디 있더라</div>
+          <div class="bubble warn">티켓은? 입장번호는? 셋리스트는 또 어디?</div>
+        </div>
+
+        <!-- 제품 -->
+        <div class="product-visual">
+          <div class="ticket-frame">
+            <img src="/assets/배경/렉사_연합공연_티켓.png" alt="디지털 티켓" />
+            <div class="ticket-stamp">입장 #042</div>
+          </div>
+          <p class="product-caption">디지털 티켓 · 입장번호 · 당일 허브</p>
+        </div>
+
+        <!-- 해답 -->
+        <div class="answer-block">
+          <p class="sigh">하… 이런 <em>공연 운영</em> 문제,<br/>어떻게 끊지?</p>
+          <div class="verbs">
+            예매하고 <i>·</i> 입금하고 <i>·</i> 확인하고 <i>·</i> 입장하고
+          </div>
+          <p>
+            <span class="highlight">끊긴 흐름을 한 번에 잇는<br/>공연 운영 웹</span>
+          </p>
+          <p class="category">밴드 · 공연 · 관객 허브</p>
+          <p class="brand-mark">밴드 공연 관리</p>
+        </div>
+      </div>
+      <p class="cover-hint">
+        구글폼 · 엑셀 · 카톡을 써도 결국 다시 — 재확인 · 재공유 · 재등록.
+        예매부터 입장번호·티켓·당일 경험까지, 한 웹으로.
+      </p>
+    </section>
+
+    <!-- ========== 1/4 한계 ========== -->
+    <section class="slide" data-i="1">
+      <div class="eyebrow">
+        <div class="logo">밴드 공연 관리 <span>·</span></div>
+        <div class="page-num">1 / 4</div>
+      </div>
+      <div class="tape">한계</div>
+      <h2 class="title">기존 방식은 한 번이 아니라, 계속 반복됩니다.</h2>
+      <p class="lead">
+        예매는 폼으로, 입금은 톡으로, 명단은 엑셀로, 당일 안내는 또 다른 링크로.
+        <strong>도구는 많은데 흐름은 끊깁니다.</strong>
+        진짜로 필요한 건 기능 추가가 아니라, 반복 루프를 끊는 연결입니다.
+      </p>
+      <div class="body">
+        <div class="loop-row">
+          <div class="loop-card">
+            <div class="loop-step">01</div>
+            <div class="loop-title">재확인</div>
+            <p class="loop-desc">입금자명과 예매명이 어긋나면 톡으로 다시 물어봅니다.</p>
+            <div class="loop-footer">예매 ↔ 입금 단절</div>
+          </div>
+          <div class="loop-card">
+            <div class="loop-step">02</div>
+            <div class="loop-title">재조율</div>
+            <p class="loop-desc">입금 확인이 되어도 입장 권한·번호가 따로 관리됩니다.</p>
+            <div class="loop-footer">확인 ↔ 입장 단절</div>
+          </div>
+          <div class="loop-card">
+            <div class="loop-step">03</div>
+            <div class="loop-title">재공유</div>
+            <p class="loop-desc">현장 손님·재접속마다 개인 링크를 다시 찾아 보냅니다.</p>
+            <div class="loop-footer">손님 ↔ 링크 단절</div>
+          </div>
+          <div class="loop-card">
+            <div class="loop-step">04</div>
+            <div class="loop-title">재탐색</div>
+            <p class="loop-desc">티켓·셋리스트·채팅·주류가 제각각이라 관객이 헤맵니다.</p>
+            <div class="loop-footer">정보 ↔ 경험 단절</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== 2/4 구조 ========== -->
+    <section class="slide" data-i="2">
+      <div class="eyebrow">
+        <div class="logo">밴드 공연 관리 <span>·</span></div>
+        <div class="page-num">2 / 4</div>
+      </div>
+      <div class="tape">구조</div>
+      <h2 class="title">예매부터 당일 허브까지, 한 파이프라인으로 잇습니다.</h2>
+      <p class="lead">
+        관객·현장 키오스크·운영자가 같은 데이터 위에 서 있습니다.
+        <strong>입력 → 연결 → 권한 → 경험</strong>으로 끊긴 지점을 순서대로 붙입니다.
+      </p>
+      <div class="body">
+        <div class="pipe">
+          <div class="pipe-card">
+            <div class="pipe-num">1</div>
+            <div class="pipe-title">입력</div>
+            <p class="pipe-desc">사전 예매 · 현장 예매로 이름과 연락처를 받습니다.</p>
+            <div class="pipe-tags">
+              <span>/login</span>
+              <span>/onsite</span>
+            </div>
+          </div>
+          <div class="pipe-card">
+            <div class="pipe-num">2</div>
+            <div class="pipe-title">연결</div>
+            <p class="pipe-desc">계좌·금액 안내, 입금 자가 확인으로 예매와 결제를 붙입니다.</p>
+            <div class="pipe-tags">
+              <span>계좌 복사</span>
+              <span>입금 안내</span>
+            </div>
+          </div>
+          <div class="pipe-card">
+            <div class="pipe-num">3</div>
+            <div class="pipe-title">권한</div>
+            <p class="pipe-desc">운영자 입금확인 → 입장번호·개인 링크가 자동으로 열립니다.</p>
+            <div class="pipe-tags">
+              <span>/manage</span>
+              <span>/t/:token</span>
+            </div>
+          </div>
+          <div class="pipe-card">
+            <div class="pipe-num">4</div>
+            <div class="pipe-title">경험</div>
+            <p class="pipe-desc">티켓·셋리스트·채팅·주류·방명록을 한 네비로 묶습니다.</p>
+            <div class="pipe-tags">
+              <span>Dashboard</span>
+              <span>QR</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== 3/4 프로토 ========== -->
+    <section class="slide" data-i="3">
+      <div class="eyebrow">
+        <div class="logo">밴드 공연 관리 <span>·</span></div>
+        <div class="page-num">3 / 4</div>
+      </div>
+      <div class="tape">프로토타입</div>
+      <h2 class="title">실제로 돌아가는 화면으로, “된다”를 증명합니다.</h2>
+      <p class="lead">
+        예매 → 입금 안내 → 당일 허브(티켓·QR).
+        <strong>세 컷이면 전체 흐름이 보입니다.</strong>
+      </p>
+      <div class="body">
+        <div class="proto-grid">
+          <!-- 1 예매 -->
+          <div>
+            <div class="phone">
+              <div class="phone-screen">
+                <div class="mock-card">
+                  <div class="mock-h1">공연 예매하기</div>
+                  <div class="mock-field">
+                    <label>이름</label>
+                    <div class="box">이지우</div>
+                  </div>
+                  <div class="mock-field">
+                    <label>전화번호</label>
+                    <div class="box">010-4824-6873</div>
+                  </div>
+                  <button class="mock-btn" type="button">공연 입장하기</button>
+                </div>
+              </div>
+            </div>
+            <p class="proto-cap"><strong>예매 · 로그인</strong>이름·연락처 한 번에</p>
+          </div>
+
+          <!-- 2 입금 -->
+          <div>
+            <div class="phone">
+              <div class="phone-screen">
+                <div class="mock-card">
+                  <div class="mock-h1">계좌 정보</div>
+                  <div class="mock-account">
+                    <div class="lbl">입금 계좌</div>
+                    <div class="num">카카오뱅크 3333…<br/>(예금주: 이지우)</div>
+                    <div class="mock-amount">입금하실 금액: 6천원</div>
+                  </div>
+                  <button class="mock-btn" type="button">결제완료</button>
+                </div>
+              </div>
+            </div>
+            <p class="proto-cap"><strong>입금 안내</strong>계좌 복사 · 현장/사전 동일</p>
+          </div>
+
+          <!-- 3 대시보드 -->
+          <div>
+            <div class="phone">
+              <div class="phone-screen dark">
+                <div class="dash-top">
+                  <h3>안녕하세요, 이지우님!</h3>
+                  <p>내 티켓과 이벤트 정보를 확인하세요</p>
+                </div>
+                <div class="dash-ticket">
+                  <img src="/assets/배경/렉사_연합공연_티켓.png" alt="티켓" />
+                </div>
+                <div style="text-align:center;padding:0.35rem 0 0.2rem;">
+                  <div class="qr-box"></div>
+                  <p style="font-size:0.65rem;color:#999;margin-top:0.35rem;">현장 QR · 개인 링크</p>
+                </div>
+                <div class="dash-nav">
+                  <span class="on">홈</span>
+                  <span>공연 정보</span>
+                  <span>채팅</span>
+                  <span>기타</span>
+                </div>
+              </div>
+            </div>
+            <p class="proto-cap"><strong>당일 허브</strong>티켓 · QR · 네비 일체</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== 4/4 결과 ========== -->
+    <section class="slide" data-i="4">
+      <div class="eyebrow">
+        <div class="logo">밴드 공연 관리 <span>·</span></div>
+        <div class="page-num">4 / 4</div>
+      </div>
+      <div class="tape">결과</div>
+      <h2 class="title">입금 확인 한 번이면, 티켓부터 재접속까지 갑니다.</h2>
+      <p class="lead">
+        기능 나열이 아니라 <strong>끊긴 흐름을 한 번에 잇는 것</strong>이 목표였습니다.
+        구현한 범위와 아직 안 한 범위를 정직하게 나눕니다.
+      </p>
+      <div class="body">
+        <div class="result-layout">
+          <div class="result-hero">
+            <p class="result-line">
+              <mark>예매 · 입금 · 입장번호</mark>를<br/>
+              한 웹에서 끝내고,<br/>
+              당일 경험까지 붙입니다.
+            </p>
+            <p class="result-sub">
+              관객은 같은 페이지·개인 링크로 다시 들어오고,
+              운영자는 입금 토글로 권한을 엽니다.
+              실제 공연 운영에 써 본 툴을 바탕으로 정리했습니다.
+            </p>
+          </div>
+          <div class="scope">
+            <div class="scope-card yes">
+              <h4>● 한 것</h4>
+              <ul>
+                <li>사전·현장 예매 + 계좌 안내</li>
+                <li>입금확인 · 입장번호 · 개인 링크/QR</li>
+                <li>티켓 · 셋리스트 · 채팅 · 방명록 · 주류/게임</li>
+                <li>관리자 엑셀 업로드 · 게스트 운영</li>
+              </ul>
+            </div>
+            <div class="scope-card no">
+              <h4>● 안 한 것</h4>
+              <ul>
+                <li>PG 자동결제 (계좌이체 안내 방식)</li>
+                <li>다중 공연 테넌트 / SaaS화</li>
+                <li>네이티브 앱 · 푸시 알림</li>
+                <li>좌석 지정 · 실시간 좌석맵</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="nav">
+    <button type="button" id="prev" aria-label="이전">‹</button>
+    <div class="dots" id="dots"></div>
+    <button type="button" id="next" aria-label="다음">›</button>
+  </div>
+  <div class="hint-key">← → 또는 스페이스 · 클릭</div>
+
+  <script>
+    const slides = [...document.querySelectorAll('.slide')]
+    const dotsEl = document.getElementById('dots')
+    let i = 0
+
+    slides.forEach((_, idx) => {
+      const b = document.createElement('button')
+      b.className = 'dot' + (idx === 0 ? ' active' : '')
+      b.type = 'button'
+      b.setAttribute('aria-label', `슬라이드 ${idx + 1}`)
+      b.addEventListener('click', () => go(idx))
+      dotsEl.appendChild(b)
+    })
+
+    function go(n) {
+      i = (n + slides.length) % slides.length
+      slides.forEach((s, idx) => s.classList.toggle('active', idx === i))
+      ;[...dotsEl.children].forEach((d, idx) => d.classList.toggle('active', idx === i))
+    }
+
+    document.getElementById('prev').onclick = () => go(i - 1)
+    document.getElementById('next').onclick = () => go(i + 1)
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        e.preventDefault()
+        go(i + 1)
+      }
+      if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault()
+        go(i - 1)
+      }
+      if (e.key === 'Home') go(0)
+      if (e.key === 'End') go(slides.length - 1)
+    })
+  </script>
+</body>
+</html>
