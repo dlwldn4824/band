@@ -24,8 +24,12 @@
 
 이 프로젝트의 목표는 기능 나열이 아니라, **끊긴 흐름을 한 번에 잇는 것**입니다.
 
-```
-예매(입력) → 계좌·자가확인(연결) → 입금확인·입장번호(권한) → 티켓/QR·당일 허브(경험)
+```mermaid
+flowchart LR
+  A[예매 입력] --> B[계좌 · 자가확인]
+  B --> C[입금확인 · 입장번호]
+  C --> D[티켓 / QR]
+  D --> E[당일 허브]
 ```
 
 ---
@@ -113,6 +117,10 @@
 
 ## 데이터는 어떻게 모이나
 
+### 관객 권한 파이프라인
+
+예매 채널이 달라도 같은 `guests_v2`로 모이고, **입금확인이 권한 스위치**가 됩니다.
+
 ```mermaid
 flowchart LR
   A[사전예매 /login] --> G[guests_v2]
@@ -121,11 +129,34 @@ flowchart LR
   G --> P[입금확인 토글]
   P --> E[입장번호 · loginTokens]
   E --> D[Dashboard / QR]
+  G --> GS[Google Sheets 수동 동기화]
+```
+
+### 당일 경험 · 콘텐츠 파이프라인
+
+관객 허브와 공연 콘텐츠는 게스트 권한과 별도로 쌓입니다.
+
+```mermaid
+flowchart LR
   F[Events 주류] --> O[drinkOrders]
   H[Guestbook] --> M[messages]
   T[Chat] --> CH[chat + onlineUsers]
   S[셋리스트 엑셀] --> PD[performanceData]
-  G --> GS[Google Sheets 수동 동기화]
+  PD --> PERF[/performances]
+  O --> EV[/events]
+  M --> GB[/guestbook]
+  CH --> CT[/chat]
+```
+
+### 운영자 하루 파이프라인
+
+```mermaid
+flowchart TD
+  A[명단 준비<br/>엑셀 · Sheets · 수동 추가] --> B[입금 대조<br/>입금확인 토글]
+  B --> C[입장번호 자동 부여]
+  C --> D[당일 입구<br/>티켓 전달 · 체크인]
+  D --> E[바 · 채팅 · 방명록 운영]
+  E --> F[공연 후<br/>응원 export · KPI 점검]
 ```
 
 | 저장소 | 주요 필드 |
@@ -170,13 +201,13 @@ flowchart LR
 
 #### 퍼널 한눈에
 
-```
-등록 58
-  └─ 입금 확인(실 관객) 49  (84.5%)
-       ├─ 입장번호 부여   49  (실 관객 대비 100%)
-       ├─ 티켓 수령       44  (실 관객 대비 89.8%)
-       └─ 체크인          9   (실 관객 대비 18.4%)
-미입금 잔여 9  (15.5%)
+```mermaid
+flowchart TD
+  R[등록 58] --> P[입금 확인 · 실 관객 49<br/>84.5%]
+  R --> U[미입금 잔여 9<br/>15.5%]
+  P --> E[입장번호 부여 49<br/>100%]
+  P --> T[티켓 수령 44<br/>89.8%]
+  P --> C[체크인 9<br/>18.4%]
 ```
 
 | KPI | 정의 | 실제 수치 | 해석 |
@@ -233,6 +264,13 @@ flowchart LR
 ## 앞으로 어떻게 개선할지
 
 데이터가 이미 Firestore에 쌓이는 구조를 전제로, **새 수집보다 집계·자동화**를 우선합니다.
+
+```mermaid
+flowchart LR
+  P1[Phase 1<br/>인사이트 패널] --> P2[Phase 2<br/>퍼널 · 타이밍]
+  P2 --> P3[Phase 3<br/>운영 자동화]
+  P3 --> P4[Phase 4<br/>범위 밖 · 보류]
+```
 
 ### Phase 1 — 관리자 인사이트 패널 (`/manage` 상단)
 
