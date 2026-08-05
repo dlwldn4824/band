@@ -173,6 +173,128 @@ flowchart TD
 
 ---
 
+## 보안 — 실사용자를 위해 잠근 것
+
+이름·전화번호·계좌·개인 링크가 오가는 **실서비스**라서, 초기 “클라이언트에서 Firestore 직접 읽고 쓰기” 구조에서 **서버 API + 규칙 차단** 구조로 옮겼습니다.  
+목표는 브라우저 DevTools / Firebase 콘솔 규칙만으로 **게스트 명단·예매·토큰을 훑지 못하게** 하는 것입니다.
+
+### 한눈에 보는 경계
+
+```mermaid
+flowchart TB
+  subgraph Browser
+    SPA[React SPA]
+    FBsdk[Firebase 클라이언트 SDK]
+  end
+
+  subgraph FirestoreRules[firestore.rules]
+    PubRO[공개 읽기만<br/>performanceData · bookingInfo · chat …]
+    Deny[클라이언트 전면 차단<br/>guests_v2 · bookings · loginTokens<br/>drinkOrders · userProfiles · rateLimits …]
+  end
+
+  subgraph API["POST /api/* · Admin SDK"]
+    PubAct[공개 액션<br/>login / register / token resolve …]
+    AdmAct[관리자 액션<br/>list / toggle / clear …]
+    HMAC[HMAC Bearer adminApiToken]
+  end
+
+  SPA --> FBsdk
+  FBsdk --> PubRO
+  FBsdk -.->|denied| Deny
+  SPA -->|공개| PubAct
+  SPA -->|Authorization: Bearer| AdmAct
+  HMAC --> AdmAct
+  PubAct --> Deny
+  AdmAct --> Deny
+```
+
+### 1) Firestore: 민감 컬렉션은 클라이언트 접근 불가
+
+활성 규칙: [`firestore.rules`](./firestore.rules)  
+(예전 전부 개방 규칙은 [`firestore-rules.txt`](./firestore-rules.txt)에만 남아 있습니다.)
+
+| 구분 | 컬렉션 | 클라이언트 |
+|------|--------|------------|
+| **차단** | `guests`, `guests_v2`, `bookings`, `loginTokens`, `userProfiles`, `drinkOrders`, `analytics_events`, `rateLimits`, `rpsTournament` | `read`/`write` 모두 `false` → **Admin SDK + `/api/*`만** |
+| **읽기만** | `performanceData`, `bookingInfo`, `chat`, `onlineUsers`, `messages`, `songComments`, `roulette`, `entryDraw`, `current`, `entries` | 공개 읽기 / 쓰기는 서버 |
+
+게스트 문서는 V2로 분리했습니다: `guests_v2/all` ([`src/config/firestorePaths.ts`](./src/config/firestorePaths.ts)).
+
+### 2) `/api/guests` — 공개 액션 vs 관리자 액션
+
+핸들러: [`server/lib/guestsApi.js`](./server/lib/guestsApi.js) · 클라이언트: [`src/services/guestsApi.ts`](./src/services/guestsApi.ts)
+
+| | 액션 | 인증 |
+|---|------|------|
+| **공개** | `login`, `status`, `check`, `register`, `onsite-payment` | 이름·전화 신원 매칭 |
+| **관리자** | `list`, `upload`, `toggle-payment`, `toggle-ticket`, `delete`, `update`, `clear`, `deduplicate`, `fix-phones` | `Authorization: Bearer` (HMAC) |
+
+- 공개 응답은 [`toPublicGuest()`](./server/lib/guestNormalize.js)로 필드 축소
+- 관리자 리스트는 브라우저가 Firestore를 직접 읽지 않고 **API만** 사용
+- 삭제는 하드 딜리트 대신 `isDeleted` 소프트 삭제
+
+### 3) 관리자 비밀번호 · HMAC 토큰 · 무차별 대입 제한
+
+| 단계 | 구현 |
+|------|------|
+| 코드 검증 | [`server/lib/verifyAdminCode.js`](./server/lib/verifyAdminCode.js) — `ADMIN_LOGIN_CODE` / `ADMIN_ACTION_PASSWORD`, SHA-256 + `timingSafeEqual` |
+| 토큰 발급 | [`server/lib/adminToken.js`](./server/lib/adminToken.js) — HMAC-SHA256 Bearer, TTL **14일** |
+| 레이트리밋 | [`server/lib/rateLimit.js`](./server/lib/rateLimit.js) — IP 해시, `verify-admin-code` 기준 **실패 5회 / 15분 → 429** |
+| `/manage` 게이트 | [`ManageProtectedRoute`](./src/components/ManageProtectedRoute.tsx) + [`manageSession`](./src/utils/manageSession.ts) — action 비밀번호 + `adminApiToken` |
+
+운영진 로그인(`AdminLogin`)은 서버 코드 확인 + 공연진 명단 매칭을 거칩니다.
+
+### 4) 개인 링크 — URL에 이름·전화 넣지 않음
+
+레거시 `base64(이름|전화)` 링크는 **거부**합니다 (`legacy_token_invalid`).  
+지금은 64자 hex 불투명 토큰만 허용합니다.
+
+| | |
+|---|---|
+| 구현 | [`server/lib/loginTokensApi.js`](./server/lib/loginTokensApi.js) |
+| 컬렉션 | `loginTokens` (클라이언트 차단) |
+| TTL | 30일 · `revoked` / `expired` → 410 |
+| 경로 | `/t/:token` |
+
+```mermaid
+flowchart LR
+  A[입금확인] --> B[create opaque token]
+  B --> C["/t/64hex…"]
+  C --> D[resolve → name/phone]
+  X[레거시 base64 링크] -->|거부| Y[legacy_token_invalid]
+```
+
+### 5) `paymentConfirmed` = 서버 쪽 권한 스위치
+
+입금 확인 전후로 UI만 막는 게 아니라, **채팅 전송·프레즌스** 등은 서버에서 `requirePayment: true`로 검증합니다 ([`server/lib/chatApi.js`](./server/lib/chatApi.js) → `payment_required`).  
+입장번호·티켓·당일 허브도 같은 플래그를 기준으로 열립니다.
+
+### 6) API 라우터 · 기타 잠금
+
+| 항목 | 내용 |
+|------|------|
+| 단일 엔드포인트 | [`api/index.js`](./api/index.js) — Hobby 플랜용 `/api/*` 라우터, **POST만**, 봇 스캔 경로 404 |
+| 쓰기 경로 | 공연/예매 정보·게임·메일 등 민감 write는 admin Bearer ([`booking-info`](./server/lib/bookingInfoApi.js), [`performance-data`](./server/lib/performanceDataApi.js), [`games`](./server/lib/gamesApi.js), …) |
+| 분석 경로 | [`sanitizePath`](./src/analytics/sanitizePath.ts) — `/t/*`, `/api/*` 등 민감 path 정리 |
+| 환경 변수 | `FIREBASE_SERVICE_ACCOUNT`, `ADMIN_LOGIN_CODE`, `ADMIN_ACTION_PASSWORD`, `ADMIN_TOKEN_SECRET` (클라이언트 번들에 비밀 넣 않음) |
+
+### 관련 파일 인덱스
+
+| 파일 | 역할 |
+|------|------|
+| [`firestore.rules`](./firestore.rules) | 컬렉션별 클라이언트 허용/차단 |
+| [`api/index.js`](./api/index.js) | Vercel API 라우터 |
+| [`server/lib/guestsApi.js`](./server/lib/guestsApi.js) | 게스트 공개/관리자 ACL |
+| [`server/lib/guestAuth.js`](./server/lib/guestAuth.js) | 게스트 신원 · 입금 여부 검증 |
+| [`server/lib/adminToken.js`](./server/lib/adminToken.js) | HMAC Bearer |
+| [`server/lib/verifyAdminCode.js`](./server/lib/verifyAdminCode.js) | 관리자 코드 검증 |
+| [`server/lib/rateLimit.js`](./server/lib/rateLimit.js) | 관리자 코드 브루트포스 제한 |
+| [`server/lib/loginTokensApi.js`](./server/lib/loginTokensApi.js) | 불투명 개인 링크 |
+| [`src/utils/manageSession.ts`](./src/utils/manageSession.ts) | `/manage` 세션 게이트 |
+| [`src/services/guestsApi.ts`](./src/services/guestsApi.ts) | 클라이언트 → API (토큰 첨부) |
+
+---
+
 ## 관리자 데이터 분석 (실제 Firestore 기준)
 
 분석 시점: 공연 메타·참여 데이터가 Firestore에 남아 있는 상태를 기준으로 정리했습니다.  
