@@ -12,6 +12,10 @@ import { handleSongCommentsRequest } from '../server/lib/songCommentsApi.js'
 import { handleGamesRequest } from '../server/lib/gamesApi.js'
 import { handleAnalyticsRequest } from '../server/lib/analyticsApi.js'
 import { handleLoginTokensRequest } from '../server/lib/loginTokensApi.js'
+import { handleClubsRequest } from '../server/lib/clubsApi.js'
+import { handleClubEventsRequest } from '../server/lib/clubEventsApi.js'
+import { handleClubConnectionsRequest } from '../server/lib/clubConnectionsApi.js'
+import { handleProfileCardsRequest } from '../server/lib/profileCardsApi.js'
 
 /**
  * Hobby 플랜 함수 개수 제한 대응 — /api/* → 이 단일 함수로 rewrite
@@ -66,6 +70,14 @@ export default async function handler(req, res) {
       return handleAnalyticsRequest(req, res)
     case 'login-tokens':
       return handleLoginTokensRequest(req, res)
+    case 'clubs':
+      return handleClubsRequest(req, res)
+    case 'club-events':
+      return handleClubEventsRequest(req, res)
+    case 'club-connections':
+      return handleClubConnectionsRequest(req, res)
+    case 'profile-cards':
+      return handleProfileCardsRequest(req, res)
     default:
       return res.status(404).json({ ok: false, error: 'not_found', route: segments.join('/') })
   }

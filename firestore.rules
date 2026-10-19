@@ -93,5 +93,31 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // BANDY 플랫폼 레이어 — 모두 서버 API 전용
+    // (동아리·행사는 공개 데이터지만 클라이언트는 /api/clubs, /api/club-events 로만 접근)
+    match /clubs/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /clubEvents/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /clubConnections/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /eventReservations/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /profileCards/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /profileExchanges/{document=**} {
+      allow read, write: if false;
+    }
+
   }
 }

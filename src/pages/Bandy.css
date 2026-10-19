@@ -1,0 +1,770 @@
+/**
+ * BANDY 플랫폼 레이어 공통 스타일
+ *
+ * 기존 디자인 원칙을 그대로 따릅니다.
+ *  - 검정 배경 · 흰 텍스트 · #2a2a2a 카드 (uiTokens.css)
+ *  - 흰 테두리 알약형 칩, 선택 시 흰 배경 + 어두운 글자 (Layout.css 의 nav-link 과 동일)
+ *  - 포인트 컬러는 --ui-primary
+ *  - 제목은 HakgyoansimJayeonR, 본문은 Pretendard
+ */
+
+.bandy {
+  width: 100%;
+  padding: 1rem 0 4rem;
+  color: var(--ui-text);
+  font-family: 'Pretendard', sans-serif;
+  box-sizing: border-box;
+}
+
+/* ── 페이지 헤더 ─────────────────────────────── */
+
+.bandy-head {
+  margin-bottom: 1.25rem;
+}
+
+.bandy-head h2 {
+  margin: 0 0 0.375rem;
+  font-size: 1.375rem;
+  font-weight: 500;
+  font-family: 'HakgyoansimJayeonR', sans-serif;
+  color: var(--ui-text);
+}
+
+.bandy-head p {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--ui-muted);
+}
+
+.bandy-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 0.875rem;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--ui-muted);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.bandy-back:hover {
+  color: var(--ui-text);
+}
+
+/* ── 세그먼트 토글 (동아리 / 행사) ──────────────── */
+
+.bandy-segment {
+  display: flex;
+  gap: 0.375rem;
+  margin-bottom: 0.875rem;
+}
+
+.bandy-segment button {
+  flex: 1;
+  padding: 0.625rem 0.75rem;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 20px;
+  color: var(--ui-text);
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.bandy-segment button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.bandy-segment button.active {
+  background-color: #ffffff;
+  color: #333333;
+}
+
+/* ── 검색 · 필터 칩 ─────────────────────────── */
+
+.bandy-search {
+  position: relative;
+  margin-bottom: 0.75rem;
+}
+
+.bandy-search input {
+  width: 100%;
+  padding: 0.75rem 0.875rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--ui-border-2);
+  border-radius: 12px;
+  color: var(--ui-text);
+  font-family: inherit;
+  font-size: 0.875rem;
+  box-sizing: border-box;
+  -webkit-appearance: none;
+}
+
+.bandy-search input::placeholder {
+  color: var(--ui-muted-2);
+}
+
+.bandy-search input:focus {
+  outline: none;
+  border-color: var(--ui-primary);
+  box-shadow: 0 0 0 3px var(--ui-focus);
+}
+
+.bandy-chips {
+  display: flex;
+  gap: 0.375rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+  margin-bottom: 1rem;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.bandy-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.bandy-chip {
+  flex-shrink: 0;
+  padding: 0.4375rem 0.75rem;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 20px;
+  color: var(--ui-text);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.bandy-chip:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.bandy-chip.active {
+  background-color: #ffffff;
+  color: #333333;
+}
+
+/* ── 카드 목록 ─────────────────────────────── */
+
+.bandy-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.bandy-card {
+  display: block;
+  width: 100%;
+  padding: 1rem;
+  background: var(--ui-card);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  box-shadow: var(--ui-shadow);
+  color: var(--ui-text);
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+  transition: transform 0.2s, border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.bandy-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--ui-border-2);
+}
+
+.bandy-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+/* 동아리·행사 식별용 엠블럼 — 액센트 컬러는 데이터에서 주입 */
+.bandy-emblem {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--ui-radius-md);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--ui-border-2);
+  font-size: 1.375rem;
+  line-height: 1;
+}
+
+.bandy-card-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.bandy-card-title {
+  margin: 0 0 0.1875rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.4;
+  word-break: keep-all;
+}
+
+.bandy-card-sub {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--ui-muted);
+  line-height: 1.5;
+}
+
+.bandy-card-note {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  color: var(--ui-muted-2);
+  line-height: 1.6;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ── 메타 배지 ─────────────────────────────── */
+
+.bandy-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin-top: 0.75rem;
+}
+
+.bandy-badge {
+  padding: 0.1875rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--ui-border);
+  font-size: 0.6875rem;
+  color: var(--ui-muted);
+  white-space: nowrap;
+}
+
+.bandy-badge.accent {
+  background: rgba(255, 76, 76, 0.16);
+  border-color: rgba(255, 76, 76, 0.4);
+  color: #ffb3b3;
+}
+
+.bandy-badge.good {
+  background: rgba(140, 224, 192, 0.16);
+  border-color: rgba(140, 224, 192, 0.4);
+  color: #a6ecd5;
+}
+
+.bandy-badge.warn {
+  background: rgba(255, 209, 102, 0.16);
+  border-color: rgba(255, 209, 102, 0.4);
+  color: #ffdf96;
+}
+
+.bandy-badge.muted {
+  color: var(--ui-muted-2);
+}
+
+/* ── 섹션 ─────────────────────────────────── */
+
+.bandy-section {
+  margin-top: 1.75rem;
+}
+
+.bandy-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.bandy-section h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 500;
+  font-family: 'HakgyoansimJayeonR', sans-serif;
+  color: var(--ui-text);
+}
+
+.bandy-section-count {
+  font-size: 0.75rem;
+  color: var(--ui-muted-2);
+}
+
+/* ── 상세 히어로 ───────────────────────────── */
+
+.bandy-hero {
+  padding: 1.25rem;
+  background: var(--ui-card);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  box-shadow: var(--ui-shadow);
+  box-sizing: border-box;
+}
+
+.bandy-hero-top {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  margin-bottom: 0.875rem;
+}
+
+.bandy-hero .bandy-emblem {
+  width: 56px;
+  height: 56px;
+  font-size: 1.75rem;
+}
+
+.bandy-hero h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1.1875rem;
+  font-weight: 600;
+  line-height: 1.35;
+  word-break: keep-all;
+}
+
+.bandy-hero-sub {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--ui-muted);
+}
+
+.bandy-hero-intro {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.75;
+  color: var(--ui-muted);
+  white-space: pre-wrap;
+  word-break: keep-all;
+}
+
+/* ── 정보 행 ─────────────────────────────── */
+
+.bandy-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.0625rem;
+  margin-top: 1rem;
+  border-radius: var(--ui-radius-md);
+  overflow: hidden;
+}
+
+.bandy-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.6875rem 0.875rem;
+  background: var(--ui-card-2);
+  font-size: 0.8125rem;
+}
+
+.bandy-row dt {
+  flex-shrink: 0;
+  width: 4.5rem;
+  margin: 0;
+  color: var(--ui-muted-2);
+  font-size: 0.75rem;
+}
+
+.bandy-row dd {
+  flex: 1;
+  margin: 0;
+  color: var(--ui-text);
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+/* ── 버튼 ─────────────────────────────────── */
+
+.bandy-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.bandy-btn {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border: none;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.2s, background-color 0.2s;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.bandy-btn-primary {
+  background: var(--ui-primary);
+  color: #ffffff;
+}
+
+.bandy-btn-primary:hover:not(:disabled) {
+  filter: brightness(0.95);
+}
+
+.bandy-btn-ghost {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  color: var(--ui-text);
+  font-weight: 500;
+}
+
+.bandy-btn-ghost:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.bandy-btn-danger {
+  background: transparent;
+  border: 1px solid rgba(255, 68, 68, 0.6);
+  color: #ff8a8a;
+  font-weight: 500;
+}
+
+.bandy-btn-danger:hover:not(:disabled) {
+  background-color: rgba(255, 68, 68, 0.12);
+}
+
+.bandy-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.bandy-btn-sm {
+  width: auto;
+  padding: 0.4375rem 0.75rem;
+  font-size: 0.75rem;
+  border-radius: 999px;
+}
+
+/* ── 폼 ─────────────────────────────────── */
+
+.bandy-field {
+  margin-bottom: 0.875rem;
+}
+
+.bandy-field label {
+  display: block;
+  margin-bottom: 0.375rem;
+  font-size: 0.75rem;
+  color: var(--ui-muted);
+}
+
+.bandy-field input,
+.bandy-field textarea,
+.bandy-field select {
+  width: 100%;
+  padding: 0.75rem 0.875rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--ui-border-2);
+  border-radius: 12px;
+  color: var(--ui-text);
+  font-family: inherit;
+  font-size: 0.875rem;
+  box-sizing: border-box;
+  -webkit-appearance: none;
+}
+
+.bandy-field textarea {
+  min-height: 7rem;
+  resize: vertical;
+  line-height: 1.7;
+}
+
+.bandy-field input::placeholder,
+.bandy-field textarea::placeholder {
+  color: var(--ui-muted-2);
+}
+
+.bandy-field input:focus,
+.bandy-field textarea:focus,
+.bandy-field select:focus {
+  outline: none;
+  border-color: var(--ui-primary);
+  box-shadow: 0 0 0 3px var(--ui-focus);
+}
+
+.bandy-field-hint {
+  margin: 0.375rem 0 0;
+  font-size: 0.6875rem;
+  color: var(--ui-muted-2);
+  line-height: 1.6;
+}
+
+.bandy-field-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.bandy-field-row > * {
+  flex: 1;
+}
+
+/* 동의 체크 — 연락처 공개 여부처럼 사용자가 직접 고르는 항목 */
+.bandy-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  padding: 0.75rem 0.875rem;
+  background: var(--ui-card-2);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-md);
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+}
+
+.bandy-check input {
+  flex-shrink: 0;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin: 0.0625rem 0 0;
+  accent-color: var(--ui-primary);
+  cursor: pointer;
+}
+
+.bandy-check-text {
+  flex: 1;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+}
+
+.bandy-check-text span {
+  display: block;
+  margin-top: 0.1875rem;
+  font-size: 0.6875rem;
+  color: var(--ui-muted-2);
+}
+
+/* ── 알림 문구 ─────────────────────────────── */
+
+.bandy-note {
+  padding: 0.75rem 0.875rem;
+  border-radius: var(--ui-radius-md);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  margin-bottom: 0.875rem;
+}
+
+.bandy-note-info {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--ui-border);
+  color: var(--ui-muted);
+}
+
+.bandy-note-error {
+  background: rgba(255, 68, 68, 0.12);
+  border: 1px solid rgba(255, 68, 68, 0.4);
+  color: #ff9a9a;
+}
+
+.bandy-note-success {
+  background: rgba(140, 224, 192, 0.12);
+  border: 1px solid rgba(140, 224, 192, 0.4);
+  color: #a6ecd5;
+}
+
+/* ── 빈 상태 · 로딩 ─────────────────────────── */
+
+.bandy-empty {
+  padding: 2.5rem 1rem;
+  text-align: center;
+  color: var(--ui-muted-2);
+  font-size: 0.8125rem;
+  line-height: 1.7;
+  background: var(--ui-card-2);
+  border: 1px dashed var(--ui-border-2);
+  border-radius: var(--ui-radius-lg);
+}
+
+.bandy-loading {
+  padding: 2.5rem 1rem;
+  text-align: center;
+  color: var(--ui-muted-2);
+  font-size: 0.8125rem;
+}
+
+/* ── 지표 타일 ─────────────────────────────── */
+
+.bandy-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.bandy-stat {
+  padding: 0.875rem;
+  background: var(--ui-card-2);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-md);
+}
+
+.bandy-stat-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--ui-text);
+}
+
+.bandy-stat-label {
+  margin-top: 0.25rem;
+  font-size: 0.6875rem;
+  color: var(--ui-muted-2);
+  line-height: 1.5;
+}
+
+/* ── 프로필 카드 (현장 네트워킹) ────────────────── */
+
+.bandy-profile-card {
+  padding: 1.25rem;
+  border-radius: var(--ui-radius-lg);
+  background: linear-gradient(145deg, #2f2f2f 0%, #1e1e1e 100%);
+  border: 1px solid var(--ui-border-2);
+  box-shadow: var(--ui-shadow);
+  box-sizing: border-box;
+}
+
+.bandy-profile-top {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.bandy-profile-name {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+.bandy-profile-club {
+  margin: 0.1875rem 0 0;
+  font-size: 0.75rem;
+  color: var(--ui-muted);
+}
+
+/* 공유 코드 — NFC·QR·링크가 모두 이 값을 전달합니다 */
+.bandy-sharecode {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding: 0.75rem 0.875rem;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px dashed var(--ui-border-2);
+  border-radius: var(--ui-radius-md);
+}
+
+.bandy-sharecode-value {
+  font-family: 'DNFBitBitv2', monospace;
+  font-size: 1.125rem;
+  letter-spacing: 0.15em;
+  color: var(--ui-text);
+}
+
+.bandy-sharecode-label {
+  font-size: 0.6875rem;
+  color: var(--ui-muted-2);
+}
+
+.bandy-qr {
+  display: flex;
+  justify-content: center;
+  padding: 1rem;
+  margin-top: 0.875rem;
+  background: #ffffff;
+  border-radius: var(--ui-radius-md);
+}
+
+/* ── 모달 ─────────────────────────────────── */
+
+.bandy-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.72);
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+.bandy-modal {
+  width: 100%;
+  max-width: 480px;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 1.25rem;
+  background: var(--ui-card);
+  border: 1px solid var(--ui-border-2);
+  border-radius: var(--ui-radius-lg);
+  box-shadow: var(--ui-shadow);
+  box-sizing: border-box;
+  padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+}
+
+.bandy-modal h3 {
+  margin: 0 0 0.375rem;
+  font-size: 1.0625rem;
+  font-weight: 500;
+  font-family: 'HakgyoansimJayeonR', sans-serif;
+}
+
+.bandy-modal-sub {
+  margin: 0 0 1rem;
+  font-size: 0.75rem;
+  color: var(--ui-muted);
+  line-height: 1.6;
+}
+
+/* ── 데스크톱 ─────────────────────────────── */
+
+@media (min-width: 768px) {
+  .bandy {
+    padding: 1.5rem 0 5rem;
+  }
+
+  .bandy-head h2 {
+    font-size: 1.75rem;
+  }
+
+  .bandy-head p {
+    font-size: 0.875rem;
+  }
+
+  .bandy-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 0.875rem;
+  }
+
+  .bandy-stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .bandy-modal-backdrop {
+    align-items: center;
+  }
+
+  .bandy-hero {
+    padding: 1.75rem;
+  }
+}

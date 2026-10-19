@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import { DataProvider } from './contexts/DataContext'
 import { AnalyticsProvider } from './analytics'
 import Layout from './components/Layout'
+import BandyLayout from './components/BandyLayout'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminProtectedRoute from './components/AdminProtectedRoute'
 import ManageProtectedRoute from './components/ManageProtectedRoute'
@@ -18,6 +19,12 @@ import Chat from './pages/Chat'
 import Guestbook from './pages/Guestbook'
 import Products from './pages/Products'
 import Onsite from './pages/Onsite'
+import Explore from './pages/Explore'
+import ClubProfile from './pages/ClubProfile'
+import EventDetail from './pages/EventDetail'
+import MyBandy from './pages/MyBandy'
+import ClubConsole from './pages/ClubConsole'
+import NfcCard from './pages/NfcCard'
 
 function useAppHeight() {
   useEffect(() => {
@@ -115,7 +122,19 @@ function AppRoutes() {
             }
           />
           <Route path="/admin/manage" element={<Navigate to="/admin/dashboard" replace />} />
-          <Route path="/" element={<Navigate to="/login" replace />} />
+
+          {/* ── BANDY 플랫폼 레이어 ──────────────────────────
+              분야별 탐색 → 동아리 프로필 · 교류 → 행사 예약 → 현장 프로필 교환.
+              예약한 행사에 당일 허브가 연결되어 있으면 아래 단일 공연 화면으로 이어집니다. */}
+          <Route path="/explore" element={<BandyLayout><Explore /></BandyLayout>} />
+          <Route path="/clubs/:clubId" element={<BandyLayout><ClubProfile /></BandyLayout>} />
+          <Route path="/shows/:eventId" element={<BandyLayout><EventDetail /></BandyLayout>} />
+          <Route path="/my" element={<BandyLayout><MyBandy /></BandyLayout>} />
+          <Route path="/club-console" element={<BandyLayout><ClubConsole /></BandyLayout>} />
+          {/* NFC 태그 · QR · 링크 공유가 모두 이 경로로 들어옵니다 */}
+          <Route path="/card/:shareCode" element={<BandyLayout><NfcCard /></BandyLayout>} />
+
+          <Route path="/" element={<Navigate to="/explore" replace />} />
           <Route
             path="/dashboard"
             element={

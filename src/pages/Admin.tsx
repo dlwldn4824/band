@@ -25,6 +25,7 @@ import GuestEditModal from '../components/admin/GuestEditModal'
 import PasswordModal from '../components/admin/PasswordModal'
 import DrinkOrdersSection from '../components/admin/DrinkOrdersSection'
 import AnalyticsDashboardSection from '../components/admin/AnalyticsDashboardSection'
+import BandyPlatformSection from '../components/admin/BandyPlatformSection'
 import { makeGuestKey } from '../utils/adminUtils'
 import {
   getBookingGroupId,
@@ -2879,6 +2880,8 @@ const Admin = () => {
       </div>
 
       <AnalyticsDashboardSection />
+
+      <BandyPlatformSection />
 
       {/* 비밀번호 확인 모달 */}
       <PasswordModal

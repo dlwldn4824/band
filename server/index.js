@@ -17,6 +17,10 @@ import { handleSongCommentsRequest } from './lib/songCommentsApi.js'
 import { handleGamesRequest } from './lib/gamesApi.js'
 import { handleAnalyticsRequest } from './lib/analyticsApi.js'
 import { handleLoginTokensRequest } from './lib/loginTokensApi.js'
+import { handleClubsRequest } from './lib/clubsApi.js'
+import { handleClubEventsRequest } from './lib/clubEventsApi.js'
+import { handleClubConnectionsRequest } from './lib/clubConnectionsApi.js'
+import { handleProfileCardsRequest } from './lib/profileCardsApi.js'
 
 dotenv.config()
 
@@ -48,6 +52,10 @@ app.post('/api/song-comments', handleSongCommentsRequest)
 app.post('/api/games', handleGamesRequest)
 app.post('/api/analytics', handleAnalyticsRequest)
 app.post('/api/login-tokens', handleLoginTokensRequest)
+app.post('/api/clubs', handleClubsRequest)
+app.post('/api/club-events', handleClubEventsRequest)
+app.post('/api/club-connections', handleClubConnectionsRequest)
+app.post('/api/profile-cards', handleProfileCardsRequest)
 
 const httpServer = createServer(app)
 const io = new Server(httpServer, {
