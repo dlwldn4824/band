@@ -19,6 +19,7 @@ import {
   adminUploadGuests,
   adminTogglePayment,
   adminToggleTicket,
+  adminSetGroupTicketReceived,
   adminDeleteGuest,
   adminUpdateGuest,
   adminClearGuests,
@@ -27,6 +28,7 @@ import {
   registerGuest,
   hasAdminApiToken,
   getGuestsLoadErrorMessage,
+  type CompanionInput,
 } from '../services/guestsApi'
 import { saveBookingInfo } from '../services/bookingInfoApi'
 import { savePerformanceData } from '../services/performanceDataApi'
@@ -51,6 +53,9 @@ export interface Guest {
   isDeleted?: boolean // 삭제 여부 (취소선 표시용)
   deletedAt?: number // 삭제 시간 (timestamp)
   bookedAt?: number // 예매 등록 시각 (timestamp)
+  bookingGroupId?: string // 동행 예매 그룹 ID
+  isPrimaryBooker?: boolean // 대표 예매자 여부
+  companionMode?: 'named' | 'shared_phone' | null
   [key: string]: any
 }
 
@@ -195,10 +200,12 @@ interface DataContextType {
       bookedAt?: number
       skipAnalytics?: boolean
       confirmPayment?: boolean
+      companions?: CompanionInput[]
     }
-  ) => Promise<{ success: boolean; message?: string }>
+  ) => Promise<{ success: boolean; message?: string; ticketCount?: number }>
   toggleGuestPayment: (index: number) => Promise<void>
   toggleGuestTicketReceived: (index: number) => Promise<void>
+  setGroupTicketReceived: (bookingGroupId: string, receivedCount: number) => Promise<void>
   setPerformanceData: (data: PerformanceData) => void
   setBookingInfo: (info: BookingInfo) => Promise<void>
   addGuestbookMessage: (message: GuestbookMessage) => void
@@ -618,8 +625,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       bookedAt?: number
       skipAnalytics?: boolean
       confirmPayment?: boolean
+      companions?: CompanionInput[]
     }
-  ): Promise<{ success: boolean; message?: string }> => {
+  ): Promise<{ success: boolean; message?: string; ticketCount?: number }> => {
     const normalizedName = normalizeName(name)
     const normalizedPhone = normalizePhone(phone)
 
@@ -639,6 +647,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       source: bookingSource,
       bookedAt,
       confirmPayment: options?.confirmPayment === true,
+      companions: options?.companions,
     })
 
     if (!result.success) {
@@ -651,23 +660,33 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     if (!options?.skipAnalytics) {
       const finalBookedAt = result.guest?.bookedAt ?? bookedAt
       const performanceDate = performanceData?.ticket?.date ?? null
-      trackBookingSubmitted(
-        buildBookingSubmittedPayload(
-          bookingSource,
-          isWalkIn,
-          finalBookedAt,
-          performanceDate
+      const ticketCount = result.ticketCount ?? 1
+      for (let i = 0; i < ticketCount; i += 1) {
+        trackBookingSubmitted(
+          buildBookingSubmittedPayload(
+            bookingSource,
+            isWalkIn,
+            finalBookedAt,
+            performanceDate
+          )
         )
-      )
+      }
     }
 
-    if (isAdmin) {
+    if (isAdmin || isManageSessionActive()) {
       void refreshGuests()
     }
 
+    const ticketCount = result.ticketCount ?? 1
     return {
       success: true,
-      message: isWalkIn ? '현장 예매 등록이 완료되었습니다.' : '예매 등록이 완료되었습니다.',
+      ticketCount,
+      message:
+        ticketCount > 1
+          ? `예매 등록이 완료되었습니다. (티켓 ${ticketCount}매)`
+          : isWalkIn
+            ? '현장 예매 등록이 완료되었습니다.'
+            : '예매 등록이 완료되었습니다.',
     }
   }
 
@@ -688,6 +707,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const name = getGuestNameKey(guest)
     if (!phone || !name) return
     const updated = await adminToggleTicket(phone, name)
+    if (updated) applyGuestList(updated)
+  }
+
+  const setGroupTicketReceived = async (bookingGroupId: string, receivedCount: number) => {
+    if (!bookingGroupId) return
+    const updated = await adminSetGroupTicketReceived(bookingGroupId, receivedCount)
     if (updated) applyGuestList(updated)
   }
 
@@ -862,6 +887,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       addWalkInGuest,
       toggleGuestPayment,
       toggleGuestTicketReceived,
+      setGroupTicketReceived,
       setPerformanceData,
       setBookingInfo,
       addGuestbookMessage,

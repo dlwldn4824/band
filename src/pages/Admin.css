@@ -771,6 +771,46 @@
   background: #e0a800;
 }
 
+.group-badge {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: rgba(23, 162, 184, 0.15);
+  color: #0c5460;
+  border: 1px solid rgba(23, 162, 184, 0.35);
+}
+
+.group-ticket-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.group-ticket-status {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ui-text, #333);
+}
+
+.group-ticket-partial {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.group-ticket-partial input {
+  width: 3.2rem;
+  padding: 0.25rem 0.35rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  text-align: center;
+}
+
 .not-applicable {
   color: var(--ui-muted-2);
   font-style: italic;

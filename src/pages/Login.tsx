@@ -22,7 +22,13 @@ import {
 } from '../analytics'
 import { captureUtmFromUrl } from '../analytics/utm'
 import { detectEntryType } from '../analytics/device'
+import {
+  createCompanionDraft,
+  type CompanionDraft,
+} from '../utils/bookingGroup'
 import './Login.css'
+
+const MAX_COMPANIONS = 9
 
 const Login = () => {
   const [showTicket, setShowTicket] = useState(false)
@@ -35,6 +41,9 @@ const Login = () => {
   const [bookingConfirmed, setBookingConfirmed] = useState(false)
   const [bookingInfoConfirmed, setBookingInfoConfirmed] = useState(false)
   const [bookingSubmitted, setBookingSubmitted] = useState(false)
+  const [companions, setCompanions] = useState<CompanionDraft[]>([])
+  const [showCompanionStep, setShowCompanionStep] = useState(false)
+  const [hasCompanions, setHasCompanions] = useState(false)
   
   // 정보 수정 모드
   const [isEditingInfo, setIsEditingInfo] = useState(false)
@@ -48,6 +57,64 @@ const Login = () => {
   
   const { login } = useAuth()
   const { addWalkInGuest, bookingInfo } = useData()
+  const ticketCount = 1 + (hasCompanions ? companions.length : 0)
+
+  const syncCompanionCount = (rawCount: number) => {
+    const count = Math.min(MAX_COMPANIONS, Math.max(1, Math.floor(rawCount) || 1))
+    setCompanions((prev) => {
+      if (prev.length === count) return prev
+      if (prev.length < count) {
+        return [
+          ...prev,
+          ...Array.from({ length: count - prev.length }, () => createCompanionDraft()),
+        ]
+      }
+      return prev.slice(0, count)
+    })
+  }
+
+  const savePendingBooking = (name: string, phone: string, nextCompanions = companions) => {
+    localStorage.setItem(
+      'pendingBooking',
+      JSON.stringify({
+        name,
+        phone,
+        email: '',
+        companions: nextCompanions.map((c) => ({
+          name: c.name,
+          phone: c.phone,
+          skipPhone: c.skipPhone,
+        })),
+      })
+    )
+  }
+
+  const validateCompanions = (primaryName: string, primaryPhone: string): string | null => {
+    for (let i = 0; i < companions.length; i += 1) {
+      const c = companions[i]
+      if (c.skipPhone) continue
+      const cName = normalizeName(c.name)
+      const cPhone = normalizePhone(c.phone)
+      if (!cName || !cPhone) {
+        return `동행자 ${i + 1}: 이름과 전화번호를 입력하거나, 전화번호 등록 안 함을 선택해주세요.`
+      }
+      const phoneValidation = validatePhoneNumber(cPhone)
+      if (!phoneValidation.valid) {
+        return `동행자 ${i + 1}: ${phoneValidation.message || '전화번호 형식이 올바르지 않습니다.'}`
+      }
+      if (cName === primaryName && cPhone === primaryPhone) {
+        return `동행자 ${i + 1}: 대표 예매자와 동일할 수 없습니다.`
+      }
+    }
+    return null
+  }
+
+  const toCompanionPayload = () =>
+    companions.map((c) =>
+      c.skipPhone
+        ? { skipPhone: true as const }
+        : { name: normalizeName(c.name), phone: normalizePhone(c.phone), skipPhone: false as const }
+    )
   const navigate = useNavigate()
   const location = useLocation()
   const { token } = useParams<{ token?: string }>()
@@ -214,6 +281,18 @@ const Login = () => {
           const booking = JSON.parse(savedBooking)
           if (booking.name && booking.phone) {
             const normalizedPhone = normalizePhone(booking.phone)
+            setBookingName(booking.name)
+            setBookingPhone(formatPhoneDisplay(booking.phone))
+            if (Array.isArray(booking.companions)) {
+              setCompanions(
+                booking.companions.map((c: { name?: string; phone?: string; skipPhone?: boolean }) => ({
+                  ...createCompanionDraft(),
+                  name: c.name || '',
+                  phone: c.phone || '',
+                  skipPhone: c.skipPhone === true,
+                }))
+              )
+            }
 
             try {
               const guestCheck = await checkGuest(normalizedPhone, booking.name)
@@ -221,8 +300,6 @@ const Login = () => {
                 const loginSuccess = await login(booking.name, normalizedPhone)
                 if (loginSuccess) {
                   localStorage.removeItem('pendingBooking')
-                  setBookingName(booking.name)
-                  setBookingPhone(formatPhoneDisplay(booking.phone))
                   setShowTicket(true)
                   return
                 }
@@ -280,7 +357,7 @@ const Login = () => {
     return () => clearInterval(interval)
   }, [showBookingConfirmation, bookingName, bookingPhone, login])
 
-  // 예매 신청하기 핸들러
+  // 예매 신청하기 핸들러 — 1단계: 이름/연락처 → 동행자 질문 화면
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setBookingError('')
@@ -306,15 +383,71 @@ const Login = () => {
     window.scrollTo(0, 0)
 
     try {
-      // 전화번호 및 이름 정규화 (유틸리티 함수 사용)
       const normalizedPhone = normalizePhone(bookingPhone)
       const normalizedName = normalizeName(bookingName)
-      
+
       if (!normalizedPhone || !normalizedName) {
         setBookingError('이름과 전화번호를 모두 입력해주세요.')
         return
       }
-      
+
+      const check = await checkGuest(normalizedPhone, normalizedName)
+
+      if (check.exactMatch && check.paymentConfirmed) {
+        const existingName = normalizeName(check.name || normalizedName)
+        const loginSuccess = await login(existingName, normalizedPhone)
+        if (loginSuccess) {
+          localStorage.removeItem('pendingBooking')
+          setBookingName(existingName)
+          setBookingPhone(formatPhoneDisplay(bookingPhone.trim() || normalizedPhone))
+          setShowTicket(true)
+          return
+        }
+        setBookingError('로그인에 실패했습니다. 이름과 전화번호를 확인해주세요.')
+        return
+      }
+
+      setHasCompanions(companions.length > 0)
+      setShowCompanionStep(true)
+      setBookingError('')
+      markFunnelComplete('booking', 'booking_form_started')
+    } catch (error) {
+      console.error('예매 신청 처리 오류:', error)
+      setBookingError('예매 신청 처리 중 오류가 발생했습니다. 다시 시도해주세요.')
+    }
+  }
+
+  // 동행자 단계 → 확인 화면
+  const proceedToBookingConfirmation = async () => {
+    setBookingError('')
+
+    const normalizedPhone = normalizePhone(bookingPhone)
+    const normalizedName = normalizeName(bookingName)
+
+    if (!normalizedPhone || !normalizedName) {
+      setBookingError('이름과 전화번호를 모두 입력해주세요.')
+      return
+    }
+
+    const activeCompanions = hasCompanions ? companions : []
+    if (!hasCompanions) {
+      setCompanions([])
+    }
+
+    const companionError = hasCompanions
+      ? validateCompanions(normalizedName, normalizedPhone)
+      : null
+    if (companionError) {
+      setBookingError(companionError)
+      return
+    }
+
+    if (hasCompanions && activeCompanions.length === 0) {
+      setBookingError('동행자를 추가하거나, 동행자 없음을 선택해주세요.')
+      return
+    }
+
+    try {
       const check = await checkGuest(normalizedPhone, normalizedName)
 
       if (check.exists && check.exactMatch === false && check.name) {
@@ -331,8 +464,7 @@ const Login = () => {
         const loginSuccess = await login(existingName, normalizedPhone)
         if (loginSuccess) {
           localStorage.removeItem('pendingBooking')
-          setBookingName(existingName)
-          setBookingPhone(formatPhoneDisplay(bookingPhone.trim() || normalizedPhone))
+          setShowCompanionStep(false)
           setShowTicket(true)
           return
         }
@@ -340,27 +472,27 @@ const Login = () => {
         return
       }
 
-      // 새 게스트 또는 입금 대기 게스트 → 확인 화면
-      
-      // 정보 수정용 상태 설정
       setEditedName(bookingName.trim())
       setEditedPhone(bookingPhone.trim())
-      
-      // localStorage에 예매 정보 저장 (페이지 재접근 시 확인 화면 표시용)
-      localStorage.setItem('pendingBooking', JSON.stringify({
-        name: bookingName.trim(),
-        phone: bookingPhone.trim(),
-        email: ''
-      }))
+      savePendingBooking(
+        bookingName.trim(),
+        bookingPhone.trim(),
+        hasCompanions ? companions : []
+      )
 
-      markFunnelComplete('booking', 'booking_form_started')
+      setShowCompanionStep(false)
       setBookingConfirmed(false)
       setBookingInfoConfirmed(false)
       setShowBookingConfirmation(true)
     } catch (error) {
-      console.error('예매 신청 처리 오류:', error)
-      setBookingError('예매 신청 처리 중 오류가 발생했습니다. 다시 시도해주세요.')
+      console.error('동행자 단계 처리 오류:', error)
+      setBookingError('처리 중 오류가 발생했습니다. 다시 시도해주세요.')
     }
+  }
+
+  const handleCompanionStepSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    await proceedToBookingConfirmation()
   }
 
   const handleContinueWithDuplicatePhone = () => {
@@ -369,13 +501,14 @@ const Login = () => {
     setEditedName(bookingName.trim())
     setEditedPhone(bookingPhone.trim())
 
-    localStorage.setItem('pendingBooking', JSON.stringify({
-      name: bookingName.trim(),
-      phone: bookingPhone.trim(),
-      email: ''
-    }))
+    savePendingBooking(
+      bookingName.trim(),
+      bookingPhone.trim(),
+      hasCompanions ? companions : []
+    )
 
     markFunnelComplete('booking', 'booking_form_started')
+    setShowCompanionStep(false)
     setBookingConfirmed(false)
     setBookingInfoConfirmed(false)
     setShowBookingConfirmation(true)
@@ -425,11 +558,7 @@ const Login = () => {
       setBookingPhone(editedPhone.trim()) // 하이픈 포함된 형태 유지
       
       // localStorage의 pendingBooking도 업데이트 (새로고침 시 수정된 정보 유지)
-      localStorage.setItem('pendingBooking', JSON.stringify({
-        name: updatedName,
-        phone: editedPhone.trim(), // 하이픈 포함된 형태 유지
-        email: updatedEmail
-      }))
+      savePendingBooking(updatedName, editedPhone.trim())
       
       setIsEditingInfo(false)
       setBookingError('')
@@ -543,6 +672,9 @@ const Login = () => {
               setShowBookingConfirmation(false)
               setBookingName('')
               setBookingPhone('')
+              setCompanions([])
+              setHasCompanions(false)
+              setShowCompanionStep(false)
               setEditedName('')
               setEditedPhone('')
               setBookingError('')
@@ -614,6 +746,31 @@ const Login = () => {
                   <span className="info-label">연락처</span>
                   <span className="info-value">{formatPhoneDisplay(bookingPhone)}</span>
                 </div>
+                <div className="info-item">
+                  <span className="info-label">티켓</span>
+                  <span className="info-value">{ticketCount}매</span>
+                </div>
+                {companions.length > 0 && (
+                  <div className="info-item companions-summary">
+                    <span className="info-label">동행자</span>
+                    <span className="info-value">
+                      {companions.map((c) => {
+                        if (c.skipPhone) {
+                          return (
+                            <span key={c.id} className="companion-summary-line">
+                              번호 미등록 (대표 번호 공유 · 이름 자동)
+                            </span>
+                          )
+                        }
+                        return (
+                          <span key={c.id} className="companion-summary-line">
+                            {c.name || '(이름 미입력)'} · {formatPhoneDisplay(c.phone) || '번호 미입력'}
+                          </span>
+                        )
+                      })}
+                    </span>
+                  </div>
+                )}
               </div>
             )}
             
@@ -654,7 +811,9 @@ const Login = () => {
               <div className="payment-item payment-item-row">
                 <span className="payment-label">입금하실 금액:</span>
                 <span className="payment-amount">
-                  {bookingInfo.walkInPrice}
+                  {ticketCount > 1
+                    ? `${ticketCount}매 · 1인 ${bookingInfo.preBookingPrice || bookingInfo.walkInPrice}`
+                    : (bookingInfo.preBookingPrice || bookingInfo.walkInPrice)}
                 </span>
               </div>
             </div>
@@ -675,6 +834,7 @@ const Login = () => {
                 <p>위 계좌로 10분 이내에 입금해 주세요.</p>
                 <p className="important-notice">
                   반드시 신청하신 "{bookingName}" 입금자명으로 입금해 주세요.
+                  {ticketCount > 1 ? ` (티켓 ${ticketCount}매)` : ''}
                 </p>
               </>
             )}
@@ -720,6 +880,12 @@ const Login = () => {
                     return
                   }
 
+                  const companionError = validateCompanions(normalizedName, normalizedPhone)
+                  if (companionError) {
+                    setBookingError(companionError)
+                    return
+                  }
+
                   const check = await checkGuest(normalizedPhone, normalizedName)
 
                   if (check.exactMatch && check.paymentConfirmed) {
@@ -743,8 +909,10 @@ const Login = () => {
                     return
                   }
 
+                  const companionPayload = toCompanionPayload()
                   const result = await addWalkInGuest(normalizedName, normalizedPhone, false, '', {
                     source: 'web_login',
+                    companions: companionPayload.length > 0 ? companionPayload : undefined,
                   })
 
                   if (!result.success) {
@@ -831,6 +999,171 @@ const Login = () => {
             checkNicknameAndNavigate()
           }}
         />
+      ) : showCompanionStep ? (
+        <div className="login-container">
+          <div className="login-header">
+            <h1>동행자가 있으신가요?</h1>
+            <p>
+              {normalizeName(bookingName) || '예매자'}님 · {formatPhoneDisplay(bookingPhone)}
+              <br />
+              함께 오실 인원을 먼저 정한 뒤, 각 동행자 정보를 입력해주세요.
+            </p>
+          </div>
+
+          <form onSubmit={handleCompanionStepSubmit} className="login-form">
+            <label className="companion-ask-checkbox-label">
+              <input
+                type="checkbox"
+                className="booking-confirm-checkbox"
+                checked={hasCompanions}
+                onChange={(e) => {
+                  const checked = e.target.checked
+                  setHasCompanions(checked)
+                  setBookingError('')
+                  if (checked) {
+                    setCompanions([createCompanionDraft()])
+                  } else {
+                    setCompanions([])
+                  }
+                }}
+              />
+              <span>네, 동행자가 있어요</span>
+            </label>
+
+            {hasCompanions && (
+              <>
+                <div className="form-group">
+                  <label htmlFor="companionCount">동행자 수</label>
+                  <input
+                    id="companionCount"
+                    type="number"
+                    min={1}
+                    max={MAX_COMPANIONS}
+                    value={companions.length || 1}
+                    onChange={(e) => {
+                      syncCompanionCount(Number(e.target.value))
+                      setBookingError('')
+                    }}
+                    placeholder="예: 2"
+                  />
+                  <p className="field-hint" style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.25rem' }}>
+                    본인 제외 인원 (최대 {MAX_COMPANIONS}명) · 총 {ticketCount}매
+                  </p>
+                </div>
+
+                <p className="field-hint companion-step-hint">
+                  전화번호를 등록하면 그 번호로도 로그인됩니다.
+                  등록하지 않으면 명단에 {(normalizeName(bookingName) || '홍길동')}2, {(normalizeName(bookingName) || '홍길동')}3… 으로 등록되고 대표 번호를 씁니다.
+                </p>
+
+                {companions.map((companion, index) => (
+                  <div key={companion.id} className="companion-form-block">
+                    <div className="companion-form-block-header">
+                      <span className="companion-form-title">동행자 {index + 1}</span>
+                    </div>
+
+                    <div className="companion-phone-choice" role="radiogroup" aria-label={`동행자 ${index + 1} 전화번호 등록 여부`}>
+                      <label className={`companion-phone-choice-option ${!companion.skipPhone ? 'is-selected' : ''}`}>
+                        <input
+                          type="radio"
+                          name={`companion-phone-mode-${companion.id}`}
+                          checked={!companion.skipPhone}
+                          onChange={() => {
+                            setCompanions((prev) =>
+                              prev.map((c) =>
+                                c.id === companion.id ? { ...c, skipPhone: false } : c
+                              )
+                            )
+                          }}
+                        />
+                        <span>전화번호 등록</span>
+                      </label>
+                      <label className={`companion-phone-choice-option ${companion.skipPhone ? 'is-selected' : ''}`}>
+                        <input
+                          type="radio"
+                          name={`companion-phone-mode-${companion.id}`}
+                          checked={companion.skipPhone}
+                          onChange={() => {
+                            setCompanions((prev) =>
+                              prev.map((c) =>
+                                c.id === companion.id
+                                  ? { ...c, skipPhone: true, name: '', phone: '' }
+                                  : c
+                              )
+                            )
+                          }}
+                        />
+                        <span>전화번호 등록 안할래요</span>
+                      </label>
+                    </div>
+
+                    {!companion.skipPhone ? (
+                      <>
+                        <div className="form-group">
+                          <label htmlFor={`companion-name-${companion.id}`}>동행자 성함</label>
+                          <input
+                            id={`companion-name-${companion.id}`}
+                            type="text"
+                            value={companion.name}
+                            onChange={(e) => {
+                              const name = e.target.value
+                              setCompanions((prev) =>
+                                prev.map((c) => (c.id === companion.id ? { ...c, name } : c))
+                              )
+                            }}
+                            placeholder="예: 홍길동"
+                            autoComplete="off"
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label htmlFor={`companion-phone-${companion.id}`}>동행자 연락처</label>
+                          <input
+                            id={`companion-phone-${companion.id}`}
+                            type="tel"
+                            value={companion.phone}
+                            onChange={(e) => {
+                              const phone = e.target.value.replace(/\D/g, '').slice(0, 11)
+                              setCompanions((prev) =>
+                                prev.map((c) => (c.id === companion.id ? { ...c, phone } : c))
+                              )
+                            }}
+                            placeholder="예: 01012345678"
+                            autoComplete="off"
+                            maxLength={11}
+                          />
+                          <p className="field-hint" style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.25rem' }}>
+                            숫자만 입력 (하이픈 없이)
+                          </p>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="field-hint companion-step-hint">
+                        명단 등록명 예시: {(normalizeName(bookingName) || '홍길동')}
+                        {index + 2} · 연락처는 대표 번호와 동일
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </>
+            )}
+
+            {bookingError && <div className="error-message">{bookingError}</div>}
+
+            <button type="submit" className="login-button">
+              {hasCompanions ? '동행자 등록 후 계속' : '동행자 없이 계속'}
+            </button>
+            <button
+              type="button"
+              className="companion-back-button"
+              onClick={() => {
+                setShowCompanionStep(false)
+                setBookingError('')
+              }}
+            >
+              이전으로
+            </button>
+          </form>
+        </div>
       ) : (
         <div className="login-container">
           <div className="login-header">

@@ -11,16 +11,23 @@ import {
   isSameGuestIdentity,
 } from './guestNormalize.js'
 import { verifyAdminToken, getBearerToken } from './adminToken.js'
+import {
+  createBookingGroupId,
+  allocateSharedCompanionName,
+  sortGroupMembers,
+} from './bookingGroup.js'
 
 const GUESTS_COLLECTION = 'guests_v2'
 const GUESTS_DOC_ID = 'all'
 const BOOKINGS_COLLECTION = 'bookings'
+const MAX_COMPANIONS = 9
 
 const ADMIN_ACTIONS = new Set([
   'list',
   'upload',
   'toggle-payment',
   'toggle-ticket',
+  'set-group-ticket-received',
   'delete',
   'update',
   'clear',
@@ -28,7 +35,14 @@ const ADMIN_ACTIONS = new Set([
   'fix-phones',
 ])
 
-const PUBLIC_ACTIONS = new Set(['login', 'status', 'check', 'register', 'onsite-payment'])
+const PUBLIC_ACTIONS = new Set([
+  'login',
+  'status',
+  'check',
+  'register',
+  'register-group',
+  'onsite-payment',
+])
 
 function guestsDocRef(db) {
   return db.collection(GUESTS_COLLECTION).doc(GUESTS_DOC_ID)
@@ -304,7 +318,36 @@ async function upsertGuestByPhone(db, { name, phone, email, isWalkIn, bookedAt, 
   })
 }
 
+async function syncBookingRecord(db, { name, phone, email, isWalkIn, bookedAt, source, approved, bookingGroupId }) {
+  const bookingId = makeGuestKey(name, phone)
+  try {
+    await db.collection(BOOKINGS_COLLECTION).doc(bookingId).set(
+      {
+        name,
+        phone,
+        email: email || '',
+        isWalkIn,
+        bookedAt,
+        createdAt: new Date(bookedAt),
+        updatedAt: new Date(),
+        source,
+        approved: approved === true,
+        ...(approved ? { approvedAt: new Date() } : {}),
+        ...(bookingGroupId ? { bookingGroupId } : {}),
+      },
+      { merge: true }
+    )
+  } catch {
+    // bookings 동기화 실패는 예매 등록을 막지 않음
+  }
+}
+
 async function handleRegister(db, body) {
+  const companions = Array.isArray(body.companions) ? body.companions : []
+  if (companions.length > 0) {
+    return handleRegisterGroup(db, body)
+  }
+
   const name = normalizeName(body.name)
   const phone = normalizePhone(body.phone)
   if (!name || !phone) {
@@ -327,25 +370,195 @@ async function handleRegister(db, body) {
 
   if (result.json.success) {
     const source = typeof body.source === 'string' ? body.source : isWalkIn ? 'onsite' : 'web_login'
-    const bookingId = makeGuestKey(name, phone)
-    try {
-      await db.collection(BOOKINGS_COLLECTION).doc(bookingId).set(
-        {
-          name,
-          phone,
-          email: body.email || '',
+    await syncBookingRecord(db, {
+      name,
+      phone,
+      email: body.email,
+      isWalkIn,
+      bookedAt,
+      source,
+      approved: confirmPayment,
+    })
+  }
+
+  return result
+}
+
+async function handleRegisterGroup(db, body) {
+  const primaryName = normalizeName(body.name)
+  const primaryPhone = normalizePhone(body.phone)
+  if (!primaryName || !primaryPhone) {
+    return { status: 400, json: { success: false, message: '이름과 전화번호를 입력해주세요.' } }
+  }
+
+  const rawCompanions = Array.isArray(body.companions) ? body.companions : []
+  if (rawCompanions.length > MAX_COMPANIONS) {
+    return {
+      status: 400,
+      json: { success: false, message: `동행자는 최대 ${MAX_COMPANIONS}명까지 등록할 수 있습니다.` },
+    }
+  }
+
+  const isWalkIn = body.isWalkIn === true
+  const confirmPayment = body.confirmPayment === true
+  const bookedAt = typeof body.bookedAt === 'number' ? body.bookedAt : Date.now()
+  const source = typeof body.source === 'string' ? body.source : isWalkIn ? 'onsite' : 'web_login'
+  const email = body.email || ''
+
+  const result = await db.runTransaction(async (tx) => {
+    const snap = await tx.get(guestsDocRef(db))
+    const { guests, cleared } = parseGuestsSnapshot(snap)
+    const usedKeys = new Set(
+      guests
+        .filter((g) => g.isDeleted !== true)
+        .map((g) => makeGuestKey(getGuestName(g), getGuestPhone(g)))
+        .filter(Boolean)
+    )
+
+    const primaryKey = makeGuestKey(primaryName, primaryPhone)
+    if (usedKeys.has(primaryKey)) {
+      const existing = findActiveByNameAndPhone(guests, primaryName, primaryPhone)
+      if (existing) {
+        return {
+          status: 200,
+          json: {
+            success: true,
+            guest: toPublicGuest(existing),
+            guests: [toPublicGuest(existing)],
+            alreadyExists: true,
+          },
+        }
+      }
+    }
+
+    const bookingGroupId = createBookingGroupId()
+    const newEntries = []
+    const now = Date.now()
+
+    newEntries.push({
+      name: primaryName,
+      phone: primaryPhone,
+      email,
+      checkedIn: false,
+      isWalkIn,
+      paymentConfirmed: confirmPayment === true,
+      ...(confirmPayment ? { paymentConfirmedAt: now } : {}),
+      bookedAt,
+      bookingGroupId,
+      isPrimaryBooker: true,
+      companionMode: null,
+      ticketReceived: false,
+    })
+    usedKeys.add(primaryKey)
+
+    for (const raw of rawCompanions) {
+      const skipPhone = raw?.skipPhone === true
+      if (skipPhone) {
+        const companionName = allocateSharedCompanionName(
+          primaryName,
+          primaryPhone,
+          usedKeys,
+          [...guests, ...newEntries]
+        )
+        newEntries.push({
+          name: companionName,
+          phone: primaryPhone,
+          email: '',
+          checkedIn: false,
           isWalkIn,
+          paymentConfirmed: confirmPayment === true,
+          ...(confirmPayment ? { paymentConfirmedAt: now } : {}),
           bookedAt,
-          createdAt: new Date(bookedAt),
-          updatedAt: new Date(),
-          source,
-          approved: confirmPayment,
-          ...(confirmPayment ? { approvedAt: new Date() } : {}),
-        },
-        { merge: true }
-      )
-    } catch {
-      // bookings 동기화 실패는 예매 등록을 막지 않음
+          bookingGroupId,
+          isPrimaryBooker: false,
+          companionMode: 'shared_phone',
+          ticketReceived: false,
+        })
+        continue
+      }
+
+      const companionName = normalizeName(raw?.name)
+      const companionPhone = normalizePhone(raw?.phone)
+      if (!companionName || !companionPhone) {
+        return {
+          status: 400,
+          json: {
+            success: false,
+            message: '동행자 이름과 전화번호를 모두 입력하거나, 전화번호 등록 안 함을 선택해주세요.',
+          },
+        }
+      }
+      if (companionPhone === primaryPhone && companionName === primaryName) {
+        return {
+          status: 400,
+          json: { success: false, message: '동행자는 대표 예매자와 다른 이름/번호여야 합니다.' },
+        }
+      }
+      const companionKey = makeGuestKey(companionName, companionPhone)
+      if (usedKeys.has(companionKey)) {
+        return {
+          status: 400,
+          json: {
+            success: false,
+            message: `이미 등록된 동행자입니다: ${companionName}`,
+          },
+        }
+      }
+      usedKeys.add(companionKey)
+      newEntries.push({
+        name: companionName,
+        phone: companionPhone,
+        email: '',
+        checkedIn: false,
+        isWalkIn,
+        paymentConfirmed: confirmPayment === true,
+        ...(confirmPayment ? { paymentConfirmedAt: now } : {}),
+        bookedAt,
+        bookingGroupId,
+        isPrimaryBooker: false,
+        companionMode: 'named',
+        ticketReceived: false,
+      })
+    }
+
+    if (confirmPayment) {
+      let maxEntry = guests.reduce((max, g) => {
+        const n = typeof g.entryNumber === 'number' ? g.entryNumber : 0
+        return n > max ? n : max
+      }, 0)
+      for (const entry of newEntries) {
+        maxEntry += 1
+        entry.entryNumber = maxEntry
+      }
+    }
+
+    const updatedGuests = [...guests, ...newEntries]
+    tx.set(guestsDocRef(db), buildDocPayload(updatedGuests, cleared, 'api_register_group'))
+
+    return {
+      status: 200,
+      json: {
+        success: true,
+        guest: toPublicGuest(newEntries[0]),
+        guests: newEntries.map(toPublicGuest),
+        bookingGroupId,
+        ticketCount: newEntries.length,
+      },
+    }
+  })
+
+  if (result.json?.success && Array.isArray(result.json.guests)) {
+    for (const g of result.json.guests) {
+      await syncBookingRecord(db, {
+        name: g.name,
+        phone: g.phone,
+        email: g.name === primaryName ? email : '',
+        isWalkIn,
+        bookedAt,
+        source,
+        approved: confirmPayment,
+        bookingGroupId: result.json.bookingGroupId,
+      })
     }
   }
 
@@ -475,49 +688,79 @@ async function handleAdminTogglePayment(db, body) {
       return { ok: false }
     }
 
-    const g = guests[index]
-    const nextConfirmed = !(g.paymentConfirmed === true)
-    let updated = {
-      ...g,
-      paymentConfirmed: nextConfirmed,
-      paymentConfirmedAt: nextConfirmed ? Date.now() : null,
-    }
+    const target = guests[index]
+    const nextConfirmed = !(target.paymentConfirmed === true)
+    const groupId =
+      typeof target.bookingGroupId === 'string' && target.bookingGroupId
+        ? target.bookingGroupId
+        : null
 
-    if (nextConfirmed) {
-      const hasEntry = updated.entryNumber !== undefined && updated.entryNumber !== null
-      if (!hasEntry) {
-        const maxEntry = guests.reduce((max, guest) => {
-          const n = typeof guest.entryNumber === 'number' ? guest.entryNumber : 0
-          return n > max ? n : max
-        }, 0)
-        updated = { ...updated, entryNumber: maxEntry + 1 }
+    let maxEntry = guests.reduce((max, guest) => {
+      const n = typeof guest.entryNumber === 'number' ? guest.entryNumber : 0
+      return n > max ? n : max
+    }, 0)
+    const now = Date.now()
+
+    const updatedGuests = guests.map((guest) => {
+      const inGroup =
+        groupId &&
+        guest.isDeleted !== true &&
+        guest.bookingGroupId === groupId
+      const isTarget = isSameGuestIdentity(guest, name, phone)
+      if (!inGroup && !isTarget) return guest
+      if (guest.isDeleted === true) return guest
+
+      let next = {
+        ...guest,
+        paymentConfirmed: nextConfirmed,
+        paymentConfirmedAt: nextConfirmed ? now : null,
       }
-    }
+      if (nextConfirmed) {
+        const hasEntry = next.entryNumber !== undefined && next.entryNumber !== null
+        if (!hasEntry) {
+          maxEntry += 1
+          next = { ...next, entryNumber: maxEntry }
+        }
+      }
+      return next
+    })
 
-    const updatedGuests = guests.map((guest, i) => (i === index ? updated : guest))
     tx.set(guestsDocRef(db), buildDocPayload(updatedGuests, cleared, 'api_toggle_payment'))
 
-    return { ok: true, guests: activeGuests(updatedGuests), paymentConfirmed: nextConfirmed }
+    const synced = groupId
+      ? updatedGuests.filter((g) => g.isDeleted !== true && g.bookingGroupId === groupId)
+      : [updatedGuests.find((g) => isSameGuestIdentity(g, name, phone))].filter(Boolean)
+
+    return {
+      ok: true,
+      guests: activeGuests(updatedGuests),
+      paymentConfirmed: nextConfirmed,
+      syncedMembers: synced,
+    }
   })
 
   if (!txResult.ok) {
     return { status: 404, json: { ok: false, message: '게스트를 찾을 수 없습니다.' } }
   }
 
-  const bookingId = makeGuestKey(name, phone)
-  try {
-    await db.collection(BOOKINGS_COLLECTION).doc(bookingId).set(
-      {
-        name,
-        phone,
-        approved: txResult.paymentConfirmed === true,
-        approvedAt: txResult.paymentConfirmed ? new Date() : null,
-        updatedAt: new Date(),
-      },
-      { merge: true }
-    )
-  } catch {
-    // bookings 동기화 실패는 입금 확인을 막지 않음
+  for (const member of txResult.syncedMembers || []) {
+    const memberName = getGuestName(member)
+    const memberPhone = normalizePhone(getGuestPhone(member))
+    if (!memberName || !memberPhone) continue
+    try {
+      await db.collection(BOOKINGS_COLLECTION).doc(makeGuestKey(memberName, memberPhone)).set(
+        {
+          name: memberName,
+          phone: memberPhone,
+          approved: txResult.paymentConfirmed === true,
+          approvedAt: txResult.paymentConfirmed ? new Date() : null,
+          updatedAt: new Date(),
+        },
+        { merge: true }
+      )
+    } catch {
+      // ignore
+    }
   }
 
   return { status: 200, json: { ok: true, guests: txResult.guests } }
@@ -533,6 +776,64 @@ async function handleAdminToggleTicket(db, body) {
     ticketReceived: !(g.ticketReceived === true),
     ticketReceivedAt: g.ticketReceived === true ? null : Date.now(),
   }))
+}
+
+async function handleAdminSetGroupTicketReceived(db, body) {
+  const bookingGroupId =
+    typeof body.bookingGroupId === 'string' ? body.bookingGroupId.trim() : ''
+  const receivedCount = Number(body.receivedCount)
+
+  if (!bookingGroupId) {
+    return { status: 400, json: { ok: false, message: 'bookingGroupId가 필요합니다.' } }
+  }
+  if (!Number.isFinite(receivedCount) || receivedCount < 0) {
+    return { status: 400, json: { ok: false, message: '수령 개수가 올바르지 않습니다.' } }
+  }
+
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(guestsDocRef(db))
+    const { guests, cleared } = parseGuestsSnapshot(snap)
+
+    const members = guests.filter(
+      (g) => g.isDeleted !== true && g.bookingGroupId === bookingGroupId
+    )
+    if (members.length === 0) {
+      return { status: 404, json: { ok: false, message: '예매 그룹을 찾을 수 없습니다.' } }
+    }
+
+    const ordered = sortGroupMembers(members)
+    const count = Math.min(Math.floor(receivedCount), ordered.length)
+    const receiveKeys = new Set(
+      ordered.slice(0, count).map((g) => makeGuestKey(getGuestName(g), getGuestPhone(g)))
+    )
+    const now = Date.now()
+
+    const updatedGuests = guests.map((g) => {
+      if (g.isDeleted === true || g.bookingGroupId !== bookingGroupId) return g
+      const key = makeGuestKey(getGuestName(g), getGuestPhone(g))
+      const shouldReceive = receiveKeys.has(key)
+      return {
+        ...g,
+        ticketReceived: shouldReceive,
+        ticketReceivedAt: shouldReceive ? g.ticketReceivedAt || now : null,
+      }
+    })
+
+    tx.set(
+      guestsDocRef(db),
+      buildDocPayload(updatedGuests, cleared, 'api_set_group_ticket_received')
+    )
+
+    return {
+      status: 200,
+      json: {
+        ok: true,
+        guests: activeGuests(updatedGuests),
+        receivedCount: count,
+        totalCount: ordered.length,
+      },
+    }
+  })
 }
 
 async function handleAdminDelete(db, body) {
@@ -680,6 +981,9 @@ export async function handleGuestsRequest(req, res) {
       case 'register':
         result = await handleRegister(db, body)
         break
+      case 'register-group':
+        result = await handleRegisterGroup(db, body)
+        break
       case 'onsite-payment':
         result = await handleOnsitePayment(db, body)
         break
@@ -694,6 +998,9 @@ export async function handleGuestsRequest(req, res) {
         break
       case 'toggle-ticket':
         result = await handleAdminToggleTicket(db, body)
+        break
+      case 'set-group-ticket-received':
+        result = await handleAdminSetGroupTicketReceived(db, body)
         break
       case 'delete':
         result = await handleAdminDelete(db, body)

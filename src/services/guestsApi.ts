@@ -12,6 +12,12 @@ export interface PublicGuest {
   bookedAt: number | null
 }
 
+export type CompanionInput = {
+  name?: string
+  phone?: string
+  skipPhone?: boolean
+}
+
 const ADMIN_TOKEN_KEY = 'adminApiToken'
 
 export function setAdminApiToken(token: string) {
@@ -129,6 +135,10 @@ export interface RegisterGuestResult {
   success: boolean
   message?: string
   guest?: PublicGuest
+  guests?: PublicGuest[]
+  bookingGroupId?: string
+  ticketCount?: number
+  alreadyExists?: boolean
 }
 
 export async function registerGuest(params: {
@@ -139,8 +149,13 @@ export async function registerGuest(params: {
   source?: string
   bookedAt?: number
   confirmPayment?: boolean
+  companions?: CompanionInput[]
 }): Promise<RegisterGuestResult> {
-  const result = await callGuestsApi<RegisterGuestResult>('register', { ...params })
+  const action =
+    Array.isArray(params.companions) && params.companions.length > 0
+      ? 'register-group'
+      : 'register'
+  const result = await callGuestsApi<RegisterGuestResult>(action, { ...params })
   return result ?? { success: false, message: '등록에 실패했습니다. 다시 시도해주세요.' }
 }
 
@@ -188,6 +203,18 @@ export async function adminTogglePayment(phone: string, name: string): Promise<G
 
 export async function adminToggleTicket(phone: string, name: string): Promise<Guest[] | null> {
   const result = await callGuestsApi<AdminGuestsResponse>('toggle-ticket', { phone, name }, true)
+  return result?.ok && Array.isArray(result.guests) ? result.guests : null
+}
+
+export async function adminSetGroupTicketReceived(
+  bookingGroupId: string,
+  receivedCount: number
+): Promise<Guest[] | null> {
+  const result = await callGuestsApi<AdminGuestsResponse>(
+    'set-group-ticket-received',
+    { bookingGroupId, receivedCount },
+    true
+  )
   return result?.ok && Array.isArray(result.guests) ? result.guests : null
 }
 

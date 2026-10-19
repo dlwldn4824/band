@@ -27,6 +27,11 @@ import DrinkOrdersSection from '../components/admin/DrinkOrdersSection'
 import AnalyticsDashboardSection from '../components/admin/AnalyticsDashboardSection'
 import { makeGuestKey } from '../utils/adminUtils'
 import {
+  getBookingGroupId,
+  getGroupMembers,
+  countReceivedInGroup,
+} from '../utils/bookingGroup'
+import {
   adminCreateLoginToken,
   buildPersonalLoginLink,
 } from '../services/loginTokensApi'
@@ -101,9 +106,10 @@ const Admin = () => {
   const [googleSheetsSyncStatus, setGoogleSheetsSyncStatus] = useState<string>('')
   const [showPasswordModal, setShowPasswordModal] = useState(false)
   const [passwordInput, setPasswordInput] = useState('')
+  const [groupReceiveDrafts, setGroupReceiveDrafts] = useState<Record<string, string>>({})
 
   const [drinkOrders, setDrinkOrders] = useState<Array<{ id: string; name: string; phone: string; beerQuantity: number; mojitoQuantity: number; totalAmount: number; createdAt: any; paymentConfirmed?: boolean; paymentConfirmedAt?: any; provided?: boolean; providedAt?: any; orderHistory?: Array<{ beerQuantity: number; mojitoQuantity: number; unitPrice?: number; createdAt: any; provided?: boolean; providedAt?: any }> }>>([])
-  const { uploadGuests, setPerformanceData, guests, guestsLoadError, refreshGuests, restoreGuestsFromLocalCache, performanceData, clearGuests, deleteGuest, clearSetlist, bookingInfo, setBookingInfo, clearChatMessages, toggleGuestPayment, toggleGuestTicketReceived, deduplicateGuests, fixGuestPhones, eventsFeatures, setEventsFeature } = useData()
+  const { uploadGuests, setPerformanceData, guests, guestsLoadError, refreshGuests, restoreGuestsFromLocalCache, performanceData, clearGuests, deleteGuest, clearSetlist, bookingInfo, setBookingInfo, clearChatMessages, toggleGuestPayment, toggleGuestTicketReceived, setGroupTicketReceived, deduplicateGuests, fixGuestPhones, eventsFeatures, setEventsFeature } = useData()
   
   // 예매 정보 폼 상태
   const [bookingForm, setBookingForm] = useState<BookingInfo>({
@@ -1586,7 +1592,18 @@ const Admin = () => {
                       className={isDeleted ? 'guest-row-deleted' : ''}
                     >
                       <td>{sortedIndex + 1}</td>
-                      <td>{guestName}</td>
+                      <td>
+                        {guestName}
+                        {guest.isPrimaryBooker === true && guest.bookingGroupId ? (
+                          <span className="group-badge">대표</span>
+                        ) : null}
+                        {guest.companionMode === 'shared_phone' ? (
+                          <span className="group-badge">동행·번호공유</span>
+                        ) : null}
+                        {guest.companionMode === 'named' ? (
+                          <span className="group-badge">동행</span>
+                        ) : null}
+                      </td>
                       <td>{guestPhone}</td>
                       <td>{guestNickname}</td>
                       <td>
@@ -1622,34 +1639,118 @@ const Admin = () => {
                       <td>{guest.entryNumber ? `${guest.entryNumber}번` : '-'}</td>
                       <td className="text-center">
                         <div className="flex-column-center">
-                          <button
-                            onClick={() => {
-                              const idx = originalIndex >= 0 ? originalIndex : sortedIndex
-                              const willReceive = !guest.ticketReceived
-                              toggleGuestTicketReceived(idx)
-                              void hashGuestId(guestPhone).then((guestIdHash) => {
-                                void trackEvent('guest_ticket_toggled', {
-                                  guest_id_hash: guestIdHash,
-                                  new_status: willReceive,
-                                })
-                              })
-                            }}
-                            className={`payment-confirm-button ${guest.ticketReceived ? 'confirmed' : 'not-confirmed'}`}
-                            title={guest.ticketReceived && guest.ticketReceivedAt ? `티켓 수령 완료 (${new Date(guest.ticketReceivedAt).toLocaleString('ko-KR')})` : '티켓 수령 대기'}
-                          >
-                            {guest.ticketReceived ? '수령완료' : '미수령'}
-                          </button>
-                          {guest.ticketReceived && guest.ticketReceivedAt && (
-                            <span className="admin-timestamp">
-                              {new Date(guest.ticketReceivedAt).toLocaleString('ko-KR', {
-                                year: 'numeric',
-                                month: '2-digit',
-                                day: '2-digit',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
-                            </span>
-                          )}
+                          {(() => {
+                            const groupId = getBookingGroupId(guest)
+                            const groupMembers = groupId ? getGroupMembers(guests, groupId) : []
+                            const isGroup = groupMembers.length > 1
+                            const showGroupControls = isGroup && guest.isPrimaryBooker === true
+
+                            if (showGroupControls) {
+                              const received = countReceivedInGroup(groupMembers)
+                              const total = groupMembers.length
+                              const draft =
+                                groupReceiveDrafts[groupId] ?? String(received)
+                              return (
+                                <>
+                                  <div className="group-ticket-controls">
+                                    <span className="group-ticket-status">
+                                      {received}/{total} 수령
+                                    </span>
+                                    <button
+                                      type="button"
+                                      className={`payment-confirm-button ${received === total ? 'confirmed' : 'not-confirmed'}`}
+                                      onClick={() => {
+                                        void setGroupTicketReceived(groupId, total)
+                                      }}
+                                    >
+                                      모두 수령
+                                    </button>
+                                    <div className="group-ticket-partial">
+                                      <input
+                                        type="number"
+                                        min={0}
+                                        max={total}
+                                        value={draft}
+                                        onChange={(e) => {
+                                          setGroupReceiveDrafts((prev) => ({
+                                            ...prev,
+                                            [groupId]: e.target.value,
+                                          }))
+                                        }}
+                                        aria-label="수령 장수"
+                                      />
+                                      <button
+                                        type="button"
+                                        className="payment-confirm-button not-confirmed"
+                                        onClick={() => {
+                                          const n = Number(draft)
+                                          if (!Number.isFinite(n) || n < 0 || n > total) {
+                                            alert(`0~${total} 사이 숫자를 입력해주세요.`)
+                                            return
+                                          }
+                                          void setGroupTicketReceived(groupId, Math.floor(n))
+                                        }}
+                                      >
+                                        N장 수령
+                                      </button>
+                                    </div>
+                                    {received > 0 && (
+                                      <button
+                                        type="button"
+                                        className="payment-confirm-button not-confirmed"
+                                        onClick={() => {
+                                          void setGroupTicketReceived(groupId, 0)
+                                        }}
+                                      >
+                                        수령 취소
+                                      </button>
+                                    )}
+                                  </div>
+                                  <span className="admin-timestamp">
+                                    {guest.isPrimaryBooker ? '그룹 대표' : '동행'} · 개별 토글도 가능
+                                  </span>
+                                </>
+                              )
+                            }
+
+                            return (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    const idx = originalIndex >= 0 ? originalIndex : sortedIndex
+                                    const willReceive = !guest.ticketReceived
+                                    toggleGuestTicketReceived(idx)
+                                    void hashGuestId(guestPhone).then((guestIdHash) => {
+                                      void trackEvent('guest_ticket_toggled', {
+                                        guest_id_hash: guestIdHash,
+                                        new_status: willReceive,
+                                      })
+                                    })
+                                  }}
+                                  className={`payment-confirm-button ${guest.ticketReceived ? 'confirmed' : 'not-confirmed'}`}
+                                  title={guest.ticketReceived && guest.ticketReceivedAt ? `티켓 수령 완료 (${new Date(guest.ticketReceivedAt).toLocaleString('ko-KR')})` : '티켓 수령 대기'}
+                                >
+                                  {guest.ticketReceived ? '수령완료' : '미수령'}
+                                </button>
+                                {isGroup && (
+                                  <span className="admin-timestamp">
+                                    그룹 {countReceivedInGroup(groupMembers)}/{groupMembers.length}
+                                  </span>
+                                )}
+                                {guest.ticketReceived && guest.ticketReceivedAt && (
+                                  <span className="admin-timestamp">
+                                    {new Date(guest.ticketReceivedAt).toLocaleString('ko-KR', {
+                                      year: 'numeric',
+                                      month: '2-digit',
+                                      day: '2-digit',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })}
+                                  </span>
+                                )}
+                              </>
+                            )
+                          })()}
                         </div>
                       </td>
                       <td>
