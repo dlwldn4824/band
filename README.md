@@ -2,7 +2,22 @@
 
 인디/대학 밴드 공연의 **예매 → 입금 확인 → 입장번호·티켓 → 당일 경험(셋리스트·채팅·방명록·주류)** 을 한 웹앱으로 잇는 운영·관객 허브입니다.
 
+그 위에 **BANDY 플랫폼 레이어**를 얹어, 한 공연이 아니라 **분야별 동아리·행사 탐색 → 동아리 간 교류 → 행사 예약 → 당일 허브 → 현장 프로필 교환**까지 이어집니다.
+예약한 행사에 당일 허브가 연결돼 있으면 아래의 단일 공연 화면으로 그대로 넘어갑니다.
+
 실제 공연 적용 사례: **Summer Night Live** (2026.08.15 · OO홀)
+
+**플랫폼 레이어**
+
+| | |
+|---|---|
+| 동아리·행사 탐색 | `/explore` |
+| 동아리 프로필·교류 | `/clubs/:clubId` |
+| 행사 상세·예약 | `/shows/:eventId` |
+| 내 BANDY·프로필 카드 | `/my`, `/card/:shareCode` |
+| 동아리 운영진 콘솔 | `/club-console` |
+
+**단일 공연 허브**
 
 | | |
 |---|---|
@@ -34,7 +49,108 @@ flowchart LR
 
 ---
 
+## BANDY 플랫폼 레이어
+
+위 허브가 **한 공연**을 끝까지 책임지는 동안, 그 앞단에는 늘 같은 공백이 있었습니다.
+
+- 다른 학교·다른 분야 동아리의 행사는 인스타 스토리를 놓치면 그대로 모름
+- 합동공연·교류는 아는 사람을 통해서만 성사되고, 연락 창구가 매번 다름
+- 행사마다 구글폼을 새로 열어 예약을 받고, 실제로 왔는지는 세지 않음
+- 현장에서 만난 사람과의 연결은 그 자리에서 끊김
+
+그래서 단일 공연 허브 **위 단계**로 **탐색 → 교류 → 예약 → 당일 허브 → 현장 프로필 교환**을 한 줄기로 얹었습니다.
+예약한 행사에 당일 허브(`hubPath`)가 연결돼 있으면 아래 「기능별 설명」의 단일 공연 화면으로 그대로 이어집니다.
+
+```mermaid
+flowchart LR
+  EX["탐색 · /explore"] --> CP["동아리 프로필 · /clubs/:clubId"]
+  EX --> ED["행사 상세 · /shows/:eventId"]
+  CP --> ED
+  CP -->|교류 신청| CC["동아리 콘솔 · /club-console"]
+  CC -->|수락| CP
+  ED -->|예약| MY["내 BANDY · /my"]
+  MY -->|hubPath| HUB["당일 허브 · /dashboard"]
+  MY --> CARD["프로필 카드 · /card/:shareCode"]
+```
+
+### 새 화면과 경로
+
+| 경로 | 화면 | 하는 일 | 왜 필요했나 |
+|------|------|---------|-------------|
+| `/explore` | 분야별 탐색 | 분야(밴드 / 댄스 / 아카펠라 / 연극·뮤지컬 / 영화·영상 / 미술·디자인 / 사진 / 기타)·대학·검색어로 동아리와 행사를 함께 둘러보기 | 행사 소식이 각 동아리 SNS에 흩어져 있어, 한 화면에서 분야별로 발견할 입구가 필요했음 |
+| `/clubs/:clubId` | 동아리 프로필·교류 신청 | 소개·태그·구성원 규모, 그 동아리의 행사, 이미 수락된 교류 동아리 + 운영진 코드로 교류 신청 | 교류 제안을 DM이 아니라 기록되는 요청으로 남겨, 수락률을 지표로 셀 수 있게 |
+| `/shows/:eventId` | 행사 상세·예약 | 일시·장소·가격·남은 자리 확인 후 이름·연락처·인원으로 예약, 당일 허브 연결 시 바로가기 | 행사별 구글폼 대신 정원(`capacity`)을 지키는 예약 하나로 통일 |
+| `/my` | 내 BANDY | 이름·연락처로 예약 내역 조회·취소, 현장 프로필 카드 만들기·공유, 교환한 프로필 모아보기 | 예약 확인과 현장 명함이 매번 다른 채널로 흩어졌음 |
+| `/club-console` | 동아리 운영진 콘솔 | 운영진 코드로 들어와 교류 요청 응답(수락·거절·철회), 행사 등록·수정·삭제, 예약자 명단·방문 처리 | 동아리 운영진이 플랫폼 관리자를 거치지 않고 자기 행사·교류를 직접 운영 |
+| `/card/:shareCode` | 현장 프로필 교환 | NFC 태그·QR·링크가 모두 이 경로로 들어와, 동의한 항목만 보여주고 교환 시 양쪽 목록에 함께 남김 | 현장에서 만난 사람과의 연결을 전화번호 수기 교환 없이 남기기 |
+
+공유 코드(`shareCode`)는 혼동되는 글자(O·0·I·1 등)를 뺀 8자리라서, 인쇄된 QR·NFC 태그를 눈으로 받아 적어도 틀리지 않습니다.
+
+### 진입 경로가 바뀐 곳
+
+| | 이전 | 지금 |
+|---|------|------|
+| `/` | `/login` 으로 리다이렉트 | **`/explore` 로 리다이렉트** (첫 화면이 탐색) |
+
+기존 경로는 그대로 동작합니다: `/login`(사전 예매·로그인), `/onsite`(현장 예매), `/t/:token`(개인 티켓 링크), `/dashboard`·`/manage` 등 단일 공연 허브 전체.
+
+### 교류·예약 권한 모델
+
+핸들러: [`server/lib/clubsApi.js`](./server/lib/clubsApi.js) · [`server/lib/clubEventsApi.js`](./server/lib/clubEventsApi.js) · [`server/lib/clubConnectionsApi.js`](./server/lib/clubConnectionsApi.js) · [`server/lib/profileCardsApi.js`](./server/lib/profileCardsApi.js)
+라우트: `/api/clubs`, `/api/club-events`, `/api/club-connections`, `/api/profile-cards` ([`api/index.js`](./api/index.js))
+
+| 구분 | 인증 | 액션 |
+|------|------|------|
+| **공개** | 없음 / 예약·카드 조회는 이름·연락처 신원 매칭 | `clubs`: `list`, `get`, `categories` · `club-events`: `list`, `get`, `reserve`, `my-reservations`, `cancel` · `profile-cards`: `upsert`, `my-card`, `get-by-code`, `exchange`, `my-exchanges` |
+| **동아리 운영진** | 동아리별 **운영진 코드** | `clubs`: `verify-code`, `update-profile` · `club-connections`: `request`, `inbox`, `respond`, `withdraw` · `club-events`: `club-reservations`, `mark-attended`, `club-upsert-event`, `club-delete-event` |
+| **플랫폼 관리자** | `Authorization: Bearer` (HMAC) — 운영진 코드 **우회 경로** | `clubs`: `upsert`, `delete`, `seed-demo`, `reset-manage-code` · `club-events`: `all-reservations`, `stats` · `club-connections`: `list-all` · `profile-cards`: `list`, `delete` |
+
+운영진 코드는 **평문을 저장하지 않습니다.**
+
+| 단계 | 구현 |
+|------|------|
+| 발급 | 혼동 글자를 뺀 6자리 (`generateManageCode`) — 발급 응답에서 **1회만** 노출 |
+| 보관 | `HMAC-SHA256(ADMIN_TOKEN_SECRET, "clubId:CODE")` 해시만 `clubs/{clubId}.manageCodeHash` 에 ([`hashManageCode`](./server/lib/bandyCore.js)) |
+| 검증 | 같은 입력을 다시 해시해 `timingSafeEqual` 비교 (`verifyManageCode`) |
+| 분실 | 평문이 없어 복구 불가 → 플랫폼 관리자가 `reset-manage-code` 로 재발급 |
+| 범위 | 코드는 **그 동아리 문서에만** 유효 (`clubId` 가 해시 입력에 들어감) |
+
+예약·교류 신청·프로필 카드 쓰기는 기존 [`rateLimit`](./server/lib/rateLimit.js)(IP 해시)을 그대로 씁니다. 예약 문서는 `eventId__전화번호` 1건으로 묶여 재예약이 중복을 만들지 않고, 정원 초과는 트랜잭션에서 `reservedCount` 와 함께 막습니다.
+
+### 파일럿 지표 (`/manage` → 「BANDY 플랫폼」)
+
+사업계획서의 검증 항목을 **같은 정의로** 관리자 화면에 올렸습니다 ([`BandyPlatformSection`](./src/components/admin/BandyPlatformSection.tsx) ← `club-events` `stats`).
+
+| 지표 | 정의 | 무엇을 검증하나 |
+|------|------|-----------------|
+| **교류 요청 수락률** | 수락 ÷ **응답된** 요청(수락+거절) — 대기 중(`pending`)은 분모에서 제외 | 교류 제안이 실제로 성립하는가 |
+| **예약 대비 방문율** | `status === 'attended'` ÷ 취소 제외 예약 (방문 처리는 콘솔의 방문 확인) | 예약이 방문으로 이어지는가 |
+| **교류로 유입된 관객 비율** | `viaConnection === true` ÷ 취소 제외 예약 | 기존 인맥 **밖**에서 관객이 유입되는가 |
+| **예약 기준 거래액** | Σ(행사 `price` × 예약 `headcount`) — 취소 제외 | 수수료 매출 추정의 기초 |
+
+`viaConnection` 은 행사 상세를 `?from=<clubId>` 로 들어와 예약했고, 그 동아리와 주최 동아리가 **수락된 교류 관계**(방향 무관)일 때만 `true` 로 기록됩니다.
+
+보조 수치로 동아리 수·행사 수·교류 요청 수(수락/대기)·예약 건수·예약 연인원(`headcount` 합)·프로필 교환 건수를 같은 섹션에서 봅니다.
+
+### 파일럿 시드 데이터
+
+`/manage` → 「BANDY 플랫폼」 섹션에서 만듭니다.
+
+| 버튼 | 하는 일 |
+|------|---------|
+| **파일럿 시드 생성** | 동아리 **8곳** · 행사 **10건** · 교류 **7건** 생성, 이미 있는 문서는 건드리지 않음 |
+| **시드 덮어쓰기** | 같은 문서를 시드 값으로 교체 + 운영진 코드 **전부 재발급** |
+| **코드 재발급** | 동아리 한 곳의 운영진 코드만 다시 발급 |
+
+시드 응답에 담긴 **운영진 코드는 그 화면에서 1회만 표시**됩니다. 해시만 저장하므로 화면을 벗어나면 다시 볼 수 없고, 재발급만 가능합니다. 생성 직후 받아서 각 동아리 담당자에게 전달·보관하세요.
+
+시드의 **대학·동아리·공연장 이름은 전부 가상 더미 값**입니다 ([`server/lib/bandySeedData.js`](./server/lib/bandySeedData.js)). 실제 단체·장소와는 무관하며, 파일럿 화면·지표 확인용입니다.
+
+---
+
 ## 기능별 설명
+
+아래는 플랫폼에서 예약한 행사의 **당일 허브** — 공연 하나를 끝까지 운영하는 화면입니다.
 
 ### 1. 사전 예매 · 로그인 (`/login`)
 
@@ -171,6 +287,20 @@ flowchart TD
 | **Firebase Storage** | `guests/게스트_목록.xlsx` |
 | **Google Sheets** | 운영용 미러 (닉네임·예매일시 포함) |
 
+### 플랫폼 레이어 컬렉션 (서버 API 전용)
+
+동아리·행사는 공개 데이터지만, **여섯 컬렉션 모두 [`firestore.rules`](./firestore.rules) 에서 클라이언트 `read`/`write` 를 차단**했습니다.
+브라우저는 `/api/clubs`, `/api/club-events`, `/api/club-connections`, `/api/profile-cards` 로만 접근하고, 응답은 [`bandyCore.js`](./server/lib/bandyCore.js) 의 `serialize*` 가 비공개 필드를 걸러 내보냅니다.
+
+| 컬렉션 | 핵심 필드 | 역할 |
+|--------|-----------|------|
+| **`clubs`** | `name`, `university`, `category`, `tagline`, `intro`, `tags`, `memberCount`, `foundedYear`, `emblem`, `accent`, `instagram`, `contactEmail`, `openToExchange`, `connectionCount`, `eventCount`, `isHostClub` | 동아리 프로필·탐색의 기준. 비공개 `manageCodeHash` 는 `serializeClub` 응답에서 제외 |
+| **`clubEvents`** | `clubId`, `clubName`, `university`, `title`, `category`, `description`, `startsAt`, `doorsAt`, `venueName`, `venueAddress`, `price`, `capacity`, `reservedCount`, `poster`, `tags`, `hubPath`, `status`(`upcoming`/`closed`) | 행사 목록·상세. `seatsLeft` 는 `capacity - reservedCount` 로 응답에서만 계산, `hubPath` 가 단일 공연 허브로 잇는 고리 |
+| **`clubConnections`** | 문서 ID `fromClubId__toClubId` · `fromClubId`/`fromClubName`, `toClubId`/`toClubName`, `status`(`pending`/`accepted`/`declined`), `message`, `requesterName`, `requesterContact`, `createdAt`, `respondedAt` | 동아리 간 교류 신청·응답 기록. 수락 건수는 `clubs.connectionCount` 로 재집계 |
+| **`eventReservations`** | 문서 ID `eventId__전화번호` · `eventId`, `eventTitle`, `clubId`, `clubName`, `name`, `phone`, `headcount`, `viaConnection`, `sourceClubId`, `status`(`reserved`/`cancelled`/`attended`), `startsAt`, `attendedAt` | 행사 예약과 방문 처리. `phone` 은 `maskPhone` 으로 기본 마스킹(`010****0000`), 본인·운영진 조회에만 원본 |
+| **`profileCards`** | `shareCode`, `ownerName`, `nickname`, `clubId`, `clubName`, `university`, `bio`, `interests`, `instagram`, `phone`, `shareInstagram`, `sharePhone`, `exchangeCount` | 현장 프로필 카드. `shareInstagram`/`sharePhone` 으로 **동의한 항목만** 상대에게 노출 |
+| **`profileExchanges`** | 문서 ID `카드A__카드B`(정렬된 쌍) · `cardIds`, `initiatedBy`, `eventId`, `createdAt`, `updatedAt` | 교환 기록. 같은 쌍은 한 문서로 묶여 중복 교환이 수치를 부풀리지 않음 |
+
 ---
 
 ## 보안 — 실사용자를 위해 잠근 것
@@ -216,6 +346,7 @@ flowchart TB
 | 구분 | 컬렉션 | 클라이언트 |
 |------|--------|------------|
 | **차단** | `guests`, `guests_v2`, `bookings`, `loginTokens`, `userProfiles`, `drinkOrders`, `analytics_events`, `rateLimits`, `rpsTournament` | `read`/`write` 모두 `false` → **Admin SDK + `/api/*`만** |
+| **차단 (BANDY 플랫폼)** | `clubs`, `clubEvents`, `clubConnections`, `eventReservations`, `profileCards`, `profileExchanges` | `read`/`write` 모두 `false` → **`/api/clubs`, `/api/club-events`, `/api/club-connections`, `/api/profile-cards` 만** |
 | **읽기만** | `performanceData`, `bookingInfo`, `chat`, `onlineUsers`, `messages`, `songComments`, `roulette`, `entryDraw`, `current`, `entries` | 공개 읽기 / 쓰기는 서버 |
 
 게스트 문서는 V2로 분리했습니다: `guests_v2/all` ([`src/config/firestorePaths.ts`](./src/config/firestorePaths.ts)).
@@ -292,6 +423,11 @@ flowchart LR
 | [`server/lib/loginTokensApi.js`](./server/lib/loginTokensApi.js) | 불투명 개인 링크 |
 | [`src/utils/manageSession.ts`](./src/utils/manageSession.ts) | `/manage` 세션 게이트 |
 | [`src/services/guestsApi.ts`](./src/services/guestsApi.ts) | 클라이언트 → API (토큰 첨부) |
+| [`server/lib/bandyCore.js`](./server/lib/bandyCore.js) | 플랫폼 컬렉션 상수 · 운영진 코드 해시 · `serialize*` |
+| [`server/lib/clubsApi.js`](./server/lib/clubsApi.js) | 동아리 프로필 · 운영진 코드 검증 · 시드 |
+| [`server/lib/clubEventsApi.js`](./server/lib/clubEventsApi.js) | 행사 · 예약 · 방문 처리 · 파일럿 지표 |
+| [`server/lib/clubConnectionsApi.js`](./server/lib/clubConnectionsApi.js) | 교류 신청 · 수신함 · 응답 |
+| [`server/lib/profileCardsApi.js`](./server/lib/profileCardsApi.js) | 현장 프로필 카드 · 교환 |
 
 ---
 
@@ -415,7 +551,7 @@ flowchart LR
 ### Phase 4 — 범위 밖의 것 (당분간 안 함)
 
 - PG 자동결제 (계좌이체 안내 유지)
-- 다중 공연 SaaS / 테넌트
+- 테넌트 과금·정산 (다중 동아리·행사 탐색은 플랫폼 레이어로 들어왔지만, 수수료 정산은 아직)
 - 네이티브 앱·푸시
 - 좌석 지정·실시간 좌석맵
 
@@ -450,6 +586,13 @@ npm run preview
 
 | 경로 | 설명 |
 |------|------|
+| `/` | **`/explore` 로 리다이렉트** (이전에는 `/login`) |
+| `/explore` | 분야별 동아리·행사 탐색 |
+| `/clubs/:clubId` | 동아리 프로필·교류 신청 |
+| `/shows/:eventId` | 행사 상세·예약 (`?from=<clubId>` 로 교류 경유 표시) |
+| `/my` | 내 BANDY — 예약 내역·현장 프로필 카드 |
+| `/club-console` | 동아리 운영진 콘솔 (운영진 코드) |
+| `/card/:shareCode` | 현장 프로필 교환 (NFC·QR·링크) |
 | `/login` | 사전 예매·로그인 |
 | `/onsite` | 현장 예매 |
 | `/dashboard` | 관객 홈 |
