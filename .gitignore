@@ -37,3 +37,6 @@ yarn.lock
 *.sw?
 .env
 
+
+# Cursor 작업 캐시
+.cursor/

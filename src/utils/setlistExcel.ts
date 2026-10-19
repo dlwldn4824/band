@@ -3,7 +3,6 @@ import type { SetlistItem } from '../contexts/DataContext'
 import {
   getPerformanceSectionsWithParts,
   resolveSectionForSetlistBlock,
-  sectionTitlesMatch,
 } from './performanceEvents'
 import { parseXlsxToGridFallback } from './xlsxRawParse'
 
