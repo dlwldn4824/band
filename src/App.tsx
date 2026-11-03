@@ -134,7 +134,8 @@ function AppRoutes() {
           {/* NFC 태그 · QR · 링크 공유가 모두 이 경로로 들어옵니다 */}
           <Route path="/card/:shareCode" element={<BandyLayout><NfcCard /></BandyLayout>} />
 
-          <Route path="/" element={<Navigate to="/explore" replace />} />
+          {/* 첫 화면은 기존 단일 공연 로그인 — 플랫폼 레이어는 /explore 주소로 들어갑니다 */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
           <Route
             path="/dashboard"
             element={
