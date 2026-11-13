@@ -97,8 +97,14 @@ html, body {
   min-height: 100%;
   margin: 0;
   padding: 0;
-  overflow-y: auto;
+  /* overflow-y:auto 를 body 에 주면 body 가 자기 스크롤 컨테이너가 되는데
+     실제로 스크롤되는 건 뷰포트라, 자손의 position:sticky 가 고정되지 않습니다.
+     기본값(visible)이면 뷰포트가 그대로 스크롤합니다. */
+  /* hidden 은 가로 스크롤 컨테이너를 만들어 자손의 position:sticky 를 깨뜨립니다.
+     clip 은 똑같이 잘라내면서 스크롤 컨테이너를 만들지 않습니다.
+     clip 을 모르는 구형 브라우저는 위의 hidden 을 그대로 씁니다. */
   overflow-x: hidden;
+  overflow-x: clip;
   background-color: #000000;
 }
 
