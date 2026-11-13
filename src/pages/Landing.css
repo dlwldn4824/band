@@ -315,9 +315,9 @@
   align-self: flex-end;
   padding: 0.4375rem 0.875rem;
   border-radius: 999px;
-  background: rgba(140, 224, 192, 0.16);
-  border: 1px solid rgba(140, 224, 192, 0.5);
-  color: #a6ecd5;
+  background: rgba(255, 76, 76, 0.14);
+  border: 1px solid rgba(255, 76, 76, 0.45);
+  color: #ff9b9b;
   font-size: 0.8125rem;
   font-weight: 700;
   opacity: 0;
@@ -385,9 +385,9 @@
 }
 
 .lp-chip--hero {
-  background: rgba(140, 224, 192, 0.16);
-  border-color: rgba(140, 224, 192, 0.45);
-  color: #a6ecd5;
+  background: rgba(255, 76, 76, 0.14);
+  border-color: rgba(255, 76, 76, 0.42);
+  color: #ff9b9b;
   font-weight: 600;
 }
 
@@ -920,65 +920,74 @@
   align-items: center;
 }
 
-.lp-formcard {
-  padding: 1.5rem 1.375rem;
-  background: #222;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 20px;
-  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.55);
-}
+/* ── 예약 서식 ──────────────────────────────
+   카드·그림자·둥근 입력칸을 쓰지 않습니다. 인쇄된 서식처럼
+   항목과 답을 가는 괘선으로만 구분하고, 유입 경로 한 줄만
+   브랜드 레드로 끌어올립니다. */
 
-.lp-section--light .lp-formcard {
-  background: #fff;
-  border-color: rgba(0, 0, 0, 0.1);
-  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.14);
+.lp-formcard {
+  border-top: 2px solid currentColor;
 }
 
 .lp-field {
-  margin-bottom: 1.125rem;
-}
-
-.lp-field:last-child {
-  margin-bottom: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 1.25rem;
+  padding: 0.9375rem 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.14);
 }
 
 .lp-field-q {
+  flex: 0 0 auto;
+  width: 7.5rem;
   font-size: 0.8125rem;
-  margin-bottom: 0.4375rem;
-  color: rgba(255, 255, 255, 0.72);
-}
-
-.lp-section--light .lp-field-q {
-  color: rgba(0, 0, 0, 0.62);
+  color: rgba(0, 0, 0, 0.5);
+  word-break: keep-all;
 }
 
 .lp-field-a {
-  padding: 0.75rem 0.9375rem;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  font-size: 0.9375rem;
-  color: #fff;
-}
-
-.lp-section--light .lp-field-a {
-  background: rgba(0, 0, 0, 0.04);
-  border-color: rgba(0, 0, 0, 0.12);
+  flex: 1;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   color: #141414;
+  word-break: keep-all;
 }
 
-/* 유입 경로 답변만 강조 — 우리 핵심 지표가 여기서 생깁니다 */
-.lp-field-a--hero {
-  background: rgba(140, 224, 192, 0.16);
-  border-color: rgba(140, 224, 192, 0.45);
-  color: #a6ecd5;
+/* 우리 지표가 생기는 한 줄 — 여기만 강조합니다 */
+.lp-field--hero {
+  border-bottom-width: 2px;
+  border-bottom-color: #ff4c4c;
+  padding-bottom: 0.8125rem;
+}
+
+.lp-field--hero .lp-field-q {
+  color: #141414;
   font-weight: 600;
 }
 
-.lp-section--light .lp-field-a--hero {
-  background: rgba(22, 150, 110, 0.1);
-  border-color: rgba(22, 150, 110, 0.35);
-  color: #0f7a58;
+.lp-field-a--hero {
+  color: #ff4c4c;
+  font-weight: 700;
+}
+
+.lp-field-note {
+  margin-top: 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1.6;
+  color: rgba(0, 0, 0, 0.45);
+  word-break: keep-all;
+}
+
+@media (max-width: 600px) {
+  .lp-field {
+    flex-direction: column;
+    gap: 0.3125rem;
+  }
+
+  .lp-field-q {
+    width: auto;
+  }
 }
 
 /* ── 기능 요약 목록 ─────────────────────────── */
@@ -1372,12 +1381,12 @@
   font-weight: 800;
   line-height: 1;
   letter-spacing: -0.03em;
-  color: #8fe0c0;
+  color: #ff7a7a;
   font-variant-numeric: tabular-nums;
 }
 
 .lp-section--light .lp-demo-pct {
-  color: #0f7a58;
+  color: #d63333;
 }
 
 .lp-demo-pct-k {
@@ -1407,8 +1416,8 @@
 }
 
 .lp-demo-resv.is-lit {
-  border-color: rgba(140, 224, 192, 0.5);
-  background: rgba(140, 224, 192, 0.1);
+  border-color: rgba(255, 76, 76, 0.45);
+  background: rgba(255, 76, 76, 0.09);
 }
 
 .lp-demo-count {
@@ -1425,11 +1434,11 @@
 .lp-demo-badge {
   padding: 0.1875rem 0.5rem;
   border-radius: 999px;
-  background: rgba(140, 224, 192, 0.18);
-  border: 1px solid rgba(140, 224, 192, 0.5);
+  background: rgba(255, 76, 76, 0.16);
+  border: 1px solid rgba(255, 76, 76, 0.45);
   font-size: 0.6875rem;
   font-weight: 600;
-  color: #a6ecd5;
+  color: #ff9b9b;
   white-space: nowrap;
   opacity: 0;
   transform: scale(0.75);
@@ -1437,9 +1446,9 @@
 }
 
 .lp-section--light .lp-demo-badge {
-  background: rgba(22, 150, 110, 0.12);
-  border-color: rgba(22, 150, 110, 0.4);
-  color: #0f7a58;
+  background: rgba(255, 76, 76, 0.1);
+  border-color: rgba(255, 76, 76, 0.38);
+  color: #d63333;
 }
 
 .lp-demo-badge.is-on {
@@ -1487,7 +1496,7 @@
 }
 
 .lp-xcard.is-tapped {
-  border-color: rgba(140, 224, 192, 0.6);
+  border-color: rgba(255, 76, 76, 0.6);
 }
 
 .lp-xcard-top {
@@ -1527,10 +1536,10 @@
 .lp-xcard-contact {
   padding: 0.4375rem 0.5625rem;
   border-radius: 9px;
-  background: rgba(140, 224, 192, 0.14);
-  border: 1px solid rgba(140, 224, 192, 0.4);
+  background: rgba(255, 76, 76, 0.12);
+  border: 1px solid rgba(255, 76, 76, 0.38);
   font-size: 0.6875rem;
-  color: #a6ecd5;
+  color: #ff9b9b;
   opacity: 0;
   transform: translateY(6px);
   transition: opacity 0.45s ease, transform 0.45s ease;
@@ -2399,4 +2408,93 @@ html.lenis body {
   flex-shrink: 0;
   font-size: 7.5px;
   color: rgba(255, 255, 255, 0.38);
+}
+
+/* ═══════════════════════════════════════════════
+   글자 마크 — 이모지 대신 쓰는 식별자.
+   동아리 이름 첫 글자를 플랫한 사각형에 넣습니다.
+   ═══════════════════════════════════════════════ */
+
+.lp-mark {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--mark-bg, #ff4c4c);
+  color: var(--mark-ink, #fff);
+  font-family: 'HakgyoansimJayeonR', 'Pretendard', sans-serif;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.lp-mark--lg {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  font-size: 21px;
+}
+
+.lp-mark--sm {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+/* ── 데모 카드에서 흰 카드·그림자 제거 ── */
+
+.lp-section--light .lp-demo {
+  background: transparent;
+  border: none;
+  border-top: 2px solid #141414;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 1.5rem 0 0;
+}
+
+.lp-section--light .lp-demo-row {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.14);
+  border-radius: 0;
+  padding: 0.75rem 0;
+}
+
+.lp-section--light .lp-demo-chip {
+  border-radius: 0;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 0.25rem 0;
+  margin-right: 0.875rem;
+  color: rgba(0, 0, 0, 0.35);
+}
+
+.lp-section--light .lp-demo-chip.is-on {
+  background: transparent;
+  color: #141414;
+  border-bottom-color: #ff4c4c;
+}
+
+.lp-section--light .lp-demo-tag {
+  background: transparent;
+  border: none;
+  color: #ff4c4c;
+  font-weight: 700;
+  padding: 0;
+}
+
+/* ── 3단 설명이 단어 중간에서 끊기지 않게 ── */
+
+.lp-step h3 {
+  word-break: keep-all;
+  text-wrap: balance;
+}
+
+.lp-step p {
+  word-break: keep-all;
 }

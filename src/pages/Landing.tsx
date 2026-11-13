@@ -166,7 +166,7 @@ const ConnectStage = () => {
   return (
     <div className="lp-stage" ref={ref} aria-hidden="true">
       <div className={`lp-club lp-club--a ${step >= 1 ? 'is-on' : ''}`}>
-        <div className="lp-club-emblem">🎸</div>
+        <div className="lp-mark lp-mark--lg">소</div>
         <div>
           <div className="lp-club-name">소리풀</div>
           <div className="lp-club-uni">한빛대학교 · 밴드</div>
@@ -174,7 +174,7 @@ const ConnectStage = () => {
       </div>
 
       <div className={`lp-club lp-club--b ${step >= 2 ? 'is-on' : ''}`}>
-        <div className="lp-club-emblem">🖤</div>
+        <div className="lp-mark lp-mark--lg" style={{ ['--mark-bg' as string]: '#1f1f1f', ['--mark-ink' as string]: '#fff' }}>블</div>
         <div>
           <div className="lp-club-name">블랙노트</div>
           <div className="lp-club-uni">새길대학교 · 밴드</div>
@@ -189,7 +189,7 @@ const ConnectStage = () => {
 
       <div className={`lp-invite ${step >= 5 ? 'is-on' : ''}`}>
         <div className="lp-invite-top">
-          <div className="lp-club-emblem">🎫</div>
+          <div className="lp-mark lp-mark--lg" style={{ ['--mark-bg' as string]: '#fff', ['--mark-ink' as string]: '#141414' }}>티</div>
           <div>
             <div className="lp-invite-title">소리풀 정기공연 — Autumn Night</div>
             <div className="lp-invite-meta">11. 1(일) 18:30 · 한빛대 소극장</div>
@@ -210,31 +210,31 @@ const FILTER_TABS = [
   {
     label: '밴드',
     clubs: [
-      { emblem: '🎸', name: '소리풀', sub: '한빛대학교', tag: '교류 2곳' },
-      { emblem: '🖤', name: '블랙노트', sub: '새길대학교', tag: '교류 1곳' },
+      { name: '소리풀', sub: '한빛대학교', tag: '교류 2곳' },
+      { name: '블랙노트', sub: '새길대학교', tag: '교류 1곳' },
     ],
   },
   {
     label: '댄스',
-    clubs: [{ emblem: '👟', name: '스텝온', sub: '한빛대학교', tag: '교류 1곳' }],
+    clubs: [{ name: '스텝온', sub: '한빛대학교', tag: '교류 1곳' }],
   },
   {
     label: '아카펠라',
-    clubs: [{ emblem: '🎤', name: '하모니카', sub: '도원대학교', tag: '교류 1곳' }],
+    clubs: [{ name: '하모니카', sub: '도원대학교', tag: '교류 1곳' }],
   },
   {
     label: '연극·뮤지컬',
-    clubs: [{ emblem: '🎭', name: '막과막사이', sub: '청림대학교', tag: '교류 2곳' }],
+    clubs: [{ name: '막과막사이', sub: '청림대학교', tag: '교류 2곳' }],
   },
   {
     label: '사진',
-    clubs: [{ emblem: '📷', name: '찰나', sub: '도원대학교', tag: '교류 1곳' }],
+    clubs: [{ name: '찰나', sub: '도원대학교', tag: '교류 1곳' }],
   },
   {
     label: 'IT·개발',
     clubs: [
-      { emblem: '💻', name: '코드모아', sub: '한빛대학교', tag: '교류 1곳' },
-      { emblem: '🔀', name: '깃플로우', sub: '새길대학교', tag: '교류 1곳' },
+      { name: '코드모아', sub: '한빛대학교', tag: '교류 1곳' },
+      { name: '깃플로우', sub: '새길대학교', tag: '교류 1곳' },
     ],
   },
 ]
@@ -258,7 +258,7 @@ const FilterDemo = () => {
         {tab.clubs.map((club) => (
           /* key 에 분야를 섞어 분야가 바뀔 때마다 다시 등장하게 합니다 */
           <div className="lp-demo-row" key={`${tab.label}-${club.name}`}>
-            <div className="lp-demo-emblem">{club.emblem}</div>
+            <div className="lp-mark">{club.name.slice(0, 1)}</div>
             <div>
               <div className="lp-demo-name">{club.name}</div>
               <div className="lp-demo-sub">
@@ -288,7 +288,7 @@ const ExchangeDemo = () => {
       <div className="lp-demo-swap">
         <div className={`lp-xcard lp-xcard--l ${near ? 'is-near' : ''} ${tapped ? 'is-tapped' : ''}`}>
           <div className="lp-xcard-top">
-            <div className="lp-demo-emblem">지</div>
+            <div className="lp-mark lp-mark--sm">지</div>
             <div>
               <div className="lp-xcard-name">지우</div>
               <div className="lp-xcard-club">소리풀 · 한빛대</div>
@@ -303,7 +303,7 @@ const ExchangeDemo = () => {
 
         <div className={`lp-xcard lp-xcard--r ${near ? 'is-near' : ''} ${tapped ? 'is-tapped' : ''}`}>
           <div className="lp-xcard-top">
-            <div className="lp-demo-emblem">민</div>
+            <div className="lp-mark lp-mark--sm" style={{ ['--mark-bg' as string]: '#1f1f1f' }}>민</div>
             <div>
               <div className="lp-xcard-name">민서</div>
               <div className="lp-xcard-club">블랙노트 · 새길대</div>
@@ -527,7 +527,7 @@ const TempScreen = ({ active }: { active: boolean }) => (
     </div>
 
     <div className="lp-temp-club">
-      <div className="lp-temp-emblem">🎸</div>
+      <div className="lp-mark lp-mark--sm">소</div>
       <div>
         <div className="lp-temp-name">소리풀</div>
         <div className="lp-temp-sub">한빛대학교 · 밴드</div>
@@ -659,18 +659,18 @@ const HubScrollPhone = () => {
 
 /** 대각선으로 흐르는 행사 카드 — 행사의 폭을 한눈에 보여주는 자리입니다. */
 const RIVER_CARDS = [
-  { poster: '🎸', title: '소리풀 정기공연 — Autumn Night', meta: '한빛대 소극장 · 밴드', accent: '#ff4c4c' },
-  { poster: '👟', title: '스텝온 정기공연 — FLOOR', meta: '한빛대 대강당 · 댄스', accent: '#7cc3ff' },
-  { poster: '🎤', title: '하모니카 소극장 공연 — 목소리만', meta: '도원아트홀 · 아카펠라', accent: '#ffd166' },
-  { poster: '🎭', title: '막과막사이 단막극전 — 암전 사이', meta: '청림대 블랙박스 · 연극', accent: '#c08cff' },
-  { poster: '🎬', title: '프레임워크 상영회 — 24프레임', meta: '새길대 영상강의실 · 영화', accent: '#8fe0c0' },
-  { poster: '🎨', title: '색다른 학기전 — 벽의 사정', meta: '백록대 전시실 · 전시', accent: '#ff9f68' },
-  { poster: '📷', title: '찰나 사진전 — 남는 건', meta: '도원대 갤러리 · 사진', accent: '#9aa7ff' },
-  { poster: '🖤', title: '블랙노트 단독공연 — 세 코드', meta: '새길문화공간 · 밴드', accent: '#d88676' },
-  { poster: '🤝', title: '소리풀 × 블랙노트 — 교차점', meta: '한빛대 소극장 · 합동공연', accent: '#ff4c4c' },
-  { poster: '✨', title: '스텝온 × 하모니카 — 목소리와 바닥', meta: '도원아트홀 · 합동공연', accent: '#7cc3ff' },
-  { poster: '💻', title: '코드모아 해커톤 — 48시간', meta: '한빛대 창업보육센터 · IT·개발', accent: '#5ad1e6' },
-  { poster: '🔀', title: '깃플로우 데모데이 — 만든 것들', meta: '새길대 공학관 · IT·개발', accent: '#a8b9ff' },
+  { poster: '소', title: '소리풀 정기공연 — Autumn Night', meta: '한빛대 소극장 · 밴드', accent: '#ff4c4c' },
+  { poster: '스', title: '스텝온 정기공연 — FLOOR', meta: '한빛대 대강당 · 댄스', accent: '#7cc3ff' },
+  { poster: '하', title: '하모니카 소극장 공연 — 목소리만', meta: '도원아트홀 · 아카펠라', accent: '#ffd166' },
+  { poster: '막', title: '막과막사이 단막극전 — 암전 사이', meta: '청림대 블랙박스 · 연극', accent: '#c08cff' },
+  { poster: '프', title: '프레임워크 상영회 — 24프레임', meta: '새길대 영상강의실 · 영화', accent: '#8fe0c0' },
+  { poster: '색', title: '색다른 학기전 — 벽의 사정', meta: '백록대 전시실 · 전시', accent: '#ff9f68' },
+  { poster: '찰', title: '찰나 사진전 — 남는 건', meta: '도원대 갤러리 · 사진', accent: '#9aa7ff' },
+  { poster: '블', title: '블랙노트 단독공연 — 세 코드', meta: '새길문화공간 · 밴드', accent: '#d88676' },
+  { poster: '교', title: '소리풀 × 블랙노트 — 교차점', meta: '한빛대 소극장 · 합동공연', accent: '#ff4c4c' },
+  { poster: '합', title: '스텝온 × 하모니카 — 목소리와 바닥', meta: '도원아트홀 · 합동공연', accent: '#7cc3ff' },
+  { poster: '코', title: '코드모아 해커톤 — 48시간', meta: '한빛대 창업보육센터 · IT·개발', accent: '#5ad1e6' },
+  { poster: '깃', title: '깃플로우 데모데이 — 만든 것들', meta: '새길대 공학관 · IT·개발', accent: '#a8b9ff' },
 ]
 
 const RiverRow = ({ direction }: { direction: 'l' | 'r' }) => {
@@ -684,7 +684,9 @@ const RiverRow = ({ direction }: { direction: 'l' | 'r' }) => {
           className="lp-river-card"
           style={{ ['--card-accent' as string]: card.accent }}
         >
-          <div className="lp-river-poster">{card.poster}</div>
+          <div className="lp-mark lp-mark--sm" style={{ ['--mark-bg' as string]: card.accent, ['--mark-ink' as string]: '#0d0d0d' }}>
+            {card.poster}
+          </div>
           <div className="lp-river-title">{card.title}</div>
           <div className="lp-river-meta">{card.meta}</div>
         </div>
@@ -865,7 +867,7 @@ const Landing = () => {
                 <div className="lp-field-q">몇 명이 오나요?</div>
                 <div className="lp-field-a">2명</div>
               </div>
-              <div className="lp-field">
+              <div className="lp-field lp-field--hero">
                 <div className="lp-field-q">어느 동아리를 통해 알게 되었나요?</div>
                 {/* 이 한 줄이 우리 핵심 지표가 됩니다 */}
                 <div className="lp-field-a lp-field-a--hero">블랙노트 공연 보러 갔다가요</div>
