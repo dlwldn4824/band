@@ -144,6 +144,40 @@ export const SEED_CLUBS = [
     contactEmail: 'chalna@example.ac.kr',
     openToExchange: true,
   },
+  {
+    id: 'codemoa',
+    name: '코드모아',
+    university: '한빛대학교',
+    category: 'it',
+    tagline: '일단 만들고 보는 쪽',
+    intro:
+      '교내 개발 동아리입니다. 학기마다 해커톤을 열고, 방학에는 팀별로 사이드 프로젝트를 만듭니다. 만든 걸 보여줄 자리가 교내에만 있어서 다른 학교 개발 동아리와 섞이고 싶습니다.',
+    tags: ['해커톤', '사이드프로젝트', '웹', '앱'],
+    memberCount: 31,
+    foundedYear: 2018,
+    emblem: '💻',
+    accent: '#5ad1e6',
+    instagram: 'codemoa_dev',
+    contactEmail: 'codemoa@example.ac.kr',
+    openToExchange: true,
+  },
+  {
+    id: 'gitflow',
+    name: '깃플로우',
+    university: '새길대학교',
+    category: 'it',
+    tagline: '머지하면 끝나는 줄 알았지',
+    intro:
+      '개발 동아리입니다. 학기말 데모데이에서 한 학기 동안 만든 것들을 발표합니다. 발표를 들어 줄 사람이 늘 같은 선후배라 외부 관객을 찾고 있습니다.',
+    tags: ['데모데이', '스터디', '백엔드', '디자인'],
+    memberCount: 24,
+    foundedYear: 2020,
+    emblem: '🔀',
+    accent: '#a8b9ff',
+    instagram: 'gitflow_club',
+    contactEmail: 'gitflow@example.ac.kr',
+    openToExchange: true,
+  },
 ]
 
 /**
@@ -333,6 +367,42 @@ export const SEED_EVENTS = [
     accent: '#7cc3ff',
     tags: ['합동공연', '교류성사', '댄스', '아카펠라'],
   },
+  {
+    id: 'codemoa-hackathon',
+    clubId: 'codemoa',
+    title: '코드모아 해커톤 — 48시간',
+    category: 'it',
+    description:
+      '48시간 동안 팀을 짜서 하나를 완성하는 교내 해커톤입니다. 타 학교 개발 동아리도 팀으로 참가할 수 있고, 마지막 날 발표는 누구나 보러 올 수 있습니다.',
+    daysFromNow: 17,
+    doorsAt: '09:00',
+    venueName: '한빛대 창업보육센터',
+    venueAddress: '한빛대학교 산학협력관 2층',
+    price: 0,
+    capacity: 80,
+    reservedCount: 41,
+    poster: '💻',
+    accent: '#5ad1e6',
+    tags: ['해커톤', '팀빌딩', '외부참가'],
+  },
+  {
+    id: 'gitflow-demoday',
+    clubId: 'gitflow',
+    title: '깃플로우 데모데이 — 만든 것들',
+    category: 'it',
+    description:
+      '한 학기 동안 만든 프로젝트를 팀별로 10분씩 발표합니다. 발표 후 자유롭게 질문하고 서로 피드백하는 시간이 이어집니다.',
+    daysFromNow: 34,
+    doorsAt: '18:00',
+    venueName: '새길대 공학관',
+    venueAddress: '새길대학교 공학관 301',
+    price: 0,
+    capacity: 100,
+    reservedCount: 27,
+    poster: '🔀',
+    accent: '#a8b9ff',
+    tags: ['데모데이', '발표', '피드백'],
+  },
 ]
 
 /** 교류 — 수락/대기 상태를 섞어 수락률 지표가 보이도록 구성 */
@@ -403,5 +473,24 @@ export const SEED_CONNECTIONS = [
     requesterName: '막과막사이 운영진',
     requesterContact: 'makgwamak',
     daysAgo: 20,
+  },
+  {
+    fromClubId: 'codemoa',
+    toClubId: 'gitflow',
+    status: 'accepted',
+    message:
+      '코드모아입니다. 해커톤에 깃플로우 팀도 참가하고, 저희도 데모데이 보러 가고 싶습니다.',
+    requesterName: '코드모아 운영진',
+    requesterContact: 'codemoa_dev',
+    daysAgo: 24,
+  },
+  {
+    fromClubId: 'codemoa',
+    toClubId: 'framework',
+    status: 'pending',
+    message: '코드모아입니다. 해커톤 현장 기록 영상을 함께 만들어 보고 싶습니다.',
+    requesterName: '코드모아 기획팀',
+    requesterContact: 'codemoa_dev',
+    daysAgo: 4,
   },
 ]

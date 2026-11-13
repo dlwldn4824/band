@@ -23,6 +23,7 @@ export const CLUB_CATEGORIES = [
   { id: 'film', label: '영화·영상' },
   { id: 'art', label: '미술·디자인' },
   { id: 'photo', label: '사진' },
+  { id: 'it', label: 'IT·개발' },
   { id: 'etc', label: '기타' },
 ]
 
