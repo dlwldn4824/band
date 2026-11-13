@@ -11,6 +11,7 @@ import {
 } from '../utils/bandyFormat'
 import { validatePhoneNumber } from '../utils/phoneFormat'
 import { loadBandyIdentity, saveBandyIdentity } from '../utils/bandyIdentity'
+import { myPageLabel } from '../config/brand'
 import './Bandy.css'
 
 /**
@@ -158,14 +159,14 @@ const EventDetail = () => {
           {reservation ? (
             <>
               <div className="bandy-note bandy-note-success">
-                예약이 완료되었습니다. 내 BANDY에서 예약 내역을 확인할 수 있습니다.
+                예약이 완료되었습니다. {myPageLabel()}에서 예약 내역을 확인할 수 있습니다.
               </div>
               <button
                 type="button"
                 className="bandy-btn bandy-btn-ghost"
                 onClick={() => navigate('/my')}
               >
-                내 BANDY로 이동
+                {myPageLabel()}로 이동
               </button>
             </>
           ) : closed ? (

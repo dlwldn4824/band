@@ -20,6 +20,7 @@ import {
   saveBandyIdentity,
   type BandyIdentity,
 } from '../utils/bandyIdentity'
+import { myPageLabel } from '../config/brand'
 import './Bandy.css'
 
 type Tab = 'reservations' | 'card'
@@ -41,7 +42,7 @@ const MyBandy = () => {
   return (
     <div className="bandy">
       <div className="bandy-head">
-        <h2>내 BANDY</h2>
+        <h2>{myPageLabel()}</h2>
         <p>
           {identity.name}님 · 예약한 행사와 현장에서 교환한 프로필을 확인할 수 있습니다.{' '}
           <button
@@ -109,7 +110,7 @@ const IdentityGate = ({ onIdentified }: { onIdentified: (identity: BandyIdentity
   return (
     <div className="bandy">
       <div className="bandy-head">
-        <h2>내 BANDY</h2>
+        <h2>{myPageLabel()}</h2>
         <p>예약할 때 쓴 이름과 연락처로 내역을 불러옵니다.</p>
       </div>
 

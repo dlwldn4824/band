@@ -19,6 +19,7 @@ import Chat from './pages/Chat'
 import Guestbook from './pages/Guestbook'
 import Products from './pages/Products'
 import Onsite from './pages/Onsite'
+import Landing from './pages/Landing'
 import Explore from './pages/Explore'
 import ClubProfile from './pages/ClubProfile'
 import EventDetail from './pages/EventDetail'
@@ -135,7 +136,9 @@ function AppRoutes() {
           <Route path="/card/:shareCode" element={<BandyLayout><NfcCard /></BandyLayout>} />
 
           {/* 첫 화면은 기존 단일 공연 로그인 — 플랫폼 레이어는 /explore 주소로 들어갑니다 */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          {/* 소개 페이지가 첫 화면입니다. 예매(/login)·탐색(/explore)로 갈라집니다. */}
+          <Route path="/" element={<Landing />} />
+          <Route path="/intro" element={<Landing />} />
           <Route
             path="/dashboard"
             element={

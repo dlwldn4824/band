@@ -39,6 +39,7 @@ import {
   toTimeInputValue,
   toTimestamp,
 } from '../utils/bandyFormat'
+import { SERVICE_NAME } from '../config/brand'
 import './Bandy.css'
 
 type Tab = 'connections' | 'events' | 'reservations'
@@ -173,7 +174,7 @@ const ClubCodeGate = ({ onVerified }: { onVerified: (session: ClubSession) => vo
             onChange={(e) => setManageCode(e.target.value.toUpperCase())}
           />
           <p className="bandy-field-hint">
-            코드는 동아리 등록 시 발급됩니다. 분실하면 BANDY 운영진에게 재발급을 요청하세요.
+            코드는 동아리 등록 시 발급됩니다. 분실하면 {SERVICE_NAME} 운영진에게 재발급을 요청하세요.
           </p>
         </div>
 

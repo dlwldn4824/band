@@ -9,6 +9,7 @@ import {
 import type { ProfileCard } from '../types/bandy'
 import { validatePhoneNumber } from '../utils/phoneFormat'
 import { loadBandyIdentity, saveBandyIdentity, type BandyIdentity } from '../utils/bandyIdentity'
+import { SERVICE_NAME, myPageLabel } from '../config/brand'
 import './Bandy.css'
 
 /**
@@ -110,7 +111,7 @@ const NfcCard = () => {
             className="bandy-btn bandy-btn-ghost"
             onClick={() => navigate('/explore')}
           >
-            BANDY 둘러보기
+            {SERVICE_NAME} 둘러보기
           </button>
         </div>
       </div>
@@ -123,7 +124,7 @@ const NfcCard = () => {
         <h2>{exchanged ? '프로필을 교환했습니다' : '프로필 카드'}</h2>
         <p>
           {exchanged
-            ? '서로의 내 BANDY에 저장되었습니다. 공개한 연락 수단으로 이어서 연락할 수 있습니다.'
+            ? `서로의 ${myPageLabel()}에 저장되었습니다. 공개한 연락 수단으로 이어서 연락할 수 있습니다.`
             : '행사 현장에서 전달받은 카드입니다. 교환하면 서로의 목록에 저장됩니다.'}
         </p>
       </div>
@@ -186,7 +187,7 @@ const NfcCard = () => {
             className="bandy-btn bandy-btn-primary"
             onClick={() => navigate('/my')}
           >
-            내 BANDY에서 보기
+            {myPageLabel()}에서 보기
           </button>
         </div>
       ) : !identity ? (
@@ -221,7 +222,7 @@ const NfcCard = () => {
             className="bandy-btn bandy-btn-ghost"
             onClick={() => navigate('/explore')}
           >
-            BANDY 둘러보기
+            {SERVICE_NAME} 둘러보기
           </button>
         </div>
       )}

@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import { SERVICE_NAME, myPageLabel } from '../config/brand'
 import './Layout.css'
 
 /**
@@ -15,7 +16,7 @@ interface BandyLayoutProps {
 
 const TABS = [
   { path: '/explore', label: '탐색' },
-  { path: '/my', label: '내 BANDY' },
+  { path: '/my', label: myPageLabel() },
   { path: '/club-console', label: '동아리 콘솔' },
 ]
 
@@ -58,8 +59,8 @@ const BandyLayout = ({ children }: BandyLayoutProps) => {
         <div className="container">
           <div className="header-top">
             <h1 className="logo">
-              <Link to="/explore" className="logo-button">
-                BANDY
+              <Link to="/" className="logo-button">
+                {SERVICE_NAME}
               </Link>
             </h1>
           </div>

@@ -6,6 +6,7 @@ import type { Club, ClubConnection, PlatformStats } from '../../types/bandy'
 import { categoryLabel } from '../../types/bandy'
 import { formatRelativeTime } from '../../utils/bandyFormat'
 import '../../pages/Admin.css'
+import { SERVICE_NAME } from '../../config/brand'
 import '../../pages/Bandy.css'
 
 /**
@@ -93,7 +94,7 @@ const BandyPlatformSection = () => {
 
   return (
     <div className="admin-section ui-card">
-      <h2 className="admin-section-title">BANDY 플랫폼</h2>
+      <h2 className="admin-section-title">{SERVICE_NAME} 플랫폼</h2>
       <p className="section-description">
         분야별 동아리·행사 탐색, 동아리 간 교류, 행사 예약, 현장 프로필 교환의 운영 현황입니다.
       </p>

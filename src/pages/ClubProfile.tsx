@@ -11,6 +11,7 @@ import { requestConnection, connectionErrorMessage } from '../services/clubConne
 import { categoryLabel } from '../types/bandy'
 import type { Club, ClubEvent, ClubSession } from '../types/bandy'
 import { formatCountdown, formatEventDate, formatPrice, formatSeats } from '../utils/bandyFormat'
+import { SERVICE_NAME } from '../config/brand'
 import './Bandy.css'
 
 /**
@@ -373,7 +374,7 @@ const ConnectionRequestModal = ({
                 onChange={(e) => setManageCode(e.target.value.toUpperCase())}
               />
               <p className="bandy-field-hint">
-                코드는 동아리 등록 시 발급됩니다. 분실하면 BANDY 운영진에게 재발급을 요청하세요.
+                코드는 동아리 등록 시 발급됩니다. 분실하면 {SERVICE_NAME} 운영진에게 재발급을 요청하세요.
               </p>
             </div>
             <div className="bandy-actions">
