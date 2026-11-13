@@ -1,8 +1,12 @@
-# 밴드 공연 관리 웹
+# 밴디 (BANDY)
+
+화면에 보이는 서비스명은 **밴디**입니다. 한때 '마주'로 바꿨다가 되돌렸는데, 그때 브랜드명을 [`src/config/brand.ts`](./src/config/brand.ts) 한 곳으로 모아 둬서 두 줄만 고치면 앱 전체가 따라옵니다.
+
+코드 안의 식별자(`bandyCore.js`, `Bandy.css`, `bandyFormat.ts`, `bandyIdentity` 등)는 **그대로 둡니다** — 화면에 보이는 이름은 [`src/config/brand.ts`](./src/config/brand.ts) 한 곳에서만 바꿉니다.
 
 인디/대학 밴드 공연의 **예매 → 입금 확인 → 입장번호·티켓 → 당일 경험(셋리스트·채팅·방명록·주류)** 을 한 웹앱으로 잇는 운영·관객 허브입니다.
 
-그 위에 **BANDY 플랫폼 레이어**를 얹어, 한 공연이 아니라 **분야별 동아리·행사 탐색 → 동아리 간 교류 → 행사 예약 → 당일 허브 → 현장 프로필 교환**까지 이어집니다.
+그 위에 **밴디 플랫폼 레이어**를 얹어, 한 공연이 아니라 **분야별 동아리·행사 탐색 → 동아리 간 교류 → 행사 예약 → 당일 허브 → 현장 프로필 교환**까지 이어집니다.
 예약한 행사에 당일 허브가 연결돼 있으면 아래의 단일 공연 화면으로 그대로 넘어갑니다.
 
 실제 공연 적용 사례: **Summer Night Live** (2026.08.15 · OO홀)
@@ -11,10 +15,11 @@
 
 | | |
 |---|---|
+| 서비스 소개 | `/`, `/intro` |
 | 동아리·행사 탐색 | `/explore` |
 | 동아리 프로필·교류 | `/clubs/:clubId` |
 | 행사 상세·예약 | `/shows/:eventId` |
-| 내 BANDY·프로필 카드 | `/my`, `/card/:shareCode` |
+| 내 밴디·프로필 카드 | `/my`, `/card/:shareCode` |
 | 동아리 운영진 콘솔 | `/club-console` |
 
 **단일 공연 허브**
@@ -49,7 +54,7 @@ flowchart LR
 
 ---
 
-## BANDY 플랫폼 레이어
+## 밴디 플랫폼 레이어
 
 위 허브가 **한 공연**을 끝까지 책임지는 동안, 그 앞단에는 늘 같은 공백이 있었습니다.
 
@@ -68,7 +73,7 @@ flowchart LR
   CP --> ED
   CP -->|교류 신청| CC["동아리 콘솔 · /club-console"]
   CC -->|수락| CP
-  ED -->|예약| MY["내 BANDY · /my"]
+  ED -->|예약| MY["내 밴디 · /my"]
   MY -->|hubPath| HUB["당일 허브 · /dashboard"]
   MY --> CARD["프로필 카드 · /card/:shareCode"]
 ```
@@ -77,10 +82,11 @@ flowchart LR
 
 | 경로 | 화면 | 하는 일 | 왜 필요했나 |
 |------|------|---------|-------------|
+| `/` · `/intro` | 소개 페이지 | 히어로(「한자리에 모이는 곳」) → 왜 만들었나 → 탐색·교류·예약 3단계 → 다른 점(교류 경유 표시) → 예약 다음(당일 허브) → 현장 프로필 교환 → 검증 지표 → 마무리 CTA 순서로, 서비스 전체를 한 장에서 설명 | 처음 들어온 사람이 예매 폼부터 보게 되면, 이 서비스가 무엇을 하는지 알 방법이 없었음 |
 | `/explore` | 분야별 탐색 | 분야(밴드 / 댄스 / 아카펠라 / 연극·뮤지컬 / 영화·영상 / 미술·디자인 / 사진 / 기타)·대학·검색어로 동아리와 행사를 함께 둘러보기 | 행사 소식이 각 동아리 SNS에 흩어져 있어, 한 화면에서 분야별로 발견할 입구가 필요했음 |
 | `/clubs/:clubId` | 동아리 프로필·교류 신청 | 소개·태그·구성원 규모, 그 동아리의 행사, 이미 수락된 교류 동아리 + 운영진 코드로 교류 신청 | 교류 제안을 DM이 아니라 기록되는 요청으로 남겨, 수락률을 지표로 셀 수 있게 |
 | `/shows/:eventId` | 행사 상세·예약 | 일시·장소·가격·남은 자리 확인 후 이름·연락처·인원으로 예약, 당일 허브 연결 시 바로가기 | 행사별 구글폼 대신 정원(`capacity`)을 지키는 예약 하나로 통일 |
-| `/my` | 내 BANDY | 이름·연락처로 예약 내역 조회·취소, 현장 프로필 카드 만들기·공유, 교환한 프로필 모아보기 | 예약 확인과 현장 명함이 매번 다른 채널로 흩어졌음 |
+| `/my` | 내 밴디 | 이름·연락처로 예약 내역 조회·취소, 현장 프로필 카드 만들기·공유, 교환한 프로필 모아보기 | 예약 확인과 현장 명함이 매번 다른 채널로 흩어졌음 |
 | `/club-console` | 동아리 운영진 콘솔 | 운영진 코드로 들어와 교류 요청 응답(수락·거절·철회), 행사 등록·수정·삭제, 예약자 명단·방문 처리 | 동아리 운영진이 플랫폼 관리자를 거치지 않고 자기 행사·교류를 직접 운영 |
 | `/card/:shareCode` | 현장 프로필 교환 | NFC 태그·QR·링크가 모두 이 경로로 들어와, 동의한 항목만 보여주고 교환 시 양쪽 목록에 함께 남김 | 현장에서 만난 사람과의 연결을 전화번호 수기 교환 없이 남기기 |
 
@@ -88,10 +94,10 @@ flowchart LR
 
 ### 진입 경로
 
-기존 경로는 **하나도 바뀌지 않았습니다.** `/` 는 그대로 `/login` 으로 리다이렉트하고, `/onsite`(현장 예매), `/t/:token`(개인 티켓 링크), `/dashboard`·`/manage` 등 단일 공연 허브도 전부 그대로입니다.
+`/` 는 **소개 페이지**([`src/pages/Landing.tsx`](./src/pages/Landing.tsx))입니다. `/intro` 로도 같은 페이지가 열립니다. 예매·티켓 경로는 **하나도 바뀌지 않았습니다** — `/login`(사전 예매), `/onsite`(현장 예매), `/t/:token`(개인 티켓 링크), `/dashboard`·`/manage` 등 단일 공연 허브는 전부 그대로입니다.
 
 플랫폼 레이어는 **자기 주소로만** 열립니다 — `/explore`, `/clubs/:clubId`, `/shows/:eventId`, `/my`, `/club-console`, `/card/:shareCode`.
-파일럿 기간에는 첫 화면을 탐색으로 두고 싶을 수 있는데, 그때는 [`src/App.tsx`](./src/App.tsx) 의 `/` 리다이렉트 대상을 `/explore` 로 바꾸면 됩니다 (한 줄).
+소개 페이지의 버튼은 각각 `/explore`(행사 둘러보기)와 `/club-console`(우리 모임으로 시작하기)로 보냅니다.
 
 ### 교류·예약 권한 모델
 
@@ -116,7 +122,7 @@ flowchart LR
 
 예약·교류 신청·프로필 카드 쓰기는 기존 [`rateLimit`](./server/lib/rateLimit.js)(IP 해시)을 그대로 씁니다. 예약 문서는 `eventId__전화번호` 1건으로 묶여 재예약이 중복을 만들지 않고, 정원 초과는 트랜잭션에서 `reservedCount` 와 함께 막습니다.
 
-### 파일럿 지표 (`/manage` → 「BANDY 플랫폼」)
+### 파일럿 지표 (`/manage` → 「밴디 플랫폼」)
 
 사업계획서의 검증 항목을 **같은 정의로** 관리자 화면에 올렸습니다 ([`BandyPlatformSection`](./src/components/admin/BandyPlatformSection.tsx) ← `club-events` `stats`).
 
@@ -133,7 +139,7 @@ flowchart LR
 
 ### 파일럿 시드 데이터
 
-`/manage` → 「BANDY 플랫폼」 섹션에서 만듭니다.
+`/manage` → 「밴디 플랫폼」 섹션에서 만듭니다.
 
 | 버튼 | 하는 일 |
 |------|---------|
@@ -345,7 +351,7 @@ flowchart TB
 | 구분 | 컬렉션 | 클라이언트 |
 |------|--------|------------|
 | **차단** | `guests`, `guests_v2`, `bookings`, `loginTokens`, `userProfiles`, `drinkOrders`, `analytics_events`, `rateLimits`, `rpsTournament` | `read`/`write` 모두 `false` → **Admin SDK + `/api/*`만** |
-| **차단 (BANDY 플랫폼)** | `clubs`, `clubEvents`, `clubConnections`, `eventReservations`, `profileCards`, `profileExchanges` | `read`/`write` 모두 `false` → **`/api/clubs`, `/api/club-events`, `/api/club-connections`, `/api/profile-cards` 만** |
+| **차단 (밴디 플랫폼)** | `clubs`, `clubEvents`, `clubConnections`, `eventReservations`, `profileCards`, `profileExchanges` | `read`/`write` 모두 `false` → **`/api/clubs`, `/api/club-events`, `/api/club-connections`, `/api/profile-cards` 만** |
 | **읽기만** | `performanceData`, `bookingInfo`, `chat`, `onlineUsers`, `messages`, `songComments`, `roulette`, `entryDraw`, `current`, `entries` | 공개 읽기 / 쓰기는 서버 |
 
 게스트 문서는 V2로 분리했습니다: `guests_v2/all` ([`src/config/firestorePaths.ts`](./src/config/firestorePaths.ts)).
@@ -585,11 +591,12 @@ npm run preview
 
 | 경로 | 설명 |
 |------|------|
-| `/` | `/login` 으로 리다이렉트 |
+| `/` | 서비스 소개 페이지 |
+| `/intro` | 서비스 소개 페이지 (`/` 와 같은 화면) |
 | `/explore` | 분야별 동아리·행사 탐색 |
 | `/clubs/:clubId` | 동아리 프로필·교류 신청 |
 | `/shows/:eventId` | 행사 상세·예약 (`?from=<clubId>` 로 교류 경유 표시) |
-| `/my` | 내 BANDY — 예약 내역·현장 프로필 카드 |
+| `/my` | 내 밴디 — 예약 내역·현장 프로필 카드 |
 | `/club-console` | 동아리 운영진 콘솔 (운영진 코드) |
 | `/card/:shareCode` | 현장 프로필 교환 (NFC·QR·링크) |
 | `/login` | 사전 예매·로그인 |
@@ -602,7 +609,7 @@ npm run preview
 | `/guestbook` | 방명록 |
 | `/events` | 주류·미니게임 등 |
 | `/t/:token` | 개인 티켓 링크 |
-| `/intro.html` | 사업소개 HTML (5장) |
+| `/intro.html` | 구버전 사업소개 HTML (5장) — 현재 소개 페이지는 `/intro` |
 
 ## 엑셀 게스트 형식
 
