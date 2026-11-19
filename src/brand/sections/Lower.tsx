@@ -1,8 +1,8 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'motion/react'
 import { audienceReasons, clubs, exchanges, links, photos, posters, tickets } from '../content'
 import { useReducedMotion } from '../useReducedMotion'
+import { useScrollIndex } from '../useScrollIndex'
 
 const EASE = [0.19, 1, 0.22, 1] as const
 
@@ -107,10 +107,12 @@ function StepArt({ i }: { i: number }) {
 }
 
 export function Steps() {
-  const [on, setOn] = useState(0)
+  /* 스크롤만 내려도 01 → 02 → 03 이 차례로 펼쳐집니다.
+     올려놓거나 누르는 건 먼저 보고 싶을 때를 위한 보조입니다. */
+  const [ref, on, setOn] = useScrollIndex(audienceReasons.length, { start: 'start 0.75', end: 'end 0.55' })
 
   return (
-    <section className="b-steps" id="audience">
+    <section className="b-steps" id="audience" ref={ref}>
       <div className="b-steps__text">
         <p className="b-kicker">보러 가는 쪽이라면</p>
         <h2 className="b-steps__h">
@@ -160,11 +162,12 @@ export function Steps() {
 const HOME = { name: '멜로딕', uni: '광운대' }
 
 export function MapConnect() {
-  const [on, setOn] = useState(0)
+  /* 여기도 마찬가지입니다 — 내려가는 동안 이어진 동아리가 하나씩 켜집니다 */
+  const [ref, on, setOn] = useScrollIndex(exchanges.length, { start: 'start 0.75', end: 'end 0.55' })
   const picked = exchanges[on]
 
   return (
-    <section className="b-map" id="connect">
+    <section className="b-map" id="connect" ref={ref}>
       <div className="b-map__text">
         <p className="b-kicker">같이 설 팀 찾기</p>
         <h2 className="b-map__h">
@@ -298,15 +301,18 @@ export function Record() {
         </p>
       </div>
 
-      <motion.ul
-        className="b-rec__log"
-        initial={{ opacity: 0, y: 10 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.2 }}
-        transition={{ duration: 0.5, ease: EASE }}
-      >
-        {rows.map((c) => (
-          <li className="b-rec__row" key={c.name}>
+      <ul className="b-rec__log">
+        {rows.map((c, i) => (
+          /* 한 덩어리로 나타나면 스크롤과 따로 노는 느낌이 납니다 —
+             줄마다 제 차례에 올라옵니다 */
+          <motion.li
+            className="b-rec__row"
+            key={c.name}
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.6 }}
+            transition={{ duration: 0.45, delay: Math.min(i, 2) * 0.04, ease: EASE }}
+          >
             <span className="b-map__dot">{c.short}</span>
             <span className="b-rec__name">
               <b>{c.name}</b>
@@ -322,9 +328,9 @@ export function Record() {
                 </span>
               ))}
             </span>
-          </li>
+          </motion.li>
         ))}
-      </motion.ul>
+      </ul>
 
       <p className="b-rec__note">
         점수나 온도가 아니라 실제로 있었던 일만 적습니다. 활동이 없다고 깎이지도 않습니다.

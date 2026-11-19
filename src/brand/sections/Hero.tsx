@@ -6,8 +6,17 @@ import { useReducedMotion } from '../useReducedMotion'
 /**
  * POSH 히어로를 그대로 따릅니다 — 오른쪽에 붙은 큰 제목,
  * 그 아래 실제 포스터가 가로로 늘어서고, 왼쪽 아래에 작은 설명 한 단락.
- * 포스터 띠는 저절로 흐르지 않습니다. 직접 밀어서 봅니다.
+ *
+ * 띠는 저절로 흐릅니다. 아무것도 누르거나 밀지 않아도 포스터가 계속 지나가야
+ * "지금 돌아가는 판"처럼 보입니다. 올려놓으면 멈추니 하나를 들여다볼 수도 있습니다.
  */
+
+/** 실제 포스터 + 아직 포스터가 없는 공연 — 띠에 들어가는 전부 */
+const strip = [
+  ...posters.map((p) => ({ key: p.title, title: p.title, hint: `${p.title} — ${p.sub}`, img: p.src, art: null })),
+  ...upcoming.map((u) => ({ key: u.title, title: u.title, hint: `${u.title} — ${u.note}`, img: null, art: u })),
+]
+
 export default function Hero() {
   const reduced = useReducedMotion()
   const rise = (d: number) =>
@@ -28,16 +37,21 @@ export default function Hero() {
       </motion.h1>
 
       <motion.div className="b-strip" {...rise(0.18)}>
-        {posters.map((p) => (
-          <div className="b-strip__item" key={p.title} title={`${p.title} — ${p.sub}`}>
-            <img src={p.src} alt={`${p.title} 포스터`} />
-          </div>
-        ))}
-        {upcoming.map((u) => (
-          <div className="b-strip__item" key={u.title} title={`${u.title} — ${u.note}`}>
-            <Poster p={u} />
-          </div>
-        ))}
+        {/* 같은 묶음을 두 번 깔고 절반만큼 밀어, 이음매 없이 이어집니다 */}
+        <div className="b-strip__track">
+          {[0, 1].map((pass) =>
+            strip.map((s) => (
+              <div
+                className="b-strip__item"
+                key={`${pass}-${s.key}`}
+                title={s.hint}
+                aria-hidden={pass === 1 ? true : undefined}
+              >
+                {s.img ? <img src={s.img} alt={`${s.title} 포스터`} draggable={false} /> : <Poster p={s.art!} />}
+              </div>
+            ))
+          )}
+        </div>
       </motion.div>
 
       <motion.p className="b-hero__foot" {...rise(0.28)}>
