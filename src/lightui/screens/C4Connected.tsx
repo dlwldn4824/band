@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import Phone from '../components/Phone'
+import TopBar from '../components/TopBar'
 import ConnectedResult from '../components/ConnectedResult'
 import { P } from '../paths'
 
@@ -14,6 +15,8 @@ const C4Connected = () => {
 
   return (
     <Phone>
+      {/* 주소로 바로 들어오면 아래 두 버튼 말고는 나갈 길이 없어서 뒤로가기를 둡니다 */}
+      <TopBar title="" back={P.clubs} />
       <ConnectedResult
         onSeeRecord={() => navigate(P.connection('lexa'))}
         secondaryLabel="3월 연합 공연 같이 지원"

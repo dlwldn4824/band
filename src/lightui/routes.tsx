@@ -18,6 +18,7 @@ import L3Venue from './screens/L3Venue'
 import S12Entry from './screens/S12Entry'
 import S1Start from './screens/S1Start'
 import S1bOnboarding from './screens/S1bOnboarding'
+import S1cKakaoReturn from './screens/S1cKakaoReturn'
 import S3Search from './screens/S3Search'
 import S7Tickets from './screens/S7Tickets'
 import S8Notifications from './screens/S8Notifications'
@@ -79,6 +80,7 @@ export const lightUiRoutes = [
     } />,
   <Route key="ui-start" path="/ui/start" element={<S1Start />} />,
   <Route key="ui-onboarding" path="/ui/start/profile" element={<S1bOnboarding />} />,
+  <Route key="ui-kakao-return" path="/ui/auth/kakao" element={<S1cKakaoReturn />} />,
   <Route key="ui-search" path="/ui/search" element={<S3Search />} />,
   <Route key="ui-tickets" path="/ui/tickets" element={<S7Tickets />} />,
   <Route key="ui-notis" path="/ui/notifications" element={<S8Notifications />} />,

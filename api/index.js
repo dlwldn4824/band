@@ -17,6 +17,7 @@ import { handleClubEventsRequest } from '../server/lib/clubEventsApi.js'
 import { handleClubConnectionsRequest } from '../server/lib/clubConnectionsApi.js'
 import { handleProfileCardsRequest } from '../server/lib/profileCardsApi.js'
 import { handleOgTicketRequest } from '../server/lib/ogTicketApi.js'
+import { handleKakaoAuthRequest } from '../server/lib/kakaoAuthApi.js'
 
 /**
  * Hobby 플랜 함수 개수 제한 대응 — /api/* → 이 단일 함수로 rewrite
@@ -48,6 +49,8 @@ export default async function handler(req, res) {
   }
 
   switch (segments.join('/')) {
+    case 'auth/kakao':
+      return handleKakaoAuthRequest(req, res)
     case 'verify-admin-code':
       return handleVerifyAdminCodeRequest(req, res)
     case 'guests':

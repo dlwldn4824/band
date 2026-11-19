@@ -1,0 +1,11 @@
+/* 카카오에서 돌아오는 자리 */
+.kret {
+  padding: 84px 32px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+.kret__title { font-size: 17px; font-weight: 700; color: var(--lui-ink); }
+.kret__sub { font-size: 13px; line-height: 21px; color: var(--lui-sub); word-break: keep-all; }

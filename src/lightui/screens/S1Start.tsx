@@ -57,6 +57,11 @@ const S1Start = () => {
                 {error}
               </p>
             )}
+
+            {/* 로그인 전에도 공연은 둘러볼 수 있어야 합니다 */}
+            <button type="button" className="s1__browse" onClick={() => navigate(P.home)}>
+              로그인 없이 둘러보기
+            </button>
           </div>
 
           <div className="s1__gap" />

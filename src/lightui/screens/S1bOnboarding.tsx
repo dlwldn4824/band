@@ -87,10 +87,14 @@ const S1bOnboarding = () => {
         </div>
       </div>
 
-      <div className="lui-bottombar">
+      <div className="lui-bottombar lui-bottombar--stack">
         <Button block disabled={!ready} onClick={submit}>
           시작하기
         </Button>
+        {/* 다 채우지 않아도 막히지 않게 — 마이에서 나중에 바꿀 수 있습니다 */}
+        <button type="button" className="ob__later" onClick={() => navigate(P.home)}>
+          나중에 할게요
+        </button>
       </div>
     </Phone>
   )

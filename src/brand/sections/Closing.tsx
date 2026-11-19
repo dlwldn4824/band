@@ -24,7 +24,7 @@ function Rise({ children, delay = 0 }: { children: React.ReactNode; delay?: numb
 
 /** 풀블리드 공연 사진 한 장 — 글자 없이 사진만 */
 export function BandPhoto() {
-  return <div className="b-band" style={{ backgroundImage: `url(${photos.stage})` }} role="img" aria-label="공연 중인 무대" />
+  return <div className="b-band" style={{ backgroundImage: `url("${photos.stage}")` }} role="img" aria-label="공연 중인 무대" />
 }
 
 /** 문장 하나 + 버튼 — POSH 의 'Driving culture & community' 자리 */
@@ -58,7 +58,7 @@ export function Clubs() {
 
   return (
     <section className="b-clubs">
-      <div className="b-clubs__bg" style={{ backgroundImage: `url(${photos.wall})` }} />
+      <div className="b-clubs__bg" style={{ backgroundImage: `url("${photos.wall}")` }} />
       <div className="b-clubs__list">
         {clubs.map((c, i) => (
           <button
@@ -87,11 +87,11 @@ export function Clubs() {
 export function Tiles() {
   return (
     <section className="b-tiles">
-      <Link className="b-tile" to={links.console} style={{ backgroundImage: `url(${photos.entry})` }}>
+      <Link className="b-tile" to={links.console} style={{ backgroundImage: `url("${photos.entry}")` }}>
         <small>무대에 서는 쪽</small>
         <b>우리 공연 올리기</b>
       </Link>
-      <Link className="b-tile" to={links.shows} style={{ backgroundImage: `url(${photos.stage})` }}>
+      <Link className="b-tile" to={links.shows} style={{ backgroundImage: `url("${photos.stage}")` }}>
         <small>보러 가는 쪽</small>
         <b>가까운 공연 찾기</b>
       </Link>

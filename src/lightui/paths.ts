@@ -10,6 +10,7 @@ export const P = {
   // 관객
   start: '/ui/start',                                   // S1
   onboarding: '/ui/start/profile',                      // 온보딩 1스텝 (Figma 프레임 없음)
+  kakaoReturn: '/ui/auth/kakao',                        // 카카오가 돌려보내는 자리
   home: '/ui',                                          // L1
   map: '/ui/map',                                       // S2
   search: '/ui/search',                                 // S3
