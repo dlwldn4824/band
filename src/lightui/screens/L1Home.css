@@ -54,14 +54,21 @@
   height: 100%;
   object-fit: cover;
 }
+/* 카드 전체를 덮는 버튼 — 하트는 그 위에 따로 얹습니다 */
+.l1-show { position: relative; }
+.l1-show__hit { display: flex; flex-direction: column; gap: 10px; width: 100%; text-align: left; }
+
 .l1-show__like {
-  position: relative;
+  position: absolute;
+  right: 10px; top: 10px;
   width: 30px; height: 30px;
   border-radius: var(--lui-r-pill);
   background: var(--lui-bg);
   display: flex; align-items: center; justify-content: center;
-  color: var(--lui-accent);
+  /* 아직 안 누른 상태는 비어 보이게 — 늘 빨간 하트는 이미 찜한 것처럼 보입니다 */
+  color: var(--lui-icon-faint);
 }
+.l1-show__like--on { color: var(--lui-accent); }
 .l1-show__meta { display: flex; flex-direction: column; gap: 4px; }
 .l1-show__name {
   font-size: 14.5px;

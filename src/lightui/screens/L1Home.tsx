@@ -9,6 +9,7 @@ import Logo from '../components/Logo'
 import RadarMap from '../components/RadarMap'
 import CountUp from '../components/CountUp'
 import { P } from '../paths'
+import { useLikes } from '../likes'
 import { weekShows, nearby } from '../../mocks/bandyLight'
 import './L1Home.css'
 
@@ -17,6 +18,7 @@ const L1Home = () => {
   const navigate = useNavigate()
   // 레이더 스윕이 끝나면 아래 줄의 숫자가 올라갑니다
   const [counted, setCounted] = useState(false)
+  const { isLiked, toggleLike } = useLikes()
 
   return (
     <Phone>
@@ -45,26 +47,35 @@ const L1Home = () => {
 
           <div className="l1__shows">
             {weekShows.map((show) => (
-              <button
-                key={show.id}
-                type="button"
-                className="l1-show"
-                onClick={() => navigate(P.show(show.id))}
-              >
-                <span className="l1-show__poster">
-                  {show.poster && <img src={show.poster} alt="" />}
-                  <span className="l1-show__like">
-                    <Icon name="heart" size={18} />
+              /* 하트가 카드 버튼 안에 있으면 눌러도 카드가 열립니다 —
+                 카드를 div 로 두고 둘을 따로 둡니다 */
+              <div key={show.id} className="l1-show">
+                <button
+                  type="button"
+                  className="l1-show__hit"
+                  onClick={() => navigate(P.show(show.id))}
+                >
+                  <span className="l1-show__poster">
+                    {show.poster && <img src={show.poster} alt="" />}
                   </span>
-                </span>
-                <span className="l1-show__meta">
-                  <span className="lui-pill">{show.genre}</span>
-                  <span className="l1-show__name">{show.title}</span>
-                  <span className="l1-show__where">
-                    {show.venue} · {show.date}
+                  <span className="l1-show__meta">
+                    <span className="lui-pill">{show.genre}</span>
+                    <span className="l1-show__name">{show.title}</span>
+                    <span className="l1-show__where">
+                      {show.venue} · {show.date}
+                    </span>
                   </span>
-                </span>
-              </button>
+                </button>
+                <button
+                  type="button"
+                  className={`l1-show__like${isLiked(show.id) ? ' l1-show__like--on' : ''}`}
+                  aria-label={`${show.title} 찜하기`}
+                  aria-pressed={isLiked(show.id)}
+                  onClick={() => toggleLike(show.id)}
+                >
+                  <Icon name="heart" size={18} />
+                </button>
+              </div>
             ))}
           </div>
 

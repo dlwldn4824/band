@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import Phone from '../components/Phone'
 import SectionHeader from '../components/SectionHeader'
 import ListRow from '../components/ListRow'
@@ -7,6 +7,7 @@ import Button from '../components/Button'
 import Icon from '../components/Icon'
 import DirectionsSheet from '../components/DirectionsSheet'
 import { P } from '../paths'
+import { useLikes } from '../likes'
 import { useGoBack } from '../useGoBack'
 import { showDetail as s } from '../../mocks/bandyLight'
 import mapVenue from '../assets/map-venue.svg'
@@ -16,7 +17,8 @@ import './D1Show.css'
 const D1Show = () => {
   const navigate = useNavigate()
   const goBack = useGoBack()
-  const [liked, setLiked] = useState(false)
+  const { showId = 'glow' } = useParams()
+  const { isLiked, toggleLike } = useLikes()
   const [dirs, setDirs] = useState(false)
 
   return (
@@ -30,10 +32,10 @@ const D1Show = () => {
           <div className="d1__hero-right">
             <button
               type="button"
-              className={`d1__round${liked ? ' d1__round--on' : ''}`}
+              className={`d1__round${isLiked(showId) ? ' d1__round--on' : ''}`}
               aria-label="찜하기"
-              aria-pressed={liked}
-              onClick={() => setLiked((v) => !v)}
+              aria-pressed={isLiked(showId)}
+              onClick={() => toggleLike(showId)}
             >
               <Icon name="heart" size={18} />
             </button>
