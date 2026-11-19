@@ -14,6 +14,9 @@ const SIZES: Record<TicketImageSize, { w: number; h: number }> = {
   story: { w: 1080, h: 1920 }, // 인스타 스토리
 }
 
+/** 티켓 디자인 — 보내는 사람이 고릅니다 */
+export type TicketTheme = 'dark' | 'light' | 'poster'
+
 export interface TicketImageInput {
   title: string
   when: string
@@ -21,9 +24,16 @@ export interface TicketImageInput {
   /** 포스터 이미지 URL (같은 출처여야 canvas 가 오염되지 않습니다) */
   poster?: string
   link: string
+  theme?: TicketTheme
 }
 
-const INK = '#17181C'
+/** 디자인마다 바탕·글자색만 다릅니다. 판형은 같습니다 */
+const THEMES: Record<TicketTheme, { bg: string; fg: string; sub: string; slot: string; dash: string }> = {
+  dark: { bg: '#17181C', fg: '#FFFFFF', sub: '#9BA0A8', slot: '#26272C', dash: 'rgba(255,255,255,0.18)' },
+  light: { bg: '#FFFFFF', fg: '#17181C', sub: '#8A8F98', slot: '#F3F4F6', dash: 'rgba(0,0,0,0.14)' },
+  poster: { bg: '#0E0F12', fg: '#FFFFFF', sub: '#C3C6CB', slot: '#1C1D21', dash: 'rgba(255,255,255,0.22)' },
+}
+
 const ACCENT = '#FF5A5A'
 const SUB = '#9BA0A8'
 
@@ -91,8 +101,9 @@ export async function renderTicketImage(
   }
 
   const font = (weight: number, px: number) => `${weight} ${px}px Pretendard, 'Noto Sans KR', sans-serif`
+  const t = THEMES[input.theme ?? 'dark']
 
-  ctx.fillStyle = INK
+  ctx.fillStyle = t.bg
   ctx.fillRect(0, 0, w, h)
 
   const poster = input.poster ? await loadImage(input.poster) : null
@@ -107,14 +118,14 @@ export async function renderTicketImage(
     ctx.save()
     roundRect(ctx, pad, cardY, posterW, cardH, 24)
     ctx.clip()
-    ctx.fillStyle = '#26272C'
+    ctx.fillStyle = t.slot
     ctx.fillRect(pad, cardY, posterW, cardH)
     if (poster) drawCover(ctx, poster, pad, cardY, posterW, cardH)
     ctx.restore()
 
     // 가운데 점선 (티켓 절취선)
     const lineX = pad + posterW + 48
-    ctx.strokeStyle = 'rgba(255,255,255,0.18)'
+    ctx.strokeStyle = t.dash
     ctx.lineWidth = 3
     ctx.setLineDash([10, 14])
     ctx.beginPath()
@@ -122,8 +133,8 @@ export async function renderTicketImage(
     ctx.lineTo(lineX, cardY + cardH - 24)
     ctx.stroke()
     ctx.setLineDash([])
-    notches(ctx, lineX, cardY - 8, 0, 22, INK)
-    notches(ctx, lineX, cardY + cardH + 8, 0, 22, INK)
+    notches(ctx, lineX, cardY - 8, 0, 22, t.bg)
+    notches(ctx, lineX, cardY + cardH + 8, 0, 22, t.bg)
 
     // 글자
     const tx = lineX + 56
@@ -132,16 +143,16 @@ export async function renderTicketImage(
     ctx.font = font(700, 26)
     ctx.fillText('BANDY · 공연 초대', tx, cardY + 92)
 
-    ctx.fillStyle = '#FFFFFF'
+    ctx.fillStyle = t.fg
     ctx.font = font(800, 56)
     wrapText(ctx, input.title, tx, cardY + 180, tw, 70, 2)
 
-    ctx.fillStyle = SUB
+    ctx.fillStyle = t.sub
     ctx.font = font(400, 30)
     ctx.fillText(input.when, tx, cardY + 330)
     ctx.fillText(input.venue, tx, cardY + 380)
 
-    ctx.fillStyle = 'rgba(255,255,255,0.45)'
+    ctx.fillStyle = t.sub
     ctx.font = font(400, 24)
     ctx.fillText(input.link, tx, cardY + cardH - 40)
   } else {
@@ -151,7 +162,7 @@ export async function renderTicketImage(
     ctx.save()
     roundRect(ctx, pad, 220, w - pad * 2, posterH, 36)
     ctx.clip()
-    ctx.fillStyle = '#26272C'
+    ctx.fillStyle = t.slot
     ctx.fillRect(pad, 220, w - pad * 2, posterH)
     if (poster) drawCover(ctx, poster, pad, 220, w - pad * 2, posterH)
     ctx.restore()

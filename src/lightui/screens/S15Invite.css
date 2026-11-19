@@ -29,3 +29,39 @@
   z-index: 50;
   text-align: center;
 }
+
+/* 티켓 디자인 고르기 */
+.s15__themes { display: flex; gap: 8px; }
+.s15-theme {
+  display: flex; align-items: center; gap: 7px;
+  padding: 9px 13px;
+  border-radius: var(--lui-r-pill);
+  border: 1px solid var(--lui-field-line);
+  background: var(--lui-ghost-bg);
+  font-size: 12.5px; color: var(--lui-body);
+}
+.s15-theme--on {
+  background: var(--lui-inverse-bg);
+  border-color: var(--lui-inverse-bg);
+  color: var(--lui-inverse-fg);
+  font-weight: 700;
+}
+.s15-theme__chip { width: 14px; height: 14px; border-radius: 4px; flex: none; border: 1px solid var(--lui-line); }
+.s15-theme__chip--dark { background: #17181c; }
+.s15-theme__chip--light { background: #ffffff; }
+.s15-theme__chip--poster { background: linear-gradient(140deg, #e0443f, #17181c); border-color: transparent; }
+
+/* 포스터 직접 올리기 */
+.s15__upload {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; padding: 13px;
+  border-radius: var(--lui-r-btn, 12px);
+  border: 1px dashed var(--lui-field-line);
+  background: var(--lui-ghost-bg);
+  font-size: 13px; font-weight: 600; color: var(--lui-body);
+}
+.s15__upload-undo {
+  display: block; margin: 8px auto 0;
+  font-size: 11.5px; font-weight: 600; color: var(--lui-sub);
+  padding: 4px;
+}

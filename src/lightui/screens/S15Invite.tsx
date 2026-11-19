@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Phone from '../components/Phone'
 import MoreMenu from '../components/MoreMenu'
@@ -9,10 +9,16 @@ import Button from '../components/Button'
 import Icon from '../components/Icon'
 import { P } from '../paths'
 import { invite as iv } from '../../mocks/bandyLight'
-import { renderTicketImage } from '../share/ticketImage'
+import { renderTicketImage, type TicketTheme } from '../share/ticketImage'
 import { copyLink, downloadStoryImage, shareByKakao, shareBySms } from '../share/share'
 import inviteTicket from '../assets/invite-ticket.png'
 import './S15Invite.css'
+
+const TICKET_THEMES: { key: TicketTheme; label: string }[] = [
+  { key: 'dark', label: '검정' },
+  { key: 'light', label: '흰색' },
+  { key: 'poster', label: '포스터' },
+]
 
 /** S15 초대 보내기 — Figma 235:2 */
 const S15Invite = () => {
@@ -20,13 +26,29 @@ const S15Invite = () => {
   const [message, setMessage] = useState(iv.message)
   const [preview, setPreview] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+  const [theme, setTheme] = useState<TicketTheme>('dark')
+  /** 직접 올린 포스터 — 올리면 티켓 그림이 이걸 씁니다 */
+  const [poster, setPoster] = useState<string | null>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
 
   const ticket = {
     title: iv.title,
     when: iv.ticketWhen,
     venue: iv.venue,
-    poster: iv.poster,
+    poster: poster ?? iv.poster,
     link: iv.link,
+    theme,
+  }
+
+  const pickPoster = (file: File | undefined) => {
+    if (!file) return
+    if (!file.type.startsWith('image/')) return say('이미지 파일만 올릴 수 있어요')
+    // 큰 사진은 그리는 데 오래 걸립니다
+    if (file.size > 8 * 1024 * 1024) return say('8MB 보다 작은 이미지로 올려 주세요')
+    setPoster((old) => {
+      if (old) URL.revokeObjectURL(old)
+      return URL.createObjectURL(file)
+    })
   }
 
   /**
@@ -50,7 +72,7 @@ const S15Invite = () => {
       if (url) URL.revokeObjectURL(url)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [theme, poster])
 
   const say = (text: string) => {
     setToast(text)
@@ -96,6 +118,52 @@ const S15Invite = () => {
               <span className="s15__link">{iv.link}</span>
             </div>
           </div>
+
+          <div className="s15__gap-26" />
+          <SectionHeader title="티켓 디자인" aside={poster ? '올린 사진' : '기본 포스터'} />
+          <div className="s15__themes">
+            {TICKET_THEMES.map((t) => (
+              <button
+                key={t.key}
+                type="button"
+                aria-pressed={t.key === theme}
+                className={`s15-theme${t.key === theme ? ' s15-theme--on' : ''}`}
+                onClick={() => setTheme(t.key)}
+              >
+                <span className={`s15-theme__chip s15-theme__chip--${t.key}`} />
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="s15__gap-14" />
+          <button type="button" className="s15__upload" onClick={() => fileRef.current?.click()}>
+            <Icon name="plus" size={18} />
+            {poster ? '다른 포스터로 바꾸기' : '포스터 직접 올리기'}
+          </button>
+          {poster && (
+            <button
+              type="button"
+              className="s15__upload-undo"
+              onClick={() => {
+                URL.revokeObjectURL(poster)
+                setPoster(null)
+              }}
+            >
+              올린 사진 지우기
+            </button>
+          )}
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            hidden
+            onChange={(e) => {
+              pickPoster(e.target.files?.[0])
+              // 같은 파일을 다시 골라도 바뀌게
+              e.target.value = ''
+            }}
+          />
 
           <div className="s15__gap-26" />
           <SectionHeader title="같이 보낼 말" aside="기본 문구" />
