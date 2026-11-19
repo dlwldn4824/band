@@ -8,6 +8,7 @@ import SectionHeader from '../components/SectionHeader'
 import ListRow from '../components/ListRow'
 import Toggle from '../components/Toggle'
 import { P } from '../paths'
+import PushRow from '../push/PushRow'
 import { notifications as n } from '../../mocks/bandyLight'
 import './S8Notifications.css'
 
@@ -72,7 +73,12 @@ const S8Notifications = () => {
           </div>
 
           <div className="s8__gap-26" />
-          <SectionHeader title="알림 설정" />
+          {/* 「받을 수 있는지」 와 「무엇을 받을지」 는 다른 이야기라 카드를 나눕니다 */}
+          <SectionHeader title="알림 받기" />
+          <PushRow />
+
+          <div className="s8__gap-26" />
+          <SectionHeader title="무엇을 받을지" />
           <div className="lui-card s8__list">
             {settings.map((row) => (
               <ListRow

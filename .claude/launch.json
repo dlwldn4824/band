@@ -22,6 +22,18 @@
         "dev"
       ],
       "port": 5173
+    },
+    {
+      "name": "case-study",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "4173",
+        "--directory",
+        "/Users/LEEJIWOO/Desktop/대학교폴더/대외활동/bandy-case-study"
+      ],
+      "port": 4173
     }
   ]
 }

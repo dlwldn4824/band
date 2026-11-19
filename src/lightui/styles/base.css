@@ -750,6 +750,8 @@ textarea.lui-input {
 }
 .lui-toggle--on { background: var(--lui-inverse-bg); justify-content: flex-end; }
 .lui-toggle__knob { width: 20px; height: 20px; border-radius: var(--lui-r-pill); background: var(--lui-card); display: block; }
+/* 켤 수 없는 자리 — 눌러도 아무 일이 없다는 걸 손이 가기 전에 보여 줍니다 */
+.lui-toggle--off-limits { opacity: 0.4; cursor: default; }
 
 /* 읽지 않음 점 — S8 211:35 */
 .lui-unread { width: 7px; height: 7px; border-radius: var(--lui-r-pill); background: var(--lui-accent); flex: none; }
