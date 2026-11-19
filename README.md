@@ -1,5 +1,12 @@
 # 밴디 (BANDY)
 
+| | |
+|---|---|
+| 서비스 | <https://band-alpha.vercel.app> |
+| UX 소개서 | <https://dlwldn4824.github.io/bandy-case-study/> ([저장소](https://github.com/dlwldn4824/bandy-case-study)) |
+
+왜 만들었고 어떤 흐름으로 이어지는지는 소개서에 한 줄로 정리돼 있습니다. 이 문서는 그 아래, 코드가 어떻게 생겼는지를 다룹니다.
+
 화면에 보이는 서비스명은 **밴디**입니다. 한때 '마주'로 바꿨다가 되돌렸는데, 그때 브랜드명을 [`src/config/brand.ts`](./src/config/brand.ts) 한 곳으로 모아 둬서 두 줄만 고치면 앱 전체가 따라옵니다.
 
 코드 안의 식별자(`bandyCore.js`, `Bandy.css`, `bandyFormat.ts`, `bandyIdentity` 등)는 **그대로 둡니다** — 화면에 보이는 이름은 [`src/config/brand.ts`](./src/config/brand.ts) 한 곳에서만 바꿉니다.
