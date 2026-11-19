@@ -383,6 +383,149 @@ export const clubDetail = {
   pastCount: 7,
 }
 
+/** 다음 공연이 아직 없는 동아리도 있습니다 */
+export type ClubDetail = Omit<typeof clubDetail, 'upcoming'> & {
+  upcoming: { thumb: string; title: string; sub: string } | null
+}
+
+/**
+ * 동아리마다 다른 상세 페이지.
+ *
+ * 예전에는 clubDetail 하나만 그려서, 어느 동아리를 눌러도 멜로딕이 나왔습니다.
+ * 주소의 id 로 찾고, 밴디에 아직 등록하지 않은 동아리는 찾지 못합니다 —
+ * 그때는 화면이 「아직 등록 전」 이라고 말합니다 (없는 정보를 지어내지 않습니다).
+ */
+export const clubsById: Record<string, ClubDetail> = {
+  melodic: clubDetail,
+  lexa: {
+    cover: coverPosterWall,
+    initial: '렉',
+    name: '렉사',
+    sub: '한양대학교 · 밴드 · 2011년 창단',
+    stats: [
+      { k: '부원', v: '24' },
+      { k: '올해 공연', v: '3' },
+      { k: '교류 동아리', v: '5' },
+    ],
+    about:
+      '얼터너티브와 포스트록을 주로 합니다. 연합 공연을 자주 주최해서, 팀을 구하는 모집 글이 올라오면 대체로 렉사입니다.',
+    upcoming: {
+      thumb: posters.union,
+      title: '렉사 X 멜로딕 연합',
+      sub: '11.29 (토) 18:00 · 몽향',
+    },
+    past: [
+      { title: '렉사 X 멜로딕 연합 공연', sub: '06.07 · 몽향 · 관객 88명' },
+      { title: '렉사 봄 정기 공연', sub: '05.18 · 한양대 소극장 · 관객 70명' },
+    ],
+    pastCount: 5,
+  },
+  harmonic: {
+    cover: coverPosterWall,
+    initial: '하',
+    name: '하모닉',
+    sub: '삼육대학교 · 밴드 · 2015년 창단',
+    stats: [
+      { k: '부원', v: '12' },
+      { k: '올해 공연', v: '4' },
+      { k: '교류 동아리', v: '3' },
+    ],
+    about: '모던록과 발라드를 합니다. 작은 공연장에서 자주 서고, 합주실을 다른 동아리와 나눠 씁니다.',
+    upcoming: {
+      thumb: posters.draft,
+      title: '하모닉 겨울 정기',
+      sub: '12.13 (토) 18:00 · 삼육대 대강당',
+    },
+    past: [
+      { title: '겨울 합동 공연', sub: '11.02 · 라디오가가 · 관객 74명' },
+      { title: '하모닉 가을 정기', sub: '10.12 · 삼육대 소극장 · 관객 52명' },
+    ],
+    pastCount: 4,
+  },
+  acappella: {
+    cover: coverPosterWall,
+    initial: '아',
+    name: '아카펠라',
+    sub: '서울여자대학교 · 아카펠라 · 2013년 창단',
+    stats: [
+      { k: '부원', v: '9' },
+      { k: '올해 공연', v: '2' },
+      { k: '교류 동아리', v: '2' },
+    ],
+    about: '반주 없이 목소리만으로 합니다. 밴드 공연의 게스트로 서는 일이 많습니다.',
+    upcoming: {
+      thumb: posters.draft,
+      title: '아카펠라 겨울 정기',
+      sub: '12.06 (토) 17:00 · 광운대 노천극장',
+    },
+    past: [{ title: '아카펠라 겨울 정기 게스트', sub: '12.06 · 광운대 노천극장 · 관객 120명' }],
+    pastCount: 2,
+  },
+  sonapeum: {
+    cover: coverPosterWall,
+    initial: '손',
+    name: '손아픔',
+    sub: '서울과학기술대학교 · 밴드 · 2018년 창단',
+    stats: [
+      { k: '부원', v: '11' },
+      { k: '올해 공연', v: '2' },
+      { k: '교류 동아리', v: '2' },
+    ],
+    about: '쏜애플 커버로 시작한 팀입니다. 요즘은 자작곡도 섞어서 합니다.',
+    upcoming: {
+      thumb: posters.draft,
+      title: '손아픔 단독 공연',
+      sub: '12.06 (토) 19:00 · 홍대 미드나잇',
+    },
+    past: [{ title: '가을 정기 게스트', sub: '09.28 · 서울과기대 소극장 · 관객 60명' }],
+    pastCount: 3,
+  },
+  bluenote: {
+    cover: coverPosterWall,
+    initial: '블',
+    name: '블루노트',
+    sub: '서울여자대학교 · 밴드 · 2010년 창단',
+    stats: [
+      { k: '부원', v: '14' },
+      { k: '올해 공연', v: '2' },
+      { k: '교류 동아리', v: '1' },
+    ],
+    about: '재즈와 소울을 합니다. 이번 학기는 자체 정기 공연을 준비하고 있습니다.',
+    upcoming: null,
+    past: [{ title: '블루노트 여름 정기', sub: '08.09 · 서울여대 소극장 · 관객 48명' }],
+    pastCount: 2,
+  },
+  soriul: {
+    cover: coverPosterWall,
+    initial: '소',
+    name: '소리울',
+    sub: '인덕대학교 · 아카펠라 · 2019년 창단',
+    stats: [
+      { k: '부원', v: '8' },
+      { k: '올해 공연', v: '1' },
+      { k: '교류 동아리', v: '1' },
+    ],
+    about: '이제 막 밴디에 들어왔습니다. 4월 버스킹을 같이 할 팀을 찾고 있습니다.',
+    upcoming: null,
+    past: [],
+    pastCount: 0,
+  },
+}
+
+/** id 로도 이름으로도 찾습니다 — 화면마다 넘기는 값이 달라서 */
+export function clubFor(key: string): ClubDetail | undefined {
+  const direct = clubsById[key]
+  if (direct) return direct
+  return Object.values(clubsById).find((club) => club.name === key)
+}
+
+/** 밴디에 아직 등록하지 않은 동아리 — 없는 정보를 지어내지 않습니다 */
+export const clubNotFound = {
+  title: '아직 밴디에 등록하지 않은 동아리예요',
+  body: '등록하면 공연과 교류 기록이 여기에 쌓입니다. 아는 동아리면 운영진에게 알려 주세요.',
+  cta: '다른 동아리 찾아보기',
+}
+
 /* ── S5 모집 글 쓰기 ────────────────────────────────── */
 export const recruitForm = {
   title: '연합 공연 같이 할 팀 2팀 구해요',

@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
+import TopBar from '../components/TopBar'
 import Phone from '../components/Phone'
 import TabBar from '../components/TabBar'
 import SectionHeader from '../components/SectionHeader'
@@ -11,7 +12,7 @@ import { P } from '../paths'
 import { useGoBack } from '../useGoBack'
 import { useRole } from '../auth/role'
 import { copyLink, shareBySms } from '../share/share'
-import { clubDetail as c } from '../../mocks/bandyLight'
+import { clubFor, clubNotFound } from '../../mocks/bandyLight'
 import './S4Club.css'
 
 /** S4 동아리 상세 — Figma 207:2 */
@@ -20,7 +21,35 @@ const S4Club = () => {
   const goBack = useGoBack()
   const { isManager } = useRole()
   const [following, setFollowing] = useState(false)
-  const link = `${window.location.origin}${P.club('melodic')}`
+  const { clubId = 'melodic' } = useParams()
+  // 동아리마다 다른 화면입니다 — 예전에는 어느 동아리를 눌러도 멜로딕이 나왔습니다
+  const c = clubFor(clubId)
+  const link = `${window.location.origin}${P.club(clubId)}`
+
+  // 밴디에 아직 등록하지 않은 동아리 — 없는 정보를 지어내지 않고 그렇다고 말합니다
+  if (!c) {
+    const guessedName = /^[a-z0-9-]+$/i.test(clubId) ? null : decodeURIComponent(clubId)
+    return (
+      <Phone>
+        <TopBar title={guessedName ?? '동아리'} />
+        <div className="lui-body">
+          <div className="s4-none">
+            <span className="s4-none__mark">
+              <Icon name="search" size={22} />
+            </span>
+            <p className="s4-none__title">{clubNotFound.title}</p>
+            <p className="s4-none__body">{clubNotFound.body}</p>
+          </div>
+        </div>
+        <div className="lui-bottombar">
+          <Button block onClick={() => navigate(P.search)}>
+            {clubNotFound.cta}
+          </Button>
+        </div>
+        <TabBar active="club" />
+      </Phone>
+    )
+  }
 
   return (
     <Phone>
@@ -103,7 +132,7 @@ const S4Club = () => {
             </Button>
             {/* 교류 제안은 운영진 일입니다 */}
             {isManager && (
-              <Button variant="ghost" onClick={() => navigate(P.chat('melodic'))}>
+              <Button variant="ghost" onClick={() => navigate(P.chat(clubId))}>
                 교류 제안
               </Button>
             )}
@@ -114,20 +143,25 @@ const S4Club = () => {
           <p className="s4__about">{c.about}</p>
 
           <div className="s4__gap-26" />
-          <SectionHeader title="다가오는 공연" aside="1" />
+          <SectionHeader title="다가오는 공연" aside={c.upcoming ? '1' : '0'} />
           <div className="lui-card s4__upcoming">
-            <ListRow
-              avatar={<img src={c.upcoming.thumb} alt="" />}
-              title={c.upcoming.title}
-              sub={c.upcoming.sub}
-              chevron
-              onClick={() => navigate(P.show('glow'))}
-            />
+            {c.upcoming ? (
+              <ListRow
+                avatar={<img src={c.upcoming.thumb} alt="" />}
+                title={c.upcoming.title}
+                sub={c.upcoming.sub}
+                chevron
+                onClick={() => navigate(P.show('glow'))}
+              />
+            ) : (
+              <p className="s4__empty">잡힌 공연이 아직 없어요.</p>
+            )}
           </div>
 
           <div className="s4__gap-26" />
           <SectionHeader title="지난 공연" aside={String(c.pastCount)} />
           <div className="lui-card s4__past">
+            {c.past.length === 0 && <p className="s4__empty">아직 올라온 공연 기록이 없어요.</p>}
             {c.past.map((show) => (
               <ListRow
                 key={show.title}
