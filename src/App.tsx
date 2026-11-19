@@ -26,6 +26,7 @@ import EventDetail from './pages/EventDetail'
 import MyBandy from './pages/MyBandy'
 import ClubConsole from './pages/ClubConsole'
 import NfcCard from './pages/NfcCard'
+import BrandLanding from './brand/BrandLanding'
 
 function useAppHeight() {
   useEffect(() => {
@@ -134,6 +135,10 @@ function AppRoutes() {
           <Route path="/club-console" element={<BandyLayout><ClubConsole /></BandyLayout>} />
           {/* NFC 태그 · QR · 링크 공유가 모두 이 경로로 들어옵니다 */}
           <Route path="/card/:shareCode" element={<BandyLayout><NfcCard /></BandyLayout>} />
+
+          {/* 브랜드 랜딩 — 처음 온 사람에게 보여 주는 페이지입니다.
+              앱 홈(/explore)과 라우트를 분리해 두었습니다. 폴더도 src/brand 로 따로 있습니다. */}
+          <Route path="/brand" element={<BrandLanding />} />
 
           {/* 첫 화면은 기존 단일 공연 로그인 — 플랫폼 레이어는 /explore 주소로 들어갑니다 */}
           {/* 소개 페이지가 첫 화면입니다. 예매(/login)·탐색(/explore)로 갈라집니다. */}
