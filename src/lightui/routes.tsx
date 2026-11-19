@@ -26,6 +26,9 @@ import S3Search from './screens/S3Search'
 import S7Tickets from './screens/S7Tickets'
 import S8Notifications from './screens/S8Notifications'
 import S14Me from './screens/S14Me'
+import S20Legal from './screens/S20Legal'
+import S21Email from './screens/S21Email'
+import S22Blocked from './screens/S22Blocked'
 import S15Invite from './screens/S15Invite'
 import S16InviteSms from './screens/S16InviteSms'
 import S17InviteCard from './screens/S17InviteCard'
@@ -45,6 +48,11 @@ import P6Guestbook from './screens/P6Guestbook'
  * 화면 간 이동은 Figma 프로토타입 연결을 그대로 옮긴 것입니다 (paths.ts 참고).
  */
 export const lightUiRoutes = [
+  // 약관 · 개인정보 · 환불, 이메일 로그인, 차단 목록 — 스토어 심사에 필요한 것들
+  <Route key="ui-legal" path="/ui/legal/:doc" element={<S20Legal />} />,
+  <Route key="ui-legal-i" path="/ui/legal" element={<S20Legal />} />,
+  <Route key="ui-email" path="/ui/start/email" element={<S21Email />} />,
+  <Route key="ui-blocked" path="/ui/blocked" element={<S22Blocked />} />,
   <Route key="ui-home" path="/ui" element={<L1Home />} />,
   <Route key="ui-show" path="/ui/show/:showId" element={<D1Show />} />,
   <Route key="ui-book" path="/ui/show/:showId/book" element={<D2Book />} />,

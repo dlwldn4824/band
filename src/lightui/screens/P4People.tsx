@@ -6,6 +6,8 @@ import SectionHeader from '../components/SectionHeader'
 import ListRow from '../components/ListRow'
 import Icon from '../components/Icon'
 import { P } from '../paths'
+import ReportMenu from '../safety/ReportMenu'
+import { useBlocked } from '../safety/report'
 import { nearbyPeople as np } from '../../mocks/bandyLight'
 import './P4People.css'
 
@@ -20,6 +22,9 @@ import './P4People.css'
 const P4People = () => {
   const navigate = useNavigate()
   const { showId = 'glow' } = useParams()
+  const { isBlocked } = useBlocked()
+  // 차단은 「안 보이게」 가 핵심이라 목록에서 빼 줍니다
+  const people = np.people.filter((person) => !isBlocked(person.id))
 
   const tapWith = (name?: string) =>
     navigate(name ? `${P.liveTap(showId)}?with=${encodeURIComponent(name)}` : P.liveTap(showId))
@@ -68,13 +73,22 @@ const P4People = () => {
 
           <div className="p4__gap-18" />
           <div className="p4__list">
-            {np.people.map((person) => (
-              <button
-                key={person.id}
-                type="button"
-                className="lui-card p4-person"
-                onClick={() => tapWith(person.name)}
-              >
+            {people.map((person) => (
+              <div key={person.id} className="lui-card p4-person">
+                {/* 모르는 사람을 실제로 만나게 하는 화면이라 신고·차단이 카드마다 붙습니다 */}
+                <div className="p4-person__report">
+                  <ReportMenu
+                    kind="profile"
+                    targetId={person.id}
+                    targetName={person.name}
+                    compact
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="p4-person__tap"
+                  onClick={() => tapWith(person.name)}
+                >
                 <span className="p4-person__head">
                   <span className="p4-person__avatar">{person.initial}</span>
                   <span className="p4-person__who">
@@ -101,7 +115,8 @@ const P4People = () => {
                   맞대서 인사하기
                   <Icon name="chevron-right" size={15} />
                 </span>
-              </button>
+                </button>
+              </div>
             ))}
           </div>
 

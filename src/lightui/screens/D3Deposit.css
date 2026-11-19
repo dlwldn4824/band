@@ -29,3 +29,10 @@
 .d3__gap { height: 26px; }
 
 .d3__bottom .lui-btn { flex: 1; min-width: 0; }
+
+/* 환불 기준이 어디에도 없으면 스토어에서 걸립니다 — 취소 버튼 가까이에 둡니다 */
+.d3__refund {
+  display: block; width: 100%; padding: 6px 0; text-align: left;
+  font-size: 12px; font-weight: 600; color: var(--lui-sub);
+  text-decoration: underline; text-underline-offset: 3px;
+}

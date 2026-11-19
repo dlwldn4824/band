@@ -12,12 +12,14 @@ import { P } from '../paths'
 import { useGoBack } from '../useGoBack'
 import { useRole } from '../auth/role'
 import { copyLink, shareBySms } from '../share/share'
+import ReportMenu from '../safety/ReportMenu'
 import { clubFor, clubNotFound } from '../../mocks/bandyLight'
 import './S4Club.css'
 
 /** S4 동아리 상세 — Figma 207:2 */
 const S4Club = () => {
   const navigate = useNavigate()
+  const [reporting, setReporting] = useState(false)
   const goBack = useGoBack()
   const { isManager } = useRole()
   const [following, setFollowing] = useState(false)
@@ -47,7 +49,7 @@ const S4Club = () => {
           </Button>
         </div>
         <TabBar active="club" />
-      </Phone>
+    </Phone>
     )
   }
 
@@ -82,9 +84,9 @@ const S4Club = () => {
                   : []),
                 { label: '대화 열기', to: P.chat('melodic') },
                 {
-                  label: '신고하기',
+                  label: '신고 · 차단',
                   danger: true,
-                  note: '신고 내용은 운영팀만 봅니다. 상대 동아리에는 누가 신고했는지 전해지지 않습니다.',
+                  onSelect: () => setReporting(true),
                 },
               ]}
             />
@@ -175,6 +177,13 @@ const S4Club = () => {
         </div>
       </div>
       <TabBar active="club" />
+      <ReportMenu
+        kind="club"
+        targetId={`club:${c.name}`}
+        targetName={c.name}
+        openedFromOutside={reporting}
+        onOutsideClose={() => setReporting(false)}
+      />
     </Phone>
   )
 }

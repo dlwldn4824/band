@@ -61,8 +61,10 @@ const S1Start = () => {
 
           <div className="s1__actions">
             {/* 규칙 1 — 기본 버튼 하나, 보조는 외곽선. Figma 가 평평하게 그려 두어 flat 입니다 */}
-            <Button flat onClick={() => navigate(P.home)}>
-              학교 이메일로 시작하기
+            {/* 카카오 말고 하나 더. 애플 심사자는 카카오 계정이 없고,
+                소셜 로그인만 두면 가이드라인 4.8 에 걸립니다. */}
+            <Button flat onClick={() => navigate(P.email(side))}>
+              이메일로 시작하기
             </Button>
             <Button variant="ghost" onClick={kakao} disabled={busy}>
               {busy ? '카카오 연결 중…' : '카카오로 시작하기'}
@@ -80,7 +82,17 @@ const S1Start = () => {
           </div>
 
           <div className="s1__gap" />
-          <p className="s1__terms">시작하면 이용약관과 개인정보 처리방침에 동의하게 됩니다.</p>
+          <p className="s1__terms">
+            시작하면{' '}
+            <button type="button" onClick={() => navigate(P.legal('terms'))}>
+              이용약관
+            </button>
+            과{' '}
+            <button type="button" onClick={() => navigate(P.legal('privacy'))}>
+              개인정보 처리방침
+            </button>
+            에 동의하게 됩니다.
+          </p>
         </div>
       </div>
     </Phone>

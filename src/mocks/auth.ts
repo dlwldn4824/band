@@ -7,8 +7,11 @@
 
 export interface BandyUser {
   id: string
-  provider: 'kakao'
+  /** 카카오 말고 이메일로도 들어옵니다 — 애플 가이드라인 4.8 과 심사자 로그인 때문 */
+  provider: 'kakao' | 'email'
   nickname: string
+  /** 이메일로 가입한 경우에만 채워집니다 */
+  email?: string
   /** 온보딩 전에는 비어 있습니다 */
   school: string
   department: string

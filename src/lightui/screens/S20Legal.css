@@ -1,0 +1,33 @@
+/* S20 약관 · 개인정보 · 환불 */
+.s20 { display: flex; flex-direction: column; padding: 0 20px; }
+.s20__gap { height: 40px; }
+
+/* 세 문서 사이를 오가는 자리 */
+.s20__tabs {
+  display: flex; gap: 6px; padding: 14px 0 10px;
+  position: sticky; top: 0; z-index: 2;
+  background: var(--lui-bg);
+}
+.s20__tab {
+  flex: 1; padding: 9px 4px; border-radius: var(--lui-r-pill);
+  background: var(--lui-soft); color: var(--lui-sub);
+  font-size: 12px; font-weight: 700; letter-spacing: -0.2px;
+}
+.s20__tab--on { background: var(--lui-inverse-bg); color: var(--lui-inverse-ink); }
+
+.s20__updated { font-size: 11.5px; color: var(--lui-sub-2); padding-bottom: 12px; }
+
+.s20__block { padding: 14px 0; border-top: 1px solid var(--lui-hairline); }
+.s20__head {
+  margin: 0 0 8px; font-size: 14px; font-weight: 800; letter-spacing: -0.3px;
+  color: var(--lui-ink);
+}
+.s20__para {
+  margin: 0 0 10px; font-size: 13px; line-height: 1.85; color: var(--lui-body);
+  /* 목록을 \n 으로 넣어 두어서, 줄바꿈을 그대로 살립니다 */
+  white-space: pre-line;
+  word-break: keep-all;
+}
+.s20__para:last-child { margin-bottom: 0; }
+
+.s20__biz .s20__para { color: var(--lui-sub); font-size: 12.5px; }

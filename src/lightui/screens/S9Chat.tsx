@@ -5,6 +5,7 @@ import MoreMenu from '../components/MoreMenu'
 import TopBar from '../components/TopBar'
 import Button from '../components/Button'
 import { P } from '../paths'
+import ReportMenu from '../safety/ReportMenu'
 import { chat } from '../../mocks/bandyLight'
 import sendButton from '../assets/send-button.svg'
 import './S9Chat.css'
@@ -19,6 +20,7 @@ const S9Chat = () => {
   const navigate = useNavigate()
   const [lines, setLines] = useState(chat.lines)
   const [draft, setDraft] = useState('')
+  const [reporting, setReporting] = useState(false)
 
   const send = () => {
     const text = draft.trim()
@@ -37,9 +39,9 @@ const S9Chat = () => {
               { label: '상대 동아리 보기', to: P.club() },
               { label: '제안 내용 다시 보기', to: P.proposal('1') },
               {
-                label: '신고하기',
+                label: '신고 · 차단',
                 danger: true,
-                note: '신고 내용은 운영팀만 봅니다. 상대 동아리에는 누가 신고했는지 전해지지 않습니다.',
+                onSelect: () => setReporting(true),
               },
             ]}
           />
@@ -107,6 +109,13 @@ const S9Chat = () => {
           <img src={sendButton} alt="" />
         </button>
       </div>
+      <ReportMenu
+        kind="message"
+        targetId={`chat:${chat.title}`}
+        targetName={chat.title}
+        openedFromOutside={reporting}
+        onOutsideClose={() => setReporting(false)}
+      />
     </Phone>
   )
 }

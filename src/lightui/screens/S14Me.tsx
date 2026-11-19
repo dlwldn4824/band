@@ -10,6 +10,8 @@ import Sheet from '../components/Sheet'
 import Button from '../components/Button'
 import { P } from '../paths'
 import { signOut } from '../auth/kakao'
+import DeleteAccount from '../auth/DeleteAccount'
+import { useBlocked } from '../safety/report'
 import { useRole, type ClubRole } from '../auth/role'
 import { me } from '../../mocks/bandyLight'
 import { THEME_LABELS, useTheme, type ThemeMode } from '../theme'
@@ -43,6 +45,8 @@ const S14Me = () => {
   const { mode, resolved, setMode } = useTheme()
   const { role, setRole, isManager } = useRole()
   const [joinOpen, setJoinOpen] = useState(false)
+  const [delOpen, setDelOpen] = useState(false)
+  const { count: blockedCount } = useBlocked()
 
   return (
     <Phone>
@@ -55,14 +59,6 @@ const S14Me = () => {
               items={[
                 { label: '프로필 수정', to: P.onboarding() },
                 { label: '알림 설정', to: P.notifications },
-                {
-                  label: '로그아웃',
-                  danger: true,
-                  onSelect: () => {
-                    signOut()
-                    navigate(P.start())
-                  },
-                },
               ]}
             />
           </div>
@@ -186,6 +182,42 @@ const S14Me = () => {
           </div>
 
           <div className="s14__gap-26" />
+          <SectionHeader title="안전" />
+          <div className="lui-card s14__menu">
+            <MenuRow
+              title="차단한 사람"
+              value={blockedCount > 0 ? `${blockedCount}명` : '없음'}
+              onClick={() => navigate(P.blocked)}
+            />
+          </div>
+
+          <div className="s14__gap-26" />
+          <SectionHeader title="약관과 정책" />
+          <div className="lui-card s14__menu">
+            <MenuRow title="이용약관" onClick={() => navigate(P.legal('terms'))} />
+            <MenuRow title="개인정보 처리방침" onClick={() => navigate(P.legal('privacy'))} />
+            <MenuRow title="취소 · 환불 규정" onClick={() => navigate(P.legal('refund'))} />
+          </div>
+
+          {/* 계정 삭제는 앱 안에 있어야 합니다 (Apple 5.1.1(v)).
+              되돌릴 수 없는 동작이라 다른 설정과 섞지 않고 맨 아래 따로 둡니다. */}
+          <div className="s14__gap-26" />
+          <SectionHeader title="계정" />
+          <div className="lui-card s14__menu">
+            <MenuRow
+              title="로그아웃"
+              onClick={() => {
+                signOut()
+                navigate(P.start())
+              }}
+            />
+            <button type="button" className="s14-menu-row s14-menu-row--danger" onClick={() => setDelOpen(true)}>
+              <span className="s14-menu-row__title">계정 삭제</span>
+              <Icon name="chevron-right" size={18} className="s14-menu-row__chev" />
+            </button>
+          </div>
+
+          <div className="s14__gap-26" />
           <p className="s14__version">{me.version}</p>
         </div>
       </div>
@@ -198,6 +230,7 @@ const S14Me = () => {
           확인
         </Button>
       </Sheet>
+      <DeleteAccount open={delOpen} onClose={() => setDelOpen(false)} />
       <TabBar active="my" />
     </Phone>
   )

@@ -1,0 +1,8 @@
+/* S22 차단한 사람 */
+.s22 { display: flex; flex-direction: column; padding: 18px 20px; }
+.s22__lead { font-size: 12.5px; line-height: 1.8; color: var(--lui-sub); padding-bottom: 14px; }
+.s22__list { padding: 0 16px; }
+.s22__empty {
+  padding: 56px 0; text-align: center;
+  font-size: 13px; line-height: 1.9; color: var(--lui-sub);
+}

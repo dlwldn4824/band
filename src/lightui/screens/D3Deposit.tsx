@@ -9,6 +9,7 @@ import Button from '../components/Button'
 import { P } from '../paths'
 import { depositGuide as d, booking } from '../../mocks/bandyLight'
 import CardPay from '../pay/CardPay'
+import { PAY_CONFIGURED } from '../pay/portone'
 import glossSoft from '../assets/gloss-soft-accent.svg'
 import glossSpec from '../assets/gloss-spec-accent.svg'
 import './D3Deposit.css'
@@ -83,17 +84,28 @@ const D3Deposit = () => {
             </div>
           </div>
 
-          <div className="d3__gap" />
-          {/* 지금 쓰는 길은 위의 계좌이체입니다. 이쪽은 준비 중이라 외곽선 버튼. */}
-          <CardPay
-            amount={d.amountValue}
-            orderName={booking.summary.title}
-            onPaid={() => navigate(P.ticket(showId))}
-          />
+          {/* 지금 쓰는 길은 위의 계좌이체입니다. 이쪽은 준비 중이라 외곽선 버튼.
+              키가 없으면 버튼 자체를 그리지 않습니다 — 눌러도 아무 일이 없는 버튼이
+              스토어 빌드에 들어가면 「미완성」 으로 반려됩니다 (Apple 2.1). */}
+          {PAY_CONFIGURED && (
+            <>
+              <div className="d3__gap" />
+              <CardPay
+                amount={d.amountValue}
+                orderName={booking.summary.title}
+                onPaid={() => navigate(P.ticket(showId))}
+              />
+            </>
+          )}
 
           <div className="d3__gap" />
           <SectionHeader title="예매 내역" aside={d.bookingNo} />
           <SummaryBox items={d.detail} />
+
+          <div className="d3__gap" />
+          <button type="button" className="d3__refund" onClick={() => navigate(P.legal('refund'))}>
+            취소 · 환불 규정 보기
+          </button>
 
           <div className="d3__gap" />
           <p className="d3__notes">

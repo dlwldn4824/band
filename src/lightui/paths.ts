@@ -16,6 +16,8 @@ export const P = {
   onboarding: (as?: 'club' | 'audience') =>
     as ? `/ui/start/profile?as=${as}` : '/ui/start/profile',  // 온보딩 (Figma 프레임 없음)
   kakaoReturn: '/ui/auth/kakao',                        // 카카오가 돌려보내는 자리
+  /** 카카오 말고 하나 더 — 애플 4.8 과 심사자 로그인 때문에 필요합니다 */
+  email: (as?: 'club' | 'audience') => (as ? `/ui/start/email?as=${as}` : '/ui/start/email'),
   home: '/ui',                                          // L1
   map: '/ui/map',                                       // S2
   search: '/ui/search',                                 // S3
@@ -26,6 +28,9 @@ export const P = {
   tickets: '/ui/tickets',                               // S7
   notifications: '/ui/notifications',                   // S8
   me: '/ui/me',                                         // S14
+  /** 약관 · 개인정보 처리방침 · 환불 규정 — 스토어 심사에 반드시 필요합니다 */
+  legal: (doc: 'terms' | 'privacy' | 'refund' = 'terms') => `/ui/legal/${doc}`, // S20
+  blocked: '/ui/blocked',                               // S22 차단한 사람
 
   // 동아리
   clubs: '/ui/clubs',                                   // L2

@@ -6,6 +6,7 @@ import TopBar from '../components/TopBar'
 import SectionHeader from '../components/SectionHeader'
 import Button from '../components/Button'
 import { P } from '../paths'
+import ReportMenu from '../safety/ReportMenu'
 import { guestbook as g } from '../../mocks/bandyLight'
 import './P6Guestbook.css'
 
@@ -17,6 +18,7 @@ const P6Guestbook = () => {
   const { showId = 'glow' } = useParams()
   const [text, setText] = useState('')
   const [who, setWho] = useState<string>(WHO[0])
+  const [reporting, setReporting] = useState(false)
 
   return (
     <Phone time="18:42">
@@ -27,9 +29,9 @@ const P6Guestbook = () => {
             items={[
               { label: '같이 온 사람들', to: P.livePeople() },
               {
-                label: '신고하기',
+                label: '신고 · 차단',
                 danger: true,
-                note: '방명록 글을 신고하면 운영팀이 확인한 뒤 가립니다.',
+                onSelect: () => setReporting(true),
               },
             ]}
           />
@@ -97,6 +99,13 @@ const P6Guestbook = () => {
           남기기
         </Button>
       </div>
+      <ReportMenu
+        kind="guestbook"
+        targetId={`guestbook:${showId}`}
+        targetName="이 방명록"
+        openedFromOutside={reporting}
+        onOutsideClose={() => setReporting(false)}
+      />
     </Phone>
   )
 }

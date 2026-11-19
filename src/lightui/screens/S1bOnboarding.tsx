@@ -107,8 +107,12 @@ const S1bOnboarding = () => {
   const [department, setDepartment] = useState(session?.department ?? '')
   const [club, setClub] = useState('')
 
+  // 「불쾌한 내용을 올리지 않겠다」 에 대한 동의는 이용자 글이 있는 앱이면
+  // 받아야 합니다 (Apple 1.2). 약관 안에 묻어 두지 않고 따로 체크를 받습니다.
+  const [agreed, setAgreed] = useState(false)
+
   const ready =
-    nickname.trim() && school.trim() && department.trim() && (!isClub || club.trim())
+    nickname.trim() && school.trim() && department.trim() && (!isClub || club.trim()) && agreed
 
   const submit = () => {
     if (!ready || !session) return navigate(P.home)
@@ -184,6 +188,25 @@ const S1bOnboarding = () => {
 
           <div className="ob__gap-26" />
           <p className="ob__notice">목록에 없으면 그대로 적어 주세요. 나중에 마이에서 바꿀 수 있어요.</p>
+
+          <div className="ob__gap-26" />
+          <label className="ob-agree">
+            <input
+              type="checkbox"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+            />
+            <span className="ob-agree__text">
+              <button type="button" onClick={() => navigate(P.legal('terms'))}>
+                이용약관
+              </button>
+              과{' '}
+              <button type="button" onClick={() => navigate(P.legal('privacy'))}>
+                개인정보 처리방침
+              </button>
+              에 동의하고, 욕설 · 혐오 표현 · 괴롭힘 같은 불쾌한 내용을 올리지 않겠습니다.
+            </span>
+          </label>
         </div>
       </div>
 

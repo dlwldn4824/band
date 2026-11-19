@@ -115,3 +115,11 @@
 .p4__made .lui-row { padding: 12px 0; }
 .p4__made .lui-row__avatar { width: 40px; height: 40px; background: var(--lui-chip); color: var(--lui-ink); }
 .p4__notice { font-size: 11.5px; line-height: 20.125px; color: var(--lui-sub-2); }
+
+/* 신고·차단 — 카드 전체가 누르는 자리라 오른쪽 위에 띄워 둡니다 */
+.p4-person { position: relative; padding: 0; }
+.p4-person__report { position: absolute; top: 10px; right: 10px; z-index: 1; }
+.p4-person__tap {
+  display: flex; flex-direction: column; gap: 12px;
+  width: 100%; padding: 16px; text-align: left;
+}

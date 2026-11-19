@@ -1,0 +1,33 @@
+/* S21 이메일로 시작하기 */
+.s21 { display: flex; flex-direction: column; min-height: 100%; padding: 18px 20px 24px; }
+.s21__gap { height: 14px; }
+.s21__space { flex: 1; min-height: 28px; }
+
+.s21__lead { font-size: 13px; line-height: 1.8; color: var(--lui-body); padding-bottom: 18px; }
+.s21__lead b { color: var(--lui-ink); font-weight: 700; }
+
+.s21__code { letter-spacing: 6px; font-size: 18px; font-weight: 700; text-align: center; }
+
+/* 서버가 붙기 전까지만 보이는 자리 */
+.s21__mock {
+  margin-top: 10px; padding: 11px 13px; border-radius: var(--lui-r-card);
+  background: var(--lui-soft); color: var(--lui-sub);
+  font-size: 12px; line-height: 1.7;
+}
+.s21__mock b { color: var(--lui-accent); font-weight: 800; letter-spacing: 1px; }
+
+.s21__error { margin-top: 12px; font-size: 12.5px; color: var(--lui-accent); }
+
+.s21__again {
+  display: block; margin: 12px auto 0; padding: 4px;
+  font-size: 12.5px; font-weight: 600; color: var(--lui-sub);
+}
+
+.s21__terms {
+  padding-top: 18px; font-size: 11.5px; line-height: 1.7; color: var(--lui-sub-2);
+  text-align: center;
+}
+.s21__terms button {
+  font-size: inherit; font-weight: 700; color: var(--lui-sub);
+  text-decoration: underline; text-underline-offset: 2px;
+}

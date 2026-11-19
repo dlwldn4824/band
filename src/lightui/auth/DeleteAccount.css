@@ -1,0 +1,23 @@
+/* 계정 삭제 */
+.delacct { display: flex; flex-direction: column; gap: 10px; padding-bottom: 4px; }
+.delacct__head {
+  font-size: 11px; font-weight: 800; letter-spacing: 0.3px;
+  color: var(--lui-sub); padding-top: 6px;
+}
+.delacct__list { margin: 0; padding-left: 17px; display: flex; flex-direction: column; gap: 5px; }
+.delacct__list li { font-size: 12.5px; line-height: 1.7; color: var(--lui-body); }
+.delacct__list--stay li { color: var(--lui-sub); }
+.delacct__note {
+  margin-top: 4px; padding: 11px 13px; border-radius: var(--lui-r-card);
+  background: var(--lui-soft); font-size: 12px; line-height: 1.7; color: var(--lui-sub);
+}
+/* 규칙 7 — 되돌릴 수 없는 동작이라 여기만 빨강 */
+.delacct__warn {
+  padding: 13px 15px; border-radius: var(--lui-r-card);
+  background: var(--lui-tint); color: var(--lui-accent);
+  font-size: 12.5px; line-height: 1.75; font-weight: 600;
+}
+.delacct__back {
+  display: block; margin: 10px auto 0; padding: 4px;
+  font-size: 12.5px; font-weight: 600; color: var(--lui-sub);
+}

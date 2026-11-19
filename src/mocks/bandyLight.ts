@@ -108,7 +108,8 @@ export const booking = {
   maxPerPerson: 4,
   ticket: { name: '일반', price: 15000, priceLabel: '15,000원' },
   addons: [
-    { id: 'drink', name: '음료 1잔', price: 3000, sub: '3,000원 · 현장 바에서 교환', initial: 1 },
+    // 주류가 섞이면 연령 등급과 지역 제한이 붙습니다 — 무알코올이라는 걸 화면에 적어 둡니다
+    { id: 'drink', name: '음료 1잔 (무알코올)', price: 3000, sub: '3,000원 · 공연 당일 현장 바에서 교환', initial: 1 },
     { id: 'tee', name: '공연 티셔츠', price: 15000, sub: '15,000원 · 수량 한정', initial: 0 },
   ],
   /**
@@ -149,7 +150,7 @@ export const depositGuide = {
     { k: '공연', v: '멜로딕 단독 공연' },
     { k: '일시', v: '11.22 (토) 19:00' },
     { k: '티켓', v: '일반 2매' },
-    { k: '사전 구매', v: '음료 1잔' },
+    { k: '사전 구매', v: '음료 1잔 (무알코올)' },
   ],
   notes: [
     '· 입금자명이 다르면 확인이 늦어질 수 있어요.',
@@ -170,7 +171,7 @@ export const myTicket = {
     { k: '예매번호', v: 'B-2611-0482' },
   ],
   guide: '입구에서 이 화면을 보여 주세요. 2매가 한 번에 처리됩니다.',
-  addon: { initial: '음', name: '음료 1잔', sub: '바에서 이 티켓을 보여 주세요', state: '미교환' },
+  addon: { initial: '음', name: '음료 1잔 (무알코올)', sub: '공연 당일 현장 바에서 이 티켓을 보여 주세요', state: '미교환' },
   payment: [
     { k: '결제 금액', v: '34,000원' },
     { k: '입금 확인', v: '11.19 21:08' },
@@ -212,7 +213,7 @@ export const ticketsByShow: Record<string, MyTicket> = {
       { k: '예매번호', v: 'B-2611-0613' },
     ],
     guide: '입금이 확인되면 QR 이 열립니다. 기한은 11.21까지입니다.',
-    addon: { initial: '음', name: '음료 1잔', sub: '바에서 이 티켓을 보여 주세요', state: '미교환' },
+    addon: { initial: '음', name: '음료 1잔 (무알코올)', sub: '공연 당일 현장 바에서 이 티켓을 보여 주세요', state: '미교환' },
     payment: [
       { k: '결제 금액', v: '16,000원' },
       { k: '입금 기한', v: '11.21까지' },

@@ -1,0 +1,33 @@
+/* 신고 · 차단 */
+.reportbtn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; flex: none;
+  border-radius: var(--lui-r-pill); color: var(--lui-sub-2);
+}
+.reportbtn:hover { background: var(--lui-soft); color: var(--lui-sub); }
+.reportbtn--compact { width: 24px; height: 24px; }
+
+.reportmenu { display: flex; flex-direction: column; gap: 10px; padding-bottom: 4px; }
+.reportmenu__gap { height: 2px; }
+
+.reportmenu__row {
+  display: flex; flex-direction: column; gap: 3px; width: 100%; text-align: left;
+  padding: 13px 15px; border-radius: var(--lui-r-card); background: var(--lui-soft);
+}
+.reportmenu__row--flat { background: none; padding-left: 0; padding-right: 0; }
+.reportmenu__title { font-size: 13.5px; font-weight: 700; color: var(--lui-ink); }
+.reportmenu__sub { font-size: 11.5px; line-height: 1.6; color: var(--lui-sub); }
+/* 규칙 7 — 되돌리기 번거로운 동작만 빨강 */
+.reportmenu__row--danger .reportmenu__title { color: var(--lui-accent); }
+
+.reportmenu__reasons { display: flex; flex-direction: column; gap: 6px; }
+.reportmenu__reason {
+  width: 100%; text-align: left; padding: 11px 14px;
+  border-radius: var(--lui-r-card); background: var(--lui-soft);
+  font-size: 13px; color: var(--lui-body);
+}
+.reportmenu__reason--on {
+  background: var(--lui-tint); color: var(--lui-accent); font-weight: 700;
+}
+
+.reportmenu__detail { min-height: 84px; resize: none; }

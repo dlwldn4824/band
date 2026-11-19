@@ -45,3 +45,15 @@
 
 /* 동아리 칸 아래 한 줄 설명 */
 .ob__hint { margin-top: 8px; font-size: 11.5px; line-height: 19px; color: var(--lui-sub-2); }
+
+/* 약관 동의 — 이용자 글이 있는 앱이면 가입할 때 받아야 합니다 */
+.ob-agree { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; }
+.ob-agree input {
+  width: 19px; height: 19px; flex: none; margin-top: 1px;
+  accent-color: var(--lui-accent); cursor: pointer;
+}
+.ob-agree__text { font-size: 12px; line-height: 1.7; color: var(--lui-body); }
+.ob-agree__text button {
+  font-size: inherit; font-weight: 700; color: var(--lui-ink);
+  text-decoration: underline; text-underline-offset: 2px;
+}
