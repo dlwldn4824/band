@@ -15,6 +15,7 @@ import { subjectParticle, withParticle } from '../korean'
 import type { ReceivedProposal } from '../../mocks/bandyLight'
 import {
   myClub,
+  showRun,
   receivedProposals,
   recruitPosts,
   sentProposals,
@@ -88,6 +89,21 @@ const L2Clubs = () => {
                 </span>
                 <Icon name="chevron-right" size={18} className="lui-darkcard__chev" />
               </span>
+            </button>
+
+            <span className="lui-darkcard__line" />
+            {/* 부원이 이 화면에서 제일 먼저 찾는 것은 「우리 다음 공연에서 내 순서」 입니다.
+                예전에는 교류 제안과 연결 지도만 있어서, 자기 순서를 보려면 주소를
+                직접 쳐야 했습니다. */}
+            <button
+              type="button"
+              className="lui-darkcard__foot lui-darkcard__hit"
+              onClick={() => navigate(P.run(showRun.showId))}
+            >
+              <span className="lui-darkcard__foot-text">
+                <span className="lui-darkcard__strong">다음 공연</span> · {showRun.when}
+              </span>
+              <Icon name="chevron-right" size={18} className="lui-darkcard__chev" />
             </button>
 
             <span className="lui-darkcard__line" />
