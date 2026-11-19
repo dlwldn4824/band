@@ -1,0 +1,29 @@
+/* 카드 결제 (테스트 모드) */
+.cardpay { display: flex; flex-direction: column; gap: 14px; padding-bottom: 4px; }
+
+/* 버튼 안의 작은 「테스트」 딱지 */
+.cardpay__tag {
+  margin-left: 6px; padding: 2px 6px; border-radius: 6px;
+  background: var(--lui-tint); color: var(--lui-accent);
+  font-size: 10px; font-weight: 800; vertical-align: middle;
+}
+
+/* 규칙 7 — 꼭 봐야 하는 것만 빨강. 돈이 안 빠진다는 게 그 하나입니다. */
+.cardpay__warn {
+  padding: 12px 14px; border-radius: var(--lui-r-card);
+  background: var(--lui-tint); color: var(--lui-body);
+  font-size: 12.5px; line-height: 1.7;
+}
+.cardpay__warn b { color: var(--lui-accent); font-weight: 800; }
+
+.cardpay__amount {
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding-bottom: 2px;
+}
+.cardpay__amount-k { font-size: 12.5px; color: var(--lui-sub); }
+.cardpay__amount-v { font-size: 20px; font-weight: 800; color: var(--lui-ink); }
+
+.cardpay__result { font-size: 12.5px; line-height: 1.7; color: var(--lui-body); }
+.cardpay__result--bad { color: var(--lui-accent); }
+
+.cardpay__fine { font-size: 11px; line-height: 1.7; color: var(--lui-sub-2); }

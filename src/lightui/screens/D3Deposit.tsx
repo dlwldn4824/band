@@ -7,7 +7,8 @@ import SectionHeader from '../components/SectionHeader'
 import SummaryBox from '../components/SummaryBox'
 import Button from '../components/Button'
 import { P } from '../paths'
-import { depositGuide as d } from '../../mocks/bandyLight'
+import { depositGuide as d, booking } from '../../mocks/bandyLight'
+import CardPay from '../pay/CardPay'
 import glossSoft from '../assets/gloss-soft-accent.svg'
 import glossSpec from '../assets/gloss-spec-accent.svg'
 import './D3Deposit.css'
@@ -15,7 +16,9 @@ import './D3Deposit.css'
 /**
  * D3 입금 안내 — Figma 185:2
  *
- * 아직 PG 가 없어서 계좌 복사 → 입금 기한 → 운영진 수동 확인 흐름입니다.
+ * 실제로 쓰는 길은 계좌 복사 → 입금 기한 → 운영진 수동 확인입니다. PG 심사가
+ * 끝나지 않아서 그대로 둡니다. 그 아래에 카드 결제를 테스트 모드로만 붙여
+ * 뒀습니다 — 화면과 코드는 완성이고 돈은 빠지지 않습니다.
  */
 const D3Deposit = () => {
   const navigate = useNavigate()
@@ -79,6 +82,14 @@ const D3Deposit = () => {
               </Button>
             </div>
           </div>
+
+          <div className="d3__gap" />
+          {/* 지금 쓰는 길은 위의 계좌이체입니다. 이쪽은 준비 중이라 외곽선 버튼. */}
+          <CardPay
+            amount={d.amountValue}
+            orderName={booking.summary.title}
+            onPaid={() => navigate(P.ticket(showId))}
+          />
 
           <div className="d3__gap" />
           <SectionHeader title="예매 내역" aside={d.bookingNo} />

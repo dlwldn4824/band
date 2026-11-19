@@ -131,7 +131,11 @@ export const booking = {
 export const depositGuide = {
   due: '11월 20일 (목) 23:59까지 입금하면 자리가 확정됩니다.',
   remain: '23:41:02',
-  amount: '34,000원',
+  /** 카드 결제는 숫자가 필요해서 원 단위를 기준으로 두고 표시용을 만들어 씁니다 */
+  amountValue: 34000,
+  get amount() {
+    return `${this.amountValue.toLocaleString('ko-KR')}원`
+  },
   account: [
     { k: '은행', v: '국민은행' },
     { k: '계좌번호', v: '123456-78-901234' },
