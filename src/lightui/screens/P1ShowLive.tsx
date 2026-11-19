@@ -7,12 +7,14 @@ import Button from '../components/Button'
 import Icon from '../components/Icon'
 import DirectionsSheet from '../components/DirectionsSheet'
 import { P } from '../paths'
+import { useGoBack } from '../useGoBack'
 import { showLive as s } from '../../mocks/bandyLight'
 import './P1ShowLive.css'
 
 /** P1 공연 정보 (예매 후) — Figma 293:2 */
 const P1ShowLive = () => {
   const navigate = useNavigate()
+  const goBack = useGoBack()
   const [liked, setLiked] = useState(false)
   const [dirs, setDirs] = useState(false)
   const { showId = 'glow' } = useParams()
@@ -28,7 +30,7 @@ const P1ShowLive = () => {
       <div className="lui-body">
         <div className="p1__hero">
           <img src={s.hero} alt="" />
-          <button type="button" className="p1__round" onClick={() => navigate(-1)} aria-label="뒤로">
+          <button type="button" className="p1__round" onClick={() => goBack()} aria-label="뒤로">
             <Icon name="chevron-left" size={20} />
           </button>
           <div className="p1__hero-right">

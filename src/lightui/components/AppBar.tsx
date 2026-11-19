@@ -1,6 +1,6 @@
 import { ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
 import Icon from './Icon'
+import { useGoBack } from '../useGoBack'
 
 /**
  * 뒤로가기 · 제목 · 우측 슬롯.
@@ -18,11 +18,8 @@ interface AppBarProps {
 }
 
 const AppBar = ({ title, over, back, right }: AppBarProps) => {
-  const navigate = useNavigate()
-  const goBack = () => {
-    if (typeof back === 'string') navigate(back)
-    else navigate(-1)
-  }
+  const back0 = useGoBack()
+  const goBack = () => back0(typeof back === 'string' ? back : undefined)
   return (
     <div className={`lui-appbar${over ? ' lui-appbar--over' : ''}`}>
       {back !== false && (

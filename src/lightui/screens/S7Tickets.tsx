@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import Phone from '../components/Phone'
 import TabBar from '../components/TabBar'
 import SectionHeader from '../components/SectionHeader'
@@ -8,10 +7,28 @@ import { P } from '../paths'
 import { myTickets as t } from '../../mocks/bandyLight'
 import './S7Tickets.css'
 
-/** S7 내 티켓 목록 — Figma 210:2 */
+type TabKey = 'upcoming' | 'past' | 'cancelled'
+
+/**
+ * S7 내 티켓 목록 — Figma 210:2
+ *
+ * 탭은 교류 탭과 같은 규칙입니다 — 이동이 아니라 같은 화면에서 목록만 바뀌고,
+ * 어떤 탭인지는 `?tab=` 에 남아 뒤로가기로 돌아올 수 있습니다.
+ */
 const S7Tickets = () => {
   const navigate = useNavigate()
-  const [tab, setTab] = useState(t.tabs[0])
+  const [params, setParams] = useSearchParams()
+
+  const asked = params.get('tab') as TabKey | null
+  const tab: TabKey = t.tabs.some((x) => x.key === asked) ? (asked as TabKey) : 'upcoming'
+  const items = t.items.filter((item) => item.tab === tab)
+
+  const goTab = (next: TabKey) => {
+    const q = new URLSearchParams(params)
+    if (next === 'upcoming') q.delete('tab')
+    else q.set('tab', next)
+    setParams(q)
+  }
 
   return (
     <Phone>
@@ -24,22 +41,25 @@ const S7Tickets = () => {
           </div>
 
           <div className="s7__gap-14" />
-          <div className="lui-utabs lui-utabs--accent">
-            {t.tabs.map((name) => (
+          <div className="lui-utabs lui-utabs--accent" role="tablist">
+            {t.tabs.map((x) => (
               <button
-                key={name}
+                key={x.key}
                 type="button"
-                className={`lui-utab${name === tab ? ' lui-utab--on' : ''}`}
-                onClick={() => setTab(name)}
+                role="tab"
+                aria-selected={x.key === tab}
+                className={`lui-utab${x.key === tab ? ' lui-utab--on' : ''}`}
+                onClick={() => goTab(x.key as TabKey)}
               >
-                {name}
+                {x.label}
               </button>
             ))}
           </div>
 
           <div className="s7__gap-14" />
           <div className="s7__list">
-            {t.items.map((item) => (
+            {items.length === 0 && <p className="s7__empty">{t.empty[tab]}</p>}
+            {items.map((item) => (
               <div key={item.id} className="lui-card s7-item">
                 <div className="s7-item__row">
                   <img className="s7-item__thumb" src={item.thumb} alt="" />

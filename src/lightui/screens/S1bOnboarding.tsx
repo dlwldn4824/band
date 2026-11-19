@@ -31,7 +31,8 @@ const S1bOnboarding = () => {
 
   return (
     <Phone>
-      <TopBar title="처음이시네요" back={false} right={<span className="lui-topbar__side" />} />
+      {/* Figma 는 뒤로가기를 그리지 않았지만, URL 로 바로 들어오면 빠져나갈 길이 없습니다 */}
+      <TopBar title="처음이시네요" back={P.start} right={<span className="lui-topbar__side" />} />
       <div className="lui-body">
         <div className="ob">
           <div className="ob__gap-14" />

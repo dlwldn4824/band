@@ -56,6 +56,9 @@ const ShowMap = ({
   const layerRef = useRef<L.LayerGroup | null>(null)
   const onViewChangeRef = useRef(onViewChange)
   onViewChangeRef.current = onViewChange
+  // 필터가 바뀌면 지도를 움직이지 않아도 목록이 따라와야 합니다
+  const showsRef = useRef(shows)
+  showsRef.current = shows
 
   // 지도 생성 (한 번만)
   useEffect(() => {
@@ -80,7 +83,7 @@ const ShowMap = ({
 
     const report = () => {
       const bounds = map.getBounds()
-      onViewChangeRef.current?.(shows.filter((s) => bounds.contains([s.lat, s.lng])))
+      onViewChangeRef.current?.(showsRef.current.filter((s) => bounds.contains([s.lat, s.lng])))
     }
     map.on('moveend', report)
     report()
@@ -94,7 +97,7 @@ const ShowMap = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // 마커 다시 그리기
+  // 마커 다시 그리기 (+ 지금 화면에 남은 공연 다시 알려 주기)
   useEffect(() => {
     const map = mapRef.current
     const layer = layerRef.current
@@ -111,6 +114,9 @@ const ShowMap = ({
         .on('click', () => onSelect?.(show))
         .addTo(layer)
     })
+
+    const bounds = map.getBounds()
+    onViewChangeRef.current?.(shows.filter((s) => bounds.contains([s.lat, s.lng])))
   }, [shows, selectedId, me, onSelect])
 
   return <div ref={boxRef} className="lui-map" style={{ height }} />

@@ -7,6 +7,7 @@ import Button from '../components/Button'
 import Icon from '../components/Icon'
 import DirectionsSheet from '../components/DirectionsSheet'
 import { P } from '../paths'
+import { useGoBack } from '../useGoBack'
 import { showDetail as s } from '../../mocks/bandyLight'
 import mapVenue from '../assets/map-venue.svg'
 import './D1Show.css'
@@ -14,6 +15,7 @@ import './D1Show.css'
 /** D1 공연 상세 — Figma 183:2 */
 const D1Show = () => {
   const navigate = useNavigate()
+  const goBack = useGoBack()
   const [liked, setLiked] = useState(false)
   const [dirs, setDirs] = useState(false)
 
@@ -22,7 +24,7 @@ const D1Show = () => {
       <div className="lui-body">
         <div className="d1__hero">
           <img src={s.hero} alt="" />
-          <button type="button" className="d1__round" onClick={() => navigate(-1)} aria-label="뒤로">
+          <button type="button" className="d1__round" onClick={() => goBack()} aria-label="뒤로">
             <Icon name="chevron-left" size={20} />
           </button>
           <div className="d1__hero-right">

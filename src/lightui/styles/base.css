@@ -961,76 +961,26 @@ textarea.lui-input {
 
 /* 운영진 전용 화면 안내 */
 .lui-gate {
-  padding: 72px 28px 0;
+  padding: 84px 32px 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 10px;
   text-align: center;
 }
-.lui-gate__title { font-size: 17px; font-weight: 700; color: var(--lui-ink); }
-.lui-gate__sub { font-size: 13px; line-height: 20px; color: var(--lui-sub); }
-.lui-gate .lui-btn { margin-top: 12px; padding: 0 28px; }
-
-/* 찜한 상태 — 사진 위 원형 버튼 (규칙 7: 빨강은 데이터와 확인이 필요한 동작에) */
-.d1__round--on,
-.p1__round--on { color: var(--lui-accent); }
-
-/* 공연장 길찾기 시트 */
-.lui-dirs { display: flex; flex-direction: column; }
-.lui-dirs__name { font-size: 15px; font-weight: 700; color: var(--lui-ink); }
-.lui-dirs__addr { font-size: 12.5px; color: var(--lui-sub); padding: 4px 0 14px; }
-.lui-dirs__apps { display: flex; flex-direction: column; border-top: 1px solid var(--lui-line-2); }
-.lui-dirs__row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  text-align: left;
-  padding: 14px 2px;
-  color: inherit;
-  text-decoration: none;
-}
-.lui-dirs__row + .lui-dirs__row { border-top: 1px solid var(--lui-line-2); }
-.lui-dirs__main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.lui-dirs__label { font-size: 14.5px; font-weight: 600; color: var(--lui-ink); }
-.lui-dirs__sub {
-  font-size: 11.5px;
+.lui-gate__title { font-size: 18px; font-weight: 800; letter-spacing: -0.3px; color: var(--lui-ink); }
+/* 한글은 그냥 두면 「권한 / 을」 처럼 낱말 가운데서 끊깁니다 */
+.lui-gate__sub { font-size: 13px; line-height: 21px; color: var(--lui-sub); word-break: keep-all; }
+.lui-gate__switch {
+  margin-top: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
   color: var(--lui-sub);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.lui-dirs__chev { color: var(--lui-icon-faint); flex: none; }
-.lui-dirs__done { color: var(--lui-accent); flex: none; }
-.lui-dirs__fallback { font-size: 11.5px; line-height: 19px; color: var(--lui-sub); padding-top: 12px; }
-/* 복사가 막힌 자리 — 손으로 긁어 갈 수 있게 */
-.lui-dirs__pick {
-  display: block;
-  user-select: all;
-  -webkit-user-select: all;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--lui-ink);
-  background: var(--lui-chip);
-  border-radius: 10px;
-  padding: 9px 11px;
-  margin-bottom: 6px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
-/* 다크 카드가 여러 곳으로 갈라질 때 — 카드 전체가 아니라 줄마다 누릅니다 */
-.lui-darkcard__hit {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  width: 100%;
-  text-align: left;
-  position: relative;
-  z-index: 1;
-}
-.lui-darkcard__foot.lui-darkcard__hit { flex-direction: row; align-items: center; justify-content: space-between; }
-.lui-darkcard__strong { color: #fff; font-weight: 700; }
-
-/* 아직 열리지 않은 줄 — 눌리지 않는다는 걸 흐림으로 말합니다 */
-.lui-row--locked .lui-row__avatar,
-.lui-row--locked .lui-row__title { opacity: 0.55; }
+/* 공연장 모드 — 모드 라벨이 곧 빠져나가는 길입니다 */
+.l3__mode { cursor: pointer; }
+/* 아직 화면이 없는 탭 */
+.lui-tabbar__item--soon { opacity: 0.4; }

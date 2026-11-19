@@ -31,11 +31,22 @@ const Row = ({ row, line, onConfirm }: { row: DepositRow; line?: boolean; onConf
   </div>
 )
 
+type FilterKey = (typeof d.filters)[number]['key']
+
 const S11Deposits = () => {
-  const [filter, setFilter] = useState(d.filters[0].label)
+  const [filter, setFilter] = useState<FilterKey>('need')
   const [confirmed, setConfirmed] = useState<string[]>([])
 
   const rows = d.needCheck.filter((r) => !confirmed.includes(r.name))
+  // 확인을 누르면 그만큼 「입금 완료」 쪽으로 옮겨 갑니다
+  const movedToPaid = d.needCheck.filter((r) => confirmed.includes(r.name))
+  const paid = [...movedToPaid.map((r) => ({ ...r, reported: false, state: '입금 완료' })), ...d.paid]
+
+  const counts: Record<FilterKey, number> = {
+    need: rows.length,
+    paid: d.done + confirmed.length,
+    refund: d.refunded.length,
+  }
 
   return (
     <Phone>
@@ -64,40 +75,82 @@ const S11Deposits = () => {
           <div className="s11__filters">
             {d.filters.map((f) => (
               <button
-                key={f.label}
+                key={f.key}
                 type="button"
-                className={`s11-filter${f.label === filter ? ' s11-filter--on' : ''}`}
-                onClick={() => setFilter(f.label)}
+                aria-pressed={f.key === filter}
+                className={`s11-filter${f.key === filter ? ' s11-filter--on' : ''}`}
+                onClick={() => setFilter(f.key)}
               >
-                {f.label}
+                {f.label} {counts[f.key]}
               </button>
             ))}
           </div>
 
           <div className="s11__gap-24" />
-          <div className="s11__sec">
-            <span className="s11__sec-title">확인 필요한 예매</span>
-            <span className="s11__sec-aside">예매순</span>
-          </div>
-          <div className="s11__gap-6" />
-          {rows.map((row, i) => (
-            <Row
-              key={row.name}
-              row={row}
-              line={i < rows.length - 1}
-              onConfirm={() => setConfirmed((prev) => [...prev, row.name])}
-            />
-          ))}
 
-          <div className="s11__gap-26" />
-          <div className="s11__sec">
-            <span className="s11__sec-title">기한이 지난 예매</span>
-            <span className="s11__sec-aside">{d.expiredCount}</span>
-          </div>
-          <div className="s11__gap-6" />
-          {d.expired.map((row) => (
-            <Row key={row.name} row={row} />
-          ))}
+          {filter === 'need' && (
+            <>
+              <div className="s11__sec">
+                <span className="s11__sec-title">확인 필요한 예매</span>
+                <span className="s11__sec-aside">예매순</span>
+              </div>
+              <div className="s11__gap-6" />
+              {rows.length === 0 ? (
+                <p className="s11__empty">{d.empty.need}</p>
+              ) : (
+                rows.map((row, i) => (
+                  <Row
+                    key={row.name}
+                    row={row}
+                    line={i < rows.length - 1}
+                    onConfirm={() => setConfirmed((prev) => [...prev, row.name])}
+                  />
+                ))
+              )}
+
+              <div className="s11__gap-26" />
+              <div className="s11__sec">
+                <span className="s11__sec-title">기한이 지난 예매</span>
+                <span className="s11__sec-aside">{d.expiredCount}</span>
+              </div>
+              <div className="s11__gap-6" />
+              {d.expired.map((row) => (
+                <Row key={row.name} row={row} />
+              ))}
+            </>
+          )}
+
+          {filter === 'paid' && (
+            <>
+              <div className="s11__sec">
+                <span className="s11__sec-title">입금이 끝난 예매</span>
+                <span className="s11__sec-aside">{d.paidMore}</span>
+              </div>
+              <div className="s11__gap-6" />
+              {paid.length === 0 ? (
+                <p className="s11__empty">{d.empty.paid}</p>
+              ) : (
+                paid.map((row, i) => <Row key={row.name} row={row} line={i < paid.length - 1} />)
+              )}
+            </>
+          )}
+
+          {filter === 'refund' && (
+            <>
+              <div className="s11__sec">
+                <span className="s11__sec-title">환불한 예매</span>
+                <span className="s11__sec-aside">{d.refunded.length}건</span>
+              </div>
+              <div className="s11__gap-6" />
+              {d.refunded.length === 0 ? (
+                <p className="s11__empty">{d.empty.refund}</p>
+              ) : (
+                d.refunded.map((row, i) => (
+                  <Row key={row.name} row={row} line={i < d.refunded.length - 1} />
+                ))
+              )}
+            </>
+          )}
 
           <div className="s11__gap-22" />
           <p className="s11__note">{d.note}</p>

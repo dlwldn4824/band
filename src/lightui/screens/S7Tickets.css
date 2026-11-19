@@ -15,3 +15,6 @@
 .s7-item__sub { font-size: 11.5px; color: var(--lui-sub); }
 .s7-item__side { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex: none; }
 .s7-item__chev { color: var(--lui-icon-faint); }
+
+/* 이 탭에 보여 줄 게 없을 때 */
+.s7__empty { font-size: 12.5px; line-height: 20px; color: var(--lui-sub); padding: 18px 2px; }

@@ -8,6 +8,7 @@ import Button from '../components/Button'
 import Icon from '../components/Icon'
 import MoreMenu from '../components/MoreMenu'
 import { P } from '../paths'
+import { useGoBack } from '../useGoBack'
 import { useRole } from '../auth/role'
 import { copyLink, shareBySms } from '../share/share'
 import { clubDetail as c } from '../../mocks/bandyLight'
@@ -16,6 +17,7 @@ import './S4Club.css'
 /** S4 동아리 상세 — Figma 207:2 */
 const S4Club = () => {
   const navigate = useNavigate()
+  const goBack = useGoBack()
   const { isManager } = useRole()
   const [following, setFollowing] = useState(false)
   const link = `${window.location.origin}${P.club('melodic')}`
@@ -25,7 +27,7 @@ const S4Club = () => {
       <div className="lui-body">
         <div className="s4__hero">
           <img src={c.cover} alt="" />
-          <button type="button" className="s4__round" onClick={() => navigate(-1)} aria-label="뒤로">
+          <button type="button" className="s4__round" onClick={() => goBack()} aria-label="뒤로">
             <Icon name="chevron-left" size={20} />
           </button>
           <div className="s4__hero-right">

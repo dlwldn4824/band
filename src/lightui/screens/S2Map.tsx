@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Phone from '../components/Phone'
 import TabBar from '../components/TabBar'
@@ -21,6 +21,22 @@ const S2Map = () => {
   const [filter, setFilter] = useState(mapFilters[0])
   const [visible, setVisible] = useState<MapShow[]>(mapShows)
   const [selected, setSelected] = useState<string | undefined>()
+
+  // 칩은 핀과 아래 목록을 함께 거릅니다 — 선택 표시만 바뀌면 누른 뜻이 없습니다
+  const filtered = useMemo(() => {
+    switch (filter) {
+      case '오늘':
+        return mapShows.filter((s) => s.when === 'today')
+      case '이번 주':
+        return mapShows.filter((s) => s.when === 'today' || s.when === 'week')
+      case '무료':
+        return mapShows.filter((s) => s.free)
+      case '전체':
+        return mapShows
+      default:
+        return mapShows.filter((s) => s.genre === filter)
+    }
+  }, [filter])
 
   const handleView = useCallback((shows: MapShow[]) => setVisible(shows), [])
 
@@ -49,7 +65,7 @@ const S2Map = () => {
         </div>
 
         <ShowMap
-          shows={mapShows}
+          shows={filtered}
           center={mapHome}
           me={myLocation}
           selectedId={selected}
@@ -66,7 +82,13 @@ const S2Map = () => {
             onAside={() => navigate(P.search)}
           />
           {visible.length === 0 ? (
-            <p className="s2__empty">이 지역에는 아직 올라온 공연이 없어요. 지도를 움직여 보세요.</p>
+            <p className="s2__empty">
+              {filtered.length === 0
+                ? `「${filter}」 조건에 맞는 공연이 없어요. 다른 조건으로 보세요.`
+                : filter === '전체'
+                  ? '이 지역에는 아직 올라온 공연이 없어요. 지도를 움직여 보세요.'
+                  : `지금 보이는 지역에 「${filter}」 공연이 없어요. 지도를 움직여 보세요.`}
+            </p>
           ) : (
             <div className="s2__cards">
               {visible.map((show) => (

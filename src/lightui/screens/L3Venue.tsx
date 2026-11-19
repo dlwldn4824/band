@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Phone from '../components/Phone'
 import SectionHeader from '../components/SectionHeader'
@@ -18,6 +18,7 @@ import './L3Venue.css'
  */
 const L3Venue = () => {
   const navigate = useNavigate()
+  const appsRef = useRef<HTMLDivElement>(null)
   const [weekIndex, setWeekIndex] = useState(1)
   const [open, setOpen] = useState(true)
   const [rejected, setRejected] = useState<string[]>([])
@@ -34,7 +35,14 @@ const L3Venue = () => {
         <div className="l3">
           <div className="l3__head">
             <h1 className="l3__name">{v.name}</h1>
-            <span className="lui-pill lui-pill--soft">{v.mode}</span>
+            {/* 공연장 모드에서 빠져나가는 유일한 길 — 그냥 라벨이면 갇힙니다 */}
+            <button
+              type="button"
+              className="lui-pill lui-pill--soft l3__mode"
+              onClick={() => navigate(P.home)}
+            >
+              {v.mode}
+            </button>
           </div>
 
           <p className="l3__lead">
@@ -142,6 +150,7 @@ const L3Venue = () => {
           </div>
 
           <div className="l3__gap-28" />
+          <div ref={appsRef} />
           <SectionHeader title="이 날 지원한 팀" aside={`${applicants.length}팀`} />
 
           <div className="l3__apps">
@@ -237,13 +246,32 @@ const L3Venue = () => {
         </Button>
       </Sheet>
 
-      {/* 공연장 모드는 탭 구성이 다릅니다 (일정 · 지원 팀 · 정산 · 공연장 · 마이) */}
+      {/* 공연장 모드는 탭 구성이 다릅니다 (일정 · 지원 팀 · 정산 · 공연장 · 마이).
+          갈 곳이 없는 탭은 눌리지 않는다는 걸 눈으로 알 수 있게 흐리게 둡니다. */}
       <nav className="lui-tabbar lui-tabbar--text">
-        {v.tabs.map((tab, i) => (
-          <span key={tab} className={`lui-tabbar__item${i === 0 ? ' lui-tabbar__item--on' : ''}`}>
-            <span className="lui-tabbar__label">{tab}</span>
-          </span>
-        ))}
+        {v.tabs.map((tab) => {
+          const on = tab.key === 'schedule'
+          const soon = 'soon' in tab && tab.soon
+          const go = () => {
+            if (tab.key === 'apps') appsRef.current?.scrollIntoView({ behavior: 'smooth' })
+            if (tab.key === 'settlement') navigate(P.settlement)
+            if (tab.key === 'me') navigate(P.me)
+          }
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              disabled={on || soon}
+              aria-current={on ? 'page' : undefined}
+              className={`lui-tabbar__item${on ? ' lui-tabbar__item--on' : ''}${
+                soon ? ' lui-tabbar__item--soon' : ''
+              }`}
+              onClick={go}
+            >
+              <span className="lui-tabbar__label">{tab.label}</span>
+            </button>
+          )
+        })}
       </nav>
     </Phone>
   )

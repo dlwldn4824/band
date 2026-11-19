@@ -37,6 +37,8 @@ const P2Preorder = () => {
 
   const showDrinks = filter === '전체' || filter === '음료'
   const showGoods = filter === '전체' || filter === '굿즈' || filter === '한정'
+  // 「한정」 은 수량이 정해진 것만 — 「굿즈」 와 같은 결과를 내면 누른 뜻이 없습니다
+  const goodsList = filter === '한정' ? pre.goods.filter((g) => g.limited) : pre.goods
 
   return (
     <Phone time="18:42">
@@ -102,9 +104,12 @@ const P2Preorder = () => {
           {showGoods && (
             <>
               <div className="p2__gap-26" />
-              <SectionHeader title="굿즈" aside={pre.goodsNote} />
+              <SectionHeader
+                title="굿즈"
+                aside={filter === '한정' ? `${goodsList.length}종 남음` : pre.goodsNote}
+              />
               <div className="p2__goods">
-                {pre.goods.map((g) => {
+                {goodsList.map((g) => {
                   const on = goods.includes(g.id)
                   return (
                     <button

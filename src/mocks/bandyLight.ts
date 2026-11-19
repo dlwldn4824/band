@@ -197,17 +197,21 @@ export interface MapShow {
   lng: number
   poster?: string
   real?: boolean
+  /** 필터 칩이 거를 거리 — 오늘은 11.22 기준입니다 */
+  when: 'today' | 'week' | 'later'
+  genre: string
+  free?: boolean
 }
 
 export const mapShows: MapShow[] = [
-  { id: 'glow', title: '멜로딕 단독 공연', venue: '라디오가가', region: '서울 노원', date: '11.22 (토) 19:00', distance: '0.4km', lat: 37.6186, lng: 127.0583, poster: posters.draft, real: true },
-  { id: 'lexa-melodic', title: '렉사 X 멜로딕', venue: '몽향', region: '서울 노원', date: '11.29 (토) 18:00', distance: '1.2km', lat: 37.6256, lng: 127.0629, poster: posters.union, real: true },
-  { id: 'alive-night', title: '얼라이브 합동 공연', venue: '얼라이브홀', region: '서울 홍대', date: '12.06 (토) 19:30', distance: '11.8km', lat: 37.5556, lng: 126.923, poster: posters.glowCard, real: true },
-  { id: 'sinchon-winter', title: '신촌 겨울 밴드전', venue: '신촌 파랑홀', region: '서울 신촌', date: '12.13 (토) 18:00', distance: '10.4km', lat: 37.5558, lng: 126.9365 },
-  { id: 'seongsu-live', title: '성수 라이브 나이트', venue: '성수 언더스테이지', region: '서울 성수', date: '12.20 (토) 19:00', distance: '8.1km', lat: 37.5447, lng: 127.0557 },
-  { id: 'busan-seomyeon', title: '서면 인디 데이', venue: '서면 오방가라지', region: '부산 서면', date: '12.07 (일) 17:00', lat: 35.1578, lng: 129.0595 },
-  { id: 'busan-gwangalli', title: '광안리 바다밴드', venue: '광안리 인디고', region: '부산 광안리', date: '12.14 (일) 18:00', lat: 35.1532, lng: 129.1186 },
-  { id: 'daegu-heavy', title: '대구 합동 공연', venue: '대구 헤비', region: '대구 동성로', date: '12.21 (일) 18:00', lat: 35.8686, lng: 128.5944 },
+  { id: 'glow', title: '멜로딕 단독 공연', venue: '라디오가가', region: '서울 노원', date: '11.22 (토) 19:00', distance: '0.4km', lat: 37.6186, lng: 127.0583, poster: posters.draft, real: true, when: 'today', genre: '밴드' },
+  { id: 'lexa-melodic', title: '렉사 X 멜로딕', venue: '몽향', region: '서울 노원', date: '11.29 (토) 18:00', distance: '1.2km', lat: 37.6256, lng: 127.0629, poster: posters.union, real: true, when: 'week', genre: '밴드' },
+  { id: 'alive-night', title: '얼라이브 합동 공연', venue: '얼라이브홀', region: '서울 홍대', date: '12.06 (토) 19:30', distance: '11.8km', lat: 37.5556, lng: 126.923, poster: posters.glowCard, real: true, when: 'later', genre: '밴드' },
+  { id: 'sinchon-winter', title: '신촌 겨울 밴드전', venue: '신촌 파랑홀', region: '서울 신촌', date: '12.13 (토) 18:00', distance: '10.4km', lat: 37.5558, lng: 126.9365, when: 'later', genre: '밴드', free: true },
+  { id: 'seongsu-live', title: '성수 라이브 나이트', venue: '성수 언더스테이지', region: '서울 성수', date: '12.20 (토) 19:00', distance: '8.1km', lat: 37.5447, lng: 127.0557, when: 'later', genre: '밴드' },
+  { id: 'busan-seomyeon', title: '서면 인디 데이', venue: '서면 오방가라지', region: '부산 서면', date: '12.07 (일) 17:00', lat: 35.1578, lng: 129.0595, when: 'later', genre: '인디' },
+  { id: 'busan-gwangalli', title: '광안리 바다밴드', venue: '광안리 인디고', region: '부산 광안리', date: '12.14 (일) 18:00', lat: 35.1532, lng: 129.1186, when: 'later', genre: '밴드', free: true },
+  { id: 'daegu-heavy', title: '대구 합동 공연', venue: '대구 헤비', region: '대구 동성로', date: '12.21 (일) 18:00', lat: 35.8686, lng: 128.5944, when: 'later', genre: '밴드' },
 ]
 
 /** 지도를 처음 열었을 때 보이는 범위 — 노원 월계동 기준 */
@@ -560,10 +564,11 @@ export const deposits = {
   summaryLine: '예매 42건 중 35건 입금 완료',
   done: 35,
   total: 42,
+  /** 칩은 아래 목록을 실제로 바꿉니다. 숫자는 데이터에서 세므로 어긋날 일이 없습니다 */
   filters: [
-    { label: '확인 필요 7', on: true },
-    { label: '입금 완료 35', on: false },
-    { label: '환불 1', on: false },
+    { key: 'need' as const, label: '확인 필요' },
+    { key: 'paid' as const, label: '입금 완료' },
+    { key: 'refund' as const, label: '환불' },
   ],
   needCheck: [
     { name: '이지우', amount: '34,000원', sub: '2매 · 11.20까지', reported: true },
@@ -574,7 +579,22 @@ export const deposits = {
   expired: [
     { name: '양성은', amount: '16,000원', sub: '1매 · 11.18 지남', state: '자동 취소됨' },
   ] as DepositRow[],
-  expiredCount: '2건',
+  expiredCount: '1건',
+  /** 입금이 끝난 건 — 전체 35건 중 최근 것만 보여 줍니다 */
+  paid: [
+    { name: '정하늘', amount: '32,000원', sub: '2매 · 11.19 입금', state: '입금 완료' },
+    { name: '오수민', amount: '16,000원', sub: '1매 · 11.19 입금', state: '입금 완료' },
+    { name: '한지훈', amount: '48,000원', sub: '3매 · 11.18 입금', state: '입금 완료' },
+  ] as DepositRow[],
+  paidMore: '최근 3건만 보여 줍니다',
+  refunded: [
+    { name: '서다인', amount: '16,000원', sub: '1매 · 11.17 환불', state: '환불 완료' },
+  ] as DepositRow[],
+  empty: {
+    need: '확인할 입금이 없어요. 전부 처리했습니다.',
+    paid: '아직 입금이 끝난 예매가 없어요.',
+    refund: '환불한 예매가 없어요.',
+  },
   note: '입금 신고는 예매자가 보냈다고 알린 건이고, 입금 대기는 아직 연락이 없는 건입니다.',
 }
 
@@ -696,7 +716,16 @@ export const venueBoard = {
     },
   ],
   bulk: { title: '남은 빈 날 8일 한 번에 공개', sub: '같은 조건으로 적용돼요' },
-  tabs: ['일정', '지원 팀', '정산', '공연장', '마이'],
+  /** 공연장 모드 탭 — 갈 곳이 있는 것만 누를 수 있습니다 */
+  tabs: [
+    { key: 'schedule', label: '일정' },
+    { key: 'apps', label: '지원 팀' },
+    { key: 'settlement', label: '정산' },
+    { key: 'venue', label: '공연장', soon: true },
+    { key: 'me', label: '마이' },
+  ],
+  /** 관객 화면으로 돌아가는 길 */
+  exit: '관객 모드로',
 }
 
 /* ── S12 입장 관리 · QR ─────────────────────────────── */
@@ -732,11 +761,23 @@ export const search = {
 
 /* ── S7 내 티켓 목록 ────────────────────────────────── */
 export const myTickets = {
-  count: '예정 3',
-  tabs: ['예정', '지난', '취소 · 환불'],
+  /** 배지는 탭과 겹치지 않게 전체 장수를 보여 줍니다 */
+  count: '전체 5장',
+  tabs: [
+    { key: 'upcoming', label: '예정' },
+    { key: 'past', label: '지난' },
+    { key: 'cancelled', label: '취소 · 환불' },
+  ],
+  /** 탭에 아무것도 없을 때 */
+  empty: {
+    upcoming: '예정된 공연이 없어요. 지도에서 가까운 공연을 찾아보세요.',
+    past: '아직 다녀온 공연이 없어요.',
+    cancelled: '취소하거나 환불한 예매가 없어요.',
+  },
   items: [
     {
       id: 'glow',
+      tab: 'upcoming',
       thumb: posters.draft,
       title: '멜로딕 단독 공연',
       when: '11.22 (토) 19:00 · 라디오가가',
@@ -748,6 +789,7 @@ export const myTickets = {
     },
     {
       id: 'lexa-melodic',
+      tab: 'upcoming',
       thumb: posters.union,
       title: '렉사 X 멜로딕 연합',
       when: '11.29 (토) 18:00 · 몽향',
@@ -757,20 +799,38 @@ export const myTickets = {
     },
     {
       id: 'sonapeum',
+      tab: 'upcoming',
       thumb: posters.draft,
       title: '손아픔 단독 공연',
       when: '12.06 (토) 19:00 · 홍대 미드나잇',
       what: '일반 1매',
       badge: '입장 1번',
-      urgent: false,
+    },
+    {
+      id: 'autumn-union',
+      tab: 'past',
+      thumb: posters.union,
+      title: '가을 연합 공연',
+      when: '10.11 (토) 18:00 · 라디오가가',
+      what: '일반 2매',
+      badge: '다녀옴',
+    },
+    {
+      id: 'harmonic-spring',
+      tab: 'cancelled',
+      thumb: posters.draft,
+      title: '하모닉 봄 정기',
+      when: '04.19 (토) 19:00 · 라디오가가',
+      what: '일반 1매 · 15,000원',
+      badge: '환불 완료',
     },
   ],
+  countMax: 2,
   counts: [
     { k: '11.22', value: 2, tone: 'accent' as const },
-    { k: '11.29', value: 1, tone: 'mute' as const },
-    { k: '12.06', value: 1, tone: 'mute' as const },
+    { k: '11.29', value: 1, tone: 'soft' as const },
+    { k: '12.06', value: 1, tone: 'soft' as const },
   ],
-  countMax: 2,
 }
 
 /* ── S8 알림 ────────────────────────────────────────── */
@@ -1036,10 +1096,10 @@ export const preorder = {
   ],
   goodsNote: '수량 한정',
   goods: [
-    { id: 'pickbox', name: '기타 피크 보관함', sub: '앰프 모양 · 한정 30개', price: 12000, priceLabel: '12,000원', photo: goodsPickBox },
+    { id: 'pickbox', name: '기타 피크 보관함', sub: '앰프 모양 · 한정 30개', price: 12000, priceLabel: '12,000원', photo: goodsPickBox, limited: true },
     // 공연 티셔츠는 아직 사진이 없어 회색 자리로 둡니다
     { id: 'tee', name: '공연 티셔츠', sub: 'S / M / L', price: 15000, priceLabel: '15,000원', photo: null },
-    { id: 'keyring', name: '헤드셋 키링', sub: '한정 50개', price: 7000, priceLabel: '7,000원', photo: goodsKeyring },
+    { id: 'keyring', name: '헤드셋 키링', sub: '한정 50개', price: 7000, priceLabel: '7,000원', photo: goodsKeyring, limited: true },
     { id: 'magnet', name: '기타 자석 4종', sub: '세트', price: 9000, priceLabel: '9,000원', photo: goodsMagnet },
   ],
   notice: '공연 2일 전까지 바꿀 수 있어요. 당일 취소는 어렵습니다.',

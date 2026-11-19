@@ -59,3 +59,6 @@
 .s11__gap-22 { height: 22px; }
 .s11__gap-24 { height: 24px; }
 .s11__gap-26 { height: 26px; }
+
+/* 이 칩에 보여 줄 게 없을 때 */
+.s11__empty { font-size: 12.5px; line-height: 20px; color: var(--lui-sub); padding: 14px 2px; }

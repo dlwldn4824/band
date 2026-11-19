@@ -5,6 +5,8 @@ import TopBar from './TopBar'
 import Button from './Button'
 import { MANAGER_ONLY, useRole } from '../auth/role'
 import { topicParticle } from '../korean'
+import { useGoBack } from '../useGoBack'
+import { P } from '../paths'
 
 /**
  * 운영진만 들어올 수 있는 화면을 감쌉니다.
@@ -24,6 +26,7 @@ const ManagerOnly = ({
 }) => {
   const { isManager } = useRole()
   const navigate = useNavigate()
+  const goBack = useGoBack()
 
   if (isManager) return <>{children}</>
 
@@ -38,8 +41,18 @@ const ManagerOnly = ({
             {topicParticle(what)} 동아리 운영진만 할 수 있습니다. 필요하면 운영진에게 권한을 받아
             주세요.
           </p>
-          <Button onClick={() => navigate(-1)}>돌아가기</Button>
+          {/* 막아 두기만 하면 주최자 화면을 아무도 못 봅니다 — 바꾸러 가는 길을 둡니다 */}
+          <button type="button" className="lui-gate__switch" onClick={() => navigate(P.me)}>
+            마이에서 권한 바꾸기
+          </button>
         </div>
+      </div>
+
+      {/* 다른 화면과 같은 자리에 같은 모양으로 — 가운데 떠 있는 작은 버튼은 어색합니다 */}
+      <div className="lui-bottombar">
+        <Button block onClick={() => goBack()}>
+          돌아가기
+        </Button>
       </div>
     </Phone>
   )
