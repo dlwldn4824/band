@@ -41,7 +41,7 @@ const ROLES: { key: ClubRole; label: string }[] = [
 const S14Me = () => {
   const navigate = useNavigate()
   const { mode, resolved, setMode } = useTheme()
-  const { role, setRole } = useRole()
+  const { role, setRole, isManager } = useRole()
   const [joinOpen, setJoinOpen] = useState(false)
 
   return (
@@ -99,6 +99,21 @@ const S14Me = () => {
               onClick={() => setJoinOpen(true)}
             />
           </div>
+
+          {/* 운영진에게만 — 입금·입장·정산 화면으로 들어가는 상설 입구 */}
+          {isManager && (
+            <>
+              <div className="s14__gap-26" />
+              <SectionHeader title="운영" />
+              <div className="lui-card s14__menu">
+                <MenuRow
+                  title="공연 관리"
+                  value="입금 · 입장 · 정산"
+                  onClick={() => navigate(P.console)}
+                />
+              </div>
+            </>
+          )}
 
           <div className="s14__gap-26" />
           <SectionHeader title="예매" />

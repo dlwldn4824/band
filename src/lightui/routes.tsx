@@ -7,6 +7,7 @@ import D3Deposit from './screens/D3Deposit'
 import D4Ticket from './screens/D4Ticket'
 import S2Map from './screens/S2Map'
 import L2Clubs from './screens/L2Clubs'
+import S18Console from './screens/S18Console'
 import S4Club from './screens/S4Club'
 import S5Recruit from './screens/S5Recruit'
 import S6Proposal from './screens/S6Proposal'
@@ -49,6 +50,11 @@ export const lightUiRoutes = [
   <Route key="ui-ticket" path="/ui/ticket/:showId" element={<D4Ticket />} />,
   <Route key="ui-map" path="/ui/map" element={<S2Map />} />,
   <Route key="ui-clubs" path="/ui/clubs" element={<L2Clubs />} />,
+  <Route key="ui-console" path="/ui/console" element={
+      <ManagerOnly title="공연 관리" what="공연 관리">
+        <S18Console />
+      </ManagerOnly>
+    } />,
   <Route key="ui-club" path="/ui/club/:clubId" element={<S4Club />} />,
   <Route key="ui-recruit-new" path="/ui/recruit/new" element={
       <ManagerOnly title="모집 글 쓰기" what="모집 글 쓰기">

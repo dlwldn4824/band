@@ -560,6 +560,51 @@ export interface DepositRow {
   state?: string
 }
 
+/**
+ * S18 공연 관리 — 운영진이 자기 동아리 공연을 한자리에서 보는 화면.
+ * 입금·입장·정산 화면은 전부터 있었지만 평소에 들어갈 길이 없어서, 그 입구를 모았습니다.
+ */
+export const clubConsole = {
+  club: { initial: '멜', name: '멜로딕 · 광운대', sub: '밴드 · 부원 18명' },
+  summaryLine: '다가오는 공연 2개 · 확인할 입금 2건',
+  upcoming: [
+    {
+      id: 'glow',
+      thumb: posters.glowCard,
+      title: '멜로딕 단독 공연',
+      when: '11.22 (토) 19:00 · 라디오가가',
+      paid: 35,
+      total: 42,
+      /** 미입금이 있으면 빨강 (규칙 7) */
+      urgent: true,
+    },
+    {
+      id: 'union',
+      thumb: posters.union,
+      title: '렉사 X 멜로딕 연합',
+      when: '11.29 (토) 18:00 · 몽향',
+      paid: 12,
+      total: 20,
+      urgent: false,
+    },
+  ],
+  past: [
+    {
+      id: 'autumn',
+      thumb: posters.draft,
+      title: '가을 연합 공연',
+      when: '10.11 (토) · 라디오가가',
+      state: '정산 대기',
+    },
+  ],
+  menu: [
+    { key: 'deposits' as const, title: '입금 관리', value: '확인 2건' },
+    { key: 'entry' as const, title: '입장 관리', value: '공연 당일' },
+    { key: 'settlement' as const, title: '정산', value: '1건 대기' },
+  ],
+  note: '공연 만들기와 입금·정산은 동아리 운영진만 할 수 있습니다. 부원에게 권한을 주려면 동아리 운영진에게 말해 주세요.',
+}
+
 export const deposits = {
   summaryLine: '예매 42건 중 35건 입금 완료',
   done: 35,

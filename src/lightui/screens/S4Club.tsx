@@ -47,6 +47,10 @@ const S4Club = () => {
             <MoreMenu
               className="s4__round"
               items={[
+                // 우리 동아리를 보고 있는 운영진에게는 관리로 가는 길을 먼저 둡니다
+                ...(isManager
+                  ? [{ label: '공연 관리', sub: '입금 · 입장 · 정산', to: P.console }]
+                  : []),
                 { label: '대화 열기', to: P.chat('melodic') },
                 {
                   label: '신고하기',

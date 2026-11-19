@@ -24,6 +24,7 @@ export const P = {
 
   // 동아리
   clubs: '/ui/clubs',                                   // L2
+  console: '/ui/console',                               // S18 운영진 출발점
   club: (id = 'melodic') => `/ui/club/${id}`,           // S4
   recruitNew: '/ui/recruit/new',                        // S5
   proposal: (id = '1') => `/ui/proposal/${id}`,         // S6
