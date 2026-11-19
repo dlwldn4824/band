@@ -42,6 +42,10 @@ const Icon = ({ name, size = 18, color, className, style }: IconProps) => {
     if (import.meta.env.DEV) console.warn(`[lightui] 아이콘 없음: ${name}`)
     return <span style={{ width: size, height: size, display: 'block', flex: 'none' }} />
   }
+  // 빌드하면 작은 SVG 는 data URI 로 인라인되는데, 그 안에 작은따옴표가 들어 있습니다.
+  // 따옴표 없이 url(...) 로 쓰면 CSS 값이 무효가 되어 마스크가 통째로 무시되고
+  // background-color 만 남아 네모로 보입니다. 큰따옴표로 감싸 둡니다.
+  const cssUrl = `url("${url.replace(/"/g, '%22')}")`
   return (
     <span
       aria-hidden
@@ -50,8 +54,8 @@ const Icon = ({ name, size = 18, color, className, style }: IconProps) => {
         width: size,
         height: size,
         color,
-        WebkitMaskImage: `url(${url})`,
-        maskImage: `url(${url})`,
+        WebkitMaskImage: cssUrl,
+        maskImage: cssUrl,
         ...style,
       }}
     />
