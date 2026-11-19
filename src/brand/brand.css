@@ -10,6 +10,8 @@
  *   한 화면에 눈에 띄는 움직임은 하나까지.
  */
 
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=IBM+Plex+Mono:wght@400;600&family=Lobster&display=swap');
+
 .bandy {
   /* 앱 라이트 UI 토큰을 그대로 가져옵니다 — 화이트 · 핑크 · 블랙 */
   --ink: #17181c;        /* 제목 · 본문 */
@@ -1363,3 +1365,128 @@
   .b-week__row { grid-template-columns: minmax(0, 1fr); }
   .b-week__row .b-week__card:nth-child(3) { display: block; }
 }
+
+
+/* ── 히어로 띠 포스터 — `Bandy Landing v3` 의 포스터 틀을 옮겼습니다 ──
+   한글은 Anton·Lobster 가 그리지 못해서 라틴 조판에만 쓰고, 우리말은 Pretendard 로 둡니다. */
+
+.b-po {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  container-type: size;
+  overflow: hidden;
+  background: #0b0b0b;
+  color: #f6f5f2;
+  line-height: 1.2;
+  word-break: keep-all;
+}
+
+/* ── 단독 공연 ─────────────────────────────── */
+
+.b-po__top,
+.b-po__rule {
+  position: absolute;
+  left: 6cqw;
+  right: 6cqw;
+  display: flex;
+  justify-content: space-between;
+  font-size: 2.6cqw;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.b-po__top { top: 5cqw; }
+.b-po__rule { bottom: 4cqw; opacity: 0.75; }
+
+.b-po__mid { position: absolute; left: 0; right: 0; top: 12cqw; text-align: center; }
+.b-po__pre { font-size: 4.4cqw; font-weight: 600; letter-spacing: 0.02em; }
+.b-po__big {
+  margin-top: 1cqw;
+  font-family: 'Anton', sans-serif;
+  font-size: 13cqw;
+  line-height: 0.95;
+  white-space: nowrap;
+}
+
+.b-po__band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 42cqw;
+  height: 60cqw;
+  background-color: #222;
+  background-size: cover;
+  background-position: center 30%;
+  filter: grayscale(1) contrast(1.25) brightness(0.9);
+}
+
+.b-po__meta {
+  position: absolute;
+  left: 6cqw;
+  right: 6cqw;
+  top: 106cqw;
+  display: flex;
+  justify-content: space-between;
+  gap: 4cqw;
+}
+.b-po__meta b { display: block; font-size: 6cqw; font-weight: 600; line-height: 1.05; letter-spacing: -0.02em; }
+.b-po__meta span { display: block; margin-top: 1.5cqw; font-size: 3cqw; font-weight: 600; opacity: 0.72; }
+.b-po__meta-r { text-align: right; }
+
+/* ── 연합 공연 (스포트라이트) ───────────────── */
+
+.b-po--spot { background: #0b0b0b; }
+.b-po__bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center 70%;
+  filter: grayscale(1) brightness(0.45) contrast(1.3);
+}
+.b-po__sweep {
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(3% 7%, 7% 5%, 100% 92%, 46% 100%);
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.1) 75%);
+}
+.b-po__dot {
+  position: absolute;
+  left: 3.5cqw;
+  top: 6cqw;
+  width: 3cqw;
+  height: 3cqw;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 3cqw 1.5cqw rgba(255, 255, 255, 0.8);
+}
+.b-po__kicker {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 3cqw;
+  text-align: center;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 3.4cqw;
+  letter-spacing: 0.9em;
+  text-indent: 0.9em;
+}
+.b-po__script {
+  position: absolute;
+  right: 6cqw;
+  top: 16cqw;
+  text-align: right;
+  font-family: 'Lobster', cursive;
+  font-size: 17cqw;
+  line-height: 0.9;
+  text-shadow: 0.5cqw 0.5cqw 0 #0b0b0b, 1cqw 1cqw 0 #f6f5f2;
+}
+.b-po__foot {
+  position: absolute;
+  left: 4cqw;
+  right: 4cqw;
+  bottom: 4cqw;
+  text-align: center;
+  font-family: 'IBM Plex Mono', monospace;
+}
+.b-po__foot-a { font-size: 3.8cqw; }
+.b-po__foot-b { margin-top: 1.2cqw; font-size: 3.4cqw; opacity: 0.8; }

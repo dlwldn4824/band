@@ -1,5 +1,6 @@
 import { motion } from 'motion/react'
-import { posters, soonTiles } from '../content'
+import { posters } from '../content'
+import Poster, { upcoming } from '../components/Poster'
 import { useReducedMotion } from '../useReducedMotion'
 
 /**
@@ -32,10 +33,9 @@ export default function Hero() {
             <img src={p.src} alt={`${p.title} 포스터`} />
           </div>
         ))}
-        {soonTiles.map((t) => (
-          <div className="b-strip__item b-strip__soon" key={t.title}>
-            <b>{t.title}</b>
-            {t.sub}
+        {upcoming.map((u) => (
+          <div className="b-strip__item" key={u.title} title={`${u.title} — ${u.note}`}>
+            <Poster p={u} />
           </div>
         ))}
       </motion.div>
