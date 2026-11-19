@@ -2,26 +2,48 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
-    <title>밴드 공연 예매</title>
-    <meta name="description" content="밴드 공연 예매 · 입장 · 당일 허브" />
+
+    <!-- 탭·홈 화면 아이콘 -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="64x64" href="/favicon-64.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <title>BANDY · 밴디</title>
+    <meta name="description" content="공연장 빈 날에 밴드를 연결합니다. 같이 설 팀과 보러 올 사람까지, 대학 밴드 동아리 공연 플랫폼." />
+    <meta name="theme-color" content="#141416" />
+
+    <!--
+      카카오톡·문자 미리보기.
+      og:image 는 반드시 절대 주소여야 합니다 — 상대 경로(/og.png)로 두면
+      크롤러가 받아 가지 못해 썸네일이 비어 보입니다.
+    -->
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="BANDY" />
     <meta property="og:url" content="https://band-alpha.vercel.app/" />
-    <meta property="og:title" content="밴드 공연 예매" />
-    <meta property="og:description" content="밴드 공연 예매 · 입장 · 당일 허브" />
-    <!-- TODO: 초대 링크(/ui/i/:code)는 공연별 OG 태그가 필요합니다.
-         og:image 를 /api/og/:eventId?v=N 으로 바꾸고, 링크 페이지를 서버에서 렌더하거나
-         프리렌더해서 메신저 크롤러가 태그를 읽을 수 있게 해야 합니다.
-         지금은 정적 placeholder 를 가리킵니다. -->
-    <meta property="og:image" content="/og-ticket-placeholder.png" />
+    <meta property="og:title" content="BANDY · 밴디" />
+    <meta property="og:description" content="공연장 빈 날에 밴드를 연결합니다. 같이 설 팀과 보러 올 사람까지." />
+    <meta property="og:image" content="https://band-alpha.vercel.app/og-bandy.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="BANDY" />
+    <meta property="og:locale" content="ko_KR" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="BANDY · 밴디" />
+    <meta name="twitter:description" content="공연장 빈 날에 밴드를 연결합니다. 같이 설 팀과 보러 올 사람까지." />
+    <meta name="twitter:image" content="https://band-alpha.vercel.app/og-bandy.png" />
+
+    <!-- TODO: 공연별 초대 링크(/ui/i/:code)는 공연마다 다른 썸네일이 필요합니다.
+         서버가 /api/og/:eventId 로 1200×630 을 그려 주고, 그 주소를 페이지별
+         og:image 로 넣어야 합니다. 메신저 크롤러는 자바스크립트를 돌리지 않아서
+         링크 페이지를 서버에서 렌더하거나 프리렌더해야 합니다. -->
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-
