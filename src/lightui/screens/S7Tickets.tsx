@@ -46,7 +46,10 @@ const S7Tickets = () => {
                   <button
                     type="button"
                     className="s7-item__main"
-                    onClick={() => navigate(P.ticket(item.id))}
+                    onClick={() =>
+                      /* 공연 당일에는 티켓보다 「오늘 뭘 할 수 있는지」 가 먼저입니다 */
+                      navigate('today' in item && item.today ? P.live(item.id) : P.ticket(item.id))
+                    }
                   >
                     <span className="s7-item__title">{item.title}</span>
                     <span className="s7-item__sub">{item.when}</span>

@@ -228,6 +228,8 @@ export const myClub = {
   received: 2,
   sent: 1,
   switcher: '멜로딕 ▾',
+  /** 다크 카드 안에서 C1 로 들어가는 줄 */
+  connections: { title: '우리의 연결', sub: '만난 밴드 6팀' },
 }
 
 export interface RecruitPost {
@@ -739,8 +741,10 @@ export const myTickets = {
       title: '멜로딕 단독 공연',
       when: '11.22 (토) 19:00 · 라디오가가',
       what: '일반 2매 · 음료 1잔',
-      badge: 'D-3',
+      badge: '오늘',
       urgent: true,
+      /** 공연 당일이면 티켓(D4) 대신 공연 정보(P1)로 갑니다 */
+      today: true,
     },
     {
       id: 'lexa-melodic',
@@ -910,6 +914,7 @@ export const connections = {
     { initial: '소', name: '소리울', sub: '교류 수락만', ratio: 22.219 / 277.766, warm: false },
   ],
   archive: { initial: '年', title: '올해 만난 밴드 모아보기', sub: '이미지로 저장해 공유할 수 있어요' },
+  stagesRow: { initial: '?', title: '연결은 어떻게 쌓이나요?', sub: '수락 · 응원 · 합동 · 단골 네 단계' },
   notice: '연결선의 굵기는 함께한 횟수입니다. 활동이 없다고 가늘어지지는 않아요.',
 }
 
@@ -1014,7 +1019,8 @@ export const showLive = {
   canDo: [
     { initial: '현', title: '현장에서 사람 만나기', sub: '취향이 겹치는 관객을 알려드려요', to: 'people' },
     { initial: '굿', title: '사전 구매한 것 받기', sub: '음료 1잔 · 바에서 교환', to: 'store' },
-    { initial: '방', title: '방명록 남기기', sub: '공연이 끝나면 열려요', to: 'guestbook' },
+    /** 공연이 끝나기 전에는 눌리지 않습니다 */
+    { initial: '방', title: '방명록 남기기', sub: '공연이 끝나면 열려요', to: 'guestbook', lock: '끝나고' },
   ],
   notice: '공연 30분 전부터 입장할 수 있어요. 늦으면 곡과 곡 사이에 들어갑니다.',
 }

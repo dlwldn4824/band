@@ -770,6 +770,8 @@ textarea.lui-input {
 
 /* ── C1 관계 그래프 (React Flow) ─────────────────────── */
 .c1g { width: 100%; height: 318px; background: var(--lui-box); border-radius: 18px; overflow: hidden; }
+/* 라벨이 노드 상자 밖으로 나오므로 잘리지 않게 */
+.c1g .react-flow__node { overflow: visible; }
 .c1g .react-flow__renderer,
 .c1g .react-flow__pane { cursor: default; }
 .c1g .react-flow__edge-path { stroke-linecap: round; }
@@ -788,7 +790,21 @@ textarea.lui-input {
 }
 .c1g-center .c1g-handle { top: 50%; transform: translate(-50%, -50%); }
 
-.c1g-node { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
+.c1g-node { position: relative; display: flex; justify-content: center; cursor: pointer; }
+/* 원 아래에 띄운 라벨 — 원보다 길어도 눌리거나 쪼개지지 않습니다 */
+.c1g-node__labels {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+  pointer-events: none;
+}
 .c1g-node__circle {
   display: flex; align-items: center; justify-content: center;
   border-radius: var(--lui-r-pill);
@@ -1001,3 +1017,20 @@ textarea.lui-input {
   padding: 9px 11px;
   margin-bottom: 6px;
 }
+
+/* 다크 카드가 여러 곳으로 갈라질 때 — 카드 전체가 아니라 줄마다 누릅니다 */
+.lui-darkcard__hit {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  text-align: left;
+  position: relative;
+  z-index: 1;
+}
+.lui-darkcard__foot.lui-darkcard__hit { flex-direction: row; align-items: center; justify-content: space-between; }
+.lui-darkcard__strong { color: #fff; font-weight: 700; }
+
+/* 아직 열리지 않은 줄 — 눌리지 않는다는 걸 흐림으로 말합니다 */
+.lui-row--locked .lui-row__avatar,
+.lui-row--locked .lui-row__title { opacity: 0.55; }

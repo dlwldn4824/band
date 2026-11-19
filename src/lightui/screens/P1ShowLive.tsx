@@ -5,6 +5,7 @@ import SectionHeader from '../components/SectionHeader'
 import ListRow from '../components/ListRow'
 import Button from '../components/Button'
 import Icon from '../components/Icon'
+import DirectionsSheet from '../components/DirectionsSheet'
 import { P } from '../paths'
 import { showLive as s } from '../../mocks/bandyLight'
 import './P1ShowLive.css'
@@ -13,6 +14,7 @@ import './P1ShowLive.css'
 const P1ShowLive = () => {
   const navigate = useNavigate()
   const [liked, setLiked] = useState(false)
+  const [dirs, setDirs] = useState(false)
   const { showId = 'glow' } = useParams()
 
   const go = (to: string) => {
@@ -114,22 +116,40 @@ const P1ShowLive = () => {
           <div className="p1__gap-26" />
           <SectionHeader title="이 공연에서 할 수 있는 것" />
           <div className="lui-card p1__cando">
-            {s.canDo.map((row) => (
-              <ListRow
-                key={row.title}
-                avatar={row.initial}
-                title={row.title}
-                sub={row.sub}
-                chevron
-                onClick={() => go(row.to)}
-              />
-            ))}
+            {s.canDo.map((row) => {
+              const lock = 'lock' in row ? row.lock : undefined
+              return (
+                <ListRow
+                  key={row.title}
+                  avatar={row.initial}
+                  title={row.title}
+                  sub={row.sub}
+                  className={lock ? 'lui-row--locked' : undefined}
+                  slot={lock ? <span className="lui-pill lui-pill--soft">{lock}</span> : undefined}
+                  chevron={!lock}
+                  onClick={lock ? undefined : () => go(row.to)}
+                />
+              )
+            })}
+          </div>
+
+          <div className="p1__gap-26" />
+          <SectionHeader title="공연장" aside="길찾기" onAside={() => setDirs(true)} />
+          <div className="lui-card p1__venue">
+            <ListRow
+              title={s.venue.name}
+              sub={s.venue.address}
+              chevron
+              onClick={() => setDirs(true)}
+            />
           </div>
 
           <div className="p1__gap-26" />
           <p className="p1__notice">{s.notice}</p>
         </div>
       </div>
+
+      <DirectionsSheet venue={s.venue} open={dirs} onClose={() => setDirs(false)} />
 
       <div className="lui-bottombar">
         <Button block onClick={() => navigate(P.ticket(showId))}>

@@ -67,3 +67,6 @@
 .p1__cando .lui-row__avatar { width: 40px; height: 40px; background: var(--lui-chip); color: var(--lui-ink); }
 
 .p1__notice { font-size: 11.5px; line-height: 20.125px; color: var(--lui-sub-2); }
+
+.p1__venue { padding: 4px 16px; }
+.p1__venue .lui-row { padding: 12px 0; }

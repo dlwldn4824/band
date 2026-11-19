@@ -64,12 +64,25 @@ const S4Club = () => {
 
           <div className="s4__gap-26" />
           <div className="lui-card s4__stats">
-            {c.stats.map((s) => (
-              <div key={s.k} className="s4__stat">
-                <span className="s4__stat-k">{s.k}</span>
-                <span className="s4__stat-v">{s.v}</span>
-              </div>
-            ))}
+            {c.stats.map((stat) =>
+              /* 교류 동아리 수는 연결 지도(C1)로 들어가는 길입니다 */
+              stat.k === '교류 동아리' ? (
+                <button
+                  key={stat.k}
+                  type="button"
+                  className="s4__stat s4__stat--link"
+                  onClick={() => navigate(P.connections)}
+                >
+                  <span className="s4__stat-k">{stat.k}</span>
+                  <span className="s4__stat-v">{stat.v}</span>
+                </button>
+              ) : (
+                <div key={stat.k} className="s4__stat">
+                  <span className="s4__stat-k">{stat.k}</span>
+                  <span className="s4__stat-v">{stat.v}</span>
+                </div>
+              ),
+            )}
           </div>
 
           <div className="s4__gap-14" />

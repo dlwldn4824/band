@@ -89,7 +89,16 @@ const C1Connections = () => {
               avatar={c.archive.initial}
               title={c.archive.title}
               sub={c.archive.sub}
-              slot={<span className="c1-row__chev">›</span>}
+              chevron
+              onClick={() => navigate(P.connected)}
+            />
+            {/* 설명 화면(C3)으로 가는 길 — 평소엔 눈에 띌 필요가 없어 맨 아래에 둡니다 */}
+            <ListRow
+              avatar={c.stagesRow.initial}
+              title={c.stagesRow.title}
+              sub={c.stagesRow.sub}
+              chevron
+              onClick={() => navigate(P.connectionStages)}
             />
           </div>
 

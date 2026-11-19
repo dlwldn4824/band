@@ -5,6 +5,7 @@ import SectionHeader from '../components/SectionHeader'
 import ListRow from '../components/ListRow'
 import Button from '../components/Button'
 import Icon from '../components/Icon'
+import DirectionsSheet from '../components/DirectionsSheet'
 import { P } from '../paths'
 import { showDetail as s } from '../../mocks/bandyLight'
 import mapVenue from '../assets/map-venue.svg'
@@ -14,6 +15,7 @@ import './D1Show.css'
 const D1Show = () => {
   const navigate = useNavigate()
   const [liked, setLiked] = useState(false)
+  const [dirs, setDirs] = useState(false)
 
   return (
     <Phone>
@@ -95,18 +97,25 @@ const D1Show = () => {
           <p className="d1__about">{s.about.join('\n')}</p>
 
           <div className="d1__gap-26" />
-          <SectionHeader title="공연장" aside="길찾기" onAside={() => navigate(P.map)} />
+          <SectionHeader title="공연장" aside="길찾기" onAside={() => setDirs(true)} />
           <div className="lui-card d1__venue">
             <div className="d1__venue-map">
               <img src={mapVenue} alt="" />
             </div>
-            <ListRow title={s.venue.name} sub={s.venue.address} chevron onClick={() => navigate(P.map)} />
+            <ListRow
+              title={s.venue.name}
+              sub={s.venue.address}
+              chevron
+              onClick={() => setDirs(true)}
+            />
           </div>
 
           <div className="d1__gap-26" />
           <p className="d1__notice">{s.notice}</p>
         </div>
       </div>
+
+      <DirectionsSheet venue={s.venue} open={dirs} onClose={() => setDirs(false)} />
 
       <div className="lui-bottombar">
         <div className="lui-bottombar__info">

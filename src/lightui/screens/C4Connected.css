@@ -39,3 +39,15 @@
   font-size: 15px; font-weight: 800; color: var(--lui-ink);
 }
 .c4__x { font-size: 18px; color: #5e636b; }
+
+/* 한 장짜리 화면으로 열렸을 때 */
+.c4-screen { flex: 1; display: flex; flex-direction: column; }
+/* 목록·상세 위에 덮일 때 — 폰 셸(.lui) 안에서만 덮습니다 */
+.c4-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  background: var(--lui-ink);
+}

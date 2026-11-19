@@ -49,6 +49,13 @@ type BandData = {
 
 type CenterData = { label: string }
 
+/**
+ * 라벨은 원 아래에 띄워 둡니다.
+ *
+ * 흐름 안에 두면 노드 상자의 너비가 원 지름으로 굳어서, 「블루노트」 처럼 원보다 긴 이름이
+ * 그 폭에 눌립니다(브라우저에 따라 두 줄로 쪼개지기도 합니다). 띄워 두면 원 밖으로
+ * 넓게 빠져나올 수 있고, 가운데 정렬도 원 기준으로 유지됩니다.
+ */
 const BandNode = ({ data }: NodeProps<Node<BandData>>) => (
   <div className="c1g-node">
     <Handle type="target" position={DIR[data.to] ?? Position.Top} className="c1g-handle" />
@@ -58,8 +65,10 @@ const BandNode = ({ data }: NodeProps<Node<BandData>>) => (
     >
       {data.initial}
     </span>
-    <span className={`c1g-node__name c1g-node__name--${data.tone}`}>{data.name}</span>
-    <span className="c1g-node__record">{data.record}</span>
+    <span className="c1g-node__labels">
+      <span className={`c1g-node__name c1g-node__name--${data.tone}`}>{data.name}</span>
+      <span className="c1g-node__record">{data.record}</span>
+    </span>
   </div>
 )
 
@@ -119,7 +128,8 @@ const ConnectionGraph = ({ onSelect }: { onSelect?: (id: string) => void }) => {
         edges={edges}
         nodeTypes={nodeTypes}
         fitView
-        fitViewOptions={{ padding: 0.12 }}
+        /* 라벨이 노드 상자 밖으로 나가 있어서 fitView 가 세지 못합니다 — 여백을 넉넉히 */
+        fitViewOptions={{ padding: 0.22 }}
         proOptions={{ hideAttribution: true }}
         nodesDraggable={false}
         nodesConnectable={false}

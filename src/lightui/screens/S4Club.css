@@ -56,3 +56,5 @@
 
 .s4__gap-14 { height: 14px; }
 .s4__gap-26 { height: 26px; }
+/* 누를 수 있는 통계 — 숫자 아래 점선으로만 표시합니다 */
+.s4__stat--link .s4__stat-v { border-bottom: 1.5px dotted var(--lui-field-line); }

@@ -21,3 +21,8 @@ export function topicParticle(word: string) {
 export function withParticle(word: string) {
   return hasFinalConsonant(word) ? '과' : '와'
 }
+
+/** 이 / 가 */
+export function subjectParticle(word: string) {
+  return hasFinalConsonant(word) ? '이' : '가'
+}

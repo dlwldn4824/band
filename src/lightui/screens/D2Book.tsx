@@ -64,7 +64,12 @@ const D2Book = () => {
           </div>
 
           <div className="d2__gap" />
-          <SectionHeader title="사전 구매" aside="현장 교환" />
+          {/* 여기서 안 고르고 넘어가도 공연 당일에 P2 에서 담을 수 있습니다 */}
+          <SectionHeader
+            title="사전 구매"
+            aside="나중에 추가하기"
+            onAside={() => navigate(P.liveStore(showId))}
+          />
           <div className="lui-card d2__option d2__option--multi">
             {booking.addons.map((a, i) => (
               <div key={a.id} style={{ display: 'contents' }}>

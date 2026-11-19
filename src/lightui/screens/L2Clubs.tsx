@@ -8,8 +8,11 @@ import Dots from '../components/Dots'
 import Button from '../components/Button'
 import Icon from '../components/Icon'
 import Sheet from '../components/Sheet'
+import ConnectedResult from '../components/ConnectedResult'
 import { P } from '../paths'
 import { useRole } from '../auth/role'
+import { subjectParticle, withParticle } from '../korean'
+import type { ReceivedProposal } from '../../mocks/bandyLight'
 import {
   myClub,
   receivedProposals,
@@ -29,7 +32,15 @@ import './L2Clubs.css'
 
 type TabKey = 'recruit' | 'received' | 'sent'
 
+/** 「멜로딕과 하모닉이」 — 받침에 맞춰 조사를 고릅니다 */
+function connectedLine(mine: string, theirs: string) {
+  const a = mine.split(' · ')[0]
+  const b = theirs.split(' · ')[0]
+  return `${a}${withParticle(a)} ${b}${subjectParticle(b)}`
+}
+
 const L2Clubs = () => {
+  const navigate = useNavigate()
   const { isManager } = useRole()
   const [params, setParams] = useSearchParams()
 
@@ -60,22 +71,38 @@ const L2Clubs = () => {
           </div>
 
           <div className="l2__gap-18" />
-          <DarkCard onClick={() => goTab('received')}>
-            <span className="lui-darkcard__head">
-              <span className="lui-darkcard__avatar">{myClub.initial}</span>
-              <span className="lui-darkcard__main">
-                <span className="lui-darkcard__name">{myClub.name}</span>
-                <span className="lui-darkcard__sub">{myClub.sub}</span>
+          <DarkCard>
+            <button type="button" className="lui-darkcard__hit" onClick={() => goTab('received')}>
+              <span className="lui-darkcard__head">
+                <span className="lui-darkcard__avatar">{myClub.initial}</span>
+                <span className="lui-darkcard__main">
+                  <span className="lui-darkcard__name">{myClub.name}</span>
+                  <span className="lui-darkcard__sub">{myClub.sub}</span>
+                </span>
               </span>
-            </span>
+              <span className="lui-darkcard__line" />
+              <span className="lui-darkcard__foot">
+                <span className="lui-darkcard__foot-text">
+                  받은 제안 <span className="lui-darkcard__count">{myClub.received}</span> · 보낸
+                  제안 {myClub.sent}
+                </span>
+                <Icon name="chevron-right" size={18} className="lui-darkcard__chev" />
+              </span>
+            </button>
+
             <span className="lui-darkcard__line" />
-            <span className="lui-darkcard__foot">
+            {/* 연결 지도(C1)로 들어가는 길 */}
+            <button
+              type="button"
+              className="lui-darkcard__foot lui-darkcard__hit"
+              onClick={() => navigate(P.connections)}
+            >
               <span className="lui-darkcard__foot-text">
-                받은 제안 <span className="lui-darkcard__count">{myClub.received}</span> · 보낸 제안{' '}
-                {myClub.sent}
+                <span className="lui-darkcard__strong">{myClub.connections.title}</span> ·{' '}
+                {myClub.connections.sub}
               </span>
               <Icon name="chevron-right" size={18} className="lui-darkcard__chev" />
-            </span>
+            </button>
           </DarkCard>
 
           <div className="l2__gap-18" />
@@ -208,6 +235,8 @@ const ReceivedTab = () => {
   const { isManager } = useRole()
   const [accepted, setAccepted] = useState<string[]>([])
   const [confirming, setConfirming] = useState<string | null>(null)
+  // 수락한 순간 이 화면 위에 「연결되었어요」 가 덮입니다 (C4)
+  const [celebrating, setCelebrating] = useState<ReceivedProposal | null>(null)
 
   const waiting = receivedProposals.waiting.filter((p) => !accepted.includes(p.id))
   const past = [
@@ -257,7 +286,12 @@ const ReceivedTab = () => {
               </button>
 
               <div className="l2-post__actions">
-                {isManager && <Button onClick={() => setConfirming(p.id)}>수락</Button>}
+                {/* 목록에는 기본 버튼을 두지 않습니다 — 검정 수락은 상세(S6)에만 */}
+                {isManager && (
+                  <Button variant="ghost" onClick={() => setConfirming(p.id)}>
+                    수락
+                  </Button>
+                )}
                 <Button variant="ghost" onClick={() => navigate(P.proposal(p.id))}>
                   자세히
                 </Button>
@@ -305,6 +339,7 @@ const ReceivedTab = () => {
           <Button
             onClick={() => {
               if (confirming) setAccepted((prev) => [...prev, confirming])
+              setCelebrating(target ?? null)
               setConfirming(null)
             }}
           >
@@ -312,6 +347,16 @@ const ReceivedTab = () => {
           </Button>
         </div>
       </Sheet>
+
+      {celebrating && (
+        <ConnectedResult
+          overlay
+          pair={[myClub.initial, celebrating.initial]}
+          headline={[connectedLine(myClub.name, celebrating.club), '연결되었어요']}
+          onSeeRecord={() => navigate(P.connection(celebrating.id))}
+          onSecondary={() => setCelebrating(null)}
+        />
+      )}
     </>
   )
 }
@@ -413,7 +458,9 @@ const SentTab = () => {
 
             {p.state === '수락됨' && (
               <div className="l2-post__actions">
-                <Button onClick={() => navigate(P.show('glow'))}>공연 보기</Button>
+                <Button variant="ghost" onClick={() => navigate(P.show('glow'))}>
+                  공연 보기
+                </Button>
                 <Button variant="ghost" onClick={() => navigate(P.chat(p.id))}>
                   대화
                 </Button>

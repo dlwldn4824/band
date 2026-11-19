@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Phone from '../components/Phone'
 import MoreMenu from '../components/MoreMenu'
@@ -6,13 +7,24 @@ import SectionHeader from '../components/SectionHeader'
 import SummaryBox from '../components/SummaryBox'
 import ListRow from '../components/ListRow'
 import Button from '../components/Button'
+import ConnectedResult from '../components/ConnectedResult'
 import { P } from '../paths'
-import { proposal as pr } from '../../mocks/bandyLight'
+import { myClub, proposal as pr } from '../../mocks/bandyLight'
+import { subjectParticle, withParticle } from '../korean'
 import './S6Proposal.css'
+
+/** 「멜로딕과 하모닉이」 — 받침에 맞춰 조사를 고릅니다 */
+function connectedLine(mine: string, theirs: string) {
+  const a = mine.split(' · ')[0]
+  const b = theirs.split(' · ')[0]
+  return `${a}${withParticle(a)} ${b}${subjectParticle(b)}`
+}
 
 /** S6 받은 제안 상세 — Figma 209:2 */
 const S6Proposal = () => {
   const navigate = useNavigate()
+  // 수락한 순간 이 화면 위에 「연결되었어요」 (C4) 가 덮입니다
+  const [connected, setConnected] = useState(false)
 
   return (
     <Phone>
@@ -82,8 +94,18 @@ const S6Proposal = () => {
         <Button variant="ghost" onClick={() => navigate(P.chat('harmonic'))}>
           대화
         </Button>
-        <Button onClick={() => navigate(P.clubs)}>수락</Button>
+        <Button onClick={() => setConnected(true)}>수락</Button>
       </div>
+
+      {connected && (
+        <ConnectedResult
+          overlay
+          pair={[myClub.initial, pr.from.initial]}
+          headline={[connectedLine(myClub.name, pr.from.name), '연결되었어요']}
+          onSeeRecord={() => navigate(P.connection('harmonic'))}
+          onSecondary={() => navigate(P.clubs)}
+        />
+      )}
     </Phone>
   )
 }

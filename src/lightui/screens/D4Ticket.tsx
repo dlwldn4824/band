@@ -8,8 +8,9 @@ import SummaryBox from '../components/SummaryBox'
 import ListRow from '../components/ListRow'
 import Button from '../components/Button'
 import Sheet from '../components/Sheet'
+import DirectionsSheet from '../components/DirectionsSheet'
 import { P } from '../paths'
-import { myTicket as t } from '../../mocks/bandyLight'
+import { myTicket as t, radioGaga } from '../../mocks/bandyLight'
 import qr from '../assets/ticket-qr.svg'
 import './D4Ticket.css'
 
@@ -21,6 +22,7 @@ const D4Ticket = () => {
   const navigate = useNavigate()
   const { showId = 'glow' } = useParams()
   const [refund, setRefund] = useState(false)
+  const [dirs, setDirs] = useState(false)
 
   return (
     <Phone>
@@ -72,6 +74,16 @@ const D4Ticket = () => {
           <div className="d4__gap-26" />
           <p className="d4__guide">{t.guide}</p>
 
+          {/* MOCK: 입구 단말이 QR 을 읽으면 서버가 알려 줄 자리입니다.
+              붙기 전까지는 이 버튼으로 입장 완료(P3) 를 볼 수 있게 둡니다. */}
+          <button
+            type="button"
+            className="d4__demo"
+            onClick={() => navigate(P.liveEntered(showId))}
+          >
+            입장 처리됨 (데모)
+          </button>
+
           <div className="d4__gap-26" />
           <SectionHeader title="사전 구매" aside="현장 교환" />
           <div className="lui-card d4__addon">
@@ -88,7 +100,7 @@ const D4Ticket = () => {
 
           <div className="d4__gap-26" />
           <div className="d4__links">
-            <button type="button" className="d4__link" onClick={() => navigate(P.show(showId))}>
+            <button type="button" className="d4__link" onClick={() => navigate(P.live(showId))}>
               공연 정보
             </button>
             <button type="button" className="d4__link" onClick={() => setRefund(true)}>
@@ -105,8 +117,10 @@ const D4Ticket = () => {
         </Button>
       </Sheet>
 
+      <DirectionsSheet venue={radioGaga} open={dirs} onClose={() => setDirs(false)} />
+
       <div className="lui-bottombar">
-        <Button block onClick={() => navigate(P.map)}>
+        <Button block onClick={() => setDirs(true)}>
           공연장 길찾기
         </Button>
       </div>
