@@ -28,9 +28,8 @@ export default defineConfig({
     proxy: {
       '/api': 'http://localhost:3001',
     },
-    hmr: {
-      clientPort: 5173,
-    },
+    // HMR 클라이언트 포트는 고정하지 않습니다 — 다른 포트(미리보기용)로 띄웠을 때
+    // ws 연결이 실패해 Vite 가 페이지를 몇 초마다 새로고침해 버립니다.
     headers: {
       'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
       'Pragma': 'no-cache',

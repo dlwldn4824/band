@@ -1,0 +1,26 @@
+/* S14 마이 — Figma 217:2 */
+.s14 { display: flex; flex-direction: column; padding: 0 20px; }
+.s14__gap-14 { height: 14px; }
+.s14__gap-26 { height: 26px; }
+
+.s14__head { display: flex; align-items: center; justify-content: space-between; }
+.s14__title { font-size: 22px; font-weight: 800; line-height: 30.36px; letter-spacing: -0.55px; color: var(--lui-ink); }
+
+.s14__profile { padding: 16px; }
+.s14__profile .lui-row { padding: 0; }
+.s14__profile .lui-row__avatar { width: 52px; height: 52px; background: var(--lui-chip); color: var(--lui-ink); font-size: 17px; }
+
+.s14__group { padding: 4px 16px; }
+.s14__group .lui-row { padding: 12px 0; }
+.s14__group .lui-row + .lui-row { border-top: 1px solid var(--lui-hairline); }
+.s14__group .lui-row__avatar { width: 40px; height: 40px; background: var(--lui-chip); color: var(--lui-ink); }
+
+/* 한 줄짜리 메뉴 목록 (제목 + 값 + chevron) */
+.s14__menu { padding: 0 16px; }
+.s14-menu-row { display: flex; align-items: center; gap: 12px; padding: 15px 0; width: 100%; text-align: left; }
+.s14-menu-row + .s14-menu-row { border-top: 1px solid var(--lui-hairline); }
+.s14-menu-row__title { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; color: var(--lui-ink); }
+.s14-menu-row__value { font-size: 12.5px; color: var(--lui-sub-2); }
+.s14-menu-row__chev { color: var(--lui-icon-faint); }
+
+.s14__version { font-size: 11.5px; line-height: 20.125px; color: var(--lui-sub-2); text-align: center; }

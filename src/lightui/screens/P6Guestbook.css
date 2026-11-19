@@ -1,0 +1,44 @@
+/* P6 방명록 — Figma 298:2 */
+.p6 { display: flex; flex-direction: column; padding: 0 20px; }
+.p6__gap-14 { height: 14px; }
+.p6__gap-26 { height: 26px; }
+.p6__title { font-size: 21px; font-weight: 800; line-height: 28.98px; letter-spacing: -0.525px; color: var(--lui-ink); }
+.p6__lead { font-size: 13px; color: var(--lui-sub); }
+.p6__input { min-height: 88px; }
+
+.p6__opts { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.p6__who { display: flex; gap: 6px; }
+.p6-who {
+  padding: 7px 12px;
+  border-radius: var(--lui-r-pill);
+  border: 1px solid var(--lui-field-line);
+  background: var(--lui-ghost-bg);
+  font-size: 12px;
+  color: var(--lui-body);
+  white-space: nowrap;
+}
+.p6-who--on {
+  background: var(--lui-inverse-bg);
+  border-color: var(--lui-inverse-bg);
+  color: var(--lui-inverse-fg);
+  font-weight: 700;
+}
+.p6__count { font-size: 11.5px; color: var(--lui-sub-2); white-space: nowrap; }
+
+.p6__entries { display: flex; flex-direction: column; gap: 10px; }
+.p6-entry { padding: 14px; border-radius: 16px; display: flex; flex-direction: column; gap: 7px; }
+.p6-entry__head { display: flex; align-items: center; gap: 9px; }
+.p6-entry__avatar {
+  width: 30px; height: 30px;
+  border-radius: var(--lui-r-pill);
+  background: var(--lui-chip);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: var(--lui-ink);
+  flex: none;
+}
+.p6-entry__name { font-size: 12.5px; font-weight: 700; color: var(--lui-ink); }
+.p6-entry__at { font-size: 10.5px; color: var(--lui-placeholder); }
+.p6-entry__text { font-size: 13.5px; line-height: 22.95px; color: #3b424c; }
+[data-lui-theme='dark'] .p6-entry__text { color: var(--lui-body); }
+
+.p6__notice { font-size: 11.5px; line-height: 20.125px; color: var(--lui-sub-2); }

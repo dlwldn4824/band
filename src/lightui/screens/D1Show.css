@@ -1,0 +1,88 @@
+/* D1 공연 상세 — Figma 183:2 */
+
+.d1__hero {
+  position: relative;
+  height: 300px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 14px 16px;
+  flex: none;
+}
+.d1__hero > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* 규칙 3 — 사진 위라서 여기서만 원형 배경을 씁니다 */
+.d1__round {
+  position: relative;
+  width: 36px; height: 36px;
+  border-radius: var(--lui-r-pill);
+  background: var(--lui-card);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--lui-ink);
+}
+.d1__hero-right { position: relative; display: flex; gap: 8px; }
+
+.d1__body { display: flex; flex-direction: column; padding: 0 20px; }
+
+.d1__badges { display: flex; gap: 6px; }
+.d1-badge {
+  display: inline-flex;
+  padding: 5px 10px;
+  border-radius: var(--lui-r-pill);
+  background: var(--lui-chip);
+  color: var(--lui-body);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.d1-badge--accent { background: var(--lui-tint); color: var(--lui-accent); }
+
+.d1__title {
+  font-size: 23px;
+  font-weight: 800;
+  line-height: 31.74px;
+  letter-spacing: -0.575px;
+  color: var(--lui-ink);
+}
+.d1__host { font-size: 13px; color: var(--lui-sub); }
+
+/* 일시 · 장소 · 러닝타임 · 관람 */
+.d1__info {
+  background: var(--lui-box);
+  border-radius: 14px;
+  padding: 13px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.d1__info-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.d1__info-k { font-size: 12.5px; color: var(--lui-sub); }
+.d1__info-v { font-size: 12.5px; font-weight: 700; color: var(--lui-ink); text-align: right; }
+
+/* 출연 팀 */
+.d1__lineup { padding: 4px 16px; }
+.d1__lineup .lui-row { padding: 12px 0; }
+.d1__lineup .lui-row + .lui-row { border-top: 1px solid var(--lui-hairline); }
+.d1__lineup .lui-row__avatar { width: 40px; height: 40px; background: var(--lui-chip); color: var(--lui-ink); }
+
+.d1__about {
+  font-size: 13.5px;
+  line-height: 24.3px;
+  color: var(--lui-body);
+  white-space: pre-wrap;
+}
+
+.d1__venue { overflow: hidden; }
+.d1__venue-map { height: 120px; background: var(--lui-soft); position: relative; }
+.d1__venue-map img { position: absolute; left: 0; top: 0; width: 348px; height: 120px; display: block; }
+
+.d1__notice { font-size: 11.5px; line-height: 20.125px; color: var(--lui-sub-2); }
+
+.d1__gap-20 { height: 20px; }
+.d1__gap-14 { height: 14px; }
+.d1__gap-26 { height: 26px; }

@@ -1,0 +1,79 @@
+/* L1 홈 (포스터) — Figma 181:2 */
+
+.l1 { gap: 7px; display: flex; flex-direction: column; padding: 0 20px; }
+
+.l1__top { display: flex; align-items: center; justify-content: space-between; padding-top: 6px; }
+.l1__logo { width: 110px; height: 34px; object-fit: contain; display: block; }
+.l1__bell {
+  width: 36px; height: 36px;
+  border-radius: var(--lui-r-pill);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--lui-ink);
+}
+
+.l1__heading {
+  padding: 26px 0 22px;
+  font-size: 25px;
+  font-weight: 800;
+  line-height: 35px;
+  letter-spacing: -0.625px;
+  color: var(--lui-ink);
+}
+
+/* 가로 스크롤 공연 카드 */
+.l1__shows {
+  display: flex;
+  gap: 12px;
+  height: 274px;
+  align-items: flex-start;
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* 프레임 밖으로 자연스럽게 흘러나가도록 좌우 패딩을 되돌립니다 */
+  margin: 0 -20px;
+  padding: 0 20px;
+}
+.l1__shows::-webkit-scrollbar { display: none; }
+
+.l1-show { width: 152px; flex: none; display: flex; flex-direction: column; gap: 10px; }
+.l1-show__poster {
+  position: relative;
+  width: 152px;
+  height: 203px;
+  border-radius: 16px;
+  background: var(--lui-soft);
+  overflow: hidden;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 10px;
+}
+.l1-show__poster img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.l1-show__like {
+  position: relative;
+  width: 30px; height: 30px;
+  border-radius: var(--lui-r-pill);
+  background: var(--lui-bg);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--lui-accent);
+}
+.l1-show__meta { display: flex; flex-direction: column; gap: 4px; }
+.l1-show__name {
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: -0.145px;
+  color: var(--lui-ink);
+}
+.l1-show__where { font-size: 11.5px; color: var(--lui-sub); }
+
+.l1__gap { height: 26px; }
+
+/* 내 주변 지도 카드 */
+.l1__map { border-radius: 20px; overflow: hidden; }
+.l1__map-canvas { height: 238px; }
+.l1__map-row { border-top: 1px solid var(--lui-line-2); }

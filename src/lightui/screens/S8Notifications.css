@@ -1,0 +1,8 @@
+/* S8 알림 — Figma 211:2 */
+.s8 { display: flex; flex-direction: column; padding: 0 20px; }
+.s8__gap-14 { height: 14px; }
+.s8__gap-26 { height: 26px; }
+.s8__list { padding: 4px 16px; }
+.s8__list .lui-row { padding: 12px 0; }
+.s8__list .lui-row + .lui-row { border-top: 1px solid var(--lui-hairline); }
+.s8__list .lui-row__avatar { width: 40px; height: 40px; background: var(--lui-chip); color: var(--lui-ink); }

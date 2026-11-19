@@ -16,6 +16,7 @@ import { handleClubsRequest } from '../server/lib/clubsApi.js'
 import { handleClubEventsRequest } from '../server/lib/clubEventsApi.js'
 import { handleClubConnectionsRequest } from '../server/lib/clubConnectionsApi.js'
 import { handleProfileCardsRequest } from '../server/lib/profileCardsApi.js'
+import { handleOgTicketRequest } from '../server/lib/ogTicketApi.js'
 
 /**
  * Hobby 플랜 함수 개수 제한 대응 — /api/* → 이 단일 함수로 rewrite
@@ -39,6 +40,11 @@ export default async function handler(req, res) {
   // 봇 스캔: /api/verify-admin-code/1234 → 404
   if (segments[0] === 'verify-admin-code' && segments.length > 1) {
     return res.status(404).json({ ok: false })
+  }
+
+  // 공연별 OG 티켓 이미지 — /api/og/:eventId (아직 placeholder)
+  if (segments[0] === 'og') {
+    return handleOgTicketRequest(req, res, segments[1])
   }
 
   switch (segments.join('/')) {

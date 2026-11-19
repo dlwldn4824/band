@@ -1,0 +1,41 @@
+/* C4 연결되었어요 (성사 순간) — Figma 267:2 */
+.c4 {
+  flex: 1;
+  background: var(--lui-ink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  padding: 40px 24px;
+  overflow: hidden;
+}
+/* 어두운 배경이라 포인트는 FF4C4C 계열 */
+.c4__badge {
+  background: rgba(255, 76, 76, 0.16);
+  color: #ff6b66;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 14px;
+  border-radius: var(--lui-r-pill);
+}
+.c4__cable { max-width: 100%; display: block; }
+.c4__headline {
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 33.6px;
+  letter-spacing: -0.48px;
+  color: #fff;
+  text-align: center;
+  width: 100%;
+}
+.c4__lines { font-size: 13.5px; line-height: 22.95px; color: #9ba0a8; text-align: center; width: 100%; }
+.c4__pair { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; }
+.c4__avatar {
+  width: 48px; height: 48px;
+  border-radius: var(--lui-r-pill);
+  background: var(--lui-soft);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 800; color: var(--lui-ink);
+}
+.c4__x { font-size: 18px; color: #5e636b; }

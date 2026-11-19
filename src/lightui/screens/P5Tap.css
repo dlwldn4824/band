@@ -1,0 +1,110 @@
+/* P5 휴대폰 맞대기 (NFC) — Figma 297:2 */
+.p5 {
+  flex: 1;
+  background: var(--lui-always-dark);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 36px 24px;
+}
+/* ── 마주 본 휴대폰 두 대 ─────────────────────────────
+   P3 와 같은 「큰 동그라미」 를 쓰지 않으려고 장면으로 그립니다. */
+.p5__scene {
+  width: 100%;
+  height: 150px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  position: relative;
+}
+.p5__phone {
+  width: 54px;
+  height: 104px;
+  border-radius: 13px;
+  border: 2.5px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.05);
+  flex: none;
+}
+/* 서로를 향해 살짝 기울어 있습니다 */
+.p5__phone--a { transform: rotate(-9deg); }
+.p5__phone--b { transform: rotate(9deg); }
+
+/* 사이에서 퍼지는 신호 */
+.p5__wave {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 46px;
+  height: 46px;
+  margin: -23px 0 0 -23px;
+  border-radius: var(--lui-r-pill);
+  border: 2px solid #ff5a5a;
+  opacity: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .p5__wave { animation: p5-wave 2.2s ease-out infinite; }
+  .p5__wave--2 { animation-delay: 1.1s; }
+}
+/* 모션을 끈 사람에게는 가운데 점 하나로 보여 줍니다 */
+@media (prefers-reduced-motion: reduce) {
+  .p5__wave { opacity: 1; width: 18px; height: 18px; margin: -9px 0 0 -9px; background: #ff5a5a; border: 0; }
+  .p5__wave--2 { display: none; }
+}
+@keyframes p5-wave {
+  0% { transform: scale(0.45); opacity: 0.9; }
+  70% { opacity: 0.18; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+
+/* 「찾는 중」 — 끝난 화면이 아니라는 걸 글로도 말합니다 */
+.p5__status {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #ff6b66;
+}
+.p5__dots { display: inline-flex; gap: 3px; margin-left: 4px; }
+.p5__dots span {
+  width: 3.5px;
+  height: 3.5px;
+  border-radius: var(--lui-r-pill);
+  background: currentColor;
+  opacity: 0.3;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .p5__dots span { animation: p5-dot 1.2s ease-in-out infinite; }
+  .p5__dots span:nth-child(2) { animation-delay: 0.2s; }
+  .p5__dots span:nth-child(3) { animation-delay: 0.4s; }
+}
+@keyframes p5-dot {
+  0%, 60%, 100% { opacity: 0.3; }
+  30% { opacity: 1; }
+}
+
+.p5__headline {
+  width: 100%;
+  font-size: 23px;
+  font-weight: 800;
+  line-height: 32.2px;
+  color: #fff;
+  text-align: center;
+}
+.p5__lines { width: 100%; font-size: 13px; line-height: 22.1px; color: #9ba0a8; text-align: center; }
+.p5__hint {
+  background: rgba(255, 255, 255, 0.08);
+  color: #9ba0a8;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: var(--lui-r-pill);
+}
+
+.p5__bottom { flex-direction: column; align-items: stretch; gap: 9px; }
+.p5__bottom .lui-btn { width: 100%; height: 49px; border-radius: 14px; }
+.p5__notice { font-size: 11.5px; line-height: 20.125px; color: var(--lui-sub-2); text-align: center; }

@@ -1,0 +1,69 @@
+/* P1 공연 정보 (예매 후) — Figma 293:2 */
+.p1__hero {
+  position: relative;
+  height: 220px;
+  background: var(--lui-soft);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 14px 16px;
+  flex: none;
+}
+.p1__hero > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* 규칙 3 — 사진 위라서 여기서만 원형 배경 */
+.p1__round {
+  position: relative;
+  width: 36px; height: 36px;
+  border-radius: var(--lui-r-pill);
+  background: var(--lui-card);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--lui-ink);
+}
+.p1__hero-right { position: relative; display: flex; gap: 8px; }
+
+.p1 { display: flex; flex-direction: column; padding: 0 20px; }
+.p1__gap-14 { height: 14px; }
+.p1__gap-26 { height: 26px; }
+
+.p1__badges { display: flex; gap: 6px; }
+.p1__title { font-size: 22px; font-weight: 800; line-height: 30.36px; letter-spacing: -0.55px; color: var(--lui-ink); }
+.p1__when { font-size: 13px; color: var(--lui-sub); }
+
+.p1__entry { padding: 14px; }
+.p1__entry .lui-row { padding: 0; }
+.p1__entry .lui-row__avatar { width: 52px; height: 52px; background: var(--lui-soft); color: var(--lui-ink); font-size: 17px; }
+
+/* 오늘 순서 */
+.p1__timeline { padding: 2px 16px; }
+.p1-slot { display: flex; gap: 14px; align-items: flex-start; padding: 14px 0; }
+.p1-slot + .p1-slot { border-top: 1px solid var(--lui-hairline); }
+.p1-slot__time { width: 88px; flex: none; display: flex; flex-direction: column; gap: 3px; }
+.p1-slot__at { font-size: 13px; font-weight: 700; color: var(--lui-ink); }
+.p1-slot__dur { font-size: 10.5px; color: var(--lui-sub-2); }
+.p1-slot__main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.p1-slot__now {
+  align-self: flex-start;
+  background: var(--lui-tint);
+  color: var(--lui-accent-soft);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: var(--lui-r-pill);
+}
+.p1-slot__title { font-size: 14.5px; font-weight: 700; color: var(--lui-ink); }
+.p1-slot__sub { font-size: 11.5px; color: var(--lui-sub); }
+
+/* 셋리스트 */
+.p1__setlist { padding: 4px 16px; }
+.p1-song { display: flex; align-items: center; gap: 12px; padding: 11px 0; }
+.p1-song + .p1-song { border-top: 1px solid var(--lui-hairline); }
+.p1-song__no { width: 18px; flex: none; font-size: 12px; font-weight: 700; color: var(--lui-icon-faint); }
+.p1-song__title { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 600; color: var(--lui-ink); }
+.p1-song__who { font-size: 11px; color: var(--lui-sub-2); white-space: nowrap; }
+
+.p1__cando { padding: 4px 16px; }
+.p1__cando .lui-row { padding: 12px 0; }
+.p1__cando .lui-row + .lui-row { border-top: 1px solid var(--lui-hairline); }
+.p1__cando .lui-row__avatar { width: 40px; height: 40px; background: var(--lui-chip); color: var(--lui-ink); }
+
+.p1__notice { font-size: 11.5px; line-height: 20.125px; color: var(--lui-sub-2); }

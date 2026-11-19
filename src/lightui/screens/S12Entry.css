@@ -1,0 +1,38 @@
+/* S12 입장 관리 · QR — Figma 215:2 */
+.s12__scan {
+  background: var(--lui-always-dark);
+  height: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  overflow: hidden;
+  flex: none;
+}
+.s12__scan img { width: 232px; height: 232px; display: block; }
+.s12__scan-hint { font-size: 13px; color: #9ea3ab; text-align: center; }
+
+.s12__body { display: flex; flex-direction: column; padding: 0 20px; margin-top: -18px; position: relative; z-index: 1; }
+
+.s12__count { padding: 18px; border-radius: 22px; display: flex; flex-direction: column; gap: 14px; }
+.s12__count-top { display: flex; align-items: center; justify-content: space-between; }
+.s12__count-now { font-size: 26px; font-weight: 800; letter-spacing: -0.52px; color: var(--lui-ink); }
+.s12__count-of { font-size: 13px; color: var(--lui-sub-2); margin-left: 6px; }
+.s12__bar { height: 10px; border-radius: var(--lui-r-pill); background: var(--lui-track); }
+/* 규칙 7 — 진행 상황(데이터)이라 포인트 컬러 */
+.s12__bar span { display: block; height: 10px; border-radius: var(--lui-r-pill); background: var(--lui-accent); }
+
+.s12__recent { padding: 4px 16px; }
+.s12__recent .lui-row { padding: 12px 0; }
+.s12__recent .lui-row + .lui-row { border-top: 1px solid var(--lui-hairline); }
+.s12__recent .lui-row__avatar { width: 40px; height: 40px; background: var(--lui-chip); color: var(--lui-ink); }
+
+.s12__onsite { padding: 14px; }
+.s12__onsite .lui-row { padding: 0; }
+
+.s12__pair { display: flex; gap: 8px; }
+.s12__pair .lui-btn { flex: 1; min-width: 0; height: 49px; border-radius: 14px; }
+
+.s12__gap-14 { height: 14px; }
+.s12__gap-26 { height: 26px; }

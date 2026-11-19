@@ -1,0 +1,37 @@
+/* C3 연결 상태 4단계 — Figma 266:2 */
+.c3 { display: flex; flex-direction: column; padding: 0 20px; }
+.c3__gap-14 { height: 14px; }
+.c3__gap-26 { height: 26px; }
+
+.c3__list { display: flex; flex-direction: column; gap: 12px; }
+.c3-stage { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.c3-stage__head { display: flex; align-items: center; gap: 8px; }
+.c3-stage__no { font-size: 14px; font-weight: 700; color: var(--lui-ink); }
+.c3-stage__tag {
+  border: 1px solid var(--lui-line);
+  border-radius: var(--lui-r-pill);
+  padding: 3px 8px;
+  font-size: 10.5px;
+  color: var(--lui-sub-2);
+}
+.c3-stage__art {
+  background: var(--lui-box);
+  border-radius: 14px;
+  padding: 14px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.c3-stage__art img { width: 310px; height: 92px; max-width: 100%; display: block; }
+.c3-stage__text { font-size: 12.5px; line-height: 20px; color: var(--lui-sub); }
+
+.c3__record {
+  background: var(--lui-box);
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.c3__record img { width: 310px; height: 92px; max-width: 100%; display: block; }
+.c3__notice { font-size: 11.5px; line-height: 20.125px; color: var(--lui-sub-2); }

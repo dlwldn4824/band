@@ -1,0 +1,24 @@
+/* 온보딩 1스텝 — 최초 로그인 뒤 학교·학과·닉네임
+   Figma 에 프레임이 없어 S1·S5 의 입력 스타일을 그대로 씁니다. */
+.ob { display: flex; flex-direction: column; padding: 0 20px; }
+.ob__gap-14 { height: 14px; }
+.ob__gap-26 { height: 26px; }
+.ob__title { font-size: 21px; font-weight: 800; line-height: 28.98px; letter-spacing: -0.525px; color: var(--lui-ink); }
+.ob__lead { font-size: 13px; color: var(--lui-sub); }
+.ob__label { font-size: 12px; font-weight: 700; color: var(--lui-body); padding-bottom: 7px; }
+.ob__chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.ob-chip {
+  padding: 8px 12px;
+  border-radius: var(--lui-r-pill);
+  border: 1px solid var(--lui-field-line);
+  background: var(--lui-ghost-bg);
+  font-size: 12.5px;
+  color: var(--lui-body);
+}
+.ob-chip--on {
+  background: var(--lui-inverse-bg);
+  border-color: var(--lui-inverse-bg);
+  color: var(--lui-inverse-fg);
+  font-weight: 700;
+}
+.ob__notice { font-size: 11.5px; line-height: 20.125px; color: var(--lui-sub-2); }

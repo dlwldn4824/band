@@ -1,0 +1,60 @@
+/* C2 우리 사이 (관계 상세) — Figma 265:2 */
+.c2 { display: flex; flex-direction: column; padding: 0 20px; }
+.c2__gap-14 { height: 14px; }
+.c2__gap-26 { height: 26px; }
+
+.c2__hero { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 10px 0 4px; }
+
+/* 좌우 밴드 + 가운데 케이블 */
+.c2__cablerow { display: flex; align-items: flex-start; justify-content: center; width: 100%; }
+.c2__band { width: 76px; flex: none; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.c2__bubble {
+  width: 72px; height: 72px;
+  border-radius: var(--lui-r-pill);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 700;
+}
+.c2__bubble--ours { background: var(--lui-inverse-bg); color: var(--lui-inverse-fg); }
+.c2__bubble--theirs { background: var(--lui-tint); color: var(--lui-ink); }
+.c2__band-name { font-size: 12.5px; font-weight: 700; color: var(--lui-ink); }
+.c2__band-school { font-size: 10.5px; color: var(--lui-sub-2); }
+/* 코드 끝이 원 뒤로 들어가게 살짝 겹칩니다 */
+.c2__cable { flex: none; margin: 10px -12px 0; }
+.c2__caption { font-size: 15px; font-weight: 700; color: var(--lui-ink); width: 100%; }
+
+.c2__stats { display: flex; gap: 10px; }
+.c2__stat {
+  flex: 1 1 0;
+  min-width: 0;
+  border: 1px solid var(--lui-line);
+  border-radius: 16px;
+  padding: 14px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  background: var(--lui-card);
+}
+.c2__stat-v { font-size: 21px; font-weight: 800; letter-spacing: -0.42px; color: var(--lui-ink); width: 100%; }
+/* 규칙 7 — 합동 공연 횟수가 이 화면의 핵심 데이터 */
+.c2__stat-v--accent { color: var(--lui-accent); }
+.c2__stat-k { font-size: 11px; color: var(--lui-sub); width: 100%; }
+
+.c2__log { padding: 4px 16px; }
+.c2-log { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; }
+.c2-log + .c2-log { border-top: 1px solid var(--lui-hairline); }
+.c2-log__dot { width: 9px; height: 9px; border-radius: var(--lui-r-pill); background: var(--lui-track-2); margin-top: 6px; flex: none; }
+.c2-log__dot--on { background: var(--lui-accent); }
+.c2-log__main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.c2-log__title { font-size: 13.5px; font-weight: 700; color: var(--lui-ink); }
+.c2-log__sub { font-size: 11.5px; color: var(--lui-sub); }
+.c2-log__at { font-size: 11px; color: var(--lui-placeholder); flex: none; }
+
+.c2__next { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.c2__next-main { display: flex; flex-direction: column; gap: 3px; }
+.c2__next-title { font-size: 14px; font-weight: 700; color: var(--lui-ink); }
+.c2__next-sub { font-size: 11.5px; color: var(--lui-sub); }
+.c2__next-actions { display: flex; gap: 8px; }
+.c2__next-actions .lui-btn { flex: 1; min-width: 0; height: 40px; border-radius: 12px; font-size: 13px; }
+
+.c2__notice { font-size: 11.5px; line-height: 20.125px; color: var(--lui-sub-2); }

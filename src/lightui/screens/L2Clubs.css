@@ -1,0 +1,120 @@
+/* L2 동아리 교류 — Figma 174:2 */
+.l2 { display: flex; flex-direction: column; padding: 0 20px; }
+
+.l2__head { display: flex; align-items: center; justify-content: space-between; padding-top: 6px; }
+.l2__title { font-size: 20px; font-weight: 800; letter-spacing: -0.4px; color: var(--lui-ink); }
+
+.l2__gap-18 { height: 18px; }
+.l2__gap-28 { height: 28px; }
+
+.l2__posts { display: flex; flex-direction: column; gap: 12px; }
+
+.l2-post { padding: 16px; display: flex; flex-direction: column; gap: 13px; }
+.l2-post__head { display: flex; align-items: center; gap: 10px; }
+/* Figma 는 이 아바타에 배경을 주지 않았습니다 — 글자만 둡니다 */
+.l2-post__avatar {
+  width: 38px; height: 38px;
+  border-radius: var(--lui-r-pill);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; color: var(--lui-ink);
+  flex: none;
+}
+.l2-post__who { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.l2-post__club { font-size: 13px; font-weight: 700; color: var(--lui-ink); }
+.l2-post__clubsub { font-size: 11px; color: var(--lui-sub-2); }
+.l2-post__title {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 22.4px;
+  letter-spacing: -0.16px;
+  color: var(--lui-ink);
+}
+.l2-post__info {
+  background: var(--lui-box);
+  border-radius: 14px;
+  padding: 13px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.l2-post__row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.l2-post__k { font-size: 12px; color: var(--lui-sub); }
+.l2-post__v { font-size: 12.5px; font-weight: 700; color: var(--lui-ink); }
+.l2-post__v--accent { color: var(--lui-accent); }
+.l2-post__joined { display: flex; align-items: center; gap: 8px; }
+/* 규칙 1 — 이 화면의 기본 버튼은 「모집 글 쓰기」 하나뿐이라 카드 안은 전부 외곽선 */
+.l2-post__actions { display: flex; gap: 8px; }
+.l2-post__actions .lui-btn { flex: 1; min-width: 0; height: 42px; border-radius: 12px; font-size: 13px; }
+
+/* 이런 동아리는 어때요 */
+.l2__suggest {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin: 0 -20px;
+  padding: 0 20px;
+}
+.l2__suggest::-webkit-scrollbar { display: none; }
+.l2-sug {
+  width: 146px;
+  flex: none;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.l2-sug__avatar {
+  width: 38px; height: 38px;
+  border-radius: var(--lui-r-pill);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; color: var(--lui-ink);
+}
+.l2-sug__name { font-size: 14.5px; font-weight: 700; line-height: 19.575px; letter-spacing: -0.145px; }
+.l2-sug__lines { font-size: 11.5px; line-height: 18.4px; color: var(--lui-sub); }
+.l2-sug .lui-btn { height: auto; padding: 9px 0; border-radius: 12px; font-size: 12px; width: 100%; }
+
+.l2__write { width: 100%; height: auto; padding: 12px 0; border-radius: 12px; font-size: 13px; }
+
+.l2__gap-12 { height: 12px; }
+.l2__note { padding: 0 2px; }
+
+/* 제안 카드의 본문은 통째로 상세로 가는 버튼입니다 (액션 줄만 따로) */
+.l2-post__open {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  text-align: left;
+  width: 100%;
+}
+
+/* 지난 제안 · 한 줄짜리 목록 */
+.l2__pastlist { padding: 0; overflow: hidden; }
+.l2-pastrow { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; }
+
+/* 거절 사유 인용 */
+.l2-quote {
+  display: block;
+  font-size: 12.5px;
+  line-height: 20px;
+  color: var(--lui-sub);
+  background: var(--lui-box);
+  border-radius: 14px;
+  padding: 13px 14px;
+}
+
+/* 다른 동아리에 제안하기 */
+.l2-more { display: flex; align-items: center; gap: 12px; padding: 16px; width: 100%; text-align: left; }
+.l2-more__plus {
+  width: 38px; height: 38px; flex: none;
+  border-radius: var(--lui-r-pill);
+  background: var(--lui-box);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; font-weight: 600; color: var(--lui-sub);
+}
+.l2-more__chev { color: var(--lui-icon-faint); flex: none; }
+
+/* 수락 · 취소 확인 시트 */
+.l2-sheet__text { font-size: 13.5px; line-height: 21px; color: var(--lui-body); padding: 2px 0 16px; }
+.l2-sheet__actions { display: flex; gap: 8px; }
+.l2-sheet__actions .lui-btn { flex: 1; min-width: 0; height: 46px; border-radius: 13px; font-size: 14px; }

@@ -1,0 +1,31 @@
+/* D3 입금 안내 — Figma 185:2 */
+.d3 { display: flex; flex-direction: column; gap: 10px; padding: 0 20px; }
+
+.d3__amount {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 26px 0 24px;
+}
+.d3__amount-label { font-size: 12.5px; color: var(--lui-sub); }
+.d3__amount-value {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -1.02px;
+  color: var(--lui-ink);
+}
+
+.d3__account { padding: 16px; display: flex; flex-direction: column; gap: 11px; }
+.d3__row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.d3__k { font-size: 12.5px; color: var(--lui-sub); }
+.d3__v { font-size: 12.5px; font-weight: 700; color: var(--lui-ink); text-align: right; }
+.d3__v--accent { color: var(--lui-accent); }
+.d3__spacer { height: 14px; }
+.d3__copy { display: flex; gap: 8px; }
+/* 규칙 1 — 기본 버튼은 하단의 「입금했어요」 하나뿐이라 복사 버튼은 외곽선입니다 */
+.d3__copy .lui-btn { flex: 1; min-width: 0; height: 40px; border-radius: 12px; font-size: 13px; }
+
+.d3__notes { font-size: 11.5px; line-height: 20.125px; color: var(--lui-sub-2); }
+.d3__gap { height: 26px; }
+
+.d3__bottom .lui-btn { flex: 1; min-width: 0; }

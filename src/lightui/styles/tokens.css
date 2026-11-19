@@ -1,0 +1,136 @@
+/*
+ * BANDY 라이트/다크 UI 토큰.
+ *
+ * 값은 Figma 파일 mLwN6nNV8jjSE70CiWRhvs 의 `앱 · 라이트 UI` / `앱 · 다크 UI` 페이지에서
+ * 그대로 읽어 온 것입니다. 두 테마는 레이아웃을 공유하고 여기 변수만 갈아끼웁니다.
+ * 숫자를 바꿀 일이 생기면 Figma 를 먼저 고치고 여기를 맞추세요.
+ */
+
+.lui {
+  /* 글자 */
+  --lui-ink: #17181c;          /* 본문 · 제목 */
+  --lui-body: #5f646d;         /* 긴 본문 · 칩 글자 */
+  --lui-sub: #8a8f98;          /* 보조 문구 */
+  --lui-sub-2: #a3a8b0;        /* 섹션 헤더 우측 보조문구 */
+  --lui-placeholder: #b5bac2;
+  --lui-icon-faint: #c6cad1;   /* chevron 같은 장식 아이콘 */
+
+  /* 면 */
+  --lui-bg: #ffffff;
+  --lui-card: #ffffff;         /* 카드 바탕 */
+  --lui-soft: #f3f4f6;         /* 포스터 자리 · 지도 바탕 */
+  --lui-box: #fafafb;          /* 금액·정보 박스 */
+  --lui-chip: #f4f4f6;         /* 아바타 원 · 중립 칩 */
+  --lui-line: #ecedef;         /* 카드 테두리 */
+  --lui-line-2: #f0f1f3;       /* 구분선 */
+  --lui-hairline: #f2f3f5;     /* 카드 안 행 구분선 */
+  --lui-field-line: #e3e5e9;   /* 입력·외곽선 버튼 테두리 */
+  --lui-track: #f1f2f4;        /* 막대 바탕 */
+  --lui-track-2: #d7dae0;      /* 약한 막대 */
+  --lui-dot-off: #e8e9ec;      /* 빈 점 */
+
+  /* 포인트 */
+  --lui-accent: #e0443f;       /* 막대 · 숫자 · 그래픽 */
+  --lui-accent-soft: #e0443f;  /* tint 위에 올라가는 글자 */
+  --lui-tint: #fceeed;
+  /* 잉크 면 + 반대색 글자 (내 말풍선 · 확인 버튼 · 알약 등) */
+  --lui-inverse-bg: #17181c;
+  --lui-inverse-fg: #ffffff;
+  /* QR 스캔처럼 테마와 상관없이 늘 어두운 면 */
+  --lui-always-dark: #17181c;
+  /* 강조 배너 (D3 입금 전) */
+  --lui-banner-bg: linear-gradient(161deg, #fff9f8 0%, #fdeeec 32.143%, #f5dad8 71.429%);
+  --lui-banner-line: rgba(255, 255, 255, 0.95);
+  --lui-banner-fg: #9c5f5c;
+  --lui-banner-shadow: 0 8px 18px -6px rgba(224, 68, 63, 0.14), inset 0 1px 2px 0 rgba(255, 255, 255, 0.85);
+
+  /* 탭바 — 사용자가 준 아이콘 10종의 색 기준 */
+  --lui-tab-on: #242426;
+  --lui-tab-off: #a5a5a9;
+
+  /* 기본 버튼 (검정) */
+  --lui-btn-bg: linear-gradient(167.847deg, #33353b 0%, #17181c 35.714%, #0b0c0e 71.429%);
+  --lui-btn-fg: #ffffff;
+  --lui-btn-shadow: 0 6px 14px -4px rgba(0, 0, 0, 0.26), inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.14);
+  --lui-btn-flat: #17181c;
+  --lui-btn-flat-fg: #ffffff;
+  /* 외곽선 버튼 */
+  --lui-ghost-bg: #ffffff;
+  --lui-ghost-line: #dcdee3;
+
+  /* 지도 미니맵 — 색을 토큰으로 두고 아트는 한 벌만 씁니다 */
+  --lui-map-bg: #f3f4f6;
+  --lui-map-street: #e7e9ec;
+  --lui-map-block: #edeff2;
+  --lui-map-pin: #17181c;
+  --lui-map-pin-2: #b9bec6;
+  --lui-map-ring: #ffffff;
+  --lui-map-me: #e0443f;
+
+  /* 모서리 */
+  --lui-r-card: 18px;
+  --lui-r-box: 14px;
+  --lui-r-btn: 13px;
+  --lui-r-pill: 999px;
+
+  /* 글꼴 — Figma 는 Noto Sans KR 로 대체되어 있지만 실제 제품은 Pretendard 입니다 */
+  --lui-font: 'Pretendard', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+}
+
+/*
+ * 다크 — Figma `앱 · 다크 UI` 페이지 값.
+ * 레이아웃은 그대로이고 색만 바뀝니다.
+ */
+[data-lui-theme='dark'] .lui {
+  --lui-ink: #f2f2f3;
+  --lui-body: #c3c6cb;
+  --lui-sub: #9a9da4;
+  --lui-sub-2: #6e727a;
+  --lui-placeholder: #6e727a;
+  --lui-icon-faint: #585c64;
+
+  --lui-bg: #141416;
+  --lui-card: #1c1d21;
+  --lui-soft: #1c1d21;
+  --lui-box: #1c1d21;
+  --lui-chip: #26282c;
+  --lui-line: #2a2c31;
+  --lui-line-2: #2a2c31;
+  --lui-hairline: #26282c;
+  --lui-field-line: #3a3d44;
+  --lui-track: #26282c;
+  --lui-track-2: #3a3d44;
+  --lui-dot-off: #2a2c31;
+
+  --lui-accent: #ff5a5a;
+  --lui-accent-soft: #ff6b66;
+  --lui-tint: #3a2422;
+  --lui-inverse-bg: #f2f2f3;
+  --lui-inverse-fg: #141416;
+  --lui-always-dark: #0e0f11;
+  --lui-banner-bg: linear-gradient(161deg, #3a2422 0%, #2e1d1c 42%, #241718 100%);
+  --lui-banner-line: rgba(255, 122, 118, 0.22);
+  --lui-banner-fg: #d79e9a;
+  --lui-banner-shadow: 0 8px 18px -6px rgba(0, 0, 0, 0.5), inset 0 1px 2px 0 rgba(255, 255, 255, 0.06);
+
+  --lui-tab-on: #f2f2f3;
+  --lui-tab-off: #6e727a;
+
+  /* 지도 미니맵 */
+  --lui-map-bg: #141518;
+  --lui-map-street: #1e2026;
+  --lui-map-block: #1a1c21;
+  --lui-map-pin: #f2f2f3;
+  --lui-map-pin-2: #6e727a;
+  --lui-map-ring: #141518;
+  --lui-map-me: #ff5a5a;
+
+  /* 다크에서 기본 버튼은 밝은 버튼입니다 */
+  --lui-btn-bg: linear-gradient(167.847deg, #ffffff 0%, #f1f2f4 45%, #dadde1 100%);
+  --lui-btn-fg: #141416;
+  --lui-btn-shadow: 0 6px 14px -6px rgba(0, 0, 0, 0.5);
+  --lui-btn-flat: #26282c;
+  --lui-btn-flat-fg: #ffffff;
+  --lui-ghost-bg: #1c1d21;
+  --lui-ghost-line: #3a3d44;
+}

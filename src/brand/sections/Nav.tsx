@@ -29,13 +29,15 @@ export default function Nav() {
       <nav className="b-nav__links">
         <Link to={links.shows}>공연 둘러보기</Link>
         <Link to={links.clubs}>동아리 둘러보기</Link>
+        <a href="#venue">공연장이라면</a>
         <a href="#about">BANDY 소개</a>
       </nav>
       <div className="b-nav__right">
         <Link to={links.my}>내 티켓</Link>
-        <Link className="b-pill" to={links.console}>
+        {/* 바로 운영진 코드 게이트로 보내지 않고, 무엇이 필요한지 설명하는 자리로 먼저 내려 줍니다 */}
+        <a className="b-pill" href="#start">
           공연 올리기
-        </Link>
+        </a>
       </div>
     </header>
   )

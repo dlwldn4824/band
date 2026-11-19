@@ -1,0 +1,64 @@
+/* S2 탐색 · 지도 — Figma 205:2 */
+.s2__top { display: flex; flex-direction: column; padding: 0 20px; }
+.s2__gap { height: 14px; }
+
+.s2__search {
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--lui-field-line);
+  border-radius: 14px;
+  padding: 13px 14px;
+  background: var(--lui-card);
+  font-size: 13.5px;
+  color: var(--lui-placeholder);
+}
+
+.s2__filters { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.s2__filters::-webkit-scrollbar { display: none; }
+.s2-chip {
+  flex: none;
+  padding: 7px 12px;
+  border-radius: var(--lui-r-pill);
+  border: 1px solid var(--lui-field-line);
+  background: var(--lui-card);
+  font-size: 12px;
+  color: var(--lui-body);
+  white-space: nowrap;
+}
+.s2-chip--on { background: var(--lui-inverse-bg); border-color: var(--lui-inverse-bg); color: var(--lui-inverse-fg); font-weight: 700; }
+
+/* 가로 공연 카드 — Figma 205:68 */
+.s2__cards {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin: 0 -20px;
+  padding: 0 20px;
+}
+.s2__cards::-webkit-scrollbar { display: none; }
+.s2-card { width: 160px; flex: none; display: flex; flex-direction: column; gap: 10px; }
+.s2-card__poster {
+  position: relative;
+  width: 160px; height: 100px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--lui-soft);
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 10px;
+}
+.s2-card__poster img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.s2-card__like {
+  position: relative;
+  width: 30px; height: 30px;
+  border-radius: var(--lui-r-pill);
+  background: var(--lui-bg);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--lui-accent);
+}
+.s2-card__meta { display: flex; flex-direction: column; gap: 4px; }
+.s2-card__title { font-size: 14.5px; font-weight: 700; letter-spacing: -0.145px; color: var(--lui-ink); }
+.s2-card__sub { font-size: 11.5px; color: var(--lui-sub); }
+.s2__empty { font-size: 12.5px; color: var(--lui-sub); padding: 8px 0 14px; }

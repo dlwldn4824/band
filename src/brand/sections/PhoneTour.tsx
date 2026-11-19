@@ -13,16 +13,22 @@ import { useReducedMotion } from '../useReducedMotion'
  */
 const EASE = [0.19, 1, 0.22, 1] as const
 
+/** 화면 하나가 머무는 길이(뷰포트 높이 배수). 1 이면 휙휙 넘어갑니다. */
+const DWELL = 1.6
+
 export default function PhoneTour() {
   const reduced = useReducedMotion()
   const ref = useRef<HTMLElement>(null)
   const [i, setI] = useState(0)
+  const [within, setWithin] = useState(0)
 
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end end'] })
 
   useMotionValueEvent(scrollYProgress, 'change', (p) => {
-    const n = Math.min(tour.length - 1, Math.max(0, Math.floor(p * tour.length)))
+    const raw = p * tour.length
+    const n = Math.min(tour.length - 1, Math.max(0, Math.floor(raw)))
     setI((prev) => (prev === n ? prev : n))
+    setWithin(Math.min(1, Math.max(0, raw - n)))
   })
 
   /* 모션을 줄여 달라고 한 경우 — 고정하지 않고 차례로 늘어놓습니다 */
@@ -49,7 +55,7 @@ export default function PhoneTour() {
   const cur = tour[i]
 
   return (
-    <section className="b-tour" id="about" ref={ref} style={{ height: `${tour.length * 100}svh` }}>
+    <section className="b-tour" id="about" ref={ref} style={{ height: `${tour.length * DWELL * 100}svh` }}>
       <div className="b-tour__pin">
         {/* 왼쪽 자리 */}
         <div className="b-tour__slot b-tour__slot--l">
@@ -74,15 +80,17 @@ export default function PhoneTour() {
         {/* 폰 — 고정, 안의 화면만 바뀝니다 */}
         <div className="b-phone">
           <div className="b-phone__screen">
+            {/* 화면을 포개 놓고 위에 것만 덮어 씌웁니다.
+                둘을 각각 페이드하면 겹치는 순간 합이 1 이 안 돼 흰 바탕이 비칩니다. */}
             {tour.map((t, n) => (
               <motion.img
                 key={t.head}
                 src={t.src}
                 alt={t.head}
                 initial={false}
-                animate={{ opacity: n === i ? 1 : 0 }}
+                animate={{ opacity: n <= i ? 1 : 0 }}
                 transition={{ duration: 0.42, ease: EASE }}
-                loading={n === 0 ? 'eager' : 'lazy'}
+                style={{ zIndex: n }}
               />
             ))}
           </div>
@@ -110,7 +118,9 @@ export default function PhoneTour() {
 
         <div className="b-tour__dots" aria-hidden="true">
           {tour.map((t, n) => (
-            <i key={t.head} data-on={n === i ? '1' : '0'} />
+            <i key={t.head} data-on={n === i ? '1' : '0'}>
+              {n === i && <b style={{ width: `${within * 100}%` }} />}
+            </i>
           ))}
         </div>
       </div>

@@ -1,0 +1,117 @@
+/* P4 현장 네트워킹 — Figma 296:2 (검정 버튼 셋을 걷어냈습니다) */
+.p4 { display: flex; flex-direction: column; padding: 0 20px; }
+.p4__gap-14 { height: 14px; }
+.p4__gap-18 { height: 18px; }
+.p4__gap-26 { height: 26px; }
+.p4__headline { font-size: 21px; font-weight: 800; line-height: 28.98px; letter-spacing: -0.525px; color: var(--lui-ink); }
+.p4__lead { font-size: 13px; color: var(--lui-sub); }
+
+.p4__list { display: flex; flex-direction: column; gap: 10px; }
+/* 아무나와 바로 맞대기 — 채운 버튼이 아니라 한 줄 */
+.p4-nfc {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  text-align: left;
+  padding: 14px 16px;
+  border-radius: var(--lui-r-card);
+  border: 1px dashed var(--lui-field-line);
+  background: transparent;
+}
+.p4-nfc__glyph {
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border-radius: var(--lui-r-pill);
+  background: var(--lui-tint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+/* 마주 보는 두 기기 */
+.p4-nfc__glyph span {
+  width: 7px;
+  height: 17px;
+  border-radius: 2.5px;
+  background: var(--lui-accent);
+}
+.p4-nfc__glyph span:last-child { opacity: 0.45; }
+.p4-nfc__main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.p4-nfc__title { font-size: 13.5px; font-weight: 700; color: var(--lui-ink); }
+.p4-nfc__sub { font-size: 11.5px; color: var(--lui-sub); }
+.p4-nfc__chev { color: var(--lui-icon-faint); flex: none; }
+
+.p4-person {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+}
+.p4-person__head { display: flex; align-items: center; gap: 12px; }
+.p4-person__avatar {
+  width: 52px; height: 52px;
+  border-radius: var(--lui-r-pill);
+  background: var(--lui-soft);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; font-weight: 700; color: var(--lui-ink);
+  flex: none;
+}
+.p4-person__who { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.p4-person__name { font-size: 14px; font-weight: 700; color: var(--lui-ink); }
+.p4-person__sub { font-size: 11.5px; color: var(--lui-sub); }
+
+/* 겹치는 태그 — 겹친 것만 포인트 컬러 */
+.p4-person__tags { display: flex; gap: 5px; flex-wrap: wrap; }
+.p4-tag {
+  padding: 3px 8px;
+  border-radius: var(--lui-r-pill);
+  background: var(--lui-chip);
+  color: var(--lui-body);
+  font-size: 10.5px;
+}
+.p4-tag--on { background: var(--lui-tint); color: var(--lui-accent-soft); font-weight: 700; }
+
+/* 건넬 말 — 머리말 없이 말풍선 모양이 설명을 대신합니다 */
+.p4-person__bubble {
+  position: relative;
+  display: block;
+  margin-left: 14px;
+  background: var(--lui-chip);
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 20.8px;
+  color: #3b424c;
+}
+[data-lui-theme='dark'] .p4-person__bubble { color: var(--lui-body); }
+/* 아바타 쪽을 가리키는 꼬리 */
+.p4-person__bubble::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 16px;
+  width: 12px;
+  height: 12px;
+  background: var(--lui-chip);
+  border-radius: 2px;
+  transform: rotate(45deg);
+}
+
+.p4-person__go {
+  align-self: flex-end;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--lui-sub);
+}
+
+.p4__made { padding: 4px 16px; }
+.p4__made .lui-row { padding: 12px 0; }
+.p4__made .lui-row__avatar { width: 40px; height: 40px; background: var(--lui-chip); color: var(--lui-ink); }
+.p4__notice { font-size: 11.5px; line-height: 20.125px; color: var(--lui-sub-2); }

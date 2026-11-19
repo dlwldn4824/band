@@ -1,0 +1,31 @@
+/* S15 초대 보내기 — Figma 235:2 */
+.s15 { display: flex; flex-direction: column; gap: 4px; padding: 0 20px; }
+.s15__gap-14 { height: 14px; }
+.s15__gap-26 { height: 26px; }
+
+.s15__preview { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.s15__preview img { width: 100%; aspect-ratio: 1200 / 630; height: auto; border-radius: 12px; object-fit: cover; display: block; background: var(--lui-soft); }
+.s15__meta { display: flex; flex-direction: column; gap: 3px; }
+.s15__title { font-size: 14px; font-weight: 700; color: var(--lui-ink); }
+.s15__when { font-size: 11.5px; color: var(--lui-sub); }
+.s15__link { font-size: 10.5px; color: var(--lui-placeholder); }
+
+.s15__message { min-height: 78px; }
+.s15__notice { font-size: 11.5px; line-height: 20.125px; color: var(--lui-sub-2); }
+
+/* 복사·저장 결과를 알려 주는 짧은 안내 */
+.s15__toast {
+  position: fixed;
+  left: 50%;
+  bottom: 110px;
+  transform: translateX(-50%);
+  max-width: 340px;
+  background: var(--lui-inverse-bg);
+  color: var(--lui-inverse-fg);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: var(--lui-r-pill);
+  z-index: 50;
+  text-align: center;
+}

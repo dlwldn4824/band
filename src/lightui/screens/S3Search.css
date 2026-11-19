@@ -1,0 +1,23 @@
+/* S3 검색 — Figma 206:2 */
+.s3 { display: flex; flex-direction: column; padding: 0 20px; }
+.s3__gap-14 { height: 14px; }
+.s3__gap-26 { height: 26px; }
+
+.s3__bar { display: flex; align-items: center; gap: 10px; }
+.s3__bar .lui-input { flex: 1; min-width: 0; border-radius: 14px; }
+.s3__cancel { font-size: 13.5px; color: var(--lui-sub); white-space: nowrap; }
+
+.s3__recent { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.s3__clubs { padding: 4px 16px; }
+.s3__clubs .lui-row { padding: 12px 0; }
+.s3__clubs .lui-row + .lui-row { border-top: 1px solid var(--lui-hairline); }
+.s3__clubs .lui-row__avatar { width: 40px; height: 40px; background: var(--lui-chip); color: var(--lui-ink); }
+
+.s3__trend { padding: 6px 16px; }
+.s3__trend-row { display: flex; align-items: center; gap: 12px; padding: 11px 0; width: 100%; text-align: left; }
+.s3__trend-row + .s3__trend-row { border-top: 1px solid var(--lui-hairline); }
+/* 규칙 7 — 순위 숫자는 데이터라 포인트 컬러 */
+.s3__rank { width: 18px; flex: none; font-size: 13px; font-weight: 800; color: var(--lui-accent); }
+.s3__word { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 600; color: var(--lui-ink); }
+.s3__delta { font-size: 11px; color: var(--lui-icon-faint); white-space: nowrap; }

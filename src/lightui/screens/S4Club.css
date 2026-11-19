@@ -1,0 +1,58 @@
+/* S4 동아리 상세 — Figma 207:2 */
+.s4__hero {
+  position: relative;
+  height: 170px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 14px 16px;
+  flex: none;
+}
+.s4__hero > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* 규칙 3 — 사진 위라서 여기서만 원형 배경 */
+.s4__round {
+  position: relative;
+  width: 36px; height: 36px;
+  border-radius: var(--lui-r-pill);
+  background: var(--lui-card);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--lui-ink);
+}
+.s4__hero-right { position: relative; display: flex; gap: 8px; }
+
+.s4__body { display: flex; flex-direction: column; padding: 0 20px; margin-top: -34px; position: relative; z-index: 1; }
+.s4__avatar {
+  width: 74px; height: 74px;
+  border-radius: var(--lui-r-pill);
+  border: 3px solid var(--lui-bg);
+  background: var(--lui-soft);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; font-weight: 800; color: var(--lui-ink);
+}
+.s4__name { font-size: 21px; font-weight: 800; line-height: 28.98px; letter-spacing: -0.525px; }
+.s4__sub { font-size: 13px; color: var(--lui-sub); }
+
+.s4__stats { padding: 16px; display: flex; }
+.s4__stat { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.s4__stat-k { font-size: 11px; color: var(--lui-sub-2); }
+.s4__stat-v { font-size: 18px; font-weight: 800; color: var(--lui-ink); }
+
+.s4__actions { display: flex; gap: 8px; }
+.s4__actions .lui-btn--primary { width: 77px; height: 50px; flex: none; }
+.s4__actions .lui-btn--ghost { flex: 1; min-width: 0; height: 50px; border-radius: 14px; }
+
+.s4__about { font-size: 13.5px; line-height: 24.3px; color: var(--lui-body); }
+
+.s4__upcoming { padding: 14px; }
+.s4__upcoming .lui-row { padding: 0; }
+.s4__upcoming .lui-row__avatar {
+  width: 52px; height: 69px;
+  border-radius: 9px;
+  background: var(--lui-soft);
+}
+.s4__past { padding: 4px 16px; }
+.s4__past .lui-row { padding: 12px 0; }
+.s4__past .lui-row + .lui-row { border-top: 1px solid var(--lui-hairline); }
+
+.s4__gap-14 { height: 14px; }
+.s4__gap-26 { height: 26px; }

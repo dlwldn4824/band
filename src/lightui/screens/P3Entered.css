@@ -1,0 +1,104 @@
+/* P3 입장 완료 — Figma 295:2 (아래 주석대로 한 번 바꿨습니다) */
+.p3 { display: flex; flex-direction: column; padding: 0 20px; }
+.p3__gap-14 { height: 14px; }
+.p3__gap-26 { height: 26px; }
+
+/* ── 찢어 낸 티켓 반쪽 ────────────────────────────────
+   큰 성공 동그라미 대신, 실제로 들어왔다는 증거를 보여 줍니다. */
+.p3-stub {
+  background: var(--lui-card);
+  border-radius: var(--lui-r-card);
+  box-shadow: 0 1px 0 var(--lui-line-2) inset, 0 8px 20px -16px rgba(0, 0, 0, 0.35);
+}
+.p3-stub__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 18px 14px;
+}
+.p3-stub__state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--lui-ink);
+}
+.p3-stub__check {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--lui-r-pill);
+  background: var(--lui-tint);
+  color: var(--lui-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.p3-stub__at {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+  color: var(--lui-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 절취선 — 카드 안쪽으로 들어온 점선.
+   양쪽에 반원 홈도 넣어 봤는데, 카드와 배경 색 차이가 작아 거의 보이지 않아서 뺐습니다. */
+.p3-stub__tear {
+  height: 1px;
+  margin: 0 18px;
+  border-top: 1px dashed var(--lui-line);
+}
+
+.p3-stub__bottom { display: flex; flex-direction: column; gap: 4px; padding: 14px 18px 17px; }
+.p3-stub__show { font-size: 15px; font-weight: 700; letter-spacing: -0.2px; color: var(--lui-ink); }
+.p3-stub__detail { font-size: 12px; color: var(--lui-sub); }
+
+/* ── 지금 할 것 — 체크리스트 ───────────────────────── */
+.p3__list { padding: 4px 16px; }
+.p3-check { display: flex; align-items: center; gap: 12px; padding: 13px 0; }
+.p3-check + .p3-check { border-top: 1px solid var(--lui-hairline); }
+
+.p3-check__box {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: var(--lui-r-pill);
+  border: 1.5px solid var(--lui-field-line);
+  background: transparent;
+  color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.14s ease, border-color 0.14s ease, color 0.14s ease;
+}
+.p3-check--on .p3-check__box {
+  background: var(--lui-inverse-bg);
+  border-color: var(--lui-inverse-bg);
+  color: var(--lui-inverse-fg);
+}
+.p3-check__box:disabled { opacity: 0.4; }
+
+.p3-check__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: left;
+}
+.p3-check__title { font-size: 14px; font-weight: 700; color: var(--lui-ink); letter-spacing: -0.1px; }
+.p3-check__sub { font-size: 11.5px; color: var(--lui-sub); }
+/* 지운 줄은 조용히 뒤로 물러납니다 */
+.p3-check--on .p3-check__title { color: var(--lui-sub); text-decoration: line-through; }
+.p3-check--on .p3-check__sub { color: var(--lui-sub-2); }
+.p3-check__chev { color: var(--lui-icon-faint); flex: none; }
+
+.p3__next { padding: 14px; }
+.p3__next .lui-row { padding: 0; }
+.p3__next .lui-row__avatar { width: 52px; height: 52px; background: var(--lui-soft); color: var(--lui-ink); font-size: 17px; }
+
+.p3__notice { font-size: 11.5px; line-height: 20.125px; color: var(--lui-sub-2); }
+.p3__bottom .lui-btn--ghost { width: 130px; flex: none; height: 49px; border-radius: 14px; }
+.p3__bottom .lui-btn--primary { flex: 1; min-width: 0; height: 49px; }

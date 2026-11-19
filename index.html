@@ -13,6 +13,11 @@
     <meta property="og:url" content="https://band-alpha.vercel.app/" />
     <meta property="og:title" content="밴드 공연 예매" />
     <meta property="og:description" content="밴드 공연 예매 · 입장 · 당일 허브" />
+    <!-- TODO: 초대 링크(/ui/i/:code)는 공연별 OG 태그가 필요합니다.
+         og:image 를 /api/og/:eventId?v=N 으로 바꾸고, 링크 페이지를 서버에서 렌더하거나
+         프리렌더해서 메신저 크롤러가 태그를 읽을 수 있게 해야 합니다.
+         지금은 정적 placeholder 를 가리킵니다. -->
+    <meta property="og:image" content="/og-ticket-placeholder.png" />
   </head>
   <body>
     <div id="root"></div>

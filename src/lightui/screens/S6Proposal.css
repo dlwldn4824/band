@@ -1,0 +1,29 @@
+/* S6 받은 제안 상세 — Figma 209:2 */
+.s6 { display: flex; flex-direction: column; gap: 4px; padding: 0 20px; }
+.s6__gap-14 { height: 14px; }
+.s6__gap-26 { height: 26px; }
+
+.s6__from { padding: 16px; }
+.s6__from-row { display: flex; align-items: center; gap: 10px; }
+.s6__from-avatar {
+  width: 40px; height: 40px;
+  border-radius: var(--lui-r-pill);
+  background: var(--lui-chip);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; color: var(--lui-ink);
+  flex: none;
+}
+.s6__from-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.s6__from-name { font-size: 14px; font-weight: 700; color: var(--lui-ink); }
+.s6__from-sub { font-size: 11.5px; color: var(--lui-sub); }
+/* 「새 제안」 은 알약이지만 조금 큽니다 (209:32) */
+.s6__badge { padding: 7px 12px; font-size: 12px; }
+
+.s6__message { padding: 16px; font-size: 13.5px; line-height: 24.3px; color: var(--lui-body); }
+
+.s6__past { padding: 4px 16px; }
+.s6__past .lui-row { padding: 12px 0; }
+.s6__past .lui-row + .lui-row { border-top: 1px solid var(--lui-hairline); }
+
+.s6__notice { font-size: 11.5px; line-height: 20.125px; color: var(--lui-sub-2); }
+.s6__bottom .lui-btn { flex: 1; min-width: 0; }

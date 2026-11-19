@@ -1,0 +1,77 @@
+/* L3 공연장 · 팀 찾기 — Figma 175:2 */
+.l3 { display: flex; flex-direction: column; gap: 4px; padding: 0 20px; }
+.l3__gap-18 { height: 18px; }
+.l3__gap-28 { height: 28px; }
+
+.l3__head { display: flex; align-items: center; justify-content: space-between; padding-top: 6px; }
+.l3__name { font-size: 20px; font-weight: 800; letter-spacing: -0.4px; color: var(--lui-ink); }
+.l3__lead { padding: 20px 0 6px; font-size: 13px; color: var(--lui-sub); }
+/* 규칙 7 — 숫자(남은 빈 날)만 포인트 컬러 */
+.l3__lead strong { font-weight: 700; color: var(--lui-accent); }
+
+/* 빈 날 도트 캘린더 */
+.l3__cal { padding: 18px 16px; display: flex; flex-direction: column; gap: 18px; }
+.l3__cal-top { display: flex; align-items: center; justify-content: space-between; }
+.l3__cal-nav { display: flex; align-items: center; gap: 10px; }
+.l3__cal-label { font-size: 15px; font-weight: 700; color: var(--lui-ink); }
+.l3__cal-arrow { color: var(--lui-ink); display: flex; }
+
+.l3__grid { display: flex; align-items: flex-start; }
+.l3__rows { width: 78px; flex: none; display: flex; flex-direction: column; }
+.l3__rows-spacer { height: 40px; }
+.l3__rowlabel { height: 34px; display: flex; align-items: center; font-size: 12.5px; font-weight: 700; color: var(--lui-ink); }
+.l3__day { width: 38px; flex: none; display: flex; flex-direction: column; align-items: center; }
+.l3__day-head { height: 40px; padding-top: 2px; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.l3__dow { font-size: 11px; color: var(--lui-sub-2); }
+.l3__date { font-size: 12.5px; font-weight: 700; color: var(--lui-sub); }
+.l3__day--accent .l3__dow,
+.l3__day--accent .l3__date { color: var(--lui-accent); }
+.l3__cell { height: 34px; display: flex; align-items: center; justify-content: center; }
+.l3__cell span { width: 10px; height: 10px; border-radius: var(--lui-r-pill); background: var(--lui-dot-off); display: block; }
+.l3__cell--on span { background: var(--lui-accent); }
+
+.l3__legend { display: flex; align-items: center; gap: 16px; }
+.l3__legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--lui-sub); }
+.l3__legend-dot { width: 10px; height: 10px; border-radius: var(--lui-r-pill); background: var(--lui-accent); }
+.l3__legend-dot--off { background: var(--lui-dot-off); }
+.l3__legend-note { font-size: 11px; color: var(--lui-accent); }
+
+/* 공개한 날 카드 */
+.l3__open { padding: 16px; display: flex; flex-direction: column; gap: 13px; }
+.l3__open-top { display: flex; align-items: center; justify-content: space-between; }
+.l3__open-date { font-size: 16px; font-weight: 700; color: var(--lui-ink); }
+.l3__box {
+  background: var(--lui-box);
+  border-radius: 14px;
+  padding: 13px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.l3__box-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.l3__box-k { font-size: 12px; color: var(--lui-sub); }
+.l3__box-v { font-size: 12.5px; font-weight: 700; color: var(--lui-ink); }
+.l3__box-v--accent { color: var(--lui-accent); }
+.l3__pair { display: flex; gap: 8px; }
+.l3__pair .lui-btn { flex: 1; min-width: 0; height: 42px; border-radius: 12px; font-size: 13px; }
+
+/* 지원 팀 카드 */
+.l3__apps { display: flex; flex-direction: column; gap: 12px; }
+.l3-app { padding: 16px; display: flex; flex-direction: column; gap: 13px; }
+.l3-app__head { display: flex; align-items: center; gap: 10px; }
+.l3-app__avatar {
+  width: 38px; height: 38px;
+  border-radius: var(--lui-r-pill);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; color: var(--lui-ink);
+  flex: none;
+}
+.l3-app__who { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.l3-app__name { font-size: 14.5px; font-weight: 700; color: var(--lui-ink); }
+.l3-app__sub { font-size: 11px; color: var(--lui-sub-2); }
+/* 규칙 1 — 카드마다 기본 버튼이 하나씩 있는 건 Figma 그대로입니다 (카드 단위 주요 동작) */
+.l3-app__reject { font-size: 12px; color: var(--lui-sub); text-align: center; width: 100%; }
+
+.l3__bulk { padding: 6px 16px; }
+.l3__bulk .lui-row { padding: 13px 0; }
+.l3__bulk .lui-row__avatar { width: 38px; height: 38px; background: transparent; }

@@ -1,0 +1,12 @@
+/* S10 공연 만들기 — Figma 213:2 */
+.s10 { display: flex; flex-direction: column; padding: 0 20px; }
+.s10__gap-14 { height: 14px; }
+.s10__gap-26 { height: 26px; }
+.s10__label { font-size: 12px; font-weight: 700; color: var(--lui-body); padding-bottom: 7px; }
+
+.s10__lineup { padding: 4px 16px; }
+.s10__lineup .lui-row { padding: 12px 0; }
+.s10__lineup .lui-row + .lui-row { border-top: 1px solid var(--lui-hairline); }
+.s10__lineup .lui-row__avatar { width: 40px; height: 40px; background: var(--lui-chip); color: var(--lui-ink); font-size: 14px; }
+
+.s10__notice { font-size: 11.5px; line-height: 20.125px; color: var(--lui-sub-2); }

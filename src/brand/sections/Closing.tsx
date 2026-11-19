@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'motion/react'
-import { clubs, links, photos } from '../content'
+import { VENUE_CONTACT, clubs, links, photos } from '../content'
 import { useReducedMotion } from '../useReducedMotion'
 import lockup from '../assets/logo-lockup.png'
 
@@ -30,7 +30,7 @@ export function BandPhoto() {
 /** 문장 하나 + 버튼 — POSH 의 'Driving culture & community' 자리 */
 export function Statement() {
   return (
-    <section className="b-say">
+    <section className="b-say" id="start">
       <Rise>
         <h2>
           공연을 만드는 건 결국
@@ -46,6 +46,7 @@ export function Statement() {
         <Link className="b-pill b-pill--lg" to={links.console}>
           동아리로 시작하기
         </Link>
+        <p className="b-say__note">동아리 운영진 코드로 들어갑니다.</p>
       </Rise>
     </section>
   )
@@ -54,7 +55,6 @@ export function Statement() {
 /** 함께 공연해 온 동아리 — POSH 의 주최자 목록 자리 */
 export function Clubs() {
   const [on, setOn] = useState(0)
-  const picked = clubs[on]
 
   return (
     <section className="b-clubs">
@@ -70,12 +70,13 @@ export function Clubs() {
             onClick={() => setOn(i)}
           >
             {c.name}
+            <small>{c.uni}</small>
           </button>
         ))}
         <p className="b-clubs__meta">
-          {picked.uni}
+          지금은 노원 5개 대학부터 시작합니다 — 광운대 · 서울과기대 · 삼육대 · 서울여대 · 인덕대.
           <br />
-          노원 5개 대학에서 10곳 넘는 동아리와 함께 공연해 왔습니다.
+          다음은 서울 동북권이고, 밴드 동아리가 있는 학교라면 어디든 열려 있습니다.
         </p>
       </div>
     </section>
@@ -103,9 +104,7 @@ export function Outro() {
   return (
     <>
       <section className="b-outro">
-        <Rise>
-          <h2>다음 공연은 여기서.</h2>
-        </Rise>
+        <h2>다음 공연은 여기서.</h2>
         <Rise delay={0.08}>
           <div className="b-outro__acts">
             <Link className="b-pill b-pill--lg b-pill--onblack" to={links.shows}>
@@ -140,6 +139,14 @@ export function Outro() {
           광운대 · 서울과기대
           <br />
           삼육대 · 서울여대 · 인덕대
+        </div>
+        <div id="contact">
+          <h4>공연장 · 제휴 문의</h4>
+          {VENUE_CONTACT ? (
+            <a href={`mailto:${VENUE_CONTACT}`}>{VENUE_CONTACT}</a>
+          ) : (
+            <span>연락처 준비 중입니다</span>
+          )}
         </div>
         <div className="b-foot__mark">
           <img src={lockup} alt="BANDY" />

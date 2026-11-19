@@ -1,0 +1,37 @@
+/* C1 우리가 만난 밴드 (연결 지도) — Figma 264:2 */
+.c1 { display: flex; flex-direction: column; padding: 0 20px; }
+.c1__gap-14 { height: 14px; }
+.c1__gap-26 { height: 26px; }
+
+.c1__headline { font-size: 21px; font-weight: 800; line-height: 28.98px; letter-spacing: -0.525px; color: var(--lui-ink); }
+.c1__lead { font-size: 13px; color: var(--lui-sub); }
+
+.c1__legend { display: flex; gap: 14px; align-items: center; }
+.c1__legend-item { display: flex; align-items: center; gap: 6px; font-size: 16px; color: #000; }
+.c1__legend-bar { width: 18px; border-radius: 9px; background: var(--lui-track-2); height: 2px; }
+.c1__legend-bar--strong { height: 5px; background: var(--lui-accent); }
+.c1__legend-bar--mid { height: 3px; background: #c9cdd4; }
+
+.c1__list { padding: 4px 16px; }
+.c1-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; width: 100%; text-align: left; }
+.c1-row + .c1-row { border-top: 1px solid var(--lui-hairline); }
+.c1-row__avatar {
+  width: 40px; height: 40px;
+  border-radius: var(--lui-r-pill);
+  background: var(--lui-chip);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; color: var(--lui-ink);
+  flex: none;
+}
+.c1-row__main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.c1-row__name { font-size: 14px; font-weight: 700; color: var(--lui-ink); }
+.c1-row__sub { font-size: 11.5px; color: var(--lui-sub); }
+.c1-row__track { margin-top: 4px; height: 6px; border-radius: var(--lui-r-pill); background: var(--lui-track); }
+.c1-row__fill { display: block; height: 6px; border-radius: var(--lui-r-pill); background: #c9cdd4; }
+.c1-row__fill--warm { background: var(--lui-accent); }
+.c1-row__chev { font-size: 14px; color: var(--lui-icon-faint); }
+
+.c1__archive { padding: 14px; }
+.c1__archive .lui-row { padding: 0; }
+.c1__archive .lui-row__avatar { width: 40px; height: 40px; background: var(--lui-chip); color: var(--lui-ink); }
+.c1__notice { font-size: 11.5px; line-height: 20.125px; color: var(--lui-sub-2); }

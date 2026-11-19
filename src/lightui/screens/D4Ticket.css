@@ -1,0 +1,53 @@
+/* D4 티켓 · QR 입장 — Figma 186:2 */
+.d4 { display: flex; flex-direction: column; padding: 0 20px; }
+
+.d4__status { display: flex; align-items: flex-start; justify-content: space-between; }
+
+/* 티켓 카드 — 위아래 두 덩어리를 반원 노치로 끊습니다 */
+.d4__ticket { border-radius: 20px; overflow: hidden; background: var(--lui-always-dark); }
+.d4__ticket-head { padding: 20px; display: flex; flex-direction: column; gap: 5px; }
+.d4__ticket-title { font-size: 18px; font-weight: 800; letter-spacing: -0.36px; color: #fff; }
+.d4__ticket-sub { font-size: 12.5px; color: #9ba0a8; }
+
+.d4__notch { height: 16px; position: relative; }
+.d4__notch::before,
+.d4__notch::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 16px; height: 16px;
+  border-radius: var(--lui-r-pill);
+  background: var(--lui-bg);
+}
+.d4__notch::before { left: -8px; }
+.d4__notch::after { right: -8px; }
+
+.d4__ticket-body { padding: 0 20px 22px; display: flex; flex-direction: column; gap: 14px; align-items: center; }
+.d4__qr {
+  /* 스캐너가 읽어야 해서 다크에서도 흰 바탕을 유지합니다 */
+  background: #fff;
+  border-radius: 16px;
+  padding: 14px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.d4__qr img { width: 175px; height: 175px; display: block; }
+.d4__facts { display: flex; gap: 10px; width: 100%; }
+.d4__fact { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.d4__fact-k { font-size: 10.5px; color: #777c85; }
+.d4__fact-v { font-size: 13.5px; font-weight: 700; color: #fff; }
+
+.d4__guide { font-size: 11.5px; line-height: 20.125px; color: var(--lui-sub-2); text-align: center; }
+
+.d4__addon { padding: 4px 16px; }
+.d4__addon .lui-row { padding: 12px 0; }
+.d4__addon .lui-row__avatar { width: 40px; height: 40px; background: var(--lui-chip); color: var(--lui-ink); }
+
+/* 규칙 1 — 기본 버튼은 하단 「공연장 길찾기」 하나. 나머지는 텍스트 링크 */
+.d4__links { display: flex; justify-content: center; gap: 26px; }
+.d4__link { font-size: 13px; font-weight: 700; color: var(--lui-sub); }
+
+.d4__gap-14 { height: 14px; }
+.d4__gap-26 { height: 26px; }

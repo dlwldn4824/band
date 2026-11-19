@@ -1,0 +1,61 @@
+/* S11 입금 관리 — Figma 214:2 (269:2 이후 리뉴얼된 레이아웃) */
+.s11 { display: flex; flex-direction: column; padding: 8px 20px 20px; }
+
+.s11__line { font-size: 13px; color: var(--lui-sub); }
+.s11__big { font-size: 40px; font-weight: 700; letter-spacing: -0.48px; color: var(--lui-ink); }
+.s11__big em { font-style: normal; color: var(--lui-sub); }
+
+.s11__filters { display: flex; gap: 8px; align-items: center; overflow-x: auto; scrollbar-width: none; }
+.s11__filters::-webkit-scrollbar { display: none; }
+.s11-filter {
+  flex: none;
+  padding: 9px 14px;
+  border-radius: var(--lui-r-pill);
+  background: #f5f5f6;
+  color: var(--lui-sub);
+  font-size: 12.5px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.s11-filter--on { background: var(--lui-inverse-bg); color: var(--lui-inverse-fg); font-weight: 700; }
+
+.s11__sec { display: flex; align-items: center; justify-content: space-between; }
+.s11__sec-title { font-size: 16px; font-weight: 700; color: var(--lui-ink); }
+.s11__sec-aside { font-size: 12px; color: var(--lui-sub); }
+
+.s11-row { display: flex; flex-direction: column; gap: 9px; padding: 16px 0; }
+.s11-row--line { border-bottom: 1px solid var(--lui-line); }
+.s11-row__top { display: flex; align-items: center; justify-content: space-between; }
+.s11-row__who { display: flex; align-items: center; gap: 7px; }
+.s11-row__name { font-size: 15px; font-weight: 700; color: var(--lui-ink); }
+.s11-row__amount { font-size: 15px; font-weight: 700; color: var(--lui-ink); }
+.s11-row__bottom { display: flex; align-items: center; justify-content: space-between; }
+.s11-row__sub { font-size: 12.5px; color: var(--lui-sub); }
+.s11-row__state { font-size: 12.5px; color: var(--lui-sub); }
+
+/* 「입금 신고」 — 예매자가 보냈다고 알린 건. 규칙 7 의 빨강(확인이 필요한 데이터) */
+.s11__reported {
+  background: #ffeeee;
+  color: #ff4c4c;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3px 7px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+.s11__confirm {
+  background: var(--lui-inverse-bg);
+  color: var(--lui-inverse-fg);
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 9px 14px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.s11__note { font-size: 11.5px; line-height: 19px; color: var(--lui-sub-2); }
+.s11__gap-6 { height: 6px; }
+.s11__gap-18 { height: 18px; }
+.s11__gap-22 { height: 22px; }
+.s11__gap-24 { height: 24px; }
+.s11__gap-26 { height: 26px; }

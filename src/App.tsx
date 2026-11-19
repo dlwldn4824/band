@@ -27,6 +27,7 @@ import MyBandy from './pages/MyBandy'
 import ClubConsole from './pages/ClubConsole'
 import NfcCard from './pages/NfcCard'
 import BrandLanding from './brand/BrandLanding'
+import { lightUiRoutes } from './lightui/routes'
 
 function useAppHeight() {
   useEffect(() => {
@@ -135,6 +136,10 @@ function AppRoutes() {
           <Route path="/club-console" element={<BandyLayout><ClubConsole /></BandyLayout>} />
           {/* NFC 태그 · QR · 링크 공유가 모두 이 경로로 들어옵니다 */}
           <Route path="/card/:shareCode" element={<BandyLayout><NfcCard /></BandyLayout>} />
+
+          {/* ── 라이트 UI (Figma `앱 · 라이트 UI` 페이지) ──────────────
+              기존 2025 공연 화면과 섞이지 않도록 전부 /ui 아래에 둡니다. */}
+          {lightUiRoutes}
 
           {/* 브랜드 랜딩 — 처음 온 사람에게 보여 주는 페이지입니다.
               앱 홈(/explore)과 라우트를 분리해 두었습니다. 폴더도 src/brand 로 따로 있습니다. */}

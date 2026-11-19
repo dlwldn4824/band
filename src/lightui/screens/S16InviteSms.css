@@ -1,0 +1,59 @@
+/* S16 문자로 받은 모습 — Figma 236:2 */
+.s16 {
+  flex: 1;
+  background: var(--lui-line);
+  padding: 18px 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.s16__at { font-size: 10.5px; color: #9fa3aa; }
+
+.s16__card {
+  background: var(--lui-card);
+  border: 1px solid #dfe0e3;
+  border-radius: 18px;
+  overflow: hidden;
+  width: 100%;
+  text-align: left;
+}
+.s16__card img { width: 100%; height: 132px; object-fit: cover; display: block; }
+.s16__card-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; }
+.s16__card-title { font-size: 13.5px; font-weight: 700; letter-spacing: -0.135px; color: var(--lui-ink); }
+.s16__card-sub { font-size: 11.5px; color: var(--lui-sub); }
+.s16__card-host { font-size: 10.5px; color: var(--lui-placeholder); }
+
+.s16__bubble {
+  max-width: 272px;
+  background: var(--lui-card);
+  border: 1px solid #e3e4e7;
+  border-radius: 18px;
+  padding: 11px 14px;
+  font-size: 13.5px;
+  line-height: 21.6px;
+  color: var(--lui-ink);
+}
+.s16__sender { font-size: 10.5px; color: #9fa3aa; }
+.s16__gap { height: 8px; }
+.s16__row-right { display: flex; justify-content: flex-end; }
+.s16__bubble--me {
+  max-width: 272px;
+  background: var(--lui-inverse-bg);
+  color: var(--lui-inverse-fg);
+  border: 0;
+  border-radius: 18px;
+  padding: 11px 14px;
+  font-size: 13.5px;
+  line-height: 21.6px;
+}
+.s16__read { font-size: 10.5px; color: #9fa3aa; }
+
+.s16__composer .lui-input { flex: 1; min-width: 0; border-radius: 14px; }
+.s16__send {
+  width: 44px; height: 44px;
+  border-radius: var(--lui-r-pill);
+  background: var(--lui-inverse-bg);
+  color: var(--lui-inverse-fg);
+  display: flex; align-items: center; justify-content: center;
+  flex: none;
+}
