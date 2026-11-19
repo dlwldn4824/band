@@ -7,10 +7,10 @@
 .c1__lead { font-size: 13px; color: var(--lui-sub); }
 
 .c1__legend { display: flex; gap: 14px; align-items: center; }
-.c1__legend-item { display: flex; align-items: center; gap: 6px; font-size: 16px; color: #000; }
+.c1__legend-item { display: flex; align-items: center; gap: 6px; font-size: 16px; color: var(--lui-ink); }
 .c1__legend-bar { width: 18px; border-radius: 9px; background: var(--lui-track-2); height: 2px; }
 .c1__legend-bar--strong { height: 5px; background: var(--lui-accent); }
-.c1__legend-bar--mid { height: 3px; background: #c9cdd4; }
+.c1__legend-bar--mid { height: 3px; background: var(--lui-sub-2); }
 
 .c1__list { padding: 4px 16px; }
 .c1-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; width: 100%; text-align: left; }

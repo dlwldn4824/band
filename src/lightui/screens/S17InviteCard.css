@@ -36,7 +36,7 @@
   padding: 13px 14px;
   font-size: 13.5px;
   line-height: 22.95px;
-  color: #3b424c;
+  color: var(--lui-body);
 }
 .s17__social {
   align-self: flex-start;
