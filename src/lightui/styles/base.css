@@ -984,3 +984,43 @@ textarea.lui-input {
 .l3__mode { cursor: pointer; }
 /* 아직 화면이 없는 탭 */
 .lui-tabbar__item--soon { opacity: 0.4; }
+
+/* ── 공연장 길찾기 시트 ──────────────────────────────
+   어느 지도 앱으로 넘길지 고르는 자리. 마이·공연 관리의 메뉴 목록과
+   같은 모양입니다 — 카드 하나에 헤어라인으로 나뉜 행. */
+.lui-dirs { display: flex; flex-direction: column; padding-bottom: 4px; }
+.lui-dirs__name {
+  font-size: 15px; font-weight: 700; letter-spacing: -0.2px;
+  color: var(--lui-ink);
+}
+.lui-dirs__addr { margin-top: 4px; font-size: 12.5px; line-height: 19px; color: var(--lui-sub); }
+
+.lui-dirs__apps {
+  margin-top: 16px;
+  background: var(--lui-card);
+  border: 1px solid var(--lui-line);
+  border-radius: var(--lui-r-card);
+  padding: 0 16px;
+}
+.lui-dirs__row {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%; padding: 13px 0;
+  text-align: left; color: inherit; text-decoration: none;
+}
+.lui-dirs__row + .lui-dirs__row { border-top: 1px solid var(--lui-hairline); }
+.lui-dirs__main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.lui-dirs__label { font-size: 14px; font-weight: 600; color: var(--lui-ink); }
+.lui-dirs__sub {
+  font-size: 11.5px; color: var(--lui-sub-2);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.lui-dirs__chev { color: var(--lui-icon-faint); flex: none; }
+.lui-dirs__done { color: var(--lui-accent); flex: none; }
+
+/* 클립보드가 막혔을 때 — 주소를 드러내 길게 눌러 복사하게 */
+.lui-dirs__fallback { margin-top: 12px; font-size: 11.5px; line-height: 19px; color: var(--lui-sub-2); }
+.lui-dirs__pick {
+  display: block; margin-bottom: 4px;
+  font-size: 12.5px; font-weight: 600; color: var(--lui-ink);
+  user-select: all; -webkit-user-select: all;
+}
