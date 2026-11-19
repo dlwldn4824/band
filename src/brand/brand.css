@@ -10,7 +10,7 @@
  *   한 화면에 눈에 띄는 움직임은 하나까지.
  */
 
-@import url('https://fonts.googleapis.com/css2?family=Anton&family=IBM+Plex+Mono:wght@400;600&family=Lobster&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Black+Han+Sans&family=IBM+Plex+Mono:wght@400;600&family=Lobster&display=swap');
 
 .bandy {
   /* 앱 라이트 UI 토큰을 그대로 가져옵니다 — 화이트 · 핑크 · 블랙 */
@@ -1521,3 +1521,180 @@
 }
 .b-po__foot-a { font-size: 3.8cqw; }
 .b-po__foot-b { margin-top: 1.2cqw; font-size: 3.4cqw; opacity: 0.8; }
+
+
+/* ── 포스터 틀 3종 더 — lWar · lPink · lSky ─────────────── */
+
+/* war — 왼쪽에 약자를 크게 박고 아래에 동아리·지역 */
+.b-po--war { background: #0b0b0b; }
+.b-po__war-top {
+  position: absolute;
+  left: 6cqw;
+  right: 6cqw;
+  top: 4cqw;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  font-family: 'Anton', sans-serif;
+  line-height: 0.86;
+}
+.b-po__war-abbr { font-size: 36cqw; letter-spacing: -0.01em; }
+.b-po__war-tour { font-size: 15cqw; text-align: right; }
+.b-po__war-ph {
+  position: absolute;
+  left: 6cqw;
+  right: 6cqw;
+  top: 36cqw;
+  height: 60cqw;
+  background-color: #444;
+  background-size: cover;
+  background-position: center 30%;
+  filter: grayscale(1) contrast(1.25);
+}
+.b-po__war-foot { position: absolute; left: 6cqw; right: 6cqw; top: 99cqw; line-height: 0.95; }
+.b-po__war-club {
+  font-family: 'Black Han Sans', 'Anton', sans-serif;
+  font-size: 12cqw;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.b-po__war-region { font-family: 'Anton', sans-serif; font-size: 9cqw; opacity: 0.72; }
+.b-po__war-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 3cqw;
+  margin-top: 1.6cqw;
+  font-size: 4.4cqw;
+  line-height: 1.25;
+  font-weight: 600;
+}
+.b-po__war-en { font-family: 'Anton', sans-serif; font-size: 9cqw; line-height: 0.85; opacity: 0.9; }
+
+/* pink — 밝은 바탕에 양옆 세로 띠 */
+.b-po--pink { background: #f0dfe0; color: #111; }
+.b-po__pink-ph {
+  position: absolute;
+  left: 16cqw;
+  right: 16cqw;
+  top: 14cqw;
+  height: 60cqw;
+  background-color: #8a8882;
+  background-size: cover;
+  background-position: center 30%;
+  filter: grayscale(1) contrast(1.5) brightness(1.05);
+  mix-blend-mode: multiply;
+}
+.b-po__pink-top {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 4cqw;
+  text-align: center;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 5cqw;
+  letter-spacing: 0.06em;
+}
+.b-po__rail {
+  position: absolute;
+  top: 14cqw;
+  width: 9cqw;
+  height: 60cqw;
+  box-sizing: border-box;
+  border: 0.7cqw solid #111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.b-po__rail--l { left: 4cqw; }
+.b-po__rail--r { right: 4cqw; }
+.b-po__rail span {
+  writing-mode: vertical-rl;
+  white-space: nowrap;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 6.4cqw;
+}
+.b-po__rail--l span { transform: rotate(180deg); }
+.b-po__pink-mid { position: absolute; left: 4cqw; right: 4cqw; top: 78cqw; text-align: center; }
+.b-po__pink-script { font-size: 11cqw; font-weight: 600; letter-spacing: -0.03em; line-height: 1; }
+.b-po__pink-pill {
+  display: inline-block;
+  margin-top: 2cqw;
+  padding: 0.8cqw 4cqw;
+  border-radius: 99cqw;
+  border: 0.5cqw solid #111;
+  font-size: 3.8cqw;
+  font-weight: 700;
+}
+.b-po__pink-note { margin-top: 2.5cqw; font-size: 3.6cqw; font-weight: 700; opacity: 0.72; }
+.b-po__pink-bar {
+  position: absolute;
+  left: 4cqw;
+  right: 4cqw;
+  bottom: 4cqw;
+  height: 11cqw;
+  border-radius: 2cqw;
+  background: #111;
+  display: grid;
+  place-items: center;
+  color: #f0dfe0;
+  font-size: 4.6cqw;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+/* sky — 큰 원 사진 */
+.b-po--sky { background: #cfe0ee; color: #1d3348; }
+.b-po__sky-circle {
+  position: absolute;
+  left: 13cqw;
+  top: 38cqw;
+  width: 80cqw;
+  height: 80cqw;
+  border-radius: 50%;
+  overflow: hidden;
+}
+.b-po__sky-circle > div {
+  position: absolute;
+  inset: 0;
+  background-color: #7fa8c9;
+  background-size: cover;
+  background-position: center;
+  filter: grayscale(0.4) contrast(1.1);
+}
+.b-po__sky-ring {
+  position: absolute;
+  left: 8cqw;
+  top: 33cqw;
+  width: 84cqw;
+  height: 84cqw;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 0.5cqw #fff;
+}
+.b-po__sky-text {
+  position: absolute;
+  left: 5cqw;
+  right: 5cqw;
+  top: 5cqw;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+.b-po__sky-head { display: flex; justify-content: space-between; gap: 4cqw; font-size: 4.6cqw; line-height: 1.1; }
+.b-po__sky-title { margin-top: 4cqw; font-size: 11cqw; line-height: 1; font-weight: 600; }
+.b-po__sky-sub { margin-top: 2.5cqw; font-size: 4.6cqw; line-height: 1.15; }
+.b-po__sky-sub span { font-weight: 600; }
+.b-po__sky-bar {
+  position: absolute;
+  left: 5cqw;
+  right: 5cqw;
+  bottom: 4cqw;
+  display: flex;
+  justify-content: space-between;
+  gap: 2cqw;
+  font-size: 2.8cqw;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #111;
+}
