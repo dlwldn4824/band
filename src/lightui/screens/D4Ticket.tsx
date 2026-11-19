@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import Phone from '../components/Phone'
 import MoreMenu from '../components/MoreMenu'
 import TopBar from '../components/TopBar'
+import TabBar from '../components/TabBar'
 import SectionHeader from '../components/SectionHeader'
 import SummaryBox from '../components/SummaryBox'
 import ListRow from '../components/ListRow'
@@ -126,6 +127,9 @@ const D4Ticket = () => {
           공연장 길찾기
         </Button>
       </div>
+      {/* 문자나 링크로 이 화면에 바로 들어오면 위쪽 뒤로가기 말고는 나갈 길이
+          없었습니다. 티켓은 흐름의 중간이 아니라 도착지라 탭바를 둡니다. */}
+      <TabBar active="ticket" />
     </Phone>
   )
 }
