@@ -1,3 +1,5 @@
+import type { JoinSide } from '../mocks/auth'
+
 /**
  * 라이트 UI 라우트.
  *
@@ -12,12 +14,12 @@ export const P = {
 
   // 관객
   /** 고른 쪽을 ?as= 로 들고 갑니다 (S0 → S1 → S1b) */
-  start: (as?: 'club' | 'audience') => (as ? `/ui/start?as=${as}` : '/ui/start'), // S1
-  onboarding: (as?: 'club' | 'audience') =>
+  start: (as?: JoinSide) => (as ? `/ui/start?as=${as}` : '/ui/start'), // S1
+  onboarding: (as?: JoinSide) =>
     as ? `/ui/start/profile?as=${as}` : '/ui/start/profile',  // 온보딩 (Figma 프레임 없음)
   kakaoReturn: '/ui/auth/kakao',                        // 카카오가 돌려보내는 자리
   /** 카카오 말고 하나 더 — 애플 4.8 과 심사자 로그인 때문에 필요합니다 */
-  email: (as?: 'club' | 'audience') => (as ? `/ui/start/email?as=${as}` : '/ui/start/email'),
+  email: (as?: JoinSide) => (as ? `/ui/start/email?as=${as}` : '/ui/start/email'),
   home: '/ui',                                          // L1
   map: '/ui/map',                                       // S2
   search: '/ui/search',                                 // S3

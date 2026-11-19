@@ -1,7 +1,7 @@
 import type { JoinSide } from '../../mocks/auth'
 
 /**
- * 가입할 때 고른 쪽 — 동아리인지 관객인지.
+ * 가입할 때 고른 쪽 — 운영진 · 부원 · 관객 · 공연장 중 어디인지.
  *
  * 주소의 `?as=` 로 들고 다니지만, 카카오에 다녀오는 동안에는 그 주소가 사라집니다.
  * (카카오는 `/ui/auth/kakao?code=…` 로만 돌려보냅니다.) 그래서 고른 순간 한 번
@@ -23,7 +23,7 @@ export function rememberSide(side: JoinSide) {
 export function recallSide(): JoinSide | undefined {
   try {
     const v = localStorage.getItem(KEY)
-    if (v === 'club' || v === 'audience') return v
+    if (v === 'manager' || v === 'member' || v === 'audience' || v === 'venue') return v
   } catch {
     /* 사생활 보호 모드 등 */
   }
@@ -40,6 +40,7 @@ export function forgetSide() {
 
 /** 주소의 `?as=` 가 먼저, 없으면 적어 둔 것 */
 export function readSide(param: string | null): JoinSide | undefined {
-  if (param === 'club' || param === 'audience') return param
+  if (param === 'manager' || param === 'member' || param === 'audience' || param === 'venue')
+    return param
   return recallSide()
 }

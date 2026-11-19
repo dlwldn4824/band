@@ -1,11 +1,28 @@
 # 밴디 (BANDY)
 
+**공연장이 비는 날에 밴드를 연결합니다. 같이 설 팀과 보러 올 사람까지.**
+대학 밴드 동아리의 공연 플랫폼. 노원 대학가에서 시작합니다.
+
+![밴디 앱 화면 — 홈, 티켓, 정산, 동아리 연결](./docs/screenshots/app-screens.png)
+
+<sub>왼쪽부터 홈 · 티켓 QR · 정산 · 동아리 연결 지도. Figma `앱 · 라이트 UI` 에서 그대로 내려받은 화면입니다.</sub>
+
 | | |
 |---|---|
-| 서비스 | <https://band-alpha.vercel.app> |
-| UX 소개서 | <https://dlwldn4824.github.io/bandy-case-study/> ([저장소](https://github.com/dlwldn4824/bandy-case-study)) |
+| **서비스** | <https://band-alpha.vercel.app> |
+| **UX 소개서** | <https://dlwldn4824.github.io/bandy-case-study/> — 문제 정의부터 서비스 플로우, 브랜드, 화면까지 ([저장소](https://github.com/dlwldn4824/bandy-case-study)) |
+| **디자인** | [Figma · 앱 / 웹](https://www.figma.com/design/mLwN6nNV8jjSE70CiWRhvs) — 라이트 UI 37화면 · 다크 UI 34화면 · 프로토타입 연결 |
 
-왜 만들었고 어떤 흐름으로 이어지는지는 소개서에 한 줄로 정리돼 있습니다. 이 문서는 그 아래, 코드가 어떻게 생겼는지를 다룹니다.
+왜 만들었고 어떤 흐름으로 이어지는지는 **소개서**에 그림과 글로 정리돼 있습니다. 이 문서는 그 아래, 코드가 어떻게 생겼는지를 다룹니다.
+
+### 한 공연이 이렇게 이어집니다
+
+```
+공연장 빈 날 등록 → 밴드 연결 → 함께 설 팀 모집 → 티켓 예매
+   → 입금 확인 → 당일 QR 입장 → 현장 교류 → 정산
+```
+
+예매 · 입장 · 사전 구매는 실제 공연 3회에 썼습니다. 공연장 빈 날 매칭과 현장 네트워킹은 개발 중입니다.
 
 화면에 보이는 서비스명은 **밴디**입니다. 한때 '마주'로 바꿨다가 되돌렸는데, 그때 브랜드명을 [`src/config/brand.ts`](./src/config/brand.ts) 한 곳으로 모아 둬서 두 줄만 고치면 앱 전체가 따라옵니다.
 
