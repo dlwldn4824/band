@@ -53,14 +53,14 @@ const S14Me = () => {
             <h1 className="s14__title">마이</h1>
             <MoreMenu
               items={[
-                { label: '프로필 수정', to: P.onboarding },
+                { label: '프로필 수정', to: P.onboarding() },
                 { label: '알림 설정', to: P.notifications },
                 {
                   label: '로그아웃',
                   danger: true,
                   onSelect: () => {
                     signOut()
-                    navigate(P.start)
+                    navigate(P.start())
                   },
                 },
               ]}
@@ -74,7 +74,7 @@ const S14Me = () => {
               title={me.name}
               sub={me.sub}
               chevron
-              onClick={() => navigate(P.onboarding)}
+              onClick={() => navigate(P.onboarding())}
             />
           </div>
 

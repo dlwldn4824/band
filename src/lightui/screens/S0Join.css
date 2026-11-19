@@ -1,0 +1,40 @@
+/* S0 가입 시작 — 동아리 / 관객 */
+.s0 { display: flex; flex-direction: column; padding: 0 20px; min-height: 100%; }
+.s0__top { height: 36px; }
+.s0__gap-10 { height: 10px; }
+.s0__gap-18 { height: 18px; }
+.s0__gap-26 { height: 26px; }
+
+.s0__wordmark { height: 26px; width: auto; align-self: flex-start; }
+.s0__title { font-size: 25px; font-weight: 800; line-height: 34px; letter-spacing: -0.6px; color: var(--lui-ink); }
+.s0__lead { font-size: 13px; color: var(--lui-sub); }
+
+.s0__cards { display: flex; flex-direction: column; gap: 12px; }
+.s0-card {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 18px 18px 16px;
+  text-align: left;
+}
+.s0-card__head { display: flex; align-items: center; justify-content: space-between; }
+.s0-card__label {
+  font-size: 11px; font-weight: 800; letter-spacing: 0.3px;
+  color: var(--lui-accent);
+}
+.s0-card__chev { color: var(--lui-icon-faint); }
+.s0-card__title { font-size: 17px; font-weight: 800; letter-spacing: -0.3px; color: var(--lui-ink); }
+.s0-card__sub { font-size: 12.5px; line-height: 20px; color: var(--lui-sub); }
+
+/* 그 쪽에서 실제로 하게 되는 일 — 말보다 목록이 빠릅니다 */
+.s0-card__does { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.s0-card__do {
+  padding: 5px 9px;
+  border-radius: var(--lui-r-pill);
+  background: var(--lui-soft);
+  font-size: 11px; font-weight: 600; color: var(--lui-body);
+}
+
+.s0__browse {
+  align-self: center;
+  font-size: 12.5px; font-weight: 700; color: var(--lui-sub);
+  padding: 6px;
+}

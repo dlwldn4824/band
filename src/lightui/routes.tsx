@@ -17,6 +17,7 @@ import S11Deposits from './screens/S11Deposits'
 import S13Settlement from './screens/S13Settlement'
 import L3Venue from './screens/L3Venue'
 import S12Entry from './screens/S12Entry'
+import S0Join from './screens/S0Join'
 import S1Start from './screens/S1Start'
 import S1bOnboarding from './screens/S1bOnboarding'
 import S1cKakaoReturn from './screens/S1cKakaoReturn'
@@ -84,6 +85,7 @@ export const lightUiRoutes = [
         <S12Entry />
       </ManagerOnly>
     } />,
+  <Route key="ui-join" path="/ui/join" element={<S0Join />} />,
   <Route key="ui-start" path="/ui/start" element={<S1Start />} />,
   <Route key="ui-onboarding" path="/ui/start/profile" element={<S1bOnboarding />} />,
   <Route key="ui-kakao-return" path="/ui/auth/kakao" element={<S1cKakaoReturn />} />,

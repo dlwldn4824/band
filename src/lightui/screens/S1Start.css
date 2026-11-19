@@ -25,3 +25,11 @@
   text-underline-offset: 3px;
   padding: 6px 4px;
 }
+
+/* S0 에서 고르고 들어왔을 때 — 어느 쪽인지 한 줄로 */
+.s1__side {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin-top: 14px;
+  font-size: 12.5px; font-weight: 700; color: var(--lui-ink);
+}
+.s1__side-change { font-size: 11.5px; font-weight: 600; color: var(--lui-sub); text-decoration: underline; }

@@ -5,6 +5,7 @@ import TopBar from '../components/TopBar'
 import Button from '../components/Button'
 import { P } from '../paths'
 import { KakaoSignInError, completeKakaoSignIn, needsOnboarding } from '../auth/kakao'
+import { recallSide } from '../auth/side'
 import './S1cKakaoReturn.css'
 
 /**
@@ -20,6 +21,8 @@ const S1cKakaoReturn = () => {
   const [error, setError] = useState<string | null>(null)
   // React 18 개발 모드는 effect 를 두 번 돌립니다. 인가 코드는 한 번만 쓸 수 있습니다.
   const used = useRef(false)
+  // 카카오는 ?as= 를 돌려주지 않아서, 고를 때 적어 둔 것을 읽습니다
+  const side = recallSide()
 
   useEffect(() => {
     if (used.current) return
@@ -43,7 +46,7 @@ const S1cKakaoReturn = () => {
 
     completeKakaoSignIn(code, params.get('state'))
       .then((user) => {
-        navigate(needsOnboarding(user) ? P.onboarding : P.home, { replace: true })
+        navigate(needsOnboarding(user) ? P.onboarding(side) : P.home, { replace: true })
       })
       .catch((e) => {
         setError(e instanceof KakaoSignInError ? e.message : '카카오 로그인에 실패했어요.')
@@ -52,7 +55,7 @@ const S1cKakaoReturn = () => {
 
   return (
     <Phone>
-      <TopBar title="카카오 로그인" back={P.start} />
+      <TopBar title="카카오 로그인" back={P.start()} />
       <div className="lui-body">
         <div className="kret">
           {error ? (
@@ -71,7 +74,7 @@ const S1cKakaoReturn = () => {
 
       {error && (
         <div className="lui-bottombar">
-          <Button block onClick={() => navigate(P.start, { replace: true })}>
+          <Button block onClick={() => navigate(P.start(), { replace: true })}>
             다시 시도하기
           </Button>
         </div>

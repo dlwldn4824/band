@@ -29,6 +29,32 @@ export const mockKakaoUser: BandyUser = {
   role: 'manager',
 }
 
+/** 가입할 때 고르는 두 쪽 — 랜딩의 두 CTA 가 각각 여기로 들어옵니다 */
+export type JoinSide = 'club' | 'audience'
+
+export const joinSides: {
+  key: JoinSide
+  label: string
+  title: string
+  sub: string
+  does: string[]
+}[] = [
+  {
+    key: 'club',
+    label: '무대에 서는 쪽',
+    title: '동아리로 시작하기',
+    sub: '공연을 올리고 예매를 받습니다. 입장 확인과 정산까지 한 곳에서.',
+    does: ['공연 올리기', '입금 확인', '입장 관리', '정산', '다른 동아리와 교류'],
+  },
+  {
+    key: 'audience',
+    label: '보러 가는 쪽',
+    title: '관객으로 시작하기',
+    sub: '가까운 공연을 찾고, 링크 하나로 예매하고, 폰으로 입장합니다.',
+    does: ['가까운 공연 찾기', '예매', '폰으로 입장', '현장 교류'],
+  },
+]
+
 /**
  * 온보딩에서 쓰는 보기.
  *

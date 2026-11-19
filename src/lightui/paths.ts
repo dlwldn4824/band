@@ -7,9 +7,14 @@
  */
 
 export const P = {
+  // 가입
+  join: '/ui/join',                                     // S0 — 동아리/관객 고르기
+
   // 관객
-  start: '/ui/start',                                   // S1
-  onboarding: '/ui/start/profile',                      // 온보딩 1스텝 (Figma 프레임 없음)
+  /** 고른 쪽을 ?as= 로 들고 갑니다 (S0 → S1 → S1b) */
+  start: (as?: 'club' | 'audience') => (as ? `/ui/start?as=${as}` : '/ui/start'), // S1
+  onboarding: (as?: 'club' | 'audience') =>
+    as ? `/ui/start/profile?as=${as}` : '/ui/start/profile',  // 온보딩 (Figma 프레임 없음)
   kakaoReturn: '/ui/auth/kakao',                        // 카카오가 돌려보내는 자리
   home: '/ui',                                          // L1
   map: '/ui/map',                                       // S2

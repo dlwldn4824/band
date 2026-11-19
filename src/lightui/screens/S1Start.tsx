@@ -1,15 +1,21 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import Phone from '../components/Phone'
 import Button from '../components/Button'
 import Logo from '../components/Logo'
 import { P } from '../paths'
 import { KakaoSignInError, needsOnboarding, signInWithKakao } from '../auth/kakao'
+import { readSide } from '../auth/side'
+import { joinSides } from '../../mocks/auth'
 import './S1Start.css'
 
 /** S1 시작 · 로그인 — Figma 204:2 */
 const S1Start = () => {
   const navigate = useNavigate()
+  const [params] = useSearchParams()
+  // S0 에서 고른 쪽 — 로그인 뒤 온보딩이 이걸 보고 갈라집니다
+  const side = readSide(params.get('as'))
+  const picked = joinSides.find((s) => s.key === side)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -19,7 +25,7 @@ const S1Start = () => {
     setBusy(true)
     try {
       const user = await signInWithKakao()
-      navigate(needsOnboarding(user) ? P.onboarding : P.home)
+      navigate(needsOnboarding(user) ? P.onboarding(side) : P.home)
     } catch (e) {
       setError(e instanceof KakaoSignInError ? e.message : '로그인 중 문제가 생겼어요.')
     } finally {
@@ -40,6 +46,15 @@ const S1Start = () => {
               <br />
               교류한 동아리가 서로의 관객이 됩니다.
             </p>
+            {/* 어느 쪽으로 들어왔는지 — 고르고 왔는데 아무 표시가 없으면 불안합니다 */}
+            {picked && (
+              <p className="s1__side">
+                {picked.title}
+                <button type="button" className="s1__side-change" onClick={() => navigate(P.join)}>
+                  바꾸기
+                </button>
+              </p>
+            )}
           </div>
 
           <div className="s1__space" />
