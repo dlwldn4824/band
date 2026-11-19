@@ -31,3 +31,14 @@
   color: var(--lui-sub);
   padding: 4px;
 }
+
+/* 검색 결과 — 입력 칸 바로 아래에 붙는 목록 */
+.ob__found { margin-top: 8px; padding: 0 14px; }
+.ob-found__row {
+  display: block; width: 100%; padding: 12px 0;
+  text-align: left; font-size: 13.5px; color: var(--lui-ink);
+}
+.ob-found__row + .ob-found__row { border-top: 1px solid var(--lui-hairline); }
+
+/* 빠른 선택 칩은 아직 아무것도 안 적었을 때만 */
+.ob__chips { margin-top: 10px; }
