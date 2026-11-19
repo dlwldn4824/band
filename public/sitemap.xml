@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  지금 크롤러에게 내용이 보이는 주소만 올립니다.
+  /ui 아래 앱 화면들은 자바스크립트로 그려지고 프리렌더가 없어서, 넣어 봐야
+  빈 페이지가 색인됩니다. 프리렌더를 늘리면 그때 같이 늘립니다.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://band-alpha.vercel.app/</loc>
+    <lastmod>2026-11-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://band-alpha.vercel.app/brand</loc>
+    <lastmod>2026-11-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+</urlset>

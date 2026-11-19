@@ -1,0 +1,40 @@
+# BANDY · 밴디 — https://band-alpha.vercel.app
+#
+# 공개해도 되는 것은 랜딩(/, /brand)뿐입니다. 티켓·초대 링크·운영진 화면은
+# 주소를 아는 사람만 들어가는 자리라 색인에서 빼 둡니다. 막는다고 접근이
+# 차단되는 건 아니고, 검색 결과에 뜨지 않게 하는 것뿐입니다.
+
+User-agent: *
+Allow: /$
+Allow: /brand
+Disallow: /old/
+Disallow: /api/
+Disallow: /ui/ticket/
+Disallow: /ui/i/
+Disallow: /ui/live/
+Disallow: /ui/invite
+Disallow: /ui/deposits
+Disallow: /ui/settlement
+Disallow: /ui/entry
+Disallow: /ui/console
+Disallow: /ui/chat/
+Disallow: /ui/me
+
+# 네이버 검색 로봇. 규칙은 위와 같지만, 네이버 문서가 따로 적기를 권합니다.
+User-agent: Yeti
+Allow: /$
+Allow: /brand
+Disallow: /old/
+Disallow: /api/
+Disallow: /ui/ticket/
+Disallow: /ui/i/
+Disallow: /ui/live/
+Disallow: /ui/invite
+Disallow: /ui/deposits
+Disallow: /ui/settlement
+Disallow: /ui/entry
+Disallow: /ui/console
+Disallow: /ui/chat/
+Disallow: /ui/me
+
+Sitemap: https://band-alpha.vercel.app/sitemap.xml

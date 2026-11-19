@@ -12,9 +12,10 @@
     <link rel="icon" type="image/png" sizes="64x64" href="/favicon-64.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
-    <title>BANDY · 밴디</title>
-    <meta name="description" content="공연장 빈 날에 밴드를 연결합니다. 같이 설 팀과 보러 올 사람까지, 대학 밴드 동아리 공연 플랫폼." />
-    <meta name="theme-color" content="#141416" />
+    <title>BANDY · 밴디 — 대학 밴드 동아리 공연 플랫폼</title>
+    <meta name="description" content="공연장 빈 날에 밴드를 연결합니다. 같이 설 팀과 보러 올 사람까지, 대학 밴드 동아리 공연 플랫폼. 노원 대학가에서 시작합니다." />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="canonical" href="https://band-alpha.vercel.app/" />
 
     <!--
       카카오톡·문자 미리보기.
@@ -41,9 +42,100 @@
          서버가 /api/og/:eventId 로 1200×630 을 그려 주고, 그 주소를 페이지별
          og:image 로 넣어야 합니다. 메신저 크롤러는 자바스크립트를 돌리지 않아서
          링크 페이지를 서버에서 렌더하거나 프리렌더해야 합니다. -->
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "BANDY",
+        "alternateName": "밴디",
+        "url": "https://band-alpha.vercel.app/",
+        "description": "공연장 빈 날에 밴드를 연결하는 대학 밴드 동아리 공연 플랫폼",
+        "inLanguage": "ko-KR"
+      }
+    </script>
+
+    <!--
+      프리렌더용 첫 화면.
+
+      네이버(Yeti)를 비롯한 크롤러 상당수는 자바스크립트를 돌리지 않습니다.
+      #root 가 비어 있으면 그 크롤러들에게 이 사이트는 빈 페이지입니다.
+      그래서 랜딩의 핵심 문구를 정적 HTML 로 여기에 심어 둡니다 —
+      createRoot().render() 가 #root 의 자식을 지우고 그리기 때문에,
+      자바스크립트가 도는 쪽에서는 진짜 랜딩으로 바로 바뀝니다.
+
+      빌드에 프리렌더 플러그인을 붙이지 않은 이유는, 랜딩 한 장 때문에
+      헤드리스 브라우저를 빌드 단계에 끌어들이면 배포가 그만큼 느려지고
+      깨질 구석이 늘기 때문입니다. 색인에 필요한 건 이 한 장입니다.
+    -->
+    <style>
+      .pre {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 22px;
+        padding: 0 max(24px, env(safe-area-inset-left, 0px));
+        background: #ffffff;
+        color: #17181c;
+        font-family: Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo',
+          'Noto Sans KR', system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        word-break: keep-all;
+      }
+      .pre h1 {
+        margin: 0;
+        font-size: clamp(38px, 8vw, 86px);
+        line-height: 1.1;
+        letter-spacing: -2.4px;
+        font-weight: 800;
+      }
+      .pre p { margin: 0; max-width: 34em; font-size: 15px; line-height: 1.8; color: #5c616b; }
+      .pre b { color: #17181c; font-weight: 700; }
+      .pre ul { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; }
+      .pre a { color: #e0443f; text-decoration: none; font-weight: 600; }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="pre">
+        <h1>우리 다음 공연,<br />같이 할래?</h1>
+        <p>
+          <b>BANDY는 대학 밴드 동아리의 공연 플랫폼입니다.</b>
+          공연장이 비는 날에 밴드를 연결하고, 같이 설 팀과 보러 올 사람까지 모읍니다.
+          노원 대학가에서 시작합니다.
+        </p>
+        <p>
+          밴드는 대관료 150만 원을 먼저 내는 대신 팀당 참가비 5만 원만 냅니다.
+          관객은 링크 하나로 예매하고 공연 당일 QR로 들어갑니다.
+          공연장은 0원이던 날에 티켓 매출의 일부를 가져갑니다.
+        </p>
+        <ul>
+          <li><a href="/ui">공연 둘러보기</a></li>
+          <li><a href="/ui/clubs">동아리 둘러보기</a></li>
+          <li><a href="/ui/start?as=club">동아리로 가입</a></li>
+          <li><a href="/ui/start?as=audience">관객으로 가입</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <noscript>
+      <div class="pre" style="min-height:auto;padding-top:40px;padding-bottom:64px">
+        <p>
+          멜로딕(광운대) · 렉사(서울과기대) · 하모닉(삼육대) · 아카펠라(서울여대) ·
+          손아름(인덕대) · 블루노트(광운대) · 소리울(서울여대) 과 함께 공연해 왔습니다.
+          홍대와 수락산 공연장이 먼저 협력 의사를 밝혔습니다.
+        </p>
+        <p>
+          이 페이지를 제대로 보려면 자바스크립트가 필요합니다.
+          서비스가 어떤 흐름으로 이어지는지는
+          <a href="https://dlwldn4824.github.io/bandy-case-study/">UX 소개서</a>에
+          글과 그림으로 정리해 뒀습니다.
+        </p>
+      </div>
+    </noscript>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
