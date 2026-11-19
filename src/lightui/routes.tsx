@@ -8,6 +8,7 @@ import D4Ticket from './screens/D4Ticket'
 import S2Map from './screens/S2Map'
 import L2Clubs from './screens/L2Clubs'
 import S18Console from './screens/S18Console'
+import S19Run from './screens/S19Run'
 import S4Club from './screens/S4Club'
 import S5Recruit from './screens/S5Recruit'
 import S6Proposal from './screens/S6Proposal'
@@ -67,6 +68,11 @@ export const lightUiRoutes = [
   <Route key="ui-show-new" path="/ui/show/new" element={
       <ManagerOnly title="공연 만들기" what="공연 만들기">
         <S10ShowNew />
+      </ManagerOnly>
+    } />,
+  <Route key="ui-run" path="/ui/show/:showId/run" element={
+      <ManagerOnly title="공연 당일" what="공연 당일 운영">
+        <S19Run />
       </ManagerOnly>
     } />,
   <Route key="ui-deposits" path="/ui/deposits" element={

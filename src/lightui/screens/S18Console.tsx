@@ -36,6 +36,7 @@ const MenuRow = ({
 )
 
 const TO: Record<(typeof c.menu)[number]['key'], string> = {
+  run: P.run(),
   deposits: P.deposits,
   entry: P.entry,
   settlement: P.settlement,
@@ -79,7 +80,7 @@ const S18Console = () => {
                   </span>
                 }
                 chevron
-                onClick={() => navigate(P.deposits)}
+                onClick={() => navigate(P.run(show.id))}
               />
             ))}
           </div>

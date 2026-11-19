@@ -807,6 +807,7 @@ export const clubConsole = {
     },
   ],
   menu: [
+    { key: 'run' as const, title: '공연 당일', value: '타임라인 · 공지' },
     { key: 'deposits' as const, title: '입금 관리', value: '확인 2건' },
     { key: 'entry' as const, title: '입장 관리', value: '공연 당일' },
     { key: 'settlement' as const, title: '정산', value: '1건 대기' },
@@ -1448,6 +1449,54 @@ export const showLive = {
     { initial: '방', title: '방명록 남기기', sub: '공연이 끝나면 열려요', to: 'guestbook', lock: '끝나고' },
   ],
   notice: '공연 30분 전부터 입장할 수 있어요. 늦으면 곡과 곡 사이에 들어갑니다.',
+}
+
+/**
+ * 공연 당일 운영 — 타임라인과 공지.
+ *
+ * 주최 동아리가 타임라인을 짜고 공지를 올립니다. 참여 동아리는 보기만 하고,
+ * 자기 팀 순서와 리허설 시각이 어디인지만 눈에 띄면 됩니다.
+ */
+export const showRun = {
+  showId: 'glow',
+  title: '멜로딕 단독 공연 〈겨울의 소리〉',
+  when: '11.22 (토) · 라디오가가',
+  /** 지금 보고 있는 사람의 동아리 — 라인업의 host 와 같으면 주최입니다 */
+  myClubId: 'melodic',
+  lineup: [
+    { id: 'melodic', name: '멜로딕', songs: 3, host: true },
+    { id: 'lexa', name: '렉사', songs: 3 },
+    { id: 'harmonic', name: '하모닉', songs: 3 },
+    { id: 'sonapeum', name: '손아픔', songs: 2 },
+  ],
+  roleLabels: { host: '주최 동아리', guest: '참여 동아리' },
+  hostCan: '타임라인을 짜고 공지를 올릴 수 있습니다.',
+  guestCan: '주최 동아리가 올린 타임라인과 공지를 봅니다. 바꾸려면 주최 쪽에 말해 주세요.',
+  notices: [
+    {
+      id: 'n3',
+      at: '어제 21:40',
+      by: '멜로딕 (주최)',
+      title: '리허설 순서 바뀌었습니다',
+      body: '손아픔 팀이 늦게 도착한다고 해서 리허설을 맨 앞으로 당겼습니다. 나머지는 그대로입니다.',
+      pinned: true,
+    },
+    {
+      id: 'n2',
+      at: '11.19 18:02',
+      by: '멜로딕 (주최)',
+      title: '합주실 열쇠는 동아리방에서',
+      body: '당일 합주실은 15시부터 열립니다. 열쇠는 동아리방에서 받아 가세요.',
+    },
+    {
+      id: 'n1',
+      at: '11.17 12:30',
+      by: '멜로딕 (주최)',
+      title: '셋리스트 금요일까지 주세요',
+      body: '조명·음향에 넘겨야 해서 금요일 자정까지 곡 순서와 편성 보내 주세요.',
+    },
+  ],
+  empty: '아직 올라온 공지가 없어요.',
 }
 
 /* ── P2 사전 구매 (굿즈·음료) ───────────────────────── */

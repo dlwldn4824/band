@@ -1,0 +1,89 @@
+/* S19 공연 당일 운영 — 타임라인과 공지 */
+.s19 { display: flex; flex-direction: column; padding: 0 20px; }
+.s19__gap-6 { height: 6px; }
+.s19__gap-14 { height: 14px; }
+.s19__gap-26 { height: 26px; }
+
+.s19__show { font-size: 19px; font-weight: 800; line-height: 26px; letter-spacing: -0.4px; color: var(--lui-ink); }
+.s19__when { font-size: 12.5px; color: var(--lui-sub); }
+
+/* 내가 주최인지 참여인지 */
+.s19-role {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 14px 16px;
+  border-radius: var(--lui-r-card);
+  background: var(--lui-soft);
+}
+.s19-role--host { background: var(--lui-tint); }
+.s19-role__tag { font-size: 11px; font-weight: 800; letter-spacing: 0.2px; color: var(--lui-sub); }
+.s19-role--host .s19-role__tag { color: var(--lui-accent); }
+.s19-role__text { font-size: 12.5px; line-height: 20px; color: var(--lui-body); }
+
+/* 요약 세 칸 */
+.s19__plan { padding: 16px; }
+.s19-sum { display: flex; gap: 18px; }
+.s19-sum__item { display: flex; flex-direction: column; gap: 2px; font-size: 11px; color: var(--lui-sub); }
+.s19-sum__item em { font-style: normal; font-size: 19px; font-weight: 800; color: var(--lui-ink); }
+.s19__line { height: 1px; background: var(--lui-hairline); margin: 14px 0 4px; }
+
+/* 한 칸 */
+.s19-slot { display: flex; align-items: flex-start; gap: 12px; padding: 11px 0; }
+.s19-slot + .s19-slot { border-top: 1px solid var(--lui-hairline); }
+.s19-slot__at { flex: none; width: 46px; font-size: 12.5px; font-weight: 700; color: var(--lui-ink); padding-top: 1px; }
+.s19-slot__main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.s19-slot__title { display: flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 600; color: var(--lui-ink); }
+.s19-slot__sub { font-size: 11.5px; color: var(--lui-sub); }
+.s19-slot__dur { flex: none; font-size: 11.5px; color: var(--lui-sub-2); padding-top: 2px; }
+
+/* 무대 올라가는 칸만 진하게, 나머지는 흐리게 — 한눈에 공연만 읽히게 */
+.s19-slot--rehearsal .s19-slot__at,
+.s19-slot--change .s19-slot__at,
+.s19-slot--break .s19-slot__at,
+.s19-slot--doors .s19-slot__at { color: var(--lui-sub); font-weight: 600; }
+.s19-slot--rehearsal .s19-slot__title,
+.s19-slot--change .s19-slot__title,
+.s19-slot--break .s19-slot__title,
+.s19-slot--doors .s19-slot__title { font-weight: 500; color: var(--lui-body); }
+.s19-slot--stage .s19-slot__title { font-size: 15px; font-weight: 800; }
+.s19-slot--end .s19-slot__title { color: var(--lui-sub); }
+
+/* 우리 팀 자리 (규칙 7 — 꼭 봐야 하는 것만 빨강) */
+.s19-slot--mine .s19-slot__at { color: var(--lui-accent); }
+.s19-slot__mine {
+  padding: 2px 6px; border-radius: 6px;
+  background: var(--lui-tint); color: var(--lui-accent);
+  font-size: 10px; font-weight: 700;
+}
+
+/* 왜 이렇게 나왔는지 */
+.s19__why { display: flex; flex-direction: column; gap: 6px; }
+.s19__why-line { font-size: 11.5px; line-height: 19px; color: var(--lui-sub-2); }
+
+/* 공지 */
+.s19__notices { padding: 0 16px; }
+.s19-notice { display: flex; flex-direction: column; gap: 4px; width: 100%; padding: 14px 0; text-align: left; }
+.s19-notice + .s19-notice { border-top: 1px solid var(--lui-hairline); }
+.s19-notice__head { display: flex; align-items: center; gap: 7px; }
+.s19-notice__pin {
+  padding: 2px 6px; border-radius: 6px;
+  background: var(--lui-tint); color: var(--lui-accent);
+  font-size: 10px; font-weight: 700; flex: none;
+}
+.s19-notice__title { font-size: 13.5px; font-weight: 600; color: var(--lui-ink); }
+.s19-notice__meta { font-size: 11px; color: var(--lui-sub-2); }
+.s19__empty { padding: 18px 0; font-size: 12.5px; color: var(--lui-sub); }
+.s19__notice-meta { font-size: 11.5px; color: var(--lui-sub-2); padding-bottom: 8px; }
+.s19__body { min-height: 110px; resize: none; }
+
+/* 조건 바꾸기 */
+.s19-tune { display: flex; flex-direction: column; gap: 10px; padding-bottom: 16px; }
+.s19-tune__row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.s19-tune__label { font-size: 12.5px; color: var(--lui-body); display: flex; flex-direction: column; gap: 2px; }
+.s19-tune__label em { font-style: normal; font-size: 10.5px; color: var(--lui-sub-2); }
+.s19-tune__field { display: flex; align-items: center; gap: 6px; }
+.s19-tune__input { width: 92px; text-align: right; padding: 9px 11px; }
+.s19-tune__unit { font-size: 11.5px; color: var(--lui-sub); width: 44px; }
+.s19-tune__reset {
+  display: block; margin: 10px auto 0;
+  font-size: 11.5px; font-weight: 600; color: var(--lui-sub); padding: 4px;
+}
