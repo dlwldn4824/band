@@ -35,3 +35,7 @@
 .c1__archive .lui-row { padding: 0; }
 .c1__archive .lui-row__avatar { width: 40px; height: 40px; background: var(--lui-chip); color: var(--lui-ink); }
 .c1__notice { font-size: 11.5px; line-height: 20.125px; color: var(--lui-sub-2); }
+
+/* 올해 만난 밴드 — 저장 결과 한 줄 */
+.c1__saved { margin-top: 12px; font-size: 12px; color: var(--lui-sub); text-align: center; }
+.c1__saved--bad { color: var(--lui-accent); }

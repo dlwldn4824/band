@@ -1077,12 +1077,12 @@ export const connections = {
   ],
   /** 막대 길이는 Figma 값 비율 그대로 (전체 277.766 기준) */
   list: [
-    { initial: '렉', name: '렉사', sub: '합동 공연 2회 · 응원 3회', ratio: 263.875 / 277.766, warm: true },
-    { initial: '하', name: '하모닉', sub: '합동 공연 1회 · 응원 2회', ratio: 194.422 / 277.766, warm: true },
-    { initial: '아', name: '아카펠라', sub: '합동 공연 1회', ratio: 133.313 / 277.766, warm: true },
-    { initial: '손', name: '손아픔', sub: '응원 2회', ratio: 83.328 / 277.766, warm: false },
-    { initial: '블', name: '블루노트', sub: '응원 1회', ratio: 49.984 / 277.766, warm: false },
-    { initial: '소', name: '소리울', sub: '교류 수락만', ratio: 22.219 / 277.766, warm: false },
+    { id: 'lexa', initial: '렉', name: '렉사', sub: '합동 공연 2회 · 응원 3회', ratio: 263.875 / 277.766, warm: true },
+    { id: 'harmonic', initial: '하', name: '하모닉', sub: '합동 공연 1회 · 응원 2회', ratio: 194.422 / 277.766, warm: true },
+    { id: 'acappella', initial: '아', name: '아카펠라', sub: '합동 공연 1회', ratio: 133.313 / 277.766, warm: true },
+    { id: 'sonapeum', initial: '손', name: '손아픔', sub: '응원 2회', ratio: 83.328 / 277.766, warm: false },
+    { id: 'bluenote', initial: '블', name: '블루노트', sub: '응원 1회', ratio: 49.984 / 277.766, warm: false },
+    { id: 'soriul', initial: '소', name: '소리울', sub: '교류 수락만', ratio: 22.219 / 277.766, warm: false },
   ],
   archive: { initial: '年', title: '올해 만난 밴드 모아보기', sub: '이미지로 저장해 공유할 수 있어요' },
   stagesRow: { initial: '?', title: '연결은 어떻게 쌓이나요?', sub: '수락 · 응원 · 합동 · 단골 네 단계' },
@@ -1104,7 +1104,6 @@ export const relation = {
     { v: '3회', k: '공연 응원' },
     { v: '1회', k: '교류 모임' },
   ],
-  logCount: '6건',
   log: [
     { strong: true, title: '렉사 X 멜로딕 연합 공연', sub: '몽향 · 관객 88명', at: '06.07' },
     { strong: false, title: '렉사 정기 공연에 응원 방문', sub: '부원 4명 현장 체크인', at: '05.18' },
@@ -1118,6 +1117,118 @@ export const relation = {
   },
   notice: '응원 방문은 같은 공연이면 밴드 간 1회로 셉니다. 방문 인원은 따로 표시해요.',
 }
+
+export type Relation = typeof relation
+
+/**
+ * 밴드마다 다른 관계 페이지.
+ *
+ * 예전에는 relation 하나만 그려서, 연결 지도에서 어느 밴드를 눌러도 똑같이
+ * 「멜로딕 × 렉사」 가 나왔습니다. 주소의 id 로 찾습니다 (그래프·목록과 같은 값).
+ */
+const NOTICE = relation.notice
+
+export const relationsByClub: Record<string, Relation> = {
+  lexa: relation,
+  harmonic: {
+    title: '멜로딕 × 하모닉',
+    cable: {
+      left: { initial: '멜', name: '멜로딕', school: '광운대' },
+      right: { initial: '하', name: '하모닉', school: '삼육대' },
+    },
+    caption: '함께한 순간이 쌓이고 있어요',
+    stats: [
+      { v: '1회', k: '합동 공연', accent: true },
+      { v: '2회', k: '공연 응원' },
+      { v: '1회', k: '교류 모임' },
+    ],
+    log: [
+      { strong: true, title: '겨울 합동 공연', sub: '라디오가가 · 관객 74명', at: '11.02' },
+      { strong: false, title: '하모닉 가을 정기에 응원 방문', sub: '부원 5명 현장 체크인', at: '10.12' },
+      { strong: false, title: '멜로딕 봄 정기에 하모닉 방문', sub: '부원 3명 현장 체크인', at: '04.19' },
+      { strong: false, title: '합주실 교류 모임', sub: '양쪽 운영진 확인', at: '2025.11.02' },
+    ],
+    next: { title: '3월 연합 공연에 함께 서기', sub: '같은 모집 글에 지원 중 · 4팀 중 3팀' },
+    notice: NOTICE,
+  },
+  acappella: {
+    title: '멜로딕 × 아카펠라',
+    cable: {
+      left: { initial: '멜', name: '멜로딕', school: '광운대' },
+      right: { initial: '아', name: '아카펠라', school: '서울여대' },
+    },
+    caption: '한 번 같이 섰어요',
+    stats: [
+      { v: '1회', k: '합동 공연', accent: true },
+      { v: '0회', k: '공연 응원' },
+      { v: '0회', k: '교류 모임' },
+    ],
+    log: [
+      { strong: true, title: '아카펠라 겨울 정기 게스트', sub: '광운대 노천극장 · 관객 120명', at: '12.06' },
+    ],
+    next: { title: '4월 버스킹 같이 하기', sub: '아카펠라가 보낸 제안 · 답을 기다리는 중' },
+    notice: NOTICE,
+  },
+  sonapeum: {
+    title: '멜로딕 × 손아픔',
+    cable: {
+      left: { initial: '멜', name: '멜로딕', school: '광운대' },
+      right: { initial: '손', name: '손아픔', school: '서울과기대' },
+    },
+    caption: '아직 같이 선 적은 없어요',
+    stats: [
+      { v: '0회', k: '합동 공연' },
+      { v: '2회', k: '공연 응원', accent: true },
+      { v: '0회', k: '교류 모임' },
+    ],
+    log: [
+      { strong: false, title: '손아픔 단독 공연에 응원 방문', sub: '부원 6명 현장 체크인', at: '12.06' },
+      { strong: false, title: '멜로딕 단독 공연에 손아픔 방문', sub: '부원 2명 현장 체크인', at: '09.28' },
+    ],
+    next: { title: '같이 설 기회 만들기', sub: '아직 함께 선 공연이 없습니다' },
+    notice: NOTICE,
+  },
+  bluenote: {
+    title: '멜로딕 × 블루노트',
+    cable: {
+      left: { initial: '멜', name: '멜로딕', school: '광운대' },
+      right: { initial: '블', name: '블루노트', school: '서울여대' },
+    },
+    caption: '한 번 보러 와 줬어요',
+    stats: [
+      { v: '0회', k: '합동 공연' },
+      { v: '1회', k: '공연 응원', accent: true },
+      { v: '0회', k: '교류 모임' },
+    ],
+    log: [
+      { strong: false, title: '멜로딕 단독 공연에 블루노트 방문', sub: '부원 4명 현장 체크인', at: '11.22' },
+    ],
+    next: { title: '같이 설 기회 만들기', sub: '겨울 합동 공연 제안은 거절되었습니다' },
+    notice: NOTICE,
+  },
+  soriul: {
+    title: '멜로딕 × 소리울',
+    cable: {
+      left: { initial: '멜', name: '멜로딕', school: '광운대' },
+      right: { initial: '소', name: '소리울', school: '인덕대' },
+    },
+    caption: '이제 막 연결되었어요',
+    stats: [
+      { v: '0회', k: '합동 공연' },
+      { v: '0회', k: '공연 응원' },
+      { v: '0회', k: '교류 모임' },
+    ],
+    log: [],
+    next: { title: '4월 버스킹 같이 하기', sub: '소리울이 보낸 제안 · 답을 기다리는 중' },
+    notice: NOTICE,
+  },
+}
+
+/** 기록이 없을 때 자리를 비우지 않게 */
+export const relationEmptyLog = '아직 함께한 기록이 없어요. 공연에 응원하러 가면 여기에 쌓입니다.'
+
+/** 모르는 id 면 기본 관계 — 화면이 비는 것보다 낫습니다 */
+export const relationFor = (id: string): Relation => relationsByClub[id] ?? relation
 
 /* ── C3 연결 상태 4단계 ─────────────────────────────
  * 로고의 케이블 B 와 같은 모티프 — 플러그가 맞물리고 신호가 흐릅니다.

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Phone from '../components/Phone'
 import MoreMenu from '../components/MoreMenu'
@@ -8,6 +9,9 @@ import ListRow from '../components/ListRow'
 import { P } from '../paths'
 import { connections as c } from '../../mocks/bandyLight'
 import ConnectionGraph from '../components/ConnectionGraph'
+import Sheet from '../components/Sheet'
+import Button from '../components/Button'
+import { downloadConnectionImage } from '../share/share'
 import './C1Connections.css'
 
 /**
@@ -18,6 +22,28 @@ import './C1Connections.css'
  */
 const C1Connections = () => {
   const navigate = useNavigate()
+  const [archiveOpen, setArchiveOpen] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState<'done' | 'failed' | null>(null)
+
+  // 「이미지로 저장해 공유할 수 있어요」 — 화면의 연결 지도를 그대로 그림으로 옮깁니다
+  const saveImage = async () => {
+    setSaving(true)
+    setSaved(null)
+    const result = await downloadConnectionImage({
+      owner: c.ownerName,
+      year: new Date().getFullYear(),
+      bands: c.list.map((row) => ({
+        initial: row.initial,
+        name: row.name,
+        sub: row.sub,
+        warm: row.warm,
+      })),
+      caption: c.lead,
+    })
+    setSaving(false)
+    setSaved(result === 'downloaded' ? 'done' : 'failed')
+  }
 
   return (
     <Phone>
@@ -65,7 +91,7 @@ const C1Connections = () => {
                 key={row.name}
                 type="button"
                 className="c1-row"
-                onClick={() => navigate(P.connection(row.name))}
+                onClick={() => navigate(P.connection(row.id))}
               >
                 <span className="c1-row__avatar">{row.initial}</span>
                 <span className="c1-row__main">
@@ -90,7 +116,7 @@ const C1Connections = () => {
               title={c.archive.title}
               sub={c.archive.sub}
               chevron
-              onClick={() => navigate(P.connected)}
+              onClick={() => setArchiveOpen(true)}
             />
             {/* 설명 화면(C3)으로 가는 길 — 평소엔 눈에 띌 필요가 없어 맨 아래에 둡니다 */}
             <ListRow
@@ -106,6 +132,19 @@ const C1Connections = () => {
           <p className="c1__notice">{c.notice}</p>
         </div>
       </div>
+      <Sheet open={archiveOpen} title={`올해 만난 밴드 ${c.list.length}팀`} onClose={() => setArchiveOpen(false)}>
+        <p className="lui-menu__note">
+          연결 지도를 인스타 세로 크기(1080×1350)로 그려 사진으로 내려받습니다. 스토리나 피드에
+          그대로 올리면 됩니다.
+        </p>
+        <Button block disabled={saving} onClick={saveImage}>
+          {saving ? '만드는 중…' : '이미지로 저장'}
+        </Button>
+        {saved === 'done' && <p className="c1__saved">저장했어요. 사진첩을 확인해 주세요.</p>}
+        {saved === 'failed' && (
+          <p className="c1__saved c1__saved--bad">저장하지 못했어요. 다시 눌러 주세요.</p>
+        )}
+      </Sheet>
       <TabBar active="club" />
     </Phone>
   )

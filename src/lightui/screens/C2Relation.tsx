@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import Phone from '../components/Phone'
 import MoreMenu from '../components/MoreMenu'
 import TopBar from '../components/TopBar'
@@ -6,12 +6,15 @@ import SectionHeader from '../components/SectionHeader'
 import Cable from '../components/Cable'
 import Button from '../components/Button'
 import { P } from '../paths'
-import { relation as r } from '../../mocks/bandyLight'
+import { relationEmptyLog, relationFor } from '../../mocks/bandyLight'
 import './C2Relation.css'
 
 /** C2 우리 사이 (관계 상세) — Figma 265:2 */
 const C2Relation = () => {
   const navigate = useNavigate()
+  const { relationId = 'lexa' } = useParams()
+  // 밴드마다 다른 관계입니다 — 예전에는 어느 밴드를 눌러도 멜로딕 × 렉사가 나왔습니다
+  const r = relationFor(relationId)
 
   return (
     <Phone>
@@ -65,8 +68,10 @@ const C2Relation = () => {
           </div>
 
           <div className="c2__gap-26" />
-          <SectionHeader title="함께한 기록" aside={r.logCount} />
+          {/* 건수는 목록에서 셉니다 — 적어 둔 숫자와 목록이 어긋나던 적이 있습니다 */}
+          <SectionHeader title="함께한 기록" aside={`${r.log.length}건`} />
           <div className="lui-card c2__log">
+            {r.log.length === 0 && <p className="c2__empty">{relationEmptyLog}</p>}
             {r.log.map((row) => (
               <div key={row.title} className="c2-log">
                 <span className={`c2-log__dot${row.strong ? ' c2-log__dot--on' : ''}`} />

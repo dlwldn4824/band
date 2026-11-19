@@ -1,4 +1,5 @@
 import { renderTicketImage, type TicketImageInput } from './ticketImage'
+import { renderConnectionImage, type ConnectionImageInput } from './connectionImage'
 
 /**
  * 공유 — 문자 · 링크 복사 · 인스타 스토리.
@@ -73,4 +74,17 @@ export async function downloadStoryImage(input: TicketImageInput): Promise<Share
  */
 export function ogImageUrl(eventId: string, version = 1) {
   return `/api/og/${eventId}?v=${version}`
+}
+
+/** 「올해 만난 밴드」 카드를 만들어 내려받습니다 (인스타 세로 1080×1350) */
+export async function downloadConnectionImage(
+  input: ConnectionImageInput,
+): Promise<ShareResult> {
+  try {
+    const blob = await renderConnectionImage(input)
+    download(blob, `bandy-${input.year}-connections.png`)
+    return 'downloaded'
+  } catch {
+    return 'failed'
+  }
 }
