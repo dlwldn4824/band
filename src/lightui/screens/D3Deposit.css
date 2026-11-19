@@ -36,3 +36,12 @@
   font-size: 12px; font-weight: 600; color: var(--lui-sub);
   text-decoration: underline; text-underline-offset: 3px;
 }
+
+/* 결제 수단 탭 — 고를 게 둘 이상일 때만 그립니다 */
+.d3-pay { display: flex; gap: 6px; padding: 14px 0 4px; }
+.d3-pay__tab {
+  flex: 1; padding: 10px 4px; border-radius: var(--lui-r-pill);
+  background: var(--lui-soft); color: var(--lui-sub);
+  font-size: 12.5px; font-weight: 700; letter-spacing: -0.2px;
+}
+.d3-pay__tab--on { background: var(--lui-inverse-bg); color: var(--lui-inverse-fg); }

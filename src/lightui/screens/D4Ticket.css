@@ -63,3 +63,16 @@
   border-radius: var(--lui-r-pill);
   padding: 7px 14px;
 }
+
+/* 공연 정보 · 셋리스트로 가는 카드 — 예매 다음에 제일 궁금한 것입니다 */
+.d4-lineup { display: flex; flex-direction: column; gap: 12px; width: 100%; padding: 16px; text-align: left; }
+.d4-lineup__rows { display: flex; flex-direction: column; gap: 10px; }
+.d4-lineup__row { display: grid; grid-template-columns: 46px 1fr; row-gap: 2px; align-items: baseline; }
+.d4-lineup__at { grid-row: span 2; font-size: 12.5px; font-weight: 700; color: var(--lui-ink); }
+.d4-lineup__title { font-size: 13.5px; font-weight: 600; color: var(--lui-ink); }
+.d4-lineup__sub { font-size: 11.5px; color: var(--lui-sub); }
+.d4-lineup__more {
+  display: flex; align-items: center; gap: 3px;
+  padding-top: 11px; border-top: 1px solid var(--lui-hairline);
+  font-size: 12.5px; font-weight: 700; color: var(--lui-accent);
+}

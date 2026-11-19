@@ -8,10 +8,11 @@ import SectionHeader from '../components/SectionHeader'
 import SummaryBox from '../components/SummaryBox'
 import ListRow from '../components/ListRow'
 import Button from '../components/Button'
+import Icon from '../components/Icon'
 import Sheet from '../components/Sheet'
 import DirectionsSheet from '../components/DirectionsSheet'
 import { P } from '../paths'
-import { ticketFor } from '../../mocks/bandyLight'
+import { ticketFor, showLive } from '../../mocks/bandyLight'
 import qr from '../assets/ticket-qr.svg'
 import './D4Ticket.css'
 
@@ -87,6 +88,31 @@ const D4Ticket = () => {
             입장 처리됨 (데모)
           </button>
 
+          {/* 예매하고 나면 다음으로 궁금한 건 「누가 언제 나오나」 입니다.
+              예전에는 화면 맨 아래 작은 글씨 링크뿐이라 아무도 거기까지 안 갔습니다. */}
+          <div className="d4__gap-26" />
+          <SectionHeader
+            title="공연 정보 · 셋리스트"
+            // 입장 줄은 팀이 아닙니다
+            aside={`${showLive.timeline.filter((x) => !x.title.includes('입장')).length}팀`}
+            onAside={() => navigate(P.live(showId))}
+          />
+          <button type="button" className="lui-card d4-lineup" onClick={() => navigate(P.live(showId))}>
+            <span className="d4-lineup__rows">
+              {showLive.timeline.slice(0, 3).map((row) => (
+                <span key={row.at} className="d4-lineup__row">
+                  <span className="d4-lineup__at">{row.at}</span>
+                  <span className="d4-lineup__title">{row.title}</span>
+                  <span className="d4-lineup__sub">{row.sub}</span>
+                </span>
+              ))}
+            </span>
+            <span className="d4-lineup__more">
+              셋리스트와 남은 순서 보기
+              <Icon name="chevron-right" size={15} />
+            </span>
+          </button>
+
           <div className="d4__gap-26" />
           <SectionHeader title="사전 구매" aside="현장 교환" />
           <div className="lui-card d4__addon">
@@ -103,11 +129,11 @@ const D4Ticket = () => {
 
           <div className="d4__gap-26" />
           <div className="d4__links">
-            <button type="button" className="d4__link" onClick={() => navigate(P.live(showId))}>
-              공연 정보
+            <button type="button" className="d4__link" onClick={() => navigate(P.legal('refund'))}>
+              취소 · 환불 규정
             </button>
             <button type="button" className="d4__link" onClick={() => setRefund(true)}>
-              취소 · 환불
+              이 공연 환불 안내
             </button>
           </div>
         </div>

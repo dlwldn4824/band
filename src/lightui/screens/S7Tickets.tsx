@@ -83,6 +83,18 @@ const S7Tickets = () => {
                     <Icon name="chevron-right" size={18} className="s7-item__chev" />
                   </span>
                 </div>
+
+                {/* 다가오는 공연에만 — 끝난 공연과 취소된 건에는 볼 순서가 없습니다 */}
+                {tab === 'upcoming' && (
+                  <button
+                    type="button"
+                    className="s7-item__more"
+                    onClick={() => navigate(P.live(item.id))}
+                  >
+                    공연 정보 · 셋리스트
+                    <Icon name="chevron-right" size={14} />
+                  </button>
+                )}
               </div>
             ))}
           </div>
