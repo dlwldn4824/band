@@ -40,3 +40,10 @@ yarn.lock
 
 # Cursor 작업 캐시
 .cursor/
+
+# 빌드할 때 src/lightui/legal/content.ts 에서 다시 찍는 약관 페이지
+# (scripts/build-legal-pages.mjs — prebuild 로 돌아갑니다)
+public/terms.html
+public/privacy.html
+public/refund.html
+public/account-deletion.html

@@ -7,6 +7,10 @@
 User-agent: *
 Allow: /$
 Allow: /brand
+Allow: /privacy
+Allow: /terms
+Allow: /refund
+Allow: /account-deletion
 Disallow: /old/
 Disallow: /api/
 Disallow: /ui/ticket/
@@ -24,6 +28,10 @@ Disallow: /ui/me
 User-agent: Yeti
 Allow: /$
 Allow: /brand
+Allow: /privacy
+Allow: /terms
+Allow: /refund
+Allow: /account-deletion
 Disallow: /old/
 Disallow: /api/
 Disallow: /ui/ticket/
