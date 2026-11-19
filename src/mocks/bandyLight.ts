@@ -172,7 +172,73 @@ export const myTicket = {
     { k: '입금 확인', v: '11.19 21:08' },
     { k: '환불 가능', v: '11.19까지' },
   ],
+  venue: radioGaga,
 }
+
+export type MyTicket = typeof myTicket
+
+export const mongHyang: VenuePlace = {
+  name: '몽향',
+  address: '서울 서대문구 연세로5다길 10 지하 1층',
+  lat: 37.5571,
+  lng: 126.9368,
+}
+
+export const midnight: VenuePlace = {
+  name: '홍대 미드나잇',
+  address: '서울 마포구 와우산로 29길 12 지하 1층',
+  lat: 37.5547,
+  lng: 126.9245,
+}
+
+/**
+ * 티켓은 공연마다 다릅니다 — 예전에는 어느 티켓을 눌러도 멜로딕 것 하나만
+ * 나와서, 눌러도 안 바뀌는 것처럼 보였습니다. 주소의 공연 id 로 찾습니다.
+ */
+export const ticketsByShow: Record<string, MyTicket> = {
+  glow: myTicket,
+  'lexa-melodic': {
+    status: '입금 대기',
+    entry: '입장 전',
+    title: '렉사 X 멜로딕 연합',
+    sub: '11.29 (토) 18:00 · 몽향',
+    facts: [
+      { k: '매수', v: '일반 1매' },
+      { k: '좌석', v: '자유석' },
+      { k: '예매번호', v: 'B-2611-0613' },
+    ],
+    guide: '입금이 확인되면 QR 이 열립니다. 기한은 11.21까지입니다.',
+    addon: { initial: '음', name: '음료 1잔', sub: '바에서 이 티켓을 보여 주세요', state: '미교환' },
+    payment: [
+      { k: '결제 금액', v: '16,000원' },
+      { k: '입금 기한', v: '11.21까지' },
+      { k: '환불 가능', v: '11.26까지' },
+    ],
+    venue: mongHyang,
+  },
+  sonapeum: {
+    status: '입금 확인됨',
+    entry: '입장 1번',
+    title: '손아픔 단독 공연',
+    sub: '12.06 (토) 19:00 · 홍대 미드나잇',
+    facts: [
+      { k: '매수', v: '일반 1매' },
+      { k: '좌석', v: '자유석' },
+      { k: '예매번호', v: 'B-2612-0071' },
+    ],
+    guide: '입구에서 이 화면을 보여 주세요. 입장 순서는 1번입니다.',
+    addon: { initial: '굿', name: '엽서 세트', sub: '굿즈 부스에서 받아 가세요', state: '미교환' },
+    payment: [
+      { k: '결제 금액', v: '15,000원' },
+      { k: '입금 확인', v: '11.30 14:22' },
+      { k: '환불 가능', v: '12.03까지' },
+    ],
+    venue: midnight,
+  },
+}
+
+/** 모르는 id 면 기본 티켓 — 화면이 비는 것보다 낫습니다 */
+export const ticketFor = (id: string): MyTicket => ticketsByShow[id] ?? myTicket
 
 /* ──────────────────────────────────────────────────────────────
  * S2 탐색 · 지도

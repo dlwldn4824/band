@@ -10,7 +10,7 @@ import Button from '../components/Button'
 import Sheet from '../components/Sheet'
 import DirectionsSheet from '../components/DirectionsSheet'
 import { P } from '../paths'
-import { myTicket as t, radioGaga } from '../../mocks/bandyLight'
+import { ticketFor } from '../../mocks/bandyLight'
 import qr from '../assets/ticket-qr.svg'
 import './D4Ticket.css'
 
@@ -21,6 +21,8 @@ const REFUND =
 const D4Ticket = () => {
   const navigate = useNavigate()
   const { showId = 'glow' } = useParams()
+  // 공연마다 다른 티켓입니다 — 예전에는 어느 티켓을 눌러도 같은 화면이 나왔습니다
+  const t = ticketFor(showId)
   const [refund, setRefund] = useState(false)
   const [dirs, setDirs] = useState(false)
 
@@ -117,7 +119,7 @@ const D4Ticket = () => {
         </Button>
       </Sheet>
 
-      <DirectionsSheet venue={radioGaga} open={dirs} onClose={() => setDirs(false)} />
+      <DirectionsSheet venue={t.venue} open={dirs} onClose={() => setDirs(false)} />
 
       <div className="lui-bottombar">
         <Button block onClick={() => setDirs(true)}>
