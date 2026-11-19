@@ -130,7 +130,7 @@ export function Outro() {
           <h4>동아리</h4>
           <Link to={links.console}>동아리로 시작하기</Link>
           <br />
-          <Link to={links.console}>공연 올리기</Link>
+          <Link to={links.newShow}>공연 올리기</Link>
           <br />
           <Link to={links.console}>입장 관리 · 정산</Link>
         </div>

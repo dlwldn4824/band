@@ -72,7 +72,7 @@
   transition: transform 420ms var(--ease);
 }
 
-.b-nav img { height: 20px; width: auto; display: block; }
+.b-nav img { height: 30px; width: auto; display: block; }
 .b-nav__links { display: flex; gap: 28px; font-size: 13px; color: var(--mute); }
 .b-nav__links a { transition: color 220ms var(--ease); }
 .b-nav__links a:hover { color: var(--ink); }
@@ -178,22 +178,38 @@
   padding: 0 var(--pad);
 }
 
+/* 폰 — Figma Community `iPhone mockups` 의 Space Black 베젤을 화면 위에 얹습니다.
+   베젤 안쪽이 뚫려 있어서, 화면은 그 컷아웃 자리에 깔면 됩니다. */
 .b-phone {
   position: relative;
-  width: clamp(230px, 24vw, 300px);
-  aspect-ratio: 9 / 19.5;
-  border-radius: 40px;
-  background: #0b0c0e;
-  padding: 7px;
-  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.26), 0 2px 0 rgba(255, 255, 255, 0.5) inset;
+  width: clamp(238px, 25vw, 312px);
+  aspect-ratio: 417.3077 / 848.0769;
+  filter: drop-shadow(0 32px 60px rgba(0, 0, 0, 0.3));
 }
 .b-phone__screen {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  border-radius: 34px;
+  position: absolute;
+  left: 4.8754%;
+  top: 2.1542%;
+  width: 90.1016%;
+  height: 96.0013%;
+  /* 베젤 컷아웃과 같은 32px 라운드 — 각진 모서리가 테두리 밖으로 비어져 나오지 않게 */
+  border-radius: 8.51% / 3.93%;
   overflow: hidden;
   background: #fff;
+  /* 겹쳐 놓은 화면들의 z-index 를 이 안에 가둡니다.
+     이게 없으면 2번째 화면부터(z-index 1 이상) 베젤 위로 올라와
+     노치와 둥근 모서리를 덮어 버립니다. */
+  isolation: isolate;
+  z-index: 0;
+}
+.b-phone__bezel {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
 }
 .b-phone__screen img {
   position: absolute;
@@ -357,28 +373,90 @@
 .b-venue__acts { margin-top: 32px; display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
 .b-venue__note { font-size: 13px; line-height: 1.7; color: rgba(255, 255, 255, 0.5); max-width: 30em; }
 
-/* 한 주 — 비는 날이 빨갛게 */
-.b-venue__week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
-.b-venue__day {
-  aspect-ratio: 3 / 4;
-  border-radius: var(--r-box);
-  border: 1px solid #2a2c31;
-  background: #1f2025;
+/* 대관표 — 공연이 잡힌 날만 적고 나머지는 비워 둡니다.
+   빈 날을 색으로 칠하면 '경고'처럼 읽혀서, 비어 있다는 사실만 그대로 보여 줍니다. */
+
+.b-cal { margin: 0; }
+.b-cal__cap {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 14px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.5);
+}
+.b-cal__cap em {
+  font-style: normal;
+  font-size: 10px;
+  padding: 2px 7px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.4);
+  letter-spacing: 0.08em;
+}
+
+.b-cal__dow,
+.b-cal__grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+
+.b-cal__dow { margin-bottom: 7px; }
+.b-cal__dow span {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.34);
+  padding-left: 10px;
+}
+
+/* 1px 틈이 그대로 괘선이 됩니다 */
+.b-cal__grid {
+  gap: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.b-cal__cell {
+  aspect-ratio: 1 / 0.84;
+  background: var(--ink);
+  padding: 8px 9px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 10px 8px;
 }
-.b-venue__day span { font-size: 12px; color: rgba(255, 255, 255, 0.58); }
-.b-venue__day i { font-style: normal; font-size: 10.5px; color: rgba(255, 255, 255, 0.42); }
-.b-venue__day em {
-  font-style: normal;
+.b-cal__cell--pad { background: var(--ink); }   /* 달 바깥 — 칸은 있고 날짜만 없습니다 */
+.b-cal__d {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.32);
+  font-feature-settings: 'tnum';
+}
+.b-cal__cell[data-booked='1'] .b-cal__d { color: rgba(255, 255, 255, 0.92); }
+.b-cal__who {
+  position: relative;
   font-size: 10.5px;
   font-weight: 500;
-  color: var(--red-on-dark);
   letter-spacing: -0.02em;
+  color: rgba(255, 255, 255, 0.7);
+  padding-left: 9px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.b-venue__day[data-empty="1"] { border-color: rgba(255, 90, 90, 0.42); background: rgba(255, 90, 90, 0.08); }
+.b-cal__who::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--red-on-dark);
+}
+
+.b-cal__sum {
+  margin: 16px 0 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.5);
+}
+.b-cal__sum em { font-style: normal; color: var(--red-on-dark); font-weight: 500; }
 
 /* ── 관객이 올 이유 ───────────────────────── */
 
@@ -549,9 +627,9 @@
   .b-proof__notes em { display: block; min-width: 0; margin-bottom: 2px; }
 
   .b-venue { grid-template-columns: 1fr; }
-  .b-venue__week { gap: 4px; }
-  .b-venue__day { padding: 8px 5px; }
-  .b-venue__day em, .b-venue__day i { font-size: 9px; }
+  .b-cal__cell { padding: 6px 6px; }
+  .b-cal__who { font-size: 9px; padding-left: 8px; }
+  .b-cal__dow span { padding-left: 6px; }
 
   .b-why__item { grid-template-columns: 34px minmax(0, 1fr); gap: 12px; }
   .b-tiles { grid-template-columns: 1fr; }
@@ -752,4 +830,536 @@
   .b-connect__pair > .b-connect__band:last-child { grid-area: 1 / 2; }
   .b-connect__pair > svg { grid-area: 2 / 1 / 3 / 3; }
   .b-exch__grid { grid-template-columns: 1fr; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   아래쪽 구성 — `Bandy Landing v3` 시안의 자리 배치를 따릅니다.
+   풀블리드 사진 → 펼침 목록 + 붙어 오는 화면 → 목록 + 연결도 →
+   탭 카드 → 포스터 가로 배열 → 숫자 → 공연장 → 입장권 두 장.
+   움직임은 섹션마다 하나까지, 자동 반복은 쓰지 않습니다.
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── 05 챕터: 풀블리드 사진 + 문장 ──────────── */
+
+.b-chapter {
+  position: relative;
+  min-height: clamp(460px, 76vh, 760px);
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+  background: var(--ink);
+}
+.b-chapter__ph {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center 38%;
+}
+.b-chapter__ph::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(10, 11, 13, 0.18) 0%, rgba(10, 11, 13, 0.52) 52%, rgba(10, 11, 13, 0.88) 100%);
+}
+.b-chapter__in {
+  position: relative;
+  width: 100%;
+  padding: clamp(40px, 7vh, 88px) var(--pad);
+  color: #fff;
+}
+.b-chapter__in h2 {
+  margin: 0 0 18px;
+  font-size: clamp(28px, 4.4vw, 56px);
+  line-height: 1.22;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+}
+.b-chapter__in p {
+  margin: 0;
+  max-width: 46em;
+  font-size: clamp(14px, 1.2vw, 16px);
+  line-height: 1.85;
+  color: rgba(255, 255, 255, 0.76);
+  word-break: keep-all;
+}
+.b-chapter__acts {
+  margin-top: 26px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.b-chapter__note { font-size: 12px; color: rgba(255, 255, 255, 0.5); }
+
+/* ── 06 보러 가는 쪽: 펼침 목록 + 붙어 오는 화면 ── */
+
+.b-steps {
+  padding: clamp(84px, 12vh, 150px) var(--pad);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.82fr);
+  gap: clamp(32px, 5vw, 80px);
+  align-items: start;
+}
+.b-steps__h {
+  margin: 0;
+  font-size: clamp(26px, 3.8vw, 46px);
+  line-height: 1.28;
+  font-weight: 500;
+  letter-spacing: -0.035em;
+}
+.b-steps__list { margin-top: clamp(32px, 4.5vh, 56px); border-top: 1px solid var(--line); }
+.b-steps__item {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  gap: 0;
+  padding: 22px 0;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  transition: opacity 220ms var(--ease);
+}
+.b-steps__item[data-on='0'] { opacity: 0.46; }
+.b-steps__n {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--red);
+  padding-top: 3px;
+}
+.b-steps__body b {
+  display: block;
+  font-size: clamp(16px, 1.5vw, 19px);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.b-steps__p {
+  display: block;
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--body);
+  word-break: keep-all;
+  transition: max-height 300ms var(--ease), opacity 220ms var(--ease), margin-top 300ms var(--ease);
+}
+.b-steps__item[data-on='1'] .b-steps__p { max-height: 10em; opacity: 1; margin-top: 8px; }
+.b-steps__cta { margin-top: clamp(28px, 4vh, 44px); }
+
+.b-steps__art { position: relative; }
+.b-steps__stick { position: sticky; top: 104px; }
+
+/* 오른쪽 그림 — 고른 항목에 맞춰 내용만 바뀝니다 */
+.b-art {
+  background: var(--box);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  padding: clamp(20px, 2.4vw, 30px);
+}
+.b-art__cap {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  color: var(--mute);
+  margin-bottom: 18px;
+}
+.b-art__foot {
+  margin: 18px 0 0;
+  font-size: 13px;
+  line-height: 1.75;
+  color: var(--body);
+  word-break: keep-all;
+}
+
+.b-art__lineup { list-style: none; margin: 0; padding: 0; }
+.b-art__lineup li {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line-2);
+}
+.b-art__lineup li:last-child { border-bottom: 0; }
+.b-art__lineup span { font-size: 11px; color: var(--mute); }
+.b-art__lineup b { font-size: 15px; font-weight: 500; }
+.b-art__lineup em,
+.b-art__lineup i {
+  font-style: normal;
+  font-size: 11px;
+  padding: 4px 9px;
+  border-radius: 999px;
+}
+.b-art__lineup em { background: var(--tint); color: var(--red); }
+.b-art__lineup i { background: var(--soft); color: var(--mute); }
+
+.b-art__shot {
+  aspect-ratio: 390 / 560;
+  border-radius: var(--r-box);
+  border: 1px solid var(--line);
+  background-color: #fff;
+  background-size: cover;
+  background-position: top center;
+}
+.b-art__price {
+  margin-top: 18px;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  letter-spacing: -0.03em;
+}
+.b-art__price b { font-size: clamp(22px, 2.4vw, 30px); font-weight: 600; }
+.b-art__price span { color: var(--mute); }
+.b-art__price em { font-style: normal; font-size: 14px; color: var(--body); }
+
+.b-art__swap {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+}
+.b-art__who {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--r-box);
+  padding: 16px 14px;
+  text-align: center;
+}
+.b-art__who b { display: block; font-size: 15px; font-weight: 500; }
+.b-art__who small { color: var(--mute); font-size: 12px; }
+.b-art__arrow { color: var(--red); font-size: 18px; }
+
+/* ── 07 다른 학교 밴드와도: 목록 + 연결도 ───── */
+
+.b-map {
+  background: var(--soft);
+  padding: clamp(84px, 12vh, 150px) var(--pad);
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1fr);
+  gap: clamp(32px, 5vw, 72px);
+  align-items: center;
+}
+.b-map__h {
+  margin: 0 0 16px;
+  font-size: clamp(26px, 3.8vw, 46px);
+  line-height: 1.28;
+  font-weight: 500;
+  letter-spacing: -0.035em;
+}
+.b-map__sub {
+  margin: 0;
+  max-width: 30em;
+  font-size: 15px;
+  line-height: 1.85;
+  color: var(--body);
+  word-break: keep-all;
+}
+.b-map__list { margin-top: clamp(26px, 3.6vh, 40px); border-top: 1px solid var(--line); }
+.b-map__row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 0;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  transition: opacity 220ms var(--ease);
+}
+.b-map__row[data-on='0'] { opacity: 0.5; }
+.b-map__row b { font-size: 15px; font-weight: 500; }
+.b-map__row small { font-size: 12px; color: var(--mute); }
+.b-map__dot {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  border: 1px solid var(--line);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.b-map__row[data-on='1'] .b-map__dot { background: var(--red); border-color: var(--red); color: #fff; }
+.b-map__dot--lg { width: 38px; height: 38px; font-size: 14px; }
+.b-map__meta {
+  margin: 22px 0 0;
+  font-size: 12px;
+  line-height: 1.85;
+  color: var(--mute);
+  word-break: keep-all;
+}
+
+.b-map__art { display: grid; gap: 18px; justify-items: center; }
+.b-map__plot { position: relative; width: min(100%, 440px); aspect-ratio: 1; }
+.b-map__svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.b-map__ring { fill: none; stroke: var(--line); stroke-width: 1; }
+.b-map__link {
+  stroke: #d7d9dd;
+  stroke-width: 1;
+  transition: stroke 220ms var(--ease), stroke-width 220ms var(--ease);
+}
+.b-map__link[data-on='1'] { stroke: var(--red); stroke-width: 2; }
+.b-map__hub {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--ink);
+  color: #fff;
+  border-radius: 999px;
+  padding: 12px 20px;
+  text-align: center;
+}
+.b-map__hub b { display: block; font-size: 14px; font-weight: 500; }
+.b-map__hub small { font-size: 11px; color: rgba(255, 255, 255, 0.6); }
+.b-map__node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  border: 1px solid var(--line);
+  font-size: 13px;
+  font-weight: 600;
+  transition: background 220ms var(--ease), border-color 220ms var(--ease), color 220ms var(--ease);
+}
+.b-map__node[data-on='1'] { background: var(--red); border-color: var(--red); color: #fff; }
+
+.b-map__card {
+  width: min(100%, 440px);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  padding: 18px 20px;
+}
+.b-map__card-top { display: flex; align-items: center; gap: 12px; }
+.b-map__card-top b { display: block; font-size: 15px; font-weight: 500; }
+.b-map__card-top small { font-size: 12px; color: var(--mute); }
+.b-map__card-row {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-2);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.b-map__card-row em { display: block; font-style: normal; font-size: 22px; font-weight: 600; letter-spacing: -0.03em; }
+.b-map__card-row span { font-size: 11px; color: var(--mute); }
+
+/* ── 08 같이한 기록 — 숫자 표가 아니라 읽히는 한 줄 ── */
+
+.b-rec { padding: clamp(84px, 12vh, 150px) var(--pad); }
+.b-rec__head { max-width: 46em; }
+.b-rec__h {
+  margin: 0;
+  font-size: clamp(26px, 3.8vw, 46px);
+  line-height: 1.28;
+  font-weight: 500;
+  letter-spacing: -0.035em;
+}
+.b-rec__sub {
+  margin: 16px 0 0;
+  font-size: 15px;
+  line-height: 1.85;
+  color: var(--body);
+  word-break: keep-all;
+}
+
+/* 괘선 목록 — 카드 없이 줄만 */
+.b-rec__log {
+  list-style: none;
+  margin: clamp(28px, 4vh, 44px) 0 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+}
+.b-rec__row {
+  display: grid;
+  grid-template-columns: 30px 150px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  padding: 17px 0;
+  border-bottom: 1px solid var(--line);
+}
+.b-rec__name b { display: block; font-size: 15px; font-weight: 500; letter-spacing: -0.02em; }
+.b-rec__name small { font-size: 12px; color: var(--mute); }
+
+.b-rec__deeds {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 8px;
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--body);
+  word-break: keep-all;
+}
+.b-rec__deed i { font-style: normal; color: #d0d3d9; margin-right: 8px; }
+.b-rec__deed em {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--ink);
+  font-feature-settings: 'tnum';
+}
+
+.b-rec__note { margin: 22px 0 0; font-size: 12px; line-height: 1.8; color: var(--mute); word-break: keep-all; }
+
+/* ── 09 BANDY 로 치른 공연: 실제 포스터 ─────── */
+
+.b-week { padding: 0 var(--pad) clamp(84px, 12vh, 150px); }
+.b-week__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.b-week__h {
+  margin: 0;
+  font-size: clamp(26px, 3.8vw, 46px);
+  line-height: 1.28;
+  font-weight: 500;
+  letter-spacing: -0.035em;
+}
+.b-week__row {
+  margin-top: clamp(28px, 4vh, 44px);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(12px, 1.6vw, 22px);
+}
+.b-week__card { margin: 0; }
+.b-week__ph {
+  aspect-ratio: 820 / 1100;
+  border-radius: var(--r-box);
+  border: 1px solid var(--line);
+  background-size: cover;
+  background-position: center;
+}
+.b-week__card figcaption { margin-top: 12px; }
+.b-week__card figcaption b { display: block; font-size: 15px; font-weight: 500; letter-spacing: -0.02em; }
+.b-week__card figcaption small { font-size: 12px; color: var(--mute); }
+
+/* ── 12 입장권 두 장 (실제 발행한 티켓 디자인) ── */
+
+.b-tk {
+  background: var(--ink);
+  color: #fff;
+  padding: clamp(72px, 10vh, 130px) var(--pad);
+}
+.b-tk__h {
+  margin: 0 0 clamp(28px, 4vh, 44px);
+  font-size: clamp(24px, 3.2vw, 40px);
+  line-height: 1.3;
+  font-weight: 500;
+  letter-spacing: -0.035em;
+}
+.b-tk__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(14px, 1.8vw, 24px);
+}
+.b-tk__card {
+  position: relative;
+  display: block;
+  background: #fff;
+  color: var(--ink);
+  border-radius: var(--r-card);
+  overflow: hidden;
+  transition: transform 240ms var(--ease);
+}
+.b-tk__card:hover { transform: translateY(-3px); }
+
+/* 실제 티켓 아트워크 */
+.b-tk__art {
+  position: relative;
+  aspect-ratio: 1645 / 767;
+  background-size: cover;
+  background-position: center;
+  background-color: #11131a;
+}
+.b-tk__side {
+  position: absolute;
+  left: 14px;
+  top: 14px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: rgba(10, 11, 13, 0.62);
+  backdrop-filter: blur(6px);
+  color: #fff;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+/* 티켓 절취선 — 양옆 반원과 점선 */
+.b-tk__perf {
+  position: relative;
+  display: block;
+  height: 0;
+  border-top: 1px dashed var(--field-line);
+}
+.b-tk__perf::before,
+.b-tk__perf::after {
+  content: '';
+  position: absolute;
+  top: -11px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--ink);
+}
+.b-tk__perf::before { left: -11px; }
+.b-tk__perf::after { right: -11px; }
+
+.b-tk__main { padding: clamp(20px, 2.4vw, 30px); }
+.b-tk__main small {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--mute);
+  margin-bottom: 10px;
+}
+.b-tk__main b {
+  display: block;
+  font-size: clamp(19px, 2vw, 26px);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+.b-tk__main p {
+  margin: 8px 0 18px;
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--body);
+  word-break: keep-all;
+}
+.b-pill--sm { height: 32px; padding: 0 15px; font-size: 12px; }
+.b-tk__note {
+  margin: clamp(24px, 3.4vh, 38px) 0 0;
+  font-size: 12px;
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.42);
+  word-break: keep-all;
+}
+
+/* ── 좁은 화면 — 축소가 아니라 세로로 다시 쌓습니다 ── */
+
+@media (max-width: 860px) {
+  .b-steps,
+  .b-map { grid-template-columns: minmax(0, 1fr); }
+  .b-steps__stick { position: static; }
+  .b-map { gap: 36px; }
+  .b-rec__row { grid-template-columns: 30px minmax(0, 1fr); row-gap: 6px; }
+  .b-rec__deeds { grid-column: 2; }
+  .b-week__row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .b-week__row .b-week__card:nth-child(3) { display: none; }
+  .b-tk__row { grid-template-columns: minmax(0, 1fr); }
+  .b-chapter__in h2 { font-size: clamp(24px, 7vw, 34px); }
+}
+
+@media (max-width: 560px) {
+  .b-week__row { grid-template-columns: minmax(0, 1fr); }
+  .b-week__row .b-week__card:nth-child(3) { display: block; }
 }

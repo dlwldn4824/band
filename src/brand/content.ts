@@ -9,8 +9,14 @@ import scDetail from './assets/screens/detail.jpg'
 import scTicket from './assets/screens/ticket.jpg'
 import scConnect from './assets/screens/connect.jpg'
 import scRecord from './assets/screens/record.jpg'
+import ticketNostalgic from './assets/ticket-nostalgic.png'
+import ticketCustom from './assets/ticket-custom.png'
+import iphoneBezel from './assets/iphone-bezel.png'
 
 export const photos = { wall, stage, entry }
+
+/** Figma Community `iPhone mockups` 의 Space Black 베젤 — 화면 위에 그대로 얹습니다 */
+export const bezel = iphoneBezel
 
 /** 히어로 포스터 띠 — 우리가 실제로 올렸던 공연들입니다 */
 export const posters = [
@@ -19,6 +25,13 @@ export const posters = [
   { src: posterNostalgic, title: '향수어린 추억들', sub: 'melod.ic 두 번째 정기공연' },
   { src: wall, title: '지난 공연들', sub: '노원 대학가' },
 ]
+
+/** 실제로 발행했던 티켓 — 입장권 섹션과 폰 화면 목업에 그대로 씁니다 */
+export const tickets = {
+  nostalgic: { src: ticketNostalgic, title: 'NOSTALG.IC', sub: 'melod.ic · 라디오가가' },
+  custom: { src: ticketCustom, title: 'CUSTOM', sub: 'lexnsound × melodic · 얼라이브홀' },
+  screen: scTicket,
+}
 
 export const soonTiles = [
   { title: '겨울의 소리', sub: '멜로딕 단독 공연 · 라디오가가' },
@@ -76,11 +89,19 @@ export const clubs = [
   { name: '소리울', uni: '서울여대' },
 ]
 
+/**
+ * 랜딩에서 앱으로 보내는 주소.
+ * 예전 앱은 전부 `/old` 아래로 내려갔고(커밋 5cdd985), 지금 쓰는 화면은 `/ui` 입니다.
+ */
 export const links = {
-  shows: '/explore?mode=events',
-  clubs: '/explore?mode=clubs',
-  my: '/my',
-  console: '/club-console',
+  shows: '/ui',             // 공연 둘러보기 — 라이트 UI 홈
+  clubs: '/ui/clubs',       // 동아리 둘러보기 — 동아리 교류
+  my: '/ui/tickets',        // 내 티켓
+  console: '/ui/console',   // 운영진 허브(공연·입금·입장·정산) — 이미 쓰는 사람용
+  /* 처음 온 사람은 로그인부터입니다. 고른 쪽을 ?as= 로 들고 가서 가입 단계가 갈라집니다 */
+  joinClub: '/ui/start?as=club',
+  joinAudience: '/ui/start?as=audience',
+  newShow: '/ui/show/new',  // 공연 올리기 — 바로 공연 만들기
 }
 
 /**

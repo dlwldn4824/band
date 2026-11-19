@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from 'motion/react'
-import { tour } from '../content'
+import { bezel, tour } from '../content'
 import { useReducedMotion } from '../useReducedMotion'
 
 /**
@@ -94,6 +94,7 @@ export default function PhoneTour() {
               />
             ))}
           </div>
+          <img className="b-phone__bezel" src={bezel} alt="" aria-hidden="true" />
         </div>
 
         {/* 오른쪽 자리 */}

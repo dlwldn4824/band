@@ -2,35 +2,35 @@ import { useEffect } from 'react'
 import Nav from './sections/Nav'
 import Hero from './sections/Hero'
 import PhoneTour from './sections/PhoneTour'
-import Proof from './sections/Proof'
 import Venue from './sections/Venue'
-import Why from './sections/Why'
 import Problem from './sections/Problem'
-import Connect from './sections/Connect'
-import Exchange from './sections/Exchange'
 import LogoIntro from './sections/LogoIntro'
-import { BandPhoto, Clubs, Outro, Statement, Tiles } from './sections/Closing'
+import { Chapter, MapConnect, Record, Steps, Tickets, Week } from './sections/Lower'
+import { Outro } from './sections/Closing'
 import { useReducedMotion } from './useReducedMotion'
 import './brand.css'
 
 /**
  * BANDY 브랜드 랜딩 — 처음 오는 사람에게 보여 주는 페이지입니다.
  *
- * 구성은 POSH(posh.vip)를 거의 그대로 따릅니다.
- *   01 내비
+ * 위쪽(01~05)은 POSH(posh.vip) 구조 그대로입니다.
+ *   01 로고 인트로 · 내비
  *   02 히어로 — 오른쪽 큰 제목 + 실제 포스터 띠 + 왼쪽 아래 한 단락
- *   03 폰 목업 투어 — 폰 하나를 고정해 두고 앱 화면 5장이 넘어감, 문장은 좌우 번갈아
- *   04 풀블리드 공연 사진
-  *   05 문장 하나 + 버튼 (밴드 쪽 이야기)
- *   06 지금까지 — 확인된 숫자 · 협력 공연장 · 만든 사람들
- *   07 공연장이라면 — 빈 날 등록
- *   08 보러 가는 쪽이라면 — 관객이 올 이유
- *   09 함께 공연해 온 동아리 목록
- *   10 큰 타일 두 장
- *   11 마지막 한 줄 + 푸터
+ *   03 지금 — 공연 한 번 잡기가 왜 이렇게 어려운지
+ *   04 폰 목업 투어 — 폰 하나를 고정해 두고 앱 화면 5장이 넘어감
  *
- * 폰 안의 화면은 Figma `앱 · 라이트 UI` 의 실제 앱 화면을 내려받아 쓴 목업입니다.
- * 앱 홈(/explore)과 라우트가 분리되어 있습니다.
+ * 아래쪽(05~12)은 `Bandy Landing v3` 시안의 구성을 따릅니다.
+ *   05 풀블리드 공연 사진 + 문장 하나
+ *   06 보러 가는 쪽이라면 — 왼쪽 펼침 목록 + 오른쪽에 붙어 따라오는 화면
+ *   07 다른 학교 밴드와도 — 왼쪽 동아리 목록 + 오른쪽 연결도
+ *   08 같이한 기록 — 탭으로 걸러 보는 카드
+ *   09 BANDY 로 치른 공연 — 실제 포스터 가로 배열
+ *   10 공연장이라면 — 비는 날 등록
+ *   11 입장권 두 장 — 실제 발행했던 티켓 디자인 그대로
+ *   12 마지막 한 줄 + 푸터
+ *
+ * 폰 안의 화면과 티켓·포스터는 전부 우리가 실제로 쓴 목업입니다.
+ * 앱 화면(/ui)과 라우트가 분리되어 있습니다. 예전 앱은 /old 아래입니다.
  */
 export default function BrandLanding() {
   const reduced = useReducedMotion()
@@ -56,15 +56,14 @@ export default function BrandLanding() {
       <Hero />
       <Problem />
       <PhoneTour />
-      <BandPhoto />
-      <Statement />
-      <Proof />
+
+      <Chapter />
+      <Steps />
+      <MapConnect />
+      <Record />
+      <Week />
       <Venue />
-      <Why />
-      <Connect />
-      <Exchange />
-      <Clubs />
-      <Tiles />
+      <Tickets />
       <Outro />
     </main>
   )

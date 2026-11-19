@@ -4,16 +4,28 @@ import { useReducedMotion } from '../useReducedMotion'
 
 const EASE = [0.19, 1, 0.22, 1] as const
 
-/* 한 주에서 공연이 없는 날 — 빨간 칸이 비는 날입니다 */
-const WEEK = [
-  { d: '월', empty: true },
-  { d: '화', empty: true },
-  { d: '수', empty: false },
-  { d: '목', empty: true },
-  { d: '금', empty: false },
-  { d: '토', empty: false },
-  { d: '일', empty: true },
-]
+/**
+ * 공연장 한 곳의 한 달 — 대관표 그대로입니다.
+ * 빈 날을 칠해서 강조하지 않습니다. 공연이 잡힌 날만 적고 나머지는 비워 두면,
+ * 달력이 비어 있다는 사실 자체가 이 섹션이 하려는 말이 됩니다.
+ */
+const DOW = ['월', '화', '수', '목', '금', '토', '일']
+const DAYS = 30
+const FIRST_COL = 4 // 1일이 금요일인 달
+
+/* 주말에만 공연이 잡힌 달 — 예시 */
+const BOOKED: Record<number, string> = {
+  9: '멜로딕',
+  16: '렉사',
+  23: '하모닉',
+  30: '아카펠라',
+}
+
+const BOOKED_COUNT = Object.keys(BOOKED).length
+const EMPTY_COUNT = DAYS - BOOKED_COUNT
+
+/* 마지막 줄이 중간에 끊기지 않도록 뒤쪽도 빈칸으로 채웁니다 */
+const TAIL = (7 - ((FIRST_COL + DAYS) % 7)) % 7
 
 /**
  * 공연장을 위한 자리.
@@ -49,22 +61,47 @@ export default function Venue() {
         </div>
       </div>
 
-      <div className="b-venue__week" aria-hidden="true">
-        {WEEK.map((w, i) => (
-          <motion.div
-            key={w.d}
-            className="b-venue__day"
-            data-empty={w.empty ? '1' : '0'}
-            initial={reduced ? false : { opacity: 0, y: 10 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.5 }}
-            transition={{ duration: 0.45, delay: Math.min(i, 4) * 0.05, ease: EASE }}
-          >
-            <span>{w.d}</span>
-            {w.empty ? <em>비어 있음</em> : <i>공연</i>}
-          </motion.div>
-        ))}
-      </div>
+      <motion.figure
+        className="b-cal"
+        initial={reduced ? false : { opacity: 0, y: 12 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.4 }}
+        transition={{ duration: 0.55, ease: EASE }}
+      >
+        <figcaption className="b-cal__cap">
+          <span>공연장 한 곳의 한 달</span>
+          <em>예시</em>
+        </figcaption>
+
+        <div className="b-cal__dow" aria-hidden="true">
+          {DOW.map((d) => (
+            <span key={d}>{d}</span>
+          ))}
+        </div>
+
+        <div className="b-cal__grid" aria-hidden="true">
+          {Array.from({ length: FIRST_COL }, (_, i) => (
+            <div className="b-cal__cell b-cal__cell--pad" key={`pad-${i}`} />
+          ))}
+          {Array.from({ length: DAYS }, (_, i) => {
+            const d = i + 1
+            const who = BOOKED[d]
+            return (
+              <div className="b-cal__cell" data-booked={who ? '1' : '0'} key={d}>
+                <span className="b-cal__d">{d}</span>
+                {who && <b className="b-cal__who">{who}</b>}
+              </div>
+            )
+          })}
+          {Array.from({ length: TAIL }, (_, i) => (
+            <div className="b-cal__cell b-cal__cell--pad" key={`tail-${i}`} />
+          ))}
+        </div>
+
+        <p className="b-cal__sum">
+          공연이 잡힌 날 {BOOKED_COUNT}일. 나머지 <em>{EMPTY_COUNT}일</em>은 비어 있습니다.
+        </p>
+      </motion.figure>
     </section>
   )
 }
