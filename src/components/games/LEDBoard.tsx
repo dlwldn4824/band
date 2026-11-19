@@ -340,7 +340,7 @@ const LEDBoard = ({ onBack }: LEDBoardProps = {}) => {
           if (onBack) {
             onBack()
           } else {
-            navigate('/admin/events?tab=기타', { replace: true })
+            navigate('/old/admin/events?tab=기타', { replace: true })
           }
         }}
       >

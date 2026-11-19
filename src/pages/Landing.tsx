@@ -437,7 +437,7 @@ const CategoryShowcase = () => {
           <button
             type="button"
             className="lp-show-btn lp-show-btn--ghost"
-            onClick={() => navigate('/explore')}
+            onClick={() => navigate('/old/explore')}
           >
             전체 보기
           </button>
@@ -700,8 +700,8 @@ const UNIVERSITIES = ['한빛대학교', '새길대학교', '도원대학교', '
 const Landing = () => {
   const navigate = useNavigate()
   useSmoothScroll()
-  const goExplore = () => navigate('/explore')
-  const goConsole = () => navigate('/club-console')
+  const goExplore = () => navigate('/old/explore')
+  const goConsole = () => navigate('/old/club-console')
 
   return (
     <div className="lp">
@@ -712,7 +712,7 @@ const Landing = () => {
           <a onClick={goExplore}>동아리</a>
           <a onClick={() => navigate('/explore?mode=events')}>행사</a>
           <a onClick={goConsole}>운영진</a>
-          <a onClick={() => navigate('/login')}>예매 확인</a>
+          <a onClick={() => navigate('/old/login')}>예매 확인</a>
         </div>
         <div className="lp-nav-cta">
           <button type="button" className="lp-nav-btn lp-nav-btn--quiet" onClick={goConsole}>
@@ -915,7 +915,7 @@ const Landing = () => {
                 교환한 사람은 목록에 남아 다음 행사 참여로 이어집니다.
               </p>
               <div className="lp-cta-row" style={{ marginTop: '1.75rem' }}>
-                <button type="button" className="lp-btn lp-btn--ghost" onClick={() => navigate('/my')}>
+                <button type="button" className="lp-btn lp-btn--ghost" onClick={() => navigate('/old/my')}>
                   내 프로필 만들기
                 </button>
               </div>
@@ -1045,7 +1045,7 @@ const Landing = () => {
                 <a onClick={() => navigate('/explore?mode=events')}>행사</a>
               </li>
               <li>
-                <a onClick={() => navigate('/my')}>내 {SERVICE_NAME}</a>
+                <a onClick={() => navigate('/old/my')}>내 {SERVICE_NAME}</a>
               </li>
             </ul>
           </div>
@@ -1056,7 +1056,7 @@ const Landing = () => {
                 <a onClick={goConsole}>동아리 콘솔</a>
               </li>
               <li>
-                <a onClick={() => navigate('/login')}>예매 확인</a>
+                <a onClick={() => navigate('/old/login')}>예매 확인</a>
               </li>
             </ul>
           </div>
@@ -1064,7 +1064,7 @@ const Landing = () => {
             <h4>서비스</h4>
             <ul>
               <li>
-                <a onClick={() => navigate('/intro')}>소개</a>
+                <a onClick={() => navigate('/old/intro')}>소개</a>
               </li>
             </ul>
           </div>

@@ -237,11 +237,11 @@ const Dashboard = () => {
                 onClick={() => {
                   void trackEvent('cta_clicked', {
                     cta_name: 'drink_banner',
-                    source_page: '/dashboard',
+                    source_page: '/old/dashboard',
                     banner_id: 'drink_promo',
                     placement: 'dashboard',
                   })
-                  navigate('/events', { state: { openDrinkModal: true } })
+                  navigate('/old/events', { state: { openDrinkModal: true } })
                 }}
                 onMouseOver={(e) => {
                   e.currentTarget.style.transform = 'translateY(-2px)'

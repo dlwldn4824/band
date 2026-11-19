@@ -49,7 +49,7 @@ class ErrorBoundary extends Component<Props, State> {
           <button
             onClick={() => {
               this.setState({ hasError: false, error: null })
-              window.location.href = '/login'
+              window.location.href = '/old/login'
             }}
             style={{
               padding: '0.75rem 1.5rem',

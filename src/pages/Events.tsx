@@ -102,7 +102,7 @@ const Events = () => {
       console.log('[Events] 접근 차단 → dashboard로 리다이렉트')
       void trackEvent('events_redirected', { enabled: false })
       trackFeatureDenied('events_disabled')
-      navigate(isAdmin ? '/admin/dashboard' : '/dashboard')
+      navigate(isAdmin ? '/old/admin/dashboard' : '/old/dashboard')
     } else {
       console.log('[Events] 접근 허용')
     }

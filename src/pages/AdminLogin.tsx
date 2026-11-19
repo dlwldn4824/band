@@ -85,7 +85,7 @@ const AdminLogin = () => {
       })
       
       // Admin Dashboard로 이동
-      navigate('/admin/dashboard')
+      navigate('/old/admin/dashboard')
     } finally {
       setIsSubmitting(false)
     }
@@ -97,7 +97,7 @@ const AdminLogin = () => {
         <div className="login-header">
           <button 
             className="login-close-button"
-            onClick={() => navigate('/login')}
+            onClick={() => navigate('/old/login')}
             aria-label="닫기"
           >
           </button>

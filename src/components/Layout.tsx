@@ -82,10 +82,10 @@ const Layout = ({ children }: LayoutProps) => {
     return location.pathname === path ? 'active' : ''
   }
 
-  const isChat = location.pathname.startsWith('/chat') || location.pathname.startsWith('/admin/chat')
-  const isGuestbook = location.pathname.startsWith('/guestbook') || location.pathname.startsWith('/admin/guestbook')
-  const isEvents = location.pathname.startsWith('/events') || location.pathname.startsWith('/admin/events')
-  const isPerformances = location.pathname.startsWith('/performances') || location.pathname.startsWith('/admin/performances')
+  const isChat = location.pathname.startsWith('/old/chat') || location.pathname.startsWith('/old/admin/chat')
+  const isGuestbook = location.pathname.startsWith('/old/guestbook') || location.pathname.startsWith('/old/admin/guestbook')
+  const isEvents = location.pathname.startsWith('/old/events') || location.pathname.startsWith('/old/admin/events')
+  const isPerformances = location.pathname.startsWith('/old/performances') || location.pathname.startsWith('/old/admin/performances')
 
   // 방명록, 채팅 페이지에서는 body 스크롤 막기
   useEffect(() => {
@@ -110,18 +110,18 @@ const Layout = ({ children }: LayoutProps) => {
   const handleLogout = () => {
     logout()
     // 항상 일반 로그인 화면으로 이동 (window.location.replace로 React Router 리다이렉트 우회)
-    window.location.replace('/login')
+    window.location.replace('/old/login')
   }
 
   const handleLogoClick = () => {
     // adminStatus가 null이면 isAdmin 사용 (fallback)
     const currentAdminStatus = adminStatus !== null ? adminStatus : isAdmin
     if (currentAdminStatus) {
-      navigate('/admin/dashboard')
+      navigate('/old/admin/dashboard')
     } else if (isAuthenticated) {
-      navigate('/dashboard')
+      navigate('/old/dashboard')
     } else {
-      navigate('/login')
+      navigate('/old/login')
     }
   }
 
@@ -155,31 +155,31 @@ const Layout = ({ children }: LayoutProps) => {
           <nav className="nav">
             {(adminStatus !== null ? adminStatus : isAdmin) ? (
               <>
-                <Link to="/admin/dashboard" className={`nav-link ${isActive('/admin/dashboard')}`} onClick={(e) => handleNavClick('/admin/dashboard', e, 'home')}>
+                <Link to="/old/admin/dashboard" className={`nav-link ${isActive('/old/admin/dashboard')}`} onClick={(e) => handleNavClick('/old/admin/dashboard', e, 'home')}>
                   홈
                 </Link>
-                <Link to="/admin/performances" className={`nav-link ${isActive('/admin/performances')}`} onClick={(e) => handleNavClick('/admin/performances', e, 'performances')}>
+                <Link to="/old/admin/performances" className={`nav-link ${isActive('/old/admin/performances')}`} onClick={(e) => handleNavClick('/old/admin/performances', e, 'performances')}>
                   공연 정보
                 </Link>
-                <Link to="/admin/chat" className={`nav-link ${isActive('/admin/chat')}`} onClick={(e) => handleNavClick('/admin/chat', e, 'chat')}>
+                <Link to="/old/admin/chat" className={`nav-link ${isActive('/old/admin/chat')}`} onClick={(e) => handleNavClick('/old/admin/chat', e, 'chat')}>
                   채팅
                 </Link>
               </>
             ) : isAuthenticated ? (
               <>
-                <Link to="/dashboard" className={`nav-link ${isActive('/dashboard')}`} onClick={(e) => handleNavClick('/dashboard', e, 'home')}>
+                <Link to="/old/dashboard" className={`nav-link ${isActive('/old/dashboard')}`} onClick={(e) => handleNavClick('/old/dashboard', e, 'home')}>
                   홈
                 </Link>
-                <Link to="/performances" className={`nav-link ${isActive('/performances')}`} onClick={(e) => handleNavClick('/performances', e, 'performances')}>
+                <Link to="/old/performances" className={`nav-link ${isActive('/old/performances')}`} onClick={(e) => handleNavClick('/old/performances', e, 'performances')}>
                   공연 정보
                 </Link>
-                <Link to="/chat" className={`nav-link ${isActive('/chat')}`} onClick={(e) => handleNavClick('/chat', e, 'chat')}>
+                <Link to="/old/chat" className={`nav-link ${isActive('/old/chat')}`} onClick={(e) => handleNavClick('/old/chat', e, 'chat')}>
                   채팅
                 </Link>
               </>
             ) : (
               <>
-                <Link to="/performances" className={`nav-link ${isActive('/performances')}`} onClick={(e) => handleNavClick('/performances', e, 'performances')}>
+                <Link to="/old/performances" className={`nav-link ${isActive('/old/performances')}`} onClick={(e) => handleNavClick('/old/performances', e, 'performances')}>
                   공연 정보
                 </Link>
               </>

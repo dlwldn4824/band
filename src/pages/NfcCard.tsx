@@ -109,7 +109,7 @@ const NfcCard = () => {
           <button
             type="button"
             className="bandy-btn bandy-btn-ghost"
-            onClick={() => navigate('/explore')}
+            onClick={() => navigate('/old/explore')}
           >
             {SERVICE_NAME} 둘러보기
           </button>
@@ -185,7 +185,7 @@ const NfcCard = () => {
           <button
             type="button"
             className="bandy-btn bandy-btn-primary"
-            onClick={() => navigate('/my')}
+            onClick={() => navigate('/old/my')}
           >
             {myPageLabel()}에서 보기
           </button>
@@ -201,7 +201,7 @@ const NfcCard = () => {
             <button
               type="button"
               className="bandy-btn bandy-btn-primary"
-              onClick={() => navigate('/my')}
+              onClick={() => navigate('/old/my')}
             >
               내 프로필 카드 만들기
             </button>
@@ -220,7 +220,7 @@ const NfcCard = () => {
           <button
             type="button"
             className="bandy-btn bandy-btn-ghost"
-            onClick={() => navigate('/explore')}
+            onClick={() => navigate('/old/explore')}
           >
             {SERVICE_NAME} 둘러보기
           </button>

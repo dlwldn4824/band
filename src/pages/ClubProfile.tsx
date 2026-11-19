@@ -61,7 +61,7 @@ const ClubProfile = () => {
   if (notFound || !club) {
     return (
       <div className="bandy">
-        <button type="button" className="bandy-back" onClick={() => navigate('/explore')}>
+        <button type="button" className="bandy-back" onClick={() => navigate('/old/explore')}>
           ← 탐색으로
         </button>
         <div className="bandy-empty">동아리를 찾을 수 없습니다.</div>
@@ -74,7 +74,7 @@ const ClubProfile = () => {
 
   return (
     <div className="bandy">
-      <button type="button" className="bandy-back" onClick={() => navigate('/explore')}>
+      <button type="button" className="bandy-back" onClick={() => navigate('/old/explore')}>
         ← 탐색으로
       </button>
 
@@ -116,7 +116,7 @@ const ClubProfile = () => {
             <button
               type="button"
               className="bandy-btn bandy-btn-ghost"
-              onClick={() => navigate('/club-console')}
+              onClick={() => navigate('/old/club-console')}
             >
               내 동아리입니다 · 콘솔로 이동
             </button>

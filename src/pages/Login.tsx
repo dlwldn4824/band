@@ -169,7 +169,7 @@ const Login = () => {
           const resolved = await resolveLoginToken(tokenParam)
           if (!resolved.ok) {
             console.warn('토큰 해석 실패:', resolved.error)
-            navigate('/login', { replace: true })
+            navigate('/old/login', { replace: true })
             return
           }
 
@@ -186,12 +186,12 @@ const Login = () => {
             setShowTicket(true)
           } else {
             setIsProcessingAutoLogin(false)
-            navigate('/login', { replace: true })
+            navigate('/old/login', { replace: true })
           }
         } catch (error) {
           console.error('자동 로그인 오류:', error)
           setIsProcessingAutoLogin(false)
-          navigate('/login', { replace: true })
+          navigate('/old/login', { replace: true })
         }
       }
 
@@ -262,11 +262,11 @@ const Login = () => {
         const personalToken = await createLoginToken(currentUser.name, currentUser.phone)
         if (personalToken) {
           navigate(`/dashboard?token=${encodeURIComponent(personalToken)}`, { replace: true })
-        } else if (location.pathname !== '/dashboard') {
-          navigate('/dashboard')
+        } else if (location.pathname !== '/old/dashboard') {
+          navigate('/old/dashboard')
         }
-      } else if (location.pathname !== '/dashboard') {
-        navigate('/dashboard')
+      } else if (location.pathname !== '/old/dashboard') {
+        navigate('/old/dashboard')
       }
     }
   }
@@ -1216,7 +1216,7 @@ const Login = () => {
 
           {/* 운영자 로그인 링크 */}
           <div className="admin-login-link" style={{ textAlign: 'center', marginTop: '1rem' }}>
-            <Link to="/admin/login" className="admin-login-text">
+            <Link to="/old/admin/login" className="admin-login-text">
               운영자 로그인 &gt;
             </Link>
           </div>

@@ -31,7 +31,7 @@ const ManageProtectedRoute = ({ children }: ManageProtectedRouteProps) => {
 
   // 운영진(admin) 화면과 완전 분리 — admin 로그인 상태에서는 /manage 접근 불가
   if (isAdmin) {
-    return <Navigate to="/admin/dashboard" replace />
+    return <Navigate to="/old/admin/dashboard" replace />
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

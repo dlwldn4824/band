@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useParams } from 'react-router-dom'
 import { useEffect } from 'react'
 import { AuthProvider } from './contexts/AuthContext'
 import { DataProvider } from './contexts/DataContext'
@@ -103,6 +103,12 @@ function useAppHeight() {
   }, [])
 }
 
+/** 예전 주소로 들어온 티켓 링크를 /old 쪽으로 넘겨 줍니다 */
+function LegacyTicketRedirect() {
+  const { token } = useParams()
+  return <Navigate to={`/old/t/${token}`} replace />
+}
+
 function AppRoutes() {
   // 예전에는 <Routes> 에 key={location.key} 를 걸어 뒀습니다. 같은 주소로 다시
   // 이동해도 화면이 새로 그려지게 하려던 것인데, location.key 는 이동할 때마다
@@ -113,33 +119,42 @@ function AppRoutes() {
   // 뺍니다.
   return (
         <Routes>
-          <Route path="/t/:token" element={
+          {/* ── 지금 쓰는 것 ───────────────────────────────
+              첫 화면은 브랜드 랜딩이고, 앱은 /ui 아래에 있습니다.
+              예전 앱은 전부 /old 아래로 내렸습니다 — 돌아다니다 잘못 넘어가는
+              일이 없게 주소를 아예 갈라 두었습니다. */}
+          <Route path="/" element={<Navigate to="/brand" replace />} />
+
+          {/* 종이에 찍어 둔 QR·링크가 아직 /t/... 를 가리킵니다 */}
+          <Route path="/t/:token" element={<LegacyTicketRedirect />} />
+
+          <Route path="/old/t/:token" element={
             <Layout>
               <Dashboard />
             </Layout>
           } />
-          <Route path="/login" element={<Login />} />
-          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/old/login" element={<Login />} />
+          <Route path="/old/admin/login" element={<AdminLogin />} />
           <Route
-            path="/manage"
+            path="/old/manage"
             element={
               <ManageProtectedRoute>
                 <Admin />
               </ManageProtectedRoute>
             }
           />
-          <Route path="/admin/manage" element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="/old/admin/manage" element={<Navigate to="/old/admin/dashboard" replace />} />
 
           {/* ── BANDY 플랫폼 레이어 ──────────────────────────
               분야별 탐색 → 동아리 프로필 · 교류 → 행사 예약 → 현장 프로필 교환.
               예약한 행사에 당일 허브가 연결되어 있으면 아래 단일 공연 화면으로 이어집니다. */}
-          <Route path="/explore" element={<BandyLayout><Explore /></BandyLayout>} />
-          <Route path="/clubs/:clubId" element={<BandyLayout><ClubProfile /></BandyLayout>} />
-          <Route path="/shows/:eventId" element={<BandyLayout><EventDetail /></BandyLayout>} />
-          <Route path="/my" element={<BandyLayout><MyBandy /></BandyLayout>} />
-          <Route path="/club-console" element={<BandyLayout><ClubConsole /></BandyLayout>} />
+          <Route path="/old/explore" element={<BandyLayout><Explore /></BandyLayout>} />
+          <Route path="/old/clubs/:clubId" element={<BandyLayout><ClubProfile /></BandyLayout>} />
+          <Route path="/old/shows/:eventId" element={<BandyLayout><EventDetail /></BandyLayout>} />
+          <Route path="/old/my" element={<BandyLayout><MyBandy /></BandyLayout>} />
+          <Route path="/old/club-console" element={<BandyLayout><ClubConsole /></BandyLayout>} />
           {/* NFC 태그 · QR · 링크 공유가 모두 이 경로로 들어옵니다 */}
-          <Route path="/card/:shareCode" element={<BandyLayout><NfcCard /></BandyLayout>} />
+          <Route path="/old/card/:shareCode" element={<BandyLayout><NfcCard /></BandyLayout>} />
 
           {/* ── 라이트 UI (Figma `앱 · 라이트 UI` 페이지) ──────────────
               기존 2025 공연 화면과 섞이지 않도록 전부 /ui 아래에 둡니다. */}
@@ -149,12 +164,11 @@ function AppRoutes() {
               앱 홈(/explore)과 라우트를 분리해 두었습니다. 폴더도 src/brand 로 따로 있습니다. */}
           <Route path="/brand" element={<BrandLanding />} />
 
-          {/* 첫 화면은 기존 단일 공연 로그인 — 플랫폼 레이어는 /explore 주소로 들어갑니다 */}
-          {/* 소개 페이지가 첫 화면입니다. 예매(/login)·탐색(/explore)로 갈라집니다. */}
-          <Route path="/" element={<Landing />} />
-          <Route path="/intro" element={<Landing />} />
+          {/* 예전 앱의 첫 화면 — /old 아래로 내렸습니다 */}
+          <Route path="/old" element={<Landing />} />
+          <Route path="/old/intro" element={<Landing />} />
           <Route
-            path="/dashboard"
+            path="/old/dashboard"
             element={
               <Layout>
                 <ProtectedRoute>
@@ -164,7 +178,7 @@ function AppRoutes() {
             }
           />
           <Route
-            path="/admin/dashboard"
+            path="/old/admin/dashboard"
             element={
               <Layout>
                 <AdminProtectedRoute>
@@ -174,7 +188,7 @@ function AppRoutes() {
             }
           />
           <Route
-            path="/admin/performances"
+            path="/old/admin/performances"
             element={
               <Layout>
                 <AdminProtectedRoute>
@@ -184,7 +198,7 @@ function AppRoutes() {
             }
           />
           <Route
-            path="/admin/events"
+            path="/old/admin/events"
             element={
               <Layout>
                 <AdminProtectedRoute>
@@ -194,7 +208,7 @@ function AppRoutes() {
             }
           />
           <Route
-            path="/admin/chat"
+            path="/old/admin/chat"
             element={
               <Layout>
                 <AdminProtectedRoute>
@@ -204,7 +218,7 @@ function AppRoutes() {
             }
           />
           <Route
-            path="/admin/guestbook"
+            path="/old/admin/guestbook"
             element={
               <Layout>
                 <AdminProtectedRoute>
@@ -214,7 +228,7 @@ function AppRoutes() {
             }
           />
           <Route
-            path="/performances"
+            path="/old/performances"
             element={
               <Layout>
                 <Performances />
@@ -222,7 +236,7 @@ function AppRoutes() {
             }
           />
           <Route
-            path="/products"
+            path="/old/products"
             element={
               <Layout>
                 <Products />
@@ -230,7 +244,7 @@ function AppRoutes() {
             }
           />
           <Route
-            path="/events"
+            path="/old/events"
             element={
               <Layout>
                 <ProtectedRoute>
@@ -240,7 +254,7 @@ function AppRoutes() {
             }
           />
           <Route
-            path="/chat"
+            path="/old/chat"
             element={
               <Layout>
                 <ProtectedRoute>
@@ -250,7 +264,7 @@ function AppRoutes() {
             }
           />
           <Route
-            path="/guestbook"
+            path="/old/guestbook"
             element={
               <Layout>
                 <Guestbook />
@@ -258,10 +272,10 @@ function AppRoutes() {
             }
           />
           <Route
-            path="/onsite"
+            path="/old/onsite"
             element={<Onsite />}
           />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<Navigate to="/brand" replace />} />
         </Routes>
   )
 }

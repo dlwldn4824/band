@@ -22,7 +22,7 @@ const Events = ({ events }: EventsProps) => {
   const location = useLocation()
   const orderedEvents = getOrderedTimelineEvents(events)
   
-  const isAdminPage = location.pathname.startsWith('/admin')
+  const isAdminPage = location.pathname.startsWith('/old/admin')
   
   const handleEventClick = (displayIndex: number) => {
     if (displayIndex === 0) return
@@ -37,13 +37,13 @@ const Events = ({ events }: EventsProps) => {
     })
     void trackEvent('cta_clicked', { cta_name: 'timeline_footer', source_page: location.pathname })
 
-    const path = isAdminPage ? '/admin/performances' : '/performances'
+    const path = isAdminPage ? '/old/admin/performances' : '/old/performances'
     navigate(path, { state: { sectionTitle, part: storagePart } })
   }
 
   const handleSetlistClick = () => {
     void trackEvent('cta_clicked', { cta_name: 'setlist_link', source_page: location.pathname })
-    const path = isAdminPage ? '/admin/performances' : '/performances'
+    const path = isAdminPage ? '/old/admin/performances' : '/old/performances'
     navigate(path)
   }
   

@@ -730,7 +730,7 @@ const EventEditorModal = ({
             id="event-hub"
             type="text"
             value={hubPath}
-            placeholder="/dashboard"
+            placeholder="/old/dashboard"
             maxLength={120}
             onChange={(e) => setHubPath(e.target.value)}
           />

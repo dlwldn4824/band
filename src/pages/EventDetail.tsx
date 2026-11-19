@@ -164,7 +164,7 @@ const EventDetail = () => {
               <button
                 type="button"
                 className="bandy-btn bandy-btn-ghost"
-                onClick={() => navigate('/my')}
+                onClick={() => navigate('/old/my')}
               >
                 {myPageLabel()}로 이동
               </button>

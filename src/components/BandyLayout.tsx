@@ -15,9 +15,9 @@ interface BandyLayoutProps {
 }
 
 const TABS = [
-  { path: '/explore', label: '탐색' },
-  { path: '/my', label: myPageLabel() },
-  { path: '/club-console', label: '동아리 콘솔' },
+  { path: '/old/explore', label: '탐색' },
+  { path: '/old/my', label: myPageLabel() },
+  { path: '/old/club-console', label: '동아리 콘솔' },
 ]
 
 const BandyLayout = ({ children }: BandyLayoutProps) => {

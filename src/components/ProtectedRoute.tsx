@@ -18,13 +18,13 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
       return null
     }
     // 로딩 중이고 localStorage에도 user가 없으면 로그인 페이지로
-    return <Navigate to="/login" replace />
+    return <Navigate to="/old/login" replace />
   }
 
   // 로딩 완료 후 인증 상태 확인
   if (!isAuthenticated) {
     trackFeatureDenied('not_logged_in')
-    return <Navigate to="/login" replace />
+    return <Navigate to="/old/login" replace />
   }
 
   return <>{children}</>

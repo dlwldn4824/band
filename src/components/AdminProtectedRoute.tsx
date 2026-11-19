@@ -19,14 +19,14 @@ const AdminProtectedRoute = ({ children }: AdminProtectedRouteProps) => {
     }
     // 로딩 중이고 localStorage에도 admin이 없으면 로그인 페이지로
     if (!savedAdmin) {
-      return <Navigate to="/admin/login" replace state={{ from: location.pathname }} />
+      return <Navigate to="/old/admin/login" replace state={{ from: location.pathname }} />
     }
     return null
   }
 
   // 로딩 완료 후 Admin이 아니면 로그인 페이지로 리다이렉트
   if (!isAdmin) {
-    return <Navigate to="/admin/login" replace state={{ from: location.pathname }} />
+    return <Navigate to="/old/admin/login" replace state={{ from: location.pathname }} />
   }
 
   return <>{children}</>
