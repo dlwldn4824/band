@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import { AuthProvider } from './contexts/AuthContext'
 import { DataProvider } from './contexts/DataContext'
@@ -104,11 +104,15 @@ function useAppHeight() {
 }
 
 function AppRoutes() {
-  const location = useLocation()
-  
-  // location.key를 사용하여 같은 경로로 이동해도 리렌더링되도록 함
+  // 예전에는 <Routes> 에 key={location.key} 를 걸어 뒀습니다. 같은 주소로 다시
+  // 이동해도 화면이 새로 그려지게 하려던 것인데, location.key 는 이동할 때마다
+  // 달라지는 값이라 탭이나 필터처럼 ?뒤만 바뀌는 경우에도 화면 전체가 통째로
+  // 다시 마운트됐습니다. 거기에 v7_startTransition 이 겹치면 React 가 새 트리를
+  // 뒤에서 그리는 동안 이전 화면을 계속 띄워 둬서, 눌러도 안 바뀌다가 새로고침해야
+  // 보이는 일이 생깁니다. 라우터는 원래 주소가 바뀌면 알아서 다시 그리므로 key 를
+  // 뺍니다.
   return (
-        <Routes location={location} key={location.key || location.pathname}>
+        <Routes>
           <Route path="/t/:token" element={
             <Layout>
               <Dashboard />
